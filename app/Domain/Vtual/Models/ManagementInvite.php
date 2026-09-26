@@ -8,12 +8,27 @@ use App\Domain\Vtual\Enums\ManagementMemberRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class ManagementInvite extends Model
 {
     use HasUuids;
+    use LogsActivity;
 
     protected $table = 'vtual_management_invites';
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        // `token` is a bearer secret for the invite-respond endpoint: log the
+        // lifecycle without ever writing it into the activity log.
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logExcept(['token'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('vtual');
+    }
 
     protected $fillable = [
         'management_id',

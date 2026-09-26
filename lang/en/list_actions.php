@@ -11,9 +11,17 @@ return [
     'deactivate' => 'Deactivate',
     'set_settlement' => 'Set as settlement',
     'remove' => 'Remove',
+    // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+    'verify_claim' => 'Verify claim',
+    'accept_anyway' => 'Accept anyway',
     'confirm' => [
         'archive_management' => 'Archive this management?',
         'cancel_event' => 'Cancel this event?',
+        // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+        'cancel_claim_title' => 'Cancel claim',
+        'cancel_claim' => 'Cancel this claim? The bio token stops working and you will have to start over.',
+        'accept_anyway_claim_title' => 'Accept anyway',
+        'accept_anyway_claim' => 'Accept this claim without finding the token in the channel bio?',
         'delete_service' => 'Delete this service?',
         'delete_inference' => 'Delete this record? This cannot be undone.',
         'delete_named_title' => 'Delete ":name"',

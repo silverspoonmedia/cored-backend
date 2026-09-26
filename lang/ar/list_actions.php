@@ -11,8 +11,16 @@ return [
     'deactivate' => 'إلغاء التفعيل',
     'set_settlement' => 'تعيين للتسوية',
     'remove' => 'إزالة',
+    // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+    'verify_claim' => 'تحقق من المطالبة',
+    'accept_anyway' => 'القبول دون تحقق',
     'confirm' => [
         'archive_management' => 'هل تريد أرشفة هذه الإدارة؟',
+        // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+        'cancel_claim_title' => 'إلغاء المطالبة',
+        'cancel_claim' => 'هل تريد إلغاء هذه المطالبة؟ سيتوقف رمز السيرة عن العمل وستبدأ من جديد.',
+        'accept_anyway_claim_title' => 'القبول دون تحقق',
+        'accept_anyway_claim' => 'هل تريد قبول هذه المطالبة دون العثور على الرمز في سيرة القناة؟',
         'cancel_event' => 'هل تريد إلغاء هذه الفعالية؟',
         'delete_service' => 'هل تريد حذف هذه الخدمة؟',
         'delete_inference' => 'هل تريد حذف هذا السجل؟ لا يمكن التراجع عن ذلك.',

@@ -46,6 +46,8 @@ class Content extends Model
         'published_at',
         'hydrated_at',
         'first_unavailable_at',
+        'region_allowed',
+        'region_blocked',
     ];
 
     /**
@@ -65,6 +67,8 @@ class Content extends Model
             'published_at' => 'datetime',
             'hydrated_at' => 'datetime',
             'first_unavailable_at' => 'datetime',
+            'region_allowed' => 'array',
+            'region_blocked' => 'array',
         ];
     }
 

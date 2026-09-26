@@ -12,6 +12,7 @@ use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Enums\CreatorClaimVerifiedVia;
 use App\Domain\Vtual\Enums\CreatorMemberRole;
 use App\Domain\Vtual\Events\CreatorClaimProgressChanged;
+use App\Domain\Vtual\Events\CreatorClaimStaffChanged;
 use App\Domain\Vtual\Events\PlatformCredentialChanged;
 use App\Domain\Vtual\Models\CreatorClaim;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
@@ -151,7 +152,7 @@ class CreatorClaimServiceTest extends TestCase
                 'options' => ['cluster' => 'ap1'],
             ],
         ]);
-        Event::fake([CreatorClaimProgressChanged::class]);
+        Event::fake([CreatorClaimProgressChanged::class, CreatorClaimStaffChanged::class]);
 
         [$orphan, $channel] = $this->seedOrphanWithChannel();
         $user = $this->userWithRole('User');
@@ -515,7 +516,7 @@ class CreatorClaimServiceTest extends TestCase
         ]);
         // PlatformCredentialChanged fires from activateYoutubeCredential()
         // below (broadcast-gated only) — fake it so Pusher is never hit.
-        Event::fake([CreatorClaimProgressChanged::class, PlatformCredentialChanged::class]);
+        Event::fake([CreatorClaimProgressChanged::class, PlatformCredentialChanged::class, CreatorClaimStaffChanged::class]);
 
         $this->activateYoutubeCredential();
         [$orphan, $channel] = $this->seedOrphanWithChannel();
@@ -701,7 +702,8 @@ class CreatorClaimServiceTest extends TestCase
         $this->claims->start($userB, $orphan->id, $channel->id);
 
         $pending = $this->claims->listPendingForStaff($this->admin);
-        $this->assertCount(2, $pending);
+        $this->assertCount(2, $pending['items']);
+        $this->assertSame(2, $pending['total']);
 
         try {
             $this->claims->listPendingForStaff($userA);

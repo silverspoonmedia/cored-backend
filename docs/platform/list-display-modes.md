@@ -15,6 +15,8 @@ The former Yajra DataTables presentation (`display_mode=datatable`) was removed 
 
 Query-paging lists: users, invoices, payment-gateways, subscriptions, services, inference providers, inference model-cards, vtual orphans, blog posts (including the separate `blog/posts/trashed` list), activity logs, error logs. The navigation **tree** and menus list are excluded — they stay a full dump and are sliced client-side. Helper: `RespondsWithListDisplayMode::respondToQueryList`.
 
+**vTual claims (`claims/mine` + `claims/pending`) are the one list that takes the envelope shape without joining this contract.** `CreatorClaimController::mine` / `pending` read `page` / `per_page` straight off the request — no `display_mode` validation, no `InteractsWithListDisplayMode` — and always answer `{ items, pagination }`, because the SPA claims hub has no flat-list mode. `pagination` is `{ current_page, per_page, total, has_more }` with **no `last_page`** (page forward with `has_more`), and `per_page` clamps to 1–50 (default 15) rather than the 100 above. A consumer that reads `last_page` gets `undefined`.
+
 ## Query-mode `actions[]` (live SPA contract)
 
 **Source of truth for which row buttons exist.** Query and flat list rows carry `actions[]`. The SPA maps and executes; views must not invent keys.
@@ -30,6 +32,8 @@ Each item: `key`, `label` (`__()` `en`/`id`/`ja` via `lang/*/list_actions.php` p
 | Mutate | `method` + `path` (API path the SPA client already calls, not a full `route()` URL) + optional `confirm` `{ title, text }` | existing composable + `confirmDialog` |
 
 Visibility copies **current SPA rules** (example: users always `edit`; `delete` only with `delete user` and not self). `@row-click` uses the same nav action already on the row. Lists that used labeled chrome (currencies, notification audiences, vTual platform “Manage”, hash blocklist) stay labeled — still driven by `row.actions`.
+
+The vTual claims hub is the reference builder for a list whose actions are **status-gated and actor-gated at once**: `VtualClaimQueryRowActions` returns `[]` for any non-pending row, offers `verify` (when the owner may still queue a verify) / `cancel` / the nav `view_profile` to the owner, and adds `accept_anyway` only for a staff actor **and** when the Accept Anyway setting is on. The endpoint re-checks authorization on every mutate path, so the payload never widens power — a key in `actions[]` is a suggestion to the client, never a grant.
 
 Out of scope: Card header toolbars, Archivd browse `.ar-action-group`, new keys.
 

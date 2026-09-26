@@ -107,6 +107,63 @@ class PlatformApiGatewayTest extends TestCase
     }
 
     #[Test]
+    public function youtube_fetch_videos_maps_region_restriction_codes(): void
+    {
+        $this->activateYoutubeCredential('yt-key');
+
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'items' => [
+                    [
+                        'id' => 'vid-restricted',
+                        'snippet' => [
+                            'title' => 'Restricted',
+                            'channelId' => 'UCabc',
+                            'publishedAt' => '2026-01-01T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                        ],
+                        'contentDetails' => [
+                            'duration' => 'PT1M',
+                            // Mixed case, duplicate and non-ISO noise.
+                            'regionRestriction' => [
+                                'blocked' => ['ru', 'BY', 'RU', 'nope', 7, ''],
+                                'allowed' => ['US', 'jp'],
+                            ],
+                        ],
+                        'statistics' => ['viewCount' => '1'],
+                        'status' => ['privacyStatus' => 'public'],
+                    ],
+                    [
+                        'id' => 'vid-global',
+                        'snippet' => [
+                            'title' => 'Global',
+                            'channelId' => 'UCabc',
+                            'publishedAt' => '2026-01-02T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                        ],
+                        'contentDetails' => ['duration' => 'PT2M'],
+                        'statistics' => ['viewCount' => '2'],
+                        'status' => ['privacyStatus' => 'public'],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $videos = $this->gateway->fetchVideos(PlatformKey::Youtube, ['vid-restricted', 'vid-global'])
+            ->keyBy(fn (PlatformVideoDto $dto): string => $dto->externalId);
+
+        /** @var PlatformVideoDto $restricted */
+        $restricted = $videos['vid-restricted'];
+        $this->assertSame(['RU', 'BY'], $restricted->regionBlocked);
+        $this->assertSame(['US', 'JP'], $restricted->regionAllowed);
+
+        /** @var PlatformVideoDto $global */
+        $global = $videos['vid-global'];
+        $this->assertSame([], $global->regionBlocked);
+        $this->assertSame([], $global->regionAllowed);
+    }
+
+    #[Test]
     public function youtube_invalid_part_throws(): void
     {
         $this->activateYoutubeCredential('yt-key');
@@ -322,6 +379,13 @@ class PlatformApiGatewayTest extends TestCase
     public function youtube_500_writes_error_log_without_mark_failed(): void
     {
         $this->activateYoutubeCredential('yt-key-no-leak');
+        // Retry is real for 5xx; keep the test fast and deterministic.
+        config([
+            'vtual.http.retry.times' => 3,
+            'vtual.http.retry.base_ms' => 1,
+            'vtual.http.retry.max_ms' => 1,
+            'vtual.http.retry.jitter' => false,
+        ]);
 
         Http::fake([
             'www.googleapis.com/youtube/v3/videos*' => Http::response([
@@ -339,14 +403,24 @@ class PlatformApiGatewayTest extends TestCase
         $cred = $this->youtube->credentials()->first();
         $this->assertNull($cred?->last_error_at);
 
-        $this->assertDatabaseCount('error_logs', 1);
-        $row = ErrorLog::query()->firstOrFail();
-        $context = $row->context ?? [];
-        $this->assertSame(500, $context['upstream_status'] ?? null);
-        $this->assertSame('youtube', $context['platform'] ?? null);
-        $this->assertSame((string) $cred->id, $context['credential_id'] ?? null);
-        $this->assertStringNotContainsString('yt-key-no-leak', $row->message);
-        $this->assertStringNotContainsString('yt-key-no-leak', json_encode($context) ?: '');
+        // ErrorLog groups by fingerprint (numbers normalised to {n}), so the two
+        // retry notices collapse into one row with occurrence_count = 2, plus
+        // the final failure row.
+        $this->assertDatabaseCount('error_logs', 2);
+
+        $failure = ErrorLog::query()->where('context->event', 'platform_http_failed')->firstOrFail();
+        $failureContext = $failure->context ?? [];
+        $this->assertSame(3, $failureContext['attempt'] ?? null);
+        $this->assertSame(3, $failureContext['max_attempts'] ?? null);
+        $this->assertSame(500, $failureContext['upstream_status'] ?? null);
+        $this->assertSame('youtube', $failureContext['platform'] ?? null);
+        $this->assertSame((string) $cred->id, $failureContext['credential_id'] ?? null);
+        $this->assertStringNotContainsString('yt-key-no-leak', $failure->message);
+        $this->assertStringNotContainsString('yt-key-no-leak', json_encode($failureContext) ?: '');
+
+        $retry = ErrorLog::query()->where('context->event', 'platform_http_retry_scheduled')->firstOrFail();
+        $this->assertSame(2, (int) $retry->occurrence_count);
+        $this->assertSame(500, ($retry->context ?? [])['upstream_status'] ?? null);
     }
 
     #[Test]
@@ -462,6 +536,13 @@ class PlatformApiGatewayTest extends TestCase
 
         $primary = $this->activateYoutubeCredential('key-a', priority: 10, label: 'yt-a');
         $this->activateYoutubeCredential('key-b', priority: 20, label: 'yt-b');
+        // 5xx is retried in place (same credential); keep the test fast.
+        config([
+            'vtual.http.retry.times' => 3,
+            'vtual.http.retry.base_ms' => 1,
+            'vtual.http.retry.max_ms' => 1,
+            'vtual.http.retry.jitter' => false,
+        ]);
 
         Http::fake([
             'www.googleapis.com/youtube/v3/videos*' => Http::response([
@@ -476,7 +557,8 @@ class PlatformApiGatewayTest extends TestCase
             $this->assertSame(500, $e->upstreamStatus);
         }
 
-        Http::assertSentCount(1);
+        // 3 attempts on the primary — a 5xx retry never switches credential.
+        Http::assertSentCount(3);
         $primary->refresh();
         $this->assertSame(0, (int) $primary->consecutive_auth_failures);
         $this->assertNull($primary->failover_skip_until);

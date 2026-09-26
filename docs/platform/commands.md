@@ -101,6 +101,8 @@ Domain data caches are forever + rebuild-on-miss + invalidate-on-change — [cac
 | `vtual:audit-content-ai` | Drain the `vtual_content_ai_audit` pool — AI resolves the rows the program classifier left incomplete (`--limit`, `--max-attempts`, `--stale-minutes`); scheduled every 5 min with `--limit=5` | [domains/vtual/README.md](../domains/vtual/README.md) |
 | `vtual:prune-fetch-pools` | Prune done/failed channel + content fetch pool rows past the retention window | [domains/vtual/README.md](../domains/vtual/README.md) |
 
+**Upstream retry (all of the above):** every platform read goes through `PlatformHttp`, which retries 429 / 5xx up to `vtual.http.retry.times` (default 3) with exponential backoff + full jitter, honouring a sane `Retry-After`, and raises a distinct quota-exhaustion error when the 429 survives the budget. Retry lives **inside one HTTP call** — the pool commands keep their own batch/attempt semantics, so a stalled pool never doubles its work. Each attempt logs to ErrorLog (`platform_http_retry_scheduled` / `platform_http_quota_exhausted` / `platform_http_failed`). Knobs: `vtual.http.retry.*` in [config/vtual.php](../../config/vtual.php); see [domains/vtual/README.md — Upstream retry and backoff](../domains/vtual/README.md#upstream-retry-and-backoff-429--5xx).
+
 ## AI
 
 | Command | Purpose | Details |

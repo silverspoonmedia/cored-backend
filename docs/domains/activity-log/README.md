@@ -26,8 +26,9 @@ Models with `LogsActivity` / `HasActivity` + `logOnlyDirty()`:
 | Model | Log name | Notes |
 |-------|----------|-------|
 | User | `user` | name, email, locale, verified_at |
-| Order | `order` | fillable |
+| Service | `service` | fillable |
 | Menu | `menu` | structural + translatable |
+| vTual management models | `vtual` | see [vTual](#vtual-log_name-vtual) below |
 
 ## Manual / semantic
 
@@ -36,6 +37,21 @@ Pivots (e.g. role assign) → explicit `activity()->useLog('user')->event('role_
 ### Auth (`log_name: auth`)
 
 Login, logout, 2FA, password — via domain events + `AuthActivityRecorder`. Coverage matrix: [platform/security.md](../../platform/security.md). Filter `?log_name=auth`.
+
+### vTual (`log_name: vtual`)
+
+The management audit trail TASK.md:228 asks for: every mutation of a talent org and its memberships, invites and events. Six models carry `LogsActivity` with `logFillable` + `logOnlyDirty` + `dontLogEmptyChanges` + `useLogName('vtual')`:
+
+| Model | Table |
+|-------|-------|
+| `Management` | `vtual_managements` |
+| `ManagementMember` | `vtual_management_members` |
+| `ManagementCreator` | `vtual_management_creators` |
+| `ManagementInvite` | `vtual_management_invites` |
+| `CreatorManagementInvite` | `vtual_creator_management_invites` |
+| `VtualEvent` | `vtual_events` |
+
+Both invite models add `logExcept(['token'])`: the row carries the 48-char respond-endpoint bearer secret, and that secret must never reach the log. Filter the trail with `?log_name=vtual` (`IndexActivityLogRequest` allow-list). `Creator`, `Channel` and `Content` are deliberately **out** — they are personal-data surfaces, not the management trail, and `creator` / `channel` / `content` are not `vtual` log rows. Full behaviour: [vtual README — Management audit trail](../vtual/README.md#management-audit-trail).
 
 ### Crypto (`log_name: crypto`)
 
@@ -97,4 +113,5 @@ php artisan encryption:migrate-activity-log
 - [identity](../identity/README.md)
 - [notification](../notification/README.md)
 - [error-log](../error-log/README.md) — grouped runtime failures (not audit)
+- [vtual](../vtual/README.md#management-audit-trail) — the `vtual` log name: which models write to it and why creator/channel/content do not
 - [platform/octane.md](../../platform/octane.md)

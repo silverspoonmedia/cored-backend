@@ -37,10 +37,6 @@ return [
         'show_success' => 'Profil vTuber publik berhasil dimuat.',
         'contents_success' => 'Umpan konten publik berhasil dimuat.',
         'landing_success' => 'Payload landing publik berhasil dimuat.',
-        'stats_success' => 'Statistik platform publik berhasil dimuat.',
-        'live_success' => 'Daftar live saat ini berhasil dimuat.',
-        'schedule_success' => 'Jadwal mendatang publik berhasil dimuat.',
-        'events_success' => 'Acara mendatang publik berhasil dimuat.',
         // curated at 2026-09-24T09:30:44+07:00 — id curation wave: glossary — management is manajemen, creator is kreator
         'management_show_success' => 'Profil manajemen publik berhasil dimuat.',
     ],
@@ -413,6 +409,9 @@ return [
         // curated at 2026-09-21T17:10:13+07:00 — id curation wave
         'upstream_error_detail' => 'Permintaan platform :platform gagal (HTTP :status): :detail',
         'upstream_connection_error' => 'Koneksi ke platform :platform gagal.',
+        // curated at 2026-09-25T21:30:00+07:00 — upstream retry/quota ops log lines
+        'upstream_retry_scheduled' => 'Permintaan ke platform :platform gagal (HTTP :status); percobaan ulang ke-:attempt dalam :delay ms.',
+        'upstream_quota_exhausted' => 'Kuota platform :platform habis (HTTP 429). Coba lagi setelah jendela kuota direset.',
         'probe_success' => 'Probe API platform selesai.',
         // curated at 2026-09-21T17:10:13+07:00 — id curation wave
         'probe_failed' => 'Probe API platform gagal tanpa terduga.',

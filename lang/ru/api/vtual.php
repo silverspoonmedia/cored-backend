@@ -38,10 +38,6 @@ return [
         'show_success' => 'Публичный профиль vTuber загружен.',
         'contents_success' => 'Публичная лента контента загружена.',
         'landing_success' => 'Данные публичной главной страницы загружены.',
-        'stats_success' => 'Публичная статистика платформы загружена.',
-        'live_success' => 'Публичный список трансляций загружен.',
-        'schedule_success' => 'Публичное расписание загружено.',
-        'events_success' => 'Публичные предстоящие события загружены.',
         // curated at 2026-09-23T19:58:16+07:00 — ru curation wave: management entity settled on организация
         'management_show_success' => 'Публичный профиль организации загружен.',
     ],
@@ -398,6 +394,9 @@ return [
         // curated at 2026-09-23T19:26:42+07:00 — ru curation wave: settled terms
         'upstream_error_detail' => 'Запрос к платформе :platform завершился ошибкой (HTTP :status): :detail',
         'upstream_connection_error' => 'Не удалось подключиться к платформе :platform.',
+        // curated at 2026-09-25T21:30:00+07:00 — upstream retry/quota ops log lines
+        'upstream_retry_scheduled' => 'Запрос к платформе :platform не удался (HTTP :status); повторная попытка :attempt через :delay мс.',
+        'upstream_quota_exhausted' => 'Квота платформы :platform исчерпана (HTTP 429). Повторите попытку после сброса окна квоты.',
         // curated at 2026-09-23T19:26:42+07:00 — ru curation wave: settled terms
         'probe_success' => 'Проверка API платформы завершена.',
         // curated at 2026-09-23T19:26:42+07:00 — ru curation wave: settled terms

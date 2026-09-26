@@ -29,12 +29,6 @@ return [
         'show_success' => 'تم تحميل ملف vTuber العام.',
         'contents_success' => 'تم تحميل موجز المحتوى العام.',
         'landing_success' => 'تم تحميل بيانات الصفحة العامة.',
-        'stats_success' => 'تم تحميل إحصاءات المنصة العامة.',
-        'live_success' => 'تم تحميل قائمة البثوث المباشرة الآن.',
-        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
-        'schedule_success' => 'تم تحميل الجدول العام للبثوث القادمة.',
-        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
-        'events_success' => 'تم تحميل الفعاليات العامة القادمة.',
         'management_show_success' => 'تم تحميل الملف العام لجهة الإدارة.',
     ],
     'merge' => [
@@ -280,6 +274,9 @@ return [
         'upstream_error' => 'فشل طلب منصة :platform (HTTP :status).',
         'upstream_error_detail' => 'فشل طلب منصة :platform (HTTP :status): :detail',
         'upstream_connection_error' => 'تعذر الاتصال بمنصة :platform.',
+        // curated at 2026-09-25T21:30:00+07:00 — upstream retry/quota ops log lines
+        'upstream_retry_scheduled' => 'فشل طلب المنصة :platform (HTTP :status)؛ ستُعاد المحاولة رقم :attempt بعد :delay مللي ثانية.',
+        'upstream_quota_exhausted' => 'استُهلكت حصة المنصة :platform (HTTP 429). أعد المحاولة بعد إعادة تعيين نافذة الحصة.',
         // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
         'probe_success' => 'اكتمل اختبار واجهة API للمنصة.',
         // curated at 2026-09-22T20:22:20+07:00 — ar curation wave

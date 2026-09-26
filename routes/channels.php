@@ -52,6 +52,13 @@ Broadcast::channel('vtual.claim.{claimId}', function (User $user, string $claimI
         ->exists();
 });
 
+// Staff pending-claim queue ping. Payload is ids + action + status only —
+// deliberately not `VtualClaimRealtime::claimSnapshot()`, which resolves the
+// resource as the claim owner and therefore carries the bio token.
+Broadcast::channel('vtual.claims', function (User $user): bool {
+    return $user->can('manage any vtual resource');
+});
+
 Broadcast::channel('vtual.platform-credentials', function (User $user): bool {
     return $user->can('view vtual platform credentials');
 });

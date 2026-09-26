@@ -67,6 +67,22 @@ return [
     'http' => [
         'timeout' => 20,
 
+        /*
+        | Upstream 429 / 5xx resilience (TASK.md:275 quota exhaustion,
+        | TASK.md:306 exponential backoff + jitter).
+        |
+        | Retry lives inside one HTTP call — never around a pool loop, or a
+        | stalled pool doubles its own work. 401/403 belong to the credential
+        | failover path and every other 4xx is a hard client error: neither is
+        | retried. `jitter` = full jitter (delay is uniform in [0, backoff]).
+        */
+        'retry' => [
+            'times' => 3,
+            'base_ms' => 250,
+            'max_ms' => 8000,
+            'jitter' => true,
+        ],
+
         'batch' => [
             // min(YouTube videos.list 50, Twitch Get Videos by id 100)
             'videos' => 50,

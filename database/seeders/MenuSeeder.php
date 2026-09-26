@@ -211,6 +211,17 @@ class MenuSeeder extends Seeder
                                 'roles' => ['Vtual vTuber', 'Vtual Editor', 'Vtual Admin'],
                             ],
                             [
+                                'name' => $this->translations('My claims', 'Klaim saya', 'マイ申請'),
+                                'icon' => 'bi bi-person-check',
+                                'route' => 'vtual.claims.index',
+                                'type' => 'c',
+                                // Owner-side claims hub. The same route also hosts
+                                // the staff queue tab, which the view gates on
+                                // `manage any vtual resource` — a role that
+                                // cannot moderate still sees its own claims.
+                                'roles' => ['Vtual vTuber', 'Vtual Editor', 'Vtual Admin'],
+                            ],
+                            [
                                 'name' => $this->translations('Managements', 'Manajemen', 'マネジメント'),
                                 'icon' => 'bi bi-people',
                                 'route' => 'vtual.managements.index',
@@ -387,6 +398,16 @@ class MenuSeeder extends Seeder
                                 'icon' => 'bi bi-person-plus',
                                 'route' => 'vtual.orphans.index',
                                 'type' => 'c',
+                                'roles' => $internalStaffRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Claims queue', 'Antrean klaim', '申請キュー'),
+                                'icon' => 'bi bi-person-check',
+                                'route' => 'vtual.claims.index',
+                                'type' => 'c',
+                                // Staff queue tab of the claims hub. Gate matches
+                                // the permission the endpoint and the
+                                // `private-vtual.claims` channel both require.
                                 'roles' => $internalStaffRoles,
                             ],
                             [
@@ -633,6 +654,18 @@ class MenuSeeder extends Seeder
                 'zh_CN' => '我的 vTuber 资料',
                 'ar' => 'ملفات vTuber الخاصة بي',
                 'ru' => 'Мои профили vTuber',
+            ],
+            'My claims' => [
+                'ko' => '내 클레임',
+                'zh_CN' => '我的认领',
+                'ar' => 'مطالباتي',
+                'ru' => 'Мои заявки',
+            ],
+            'Claims queue' => [
+                'ko' => '클레임 대기열',
+                'zh_CN' => '认领队列',
+                'ar' => 'قائمة المطالبات',
+                'ru' => 'Очередь заявок',
             ],
             'Administration' => [
                 'ko' => '관리',

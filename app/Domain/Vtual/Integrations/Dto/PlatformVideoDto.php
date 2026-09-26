@@ -53,6 +53,20 @@ final class PlatformVideoDto
          * uploader's own song (original) from someone else's song (cover).
          */
         public readonly ?string $channelTitle = null,
+        /**
+         * YouTube contentDetails.regionRestriction.allowed — ISO 3166-1 alpha-2
+         * codes the video is *only* playable in. Empty means unrestricted.
+         *
+         * @var list<string>
+         */
+        public readonly array $regionAllowed = [],
+        /**
+         * YouTube contentDetails.regionRestriction.blocked — ISO 3166-1 alpha-2
+         * codes the video is *not* playable in. Empty means unrestricted.
+         *
+         * @var list<string>
+         */
+        public readonly array $regionBlocked = [],
     ) {}
 
     /**
@@ -79,6 +93,8 @@ final class PlatformVideoDto
             'concurrent_viewers' => $this->concurrentViewers,
             'topic_categories' => $this->topicCategories,
             'tags' => $this->tags,
+            'region_allowed' => $this->regionAllowed,
+            'region_blocked' => $this->regionBlocked,
         ];
     }
 }

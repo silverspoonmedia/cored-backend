@@ -12,8 +12,16 @@ return [
     // curated at 2026-09-21T17:00:35+07:00 — id curation wave
     'set_settlement' => 'Jadikan mata uang settlement',
     'remove' => 'Hapus',
+    // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+    'verify_claim' => 'Verifikasi klaim',
+    'accept_anyway' => 'Terima tanpa verifikasi',
     'confirm' => [
         'archive_management' => 'Arsipkan manajemen ini?',
+        // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+        'cancel_claim_title' => 'Batalkan klaim',
+        'cancel_claim' => 'Batalkan klaim ini? Token bio tidak berlaku lagi dan Anda harus memulai dari awal.',
+        'accept_anyway_claim_title' => 'Terima tanpa verifikasi',
+        'accept_anyway_claim' => 'Terima klaim ini tanpa menemukan token di bio channel?',
         // curated at 2026-09-21T17:00:35+07:00 — id curation wave
         'cancel_event' => 'Batalkan acara ini?',
         'delete_service' => 'Hapus layanan ini?',
