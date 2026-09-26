@@ -69,7 +69,7 @@ class YoutubeWebSubWebhookTest extends TestCase
     public function notify_post_returns_204_for_valid_signature(): void
     {
         $subscription = $this->seedSubscription(WebsubSubscriptionStatus::Active);
-        $body = file_get_contents(base_path('tests/fixtures/vtual/youtube-channel-feed.xml'));
+        $body = file_get_contents(base_path('tests/Fixtures/vtual/youtube-channel-feed.xml'));
         $this->assertIsString($body);
         $signature = 'sha1='.base64_encode(hash_hmac('sha1', $body, $subscription->secret, true));
 
@@ -94,7 +94,7 @@ class YoutubeWebSubWebhookTest extends TestCase
     public function notify_post_returns_204_for_invalid_signature(): void
     {
         $subscription = $this->seedSubscription(WebsubSubscriptionStatus::Active);
-        $body = file_get_contents(base_path('tests/fixtures/vtual/youtube-channel-feed.xml'));
+        $body = file_get_contents(base_path('tests/Fixtures/vtual/youtube-channel-feed.xml'));
         $this->assertIsString($body);
 
         $response = $this->call(

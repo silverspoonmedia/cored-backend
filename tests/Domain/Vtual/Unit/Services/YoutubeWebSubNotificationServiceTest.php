@@ -204,7 +204,7 @@ class YoutubeWebSubNotificationServiceTest extends TestCase
 
         $topic = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCPkKpOHxEDcwmUAnRpIu-Ng';
         $secret = 'test-secret';
-        $body = file_get_contents(base_path('tests/fixtures/vtual/youtube-channel-feed.xml'));
+        $body = file_get_contents(base_path('tests/Fixtures/vtual/youtube-channel-feed.xml'));
         $this->assertIsString($body);
 
         WebsubSubscription::query()->create([

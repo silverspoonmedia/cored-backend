@@ -36,7 +36,11 @@ class QuotaThrottleProbeTest extends TestCase
 
     public function test_429_still_carries_cors_headers(): void
     {
-        config(['services.spa.url' => self::ORIGIN]);
+        // Set the allowlist itself, not `services.spa.url`: `cors.allowed_origins`
+        // is resolved at boot from `APP_URL` / `SPA_URL`, so a test that only moves
+        // the SPA url leaves this origin outside the allowlist and then measures
+        // the absence of the header instead of the throttle.
+        config(['cors.allowed_origins' => [self::ORIGIN]]);
 
         $user = $this->userWithRole('User');
         $this->grantPaidMain($user);
