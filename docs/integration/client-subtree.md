@@ -9,7 +9,7 @@ How a downstream client project consumes this repository as its `core/` subtree,
 | `monolith` | **Core** — standalone Laravel 13 app | Shared backend: domain logic, config, routes, migrations, seeders, API |
 | `client-project` | **Client-specific** — extends core | Client-only domain code, routes, migrations, config values |
 
-The client's browser UI is not part of the subtree: a Monolith-based stack serves the sibling `monolith-vue-workers` SPA against the API; a client that also ships the SPA deploys it separately.
+The client's browser UI is not part of the subtree: the sibling `monolith-vue-workers` SPA is deployed separately.
 
 ## 2. Folder structure
 
@@ -31,6 +31,7 @@ The client's browser UI is not part of the subtree: a Monolith-based stack serve
 ```
 
 Core classes are available with no import changes; an override is a file at the same relative path in `app/`. Core is never modified for a client.
+
 **Config merging.** `git subtree pull` updates `core/config/` only — it never touches the client's `config/`. New core keys must be merged into the client's copies by hand after each pull.
 
 **Routes and middleware** are registered in the client's `bootstrap/app.php`: load `core/routes/*.php`, then the client's own route files, and register core middleware groups before client additions.
@@ -54,15 +55,14 @@ git remote add monolith https://github.com/silverspoonmedia/monolith.git
 git subtree add --prefix=core/ monolith main --squash
 ```
 
-Then: copy every `require` / `require-dev` entry from `core/composer.json` into the client manifest, add the overlay autoload paths, `composer install`; write `bootstrap/app.php` from `core/bootstrap/app.php` as the starting point; copy the core config files you intend to customize into `config/`; set `.env`; then
+Then: copy every `require` / `require-dev` entry from `core/composer.json` into the client manifest, add the overlay autoload paths, `composer install`; write `bootstrap/app.php` from `core/bootstrap/app.php`; copy the core config files you intend to customize into `config/`; set `.env`; then
 
 ```bash
 php artisan migrate
 php artisan db:seed
 php artisan route:list   # must show core + client routes
+# then copy update-core.sh + push-core.sh from the core root into the client root
 ```
-
-Copy `update-core.sh` and `push-core.sh` from the core root into the client root.
 
 ## 5. Daily workflow
 
@@ -87,4 +87,4 @@ php artisan migrate              # core migrations
 | Push core | `git subtree push --prefix=core/ monolith main` |
 | Check drift | `git fetch monolith && git diff --stat core/` |
 
-Automated checks: [`ClientSubtreeIntegrationDocTest`](../../tests/Unit/Documentation/ClientSubtreeIntegrationDocTest.php) and [`CoreScriptTest`](../../tests/Unit/Documentation/CoreScriptTest.php) keep this page and the two scripts honest.
+Automated checks: [`ClientSubtreeIntegrationDocTest`](../../tests/Unit/Documentation/ClientSubtreeIntegrationDocTest.php) and [`CoreScriptTest`](../../tests/Unit/Documentation/CoreScriptTest.php).

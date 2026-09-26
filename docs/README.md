@@ -43,9 +43,9 @@ Every living brief is listed in this index; narrative, audits and progress track
 | [octane.md](platform/octane.md) | Long-lived worker rules |
 | [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, response minimization, CORS perimeter |
 | [envelope-encryption.md](platform/envelope-encryption.md) | Tiered crypto, OCI KMS, decrypt cache, P0 columns |
-| [tooling.md](platform/tooling.md) | Laravel Pint wrapper; CI workflow |
+| [tooling.md](platform/tooling.md) | Pint usage, gate list |
 
-**Platform deep dives:** [reference-architecture.md](platform/reference-architecture.md) · [reference-api-routing.md](platform/reference-api-routing.md) · [reference-commands.md](platform/reference-commands.md) · [reference-crud.md](platform/reference-crud.md) · [reference-environment.md](platform/reference-environment.md) · [reference-configuration-policy.md](platform/reference-configuration-policy.md) · [reference-settings.md](platform/reference-settings.md) · [reference-security.md](platform/reference-security.md) · [reference-localization.md](platform/reference-localization.md) · [reference-envelope-encryption.md](platform/reference-envelope-encryption.md)
+**Platform deep dives:** [reference-architecture.md](platform/reference-architecture.md) · [reference-api-routing.md](platform/reference-api-routing.md) · [reference-commands.md](platform/reference-commands.md) · [reference-crud.md](platform/reference-crud.md) · [reference-environment.md](platform/reference-environment.md) · [reference-configuration-policy.md](platform/reference-configuration-policy.md) · [reference-settings.md](platform/reference-settings.md) · [reference-security.md](platform/reference-security.md) · [reference-localization.md](platform/reference-localization.md) · [reference-envelope-encryption.md](platform/reference-envelope-encryption.md) · [reference-tooling.md](platform/reference-tooling.md)
 
 ## Domains (`app/Domain/*`)
 
@@ -86,7 +86,7 @@ The browser UI lives in the sibling SPA. These are historical only; the live lis
 
 ## Archive (not daily reading)
 
-[archive/](archive/) holds historical assessments, one-shot audits, the original bootstrap brief ([bootstrap-task-2026-08.md](archive/bootstrap-task-2026-08.md)), the [security audit](archive/security-audit-2026-06-16.md), the [archived Blade UI patterns](archive/ui-patterns-blade.md), and [microstock probe summaries](archive/microstock-probes/). Archive files may mention a former three-repo workflow; that model is dissolved.
+[archive/](archive/) holds historical assessments, one-shot audits, the original bootstrap brief ([bootstrap-task-2026-08.md](archive/bootstrap-task-2026-08.md)), the [security audit](archive/security-audit-2026-06-16.md), the [archived Blade UI patterns](archive/ui-patterns-blade.md), the [SPA consumer decision findings](archive/spa-consumer-decision-findings.md), and [microstock probe summaries](archive/microstock-probes/). Archive files may mention a former three-repo workflow; that model is dissolved.
 
 ## Writing docs
 

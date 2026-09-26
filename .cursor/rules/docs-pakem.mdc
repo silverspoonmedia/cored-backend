@@ -18,18 +18,9 @@ Two documentation surfaces, **one owner per topic**. Never state the same rule t
 
 Worked example of the shape: [docs/domains/vtual/README.md](../../docs/domains/vtual/README.md).
 
-## Doc kinds and size budgets (enforced by `scripts/docs-guard.php`)
+## Doc kinds and size budgets (registry: `docs_guard_doc_kind()` in `scripts/docs-guard.php`)
 
-Not every living doc is a brief. The kind comes from the file name, so a new kind is a deliberate choice:
-
-| Kind | File | Max lines |
-|------|------|-----------|
-| Index | `docs/README.md` | 150 |
-| Brief | `**/README.md` elsewhere, and anything unnamed | 90 |
-| Deep dive | `reference.md`, `reference-*.md` | 400 |
-| Tracker | `implementation-status.md` | 500 |
-| Glossary | `naming-conventions.md` | 200 |
-| Edge case | `*-edge-cases.md`, `daily-free-trial.md` | 200 |
+The kind comes from the file name, so a new kind is a deliberate edit to that function, not a new registry. Budgets: index `docs/README.md` 150 · brief (any other `**/README.md`, and anything unnamed) 90 · deep dive `reference.md` / `reference-*.md` 400 · tracker `implementation-status.md` 500 · glossary `naming-conventions.md` 200 · edge case `*-edge-cases.md` / `daily-free-trial.md` 200.
 
 - A **deep dive** must be linked from the `README.md` in the same directory. Unlinked, it is a second front door to the same topic.
 - Over budget means the content belongs in `docs/archive/` or in a rule file. The allowlist `docs/.docs-budget-allowlist.json` is the last resort, every entry carries a reason, and an entry whose file now fits is itself a finding — the list can only shrink.
@@ -47,4 +38,5 @@ Not every living doc is a brief. The kind comes from the file name, so a new kin
 - Behavior change in the same task/PR: update the owning brief, and the rule file when an invariant moved.
 - Keyword **`wrap up the docs`** = session-wide consolidation of code ↔ docs ↔ rules across both repos, then run the gates.
 - Gates: `php scripts/docs-guard.php`, `php artisan test --filter=Documentation`, `php artisan test --filter=Locale`; SPA `npm run check:docs` and `npm run check:i18n`.
+- The guard resolves link **paths and `#anchors`**: reword a heading and every deep link into it fails, so update the referrers in the same change.
 - Full behavioral guides are the domain/platform docs; this file owns the *shape*, not the content. A doc that outgrows its kind budget is a signal, not a violation to silence: split the invariants into the owning rule file and move narrative to `docs/archive/`.

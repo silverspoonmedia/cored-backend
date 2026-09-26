@@ -11,7 +11,8 @@
 // The failure modes this guard closes are all silent: a brief that is never indexed,
 // a brief that grew back into an essay, a rule whose `globs:` matches nothing (so it
 // never fires), a rule that AGENTS.md forgot, a relative link to a file that moved,
-// and `docs/agents/` creeping back as a second home for agent rules.
+// a link whose `#anchor` no longer matches any heading, and `docs/agents/` creeping
+// back as a second home for agent rules.
 //
 // Not every living doc is a brief. A deep dive, a progress tracker, a settled-terms
 // glossary and an edge-case inventory each have their own budget (see
@@ -26,6 +27,8 @@
 //   php scripts/docs-guard.php --repo=spa      sibling SPA only (exits 1 when absent)
 //
 // Zero tolerance: any finding exits 1.
+
+require __DIR__.'/lib/docs-anchor-support.php';
 
 const DOCS_GUARD_RULE_MAX_LINES = 60;
 const DOCS_GUARD_ALWAYS_ON_MAX_LINES = 150;
@@ -212,33 +215,124 @@ function docs_guard_repo(string $root, string $label): array
         }
     }
 
-    // 4. Relative markdown links in living docs, rules and AGENTS.md must resolve.
+    // 4. Relative markdown links in living docs, rules and AGENTS.md must resolve —
+    //    path *and* `#anchor`. The path half catches a file that moved; the anchor
+    //    half catches a heading that was reworded, which leaves every deep link into
+    //    it pointing at nothing. External links keep the path check only: their
+    //    anchors belong to someone else's site.
     $linkSources = array_merge($livingDocs, $ruleFiles, is_file($agentsPath) ? [$agentsPath] : []);
 
     foreach ($linkSources as $source) {
         $contents = (string) file_get_contents($source);
         preg_match_all('/\[[^\]]*\]\(([^)\s]+)\)/', $contents, $links);
 
+        $sourceSlugs = null;
+
         foreach (array_unique($links[1] ?? []) as $link) {
-            if (preg_match('~^(https?:|mailto:|tel:|#)~', $link) === 1) {
+            if (preg_match('~^(https?:|mailto:|tel:)~', $link) === 1) {
                 continue;
             }
 
-            $path = strtok($link, '#');
+            [$path, $anchor] = array_pad(explode('#', $link, 2), 2, null);
 
-            if ($path === false || $path === '') {
+            // A same-file anchor resolves against the file the link is written in.
+            if ($path === '' && $anchor !== null) {
+                $sourceSlugs ??= docs_anchor_slugs($source);
+
+                if (! in_array(urldecode($anchor), $sourceSlugs, true)) {
+                    $findings[] = "[{$label}] {$rel($source)} links to {$link}, and no heading in that file has that anchor";
+                }
+
+                continue;
+            }
+
+            if ($path === '') {
                 continue;
             }
 
             $resolved = dirname($source).DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, urldecode($path));
 
+            // A link that escapes this repo points at a sibling checkout
+            // (`monolith-vue-workers`, `gateway`). Those are present on a developer
+            // machine and absent in CI, so an unresolvable sibling is an
+            // *unverifiable* link, not a broken one — the same rule the SPA guard
+            // applies in reverse. Reporting it here would fail `--repo=backend`,
+            // which exists precisely so the guard can run with no sibling at all.
+            if (! docs_guard_within_root($resolved, $root)
+                && ! is_dir(docs_guard_sibling_root($resolved, $root))) {
+                continue;
+            }
+
             if (! file_exists($resolved)) {
                 $findings[] = "[{$label}] {$rel($source)} links to {$link}, which does not exist";
+
+                continue;
+            }
+
+            if ($anchor === null || ! preg_match('/\.mdc?$/i', $resolved)) {
+                continue;
+            }
+
+            if (! in_array(urldecode($anchor), docs_anchor_slugs($resolved), true)) {
+                $findings[] = "[{$label}] {$rel($source)} links to {$link}, and no heading in "
+                    .$rel($resolved).' has that anchor';
             }
         }
     }
 
     return $findings;
+}
+
+/**
+ * Is `$path` inside `$root`? Both are compared after collapsing `.` / `..`, so a
+ * link like `../../../../gateway/docs/x.md` is recognised as leaving the repo
+ * rather than as a missing file.
+ */
+function docs_guard_within_root(string $path, string $root): bool
+{
+    $path = docs_guard_normalize($path);
+    $root = rtrim(docs_guard_normalize($root), '/');
+
+    return $path === $root || str_starts_with($path, $root.'/');
+}
+
+/**
+ * The sibling checkout a cross-repo link points into — the first path segment
+ * outside this repo. `is_dir()` on the result is the presence probe.
+ */
+function docs_guard_sibling_root(string $path, string $root): string
+{
+    $parent = rtrim(dirname(rtrim(docs_guard_normalize($root), '/')), '/');
+    $escaped = substr(docs_guard_normalize($path), strlen($parent) + 1);
+
+    return $parent.'/'.strtok($escaped, '/');
+}
+
+/**
+ * Collapse `.` and `..` segments without touching the filesystem, so the result can
+ * be compared even when the path does not exist (which is the case under test).
+ */
+function docs_guard_normalize(string $path): string
+{
+    $path = str_replace('\\', '/', $path);
+    $prefix = str_starts_with($path, '/') ? '/' : '';
+    $segments = [];
+
+    foreach (explode('/', $path) as $segment) {
+        if ($segment === '' || $segment === '.') {
+            continue;
+        }
+
+        if ($segment === '..') {
+            array_pop($segments);
+
+            continue;
+        }
+
+        $segments[] = $segment;
+    }
+
+    return $prefix.implode('/', $segments);
 }
 
 /**
