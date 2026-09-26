@@ -42,6 +42,7 @@ return [
         'fulfillment_target' => null,
         'menu_routes' => [
             'vtual.orphans.index',
+            'vtual.claims.index',
             'vtual.platform-credentials.index',
             'vtual.profiles.index',
             'vtual.profiles.show',

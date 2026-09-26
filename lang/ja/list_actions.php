@@ -11,8 +11,16 @@ return [
     'deactivate' => '無効化',
     'set_settlement' => '決済通貨に設定',
     'remove' => '削除',
+    // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+    'verify_claim' => '申請を検証',
+    'accept_anyway' => '確認なしで承認',
     'confirm' => [
         'archive_management' => 'このマネジメントをアーカイブしますか？',
+        // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+        'cancel_claim_title' => '申請をキャンセル',
+        'cancel_claim' => 'この申請をキャンセルしますか？bio のトークンは無効になり、最初からやり直す必要があります。',
+        'accept_anyway_claim_title' => '確認なしで承認',
+        'accept_anyway_claim' => 'チャンネルの bio にトークンがないまま、この申請を承認しますか？',
         'cancel_event' => 'このイベントを中止しますか？',
         'delete_service' => 'このサービスを削除しますか？',
         'delete_inference' => 'このレコードを削除しますか？元に戻せません。',

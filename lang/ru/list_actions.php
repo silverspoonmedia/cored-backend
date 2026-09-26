@@ -11,9 +11,17 @@ return [
     'deactivate' => 'Деактивировать',
     'set_settlement' => 'Назначить расчётным',
     'remove' => 'Убрать',
+    // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+    'verify_claim' => 'Проверить заявку',
+    'accept_anyway' => 'Принять без проверки',
     'confirm' => [
         // curated at 2026-09-23T19:58:41+07:00 — ru curation wave: management entity settled on организация
         'archive_management' => 'Архивировать эту организацию?',
+        // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+        'cancel_claim_title' => 'Отмена заявки',
+        'cancel_claim' => 'Отменить эту заявку? Токен в описании канала перестанет действовать, и заявку придётся начать заново.',
+        'accept_anyway_claim_title' => 'Принятие без проверки',
+        'accept_anyway_claim' => 'Принять эту заявку, не найдя токен в описании канала?',
         'cancel_event' => 'Отменить это событие?',
         'delete_service' => 'Удалить этот сервис?',
         'delete_inference' => 'Удалить эту запись? Это действие нельзя отменить.',

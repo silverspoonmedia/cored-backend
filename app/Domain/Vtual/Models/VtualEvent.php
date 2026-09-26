@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A vTual event submitted by a management org (Owner/Admin). Published
@@ -16,9 +18,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class VtualEvent extends Model
 {
     use HasUuids;
+    use LogsActivity;
     use SoftDeletes;
 
     protected $table = 'vtual_events';
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('vtual');
+    }
 
     protected $fillable = [
         'management_id',

@@ -32,7 +32,9 @@ class QuotaPreflightProbeTest extends TestCase
 
     public function test_options_preflight_is_not_throttled(): void
     {
-        config(['services.spa.url' => self::ORIGIN]);
+        // See QuotaThrottleProbeTest: `cors.allowed_origins` is boot-resolved from
+        // the environment, so the origin must be set on the allowlist directly.
+        config(['cors.allowed_origins' => [self::ORIGIN]]);
 
         $user = $this->userWithRole('User');
         $token = auth('api')->login($user);

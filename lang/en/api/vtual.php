@@ -28,10 +28,6 @@ return [
         'show_success' => 'Public vTuber profile loaded.',
         'contents_success' => 'Public content feed loaded.',
         'landing_success' => 'Public landing payload loaded.',
-        'stats_success' => 'Public platform stats loaded.',
-        'live_success' => 'Public live-now list loaded.',
-        'schedule_success' => 'Public upcoming schedule loaded.',
-        'events_success' => 'Public upcoming events loaded.',
         'management_show_success' => 'Public management profile loaded.',
     ],
     'merge' => [
@@ -257,6 +253,9 @@ return [
         'upstream_error' => 'Platform :platform request failed (HTTP :status).',
         'upstream_error_detail' => 'Platform :platform request failed (HTTP :status): :detail',
         'upstream_connection_error' => 'Platform :platform connection failed.',
+        // curated at 2026-09-25T21:30:00+07:00 — upstream retry/quota ops log lines
+        'upstream_retry_scheduled' => 'Platform :platform request failed (HTTP :status); retry :attempt in :delay ms.',
+        'upstream_quota_exhausted' => 'Platform :platform quota exhausted (HTTP 429). Retry after the quota window resets.',
         'probe_success' => 'Platform API probe completed.',
         'probe_failed' => 'Platform API probe failed unexpectedly.',
         'probe_ids_required' => 'At least one id is required for this method.',

@@ -24,6 +24,26 @@ class CorsOriginsTest extends TestCase
             ->assertHeaderMissing('Access-Control-Allow-Origin');
     }
 
+    public function test_foreign_origin_preflight_does_not_receive_allow_origin(): void
+    {
+        // Same guarantee on the preflight path. A single-origin allowlist (the
+        // `SPA_URL`-unset deployment, and every CI run with an empty `.env`) is
+        // where `fruitcake/php-cors` used to answer without checking the request
+        // origin; see `App\Support\Http\AllowlistCorsService`.
+        $this->call(
+            'OPTIONS',
+            '/api/v1/csrf',
+            server: [
+                'HTTP_ORIGIN' => 'https://evil.example',
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'GET',
+                'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'x-spa-origin',
+            ],
+        )
+            ->assertSuccessful()
+            ->assertHeaderMissing('Access-Control-Allow-Origin')
+            ->assertHeaderMissing('Access-Control-Allow-Credentials');
+    }
+
     public function test_content_disposition_is_exposed_to_the_browser(): void
     {
         // getBlob() in the SPA reads Content-Disposition to name CSV/file

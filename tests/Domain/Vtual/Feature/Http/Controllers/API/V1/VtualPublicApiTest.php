@@ -334,6 +334,32 @@ class VtualPublicApiTest extends TestCase
     }
 
     #[Test]
+    public function public_profile_contents_expose_region_restriction_notice(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+
+        $restricted = $this->vodContent($creator, 'vod-region', 'Region Blocked', now()->subDay());
+        $restricted->forceFill([
+            'region_blocked' => ['RU', 'BY'],
+            'region_allowed' => null,
+        ])->save();
+
+        $this->vodContent($creator, 'vod-global', 'Global', now()->subDays(2));
+
+        $items = $this->getJson('/api/v1/vtual/public/vtubers/neon-fox')
+            ->assertOk()
+            ->json('data.contents.items');
+
+        $byTitle = collect($items)->keyBy('title');
+
+        // Notice, not a filter: the restricted row is still listed.
+        $this->assertSame(['RU', 'BY'], $byTitle['Region Blocked']['region_blocked']);
+        $this->assertNull($byTitle['Region Blocked']['region_allowed']);
+        $this->assertNull($byTitle['Global']['region_blocked']);
+        $this->assertNull($byTitle['Global']['region_allowed']);
+    }
+
+    #[Test]
     public function public_profile_contents_respect_per_page_bound(): void
     {
         $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
@@ -529,47 +555,49 @@ class VtualPublicApiTest extends TestCase
     }
 
     #[Test]
-    public function guest_can_load_stats_live_and_schedule_endpoints(): void
+    public function landing_carries_stats_live_and_schedule_subsets(): void
     {
+        \App\Domain\Vtual\Support\PublicLandingCache::flush();
+
         $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 1500);
         $this->liveContent($creator, 'live-1');
         $this->scheduledContent($creator, 'sched-1', 'Upcoming', now()->addHours(6));
 
-        $this->getJson('/api/v1/vtual/public/stats')
+        // The standalone stats/live/schedule/events endpoints were removed:
+        // landing already returns every subset, so this test is the contract.
+        $this->getJson('/api/v1/vtual/public/landing')
             ->assertOk()
-            ->assertJsonPath('data.creators', 1)
-            ->assertJsonPath('data.subscribers_total_formatted', '1,500');
-
-        $this->getJson('/api/v1/vtual/public/live')
-            ->assertOk()
-            ->assertJsonCount(1, 'data.items')
-            ->assertJsonPath('data.items.0.type', 'live')
-            ->assertJsonPath('data.items.0.status', 'live');
-
-        $this->getJson('/api/v1/vtual/public/schedule')
-            ->assertOk()
-            ->assertJsonCount(1, 'data.items')
-            ->assertJsonPath('data.items.0.title', 'Upcoming');
+            ->assertJsonPath('data.stats.creators', 1)
+            ->assertJsonPath('data.stats.subscribers_total_formatted', '1,500')
+            ->assertJsonCount(1, 'data.live_now')
+            ->assertJsonPath('data.live_now.0.type', 'live')
+            ->assertJsonPath('data.live_now.0.status', 'live')
+            ->assertJsonCount(1, 'data.schedule')
+            ->assertJsonPath('data.schedule.0.title', 'Upcoming');
     }
 
     #[Test]
     public function schedule_excludes_past_and_untitled_rows(): void
     {
+        \App\Domain\Vtual\Support\PublicLandingCache::flush();
+
         $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
         $this->scheduledContent($creator, 'sched-past', 'Past stream', now()->subDay());
         $this->scheduledContent($creator, 'sched-blank', '', now()->addDay());
         $this->scheduledContent($creator, 'sched-future', 'Future stream', now()->addDay());
 
-        $titles = $this->getJson('/api/v1/vtual/public/schedule')
+        $titles = $this->getJson('/api/v1/vtual/public/landing')
             ->assertOk()
-            ->json('data.items');
+            ->json('data.schedule');
 
         $this->assertSame(['Future stream'], collect($titles)->pluck('title')->all());
     }
 
     #[Test]
-    public function guest_can_load_public_events(): void
+    public function landing_events_expose_upcoming_rows_only(): void
     {
+        \App\Domain\Vtual\Support\PublicLandingCache::flush();
+
         $management = \App\Domain\Vtual\Models\Management::query()->create([
             'slug' => 'org-alpha',
             'name' => 'Org Alpha',
@@ -598,9 +626,9 @@ class VtualPublicApiTest extends TestCase
             'status' => \App\Domain\Vtual\Enums\VtualEventStatus::Cancelled->value,
         ]);
 
-        $items = $this->getJson('/api/v1/vtual/public/events')
+        $items = $this->getJson('/api/v1/vtual/public/landing')
             ->assertOk()
-            ->json('data.items');
+            ->json('data.events');
 
         $this->assertSame(['Anniversary Live'], collect($items)->pluck('title')->all());
         $this->assertSame('Org Alpha', $items[0]['management']['name']);

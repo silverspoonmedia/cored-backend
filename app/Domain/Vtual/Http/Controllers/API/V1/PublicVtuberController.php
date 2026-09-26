@@ -121,39 +121,4 @@ class PublicVtuberController extends Controller
 
         return $this->successResponse($payload, __('api/vtual.public.landing_success'));
     }
-
-    public function stats(): JsonResponse
-    {
-        return $this->successResponse(
-            $this->profiles->publicStats(),
-            __('api/vtual.public.stats_success'),
-        );
-    }
-
-    public function live(): JsonResponse
-    {
-        return $this->successResponse([
-            'items' => $this->resolveResource(
-                PublicContentResource::collection($this->profiles->liveNow())
-            ),
-        ], __('api/vtual.public.live_success'));
-    }
-
-    public function schedule(): JsonResponse
-    {
-        return $this->successResponse([
-            'items' => $this->resolveResource(
-                PublicContentResource::collection($this->profiles->upcomingSchedule())
-            ),
-        ], __('api/vtual.public.schedule_success'));
-    }
-
-    public function events(): JsonResponse
-    {
-        return $this->successResponse([
-            'items' => $this->resolveResource(
-                PublicEventResource::collection($this->profiles->upcomingEvents())
-            ),
-        ], __('api/vtual.public.events_success'));
-    }
 }

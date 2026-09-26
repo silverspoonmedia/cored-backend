@@ -341,6 +341,15 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
             $status = 'unknown';
         }
 
+        // contentDetails.regionRestriction — persisted + surfaced as a notice,
+        // never used to hide the row (a global audience would see content
+        // disappear with no visible cause).
+        $regionRestriction = is_array($content['regionRestriction'] ?? null)
+            ? $content['regionRestriction']
+            : [];
+        $regionAllowed = $this->normalizeRegionCodes($regionRestriction['allowed'] ?? null);
+        $regionBlocked = $this->normalizeRegionCodes($regionRestriction['blocked'] ?? null);
+
         return new PlatformVideoDto(
             platform: PlatformKey::Youtube,
             externalId: $id,
@@ -365,7 +374,36 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
             channelTitle: isset($snippet['channelTitle']) && is_string($snippet['channelTitle']) && trim($snippet['channelTitle']) !== ''
                 ? (string) $snippet['channelTitle']
                 : null,
+            regionAllowed: $regionAllowed,
+            regionBlocked: $regionBlocked,
         );
+    }
+
+    /**
+     * Normalize a YouTube regionRestriction list into uppercase ISO 3166-1
+     * alpha-2 codes, dropping anything that is not a plain 2-letter string.
+     *
+     * @return list<string>
+     */
+    private function normalizeRegionCodes(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $codes = [];
+        foreach ($value as $code) {
+            if (! is_string($code)) {
+                continue;
+            }
+
+            $code = strtoupper(trim($code));
+            if (preg_match('/^[A-Z]{2}$/', $code) === 1) {
+                $codes[$code] = true;
+            }
+        }
+
+        return array_keys($codes);
     }
 
     /**

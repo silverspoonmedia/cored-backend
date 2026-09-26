@@ -31,10 +31,6 @@ return [
         'show_success' => '公開 vTuber プロフィールを読み込みました。',
         'contents_success' => '公開コンテンツフィードを読み込みました。',
         'landing_success' => '公開ランディングペイロードを読み込みました。',
-        'stats_success' => '公開プラットフォーム統計を読み込みました。',
-        'live_success' => '現在ライブ中の一覧を読み込みました。',
-        'schedule_success' => '公開の今後のスケジュールを読み込みました。',
-        'events_success' => '公開の今後のイベントを読み込みました。',
         'management_show_success' => '公開マネジメントプロフィールを読み込みました。',
     ],
     'merge' => [
@@ -325,6 +321,9 @@ return [
         'upstream_error' => 'プラットフォーム :platform へのリクエストが失敗しました（HTTP :status）。',
         'upstream_error_detail' => 'プラットフォーム :platform へのリクエストが失敗しました（HTTP :status）: :detail',
         'upstream_connection_error' => 'プラットフォーム :platform への接続に失敗しました。',
+        // curated at 2026-09-25T21:30:00+07:00 — upstream retry/quota ops log lines
+        'upstream_retry_scheduled' => 'プラットフォーム :platform へのリクエストが失敗しました（HTTP :status）。:delay ミリ秒後に :attempt 回目の再試行を行います。',
+        'upstream_quota_exhausted' => 'プラットフォーム :platform のクォータを使い切りました（HTTP 429）。クォータがリセットされてから再試行してください。',
         'probe_success' => 'プラットフォーム API プローブが完了しました。',
         'probe_failed' => 'プラットフォーム API プローブが予期せず失敗しました。',
         'probe_ids_required' => 'このメソッドには少なくとも 1 つの id が必要です。',

@@ -33,46 +33,153 @@ final class PlatformHttp
         array $logContext = [],
     ): Response {
         $pending = $request ?? self::client();
+        $maxAttempts = self::maxAttempts();
+        $attempt = 0;
 
-        try {
-            // Empty query array must not be passed — Guzzle replaces URL query with [].
-            $response = $query === []
-                ? $pending->get($url)
-                : $pending->get($url, $query);
-        } catch (ConnectionException $e) {
-            $message = __('api/vtual.integrations.upstream_connection_error', [
-                'platform' => $platformKey ?? 'platform',
-            ]);
-            self::logFailure($message, $platformKey, null, $url, $logContext, [
-                'event' => 'platform_http_connection_failed',
-                'exception_class' => $e::class,
+        while (true) {
+            $attempt++;
+
+            try {
+                // Empty query array must not be passed — Guzzle replaces URL query with [].
+                $response = $query === []
+                    ? $pending->get($url)
+                    : $pending->get($url, $query);
+            } catch (ConnectionException $e) {
+                $message = __('api/vtual.integrations.upstream_connection_error', [
+                    'platform' => $platformKey ?? 'platform',
+                ]);
+                self::logFailure($message, $platformKey, null, $url, $logContext, [
+                    'event' => 'platform_http_connection_failed',
+                    'attempt' => $attempt,
+                    'exception_class' => $e::class,
+                ]);
+
+                throw new PlatformApiException(
+                    message: $message,
+                    httpStatus: 502,
+                    upstreamStatus: null,
+                    platformKey: $platformKey,
+                );
+            }
+
+            if ($response->successful()) {
+                return $response;
+            }
+
+            $status = $response->status();
+
+            if (self::shouldRetry($status) && $attempt < $maxAttempts) {
+                $delayMs = self::retryDelayMs($response, $attempt);
+
+                self::logFailure(
+                    __('api/vtual.integrations.upstream_retry_scheduled', [
+                        'platform' => $platformKey ?? 'platform',
+                        'status' => $status,
+                        'attempt' => $attempt,
+                        'delay' => $delayMs,
+                    ]),
+                    $platformKey,
+                    $status,
+                    $url,
+                    $logContext,
+                    [
+                        'event' => 'platform_http_retry_scheduled',
+                        'attempt' => $attempt,
+                        'max_attempts' => $maxAttempts,
+                        'delay_ms' => $delayMs,
+                    ],
+                );
+
+                if ($delayMs > 0) {
+                    usleep($delayMs * 1000);
+                }
+
+                continue;
+            }
+
+            // 429 that survived the retry budget is quota exhaustion, not a hard
+            // failure: distinct message so ops can tell the two apart.
+            $message = $status === 429
+                ? __('api/vtual.integrations.upstream_quota_exhausted', [
+                    'platform' => $platformKey ?? 'platform',
+                ])
+                : self::safeErrorMessage($response, $platformKey, $status);
+
+            self::logFailure($message, $platformKey, $status, $url, $logContext, [
+                'event' => $status === 429 ? 'platform_http_quota_exhausted' : 'platform_http_failed',
+                'attempt' => $attempt,
+                'max_attempts' => $maxAttempts,
             ]);
 
             throw new PlatformApiException(
                 message: $message,
-                httpStatus: 502,
-                upstreamStatus: null,
+                httpStatus: $status === 401 || $status === 403 ? 422 : 502,
+                upstreamStatus: $status,
                 platformKey: $platformKey,
             );
         }
+    }
 
-        if ($response->successful()) {
-            return $response;
+    /**
+     * 429 and 5xx are transient upstream conditions worth a retry. 401/403 are
+     * owned by the credential failover path; every other 4xx is a hard client
+     * error that a retry cannot fix.
+     */
+    private static function shouldRetry(int $status): bool
+    {
+        return $status === 429 || $status >= 500;
+    }
+
+    private static function maxAttempts(): int
+    {
+        return max(1, (int) setting_config('vtual.http.retry.times', 3));
+    }
+
+    /**
+     * Exponential backoff from `base_ms`, capped at `max_ms`, honouring a sane
+     * `Retry-After` header. Full jitter spreads a fleet-wide quota hit so the
+     * retries do not resynchronise into a second burst.
+     */
+    private static function retryDelayMs(Response $response, int $attempt): int
+    {
+        $base = max(1, (int) setting_config('vtual.http.retry.base_ms', 250));
+        $cap = max($base, (int) setting_config('vtual.http.retry.max_ms', 8000));
+        $jitter = (bool) setting_config('vtual.http.retry.jitter', true);
+
+        $backoff = min($cap, $base * (2 ** max(0, $attempt - 1)));
+
+        $retryAfter = self::retryAfterMs($response);
+        if ($retryAfter !== null) {
+            return min($cap, $retryAfter);
         }
 
-        $status = $response->status();
-        $message = self::safeErrorMessage($response, $platformKey, $status);
+        return $jitter ? random_int(0, $backoff) : $backoff;
+    }
 
-        self::logFailure($message, $platformKey, $status, $url, $logContext, [
-            'event' => 'platform_http_failed',
-        ]);
+    private static function retryAfterMs(Response $response): ?int
+    {
+        $header = trim((string) $response->header('Retry-After'));
 
-        throw new PlatformApiException(
-            message: $message,
-            httpStatus: $status === 401 || $status === 403 ? 422 : 502,
-            upstreamStatus: $status,
-            platformKey: $platformKey,
-        );
+        if ($header === '') {
+            return null;
+        }
+
+        if (ctype_digit($header)) {
+            $seconds = (int) $header;
+
+            // Absurd values mean the upstream is confused, not that we should
+            // sleep for an hour inside a request.
+            return $seconds >= 1 && $seconds <= 60 ? $seconds * 1000 : null;
+        }
+
+        $timestamp = strtotime($header);
+        if ($timestamp === false) {
+            return null;
+        }
+
+        $seconds = $timestamp - time();
+
+        return $seconds >= 1 && $seconds <= 60 ? $seconds * 1000 : null;
     }
 
     /**

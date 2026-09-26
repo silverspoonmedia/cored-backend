@@ -24,6 +24,9 @@ class ContentResource extends JsonResource
             'title' => $this->title,
             'thumbnail_url' => $this->thumbnail_url,
             'url' => $this->url,
+            // Region hint: expose, never hide. Null = unrestricted.
+            'region_allowed' => $this->region_allowed,
+            'region_blocked' => $this->region_blocked,
             ...$this->dateFields('published_at', $this->published_at),
             'platform' => $this->whenLoaded('platform', fn () => new PlatformResource($this->platform)),
             'channel' => $this->whenLoaded('channel', fn (): array => [

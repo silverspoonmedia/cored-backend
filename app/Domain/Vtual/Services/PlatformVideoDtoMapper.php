@@ -36,6 +36,8 @@ class PlatformVideoDtoMapper
      *     duration_seconds?: int|null,
      *     topic_categories?: list<string>,
      *     tags?: list<string>,
+     *     region_allowed?: list<string>,
+     *     region_blocked?: list<string>,
      * }
      */
     public function toUpsertPayload(PlatformVideoDto $dto): array
@@ -58,6 +60,8 @@ class PlatformVideoDtoMapper
             'duration_seconds' => $dto->durationSeconds,
             'topic_categories' => $dto->topicCategories,
             'tags' => $dto->tags,
+            'region_allowed' => $dto->regionAllowed,
+            'region_blocked' => $dto->regionBlocked,
             ...$this->classificationPayload($dto, $type->value),
         ];
 

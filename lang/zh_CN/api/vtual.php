@@ -32,12 +32,6 @@ return [
         'show_success' => '公开 vTuber 资料已加载。',
         'contents_success' => '公开内容动态已加载。',
         'landing_success' => '公开落地页数据已加载。',
-        'stats_success' => '公开平台统计已加载。',
-        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
-        'live_success' => '公开正在直播列表已加载。',
-        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
-        'schedule_success' => '公开即将开播的日程已加载。',
-        'events_success' => '公开即将开始的活动已加载。',
         'management_show_success' => '公开管理机构资料已加载。',
     ],
     'merge' => [
@@ -330,6 +324,9 @@ return [
         'upstream_error' => '平台 :platform 请求失败（HTTP :status）。',
         'upstream_error_detail' => '平台 :platform 请求失败（HTTP :status）：:detail',
         'upstream_connection_error' => '平台 :platform 连接失败。',
+        // curated at 2026-09-25T21:30:00+07:00 — upstream retry/quota ops log lines
+        'upstream_retry_scheduled' => '平台 :platform 请求失败（HTTP :status），将在 :delay 毫秒后进行第 :attempt 次重试。',
+        'upstream_quota_exhausted' => '平台 :platform 配额已用尽（HTTP 429）。请在配额重置后重试。',
         'probe_success' => '平台 API 探针已完成。',
         'probe_failed' => '平台 API 探针意外失败。',
         'probe_ids_required' => '此方法至少需要一个 ID。',

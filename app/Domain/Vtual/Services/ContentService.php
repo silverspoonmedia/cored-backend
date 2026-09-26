@@ -54,6 +54,8 @@ class ContentService
      *     duration_seconds?: int|null,
      *     topic_categories?: list<string>|null,
      *     tags?: list<string>|null,
+     *     region_allowed?: list<string>|null,
+     *     region_blocked?: list<string>|null,
      * }  $data
      */
     public function upsertFromPrimary(Channel $primaryChannel, array $data): Content
@@ -93,6 +95,8 @@ class ContentService
                 'content_category' => $this->resolveCategory($data['content_category'] ?? null),
                 'content_category_detail' => $data['content_category_detail'] ?? null,
                 'content_type' => $this->resolveKind($data),
+                'region_allowed' => $this->resolveRegionList($data['region_allowed'] ?? null),
+                'region_blocked' => $this->resolveRegionList($data['region_blocked'] ?? null),
                 // Re-available: a successful hydrate clears any tombstone.
                 'first_unavailable_at' => null,
             ];
@@ -625,5 +629,32 @@ class ContentService
             'topic_categories' => $data['topic_categories'] ?? null,
             'tags' => $data['tags'] ?? null,
         ])['kind'];
+    }
+
+    /**
+     * Region restriction list → stored JSON. An empty list is stored as null so
+     * "no restriction" and "restriction cleared upstream" look identical.
+     *
+     * @return list<string>|null
+     */
+    private function resolveRegionList(mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $codes = [];
+        foreach ($value as $code) {
+            if (! is_string($code)) {
+                continue;
+            }
+
+            $code = strtoupper(trim($code));
+            if (preg_match('/^[A-Z]{2}$/', $code) === 1) {
+                $codes[$code] = true;
+            }
+        }
+
+        return $codes === [] ? null : array_keys($codes);
     }
 }

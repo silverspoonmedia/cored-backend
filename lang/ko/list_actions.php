@@ -11,8 +11,16 @@ return [
     'deactivate' => '비활성화',
     'set_settlement' => '정산 계좌로 설정',
     'remove' => '제거',
+    // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+    'verify_claim' => '클레임 검증',
+    'accept_anyway' => '무조건 수락',
     'confirm' => [
         'archive_management' => '이 매니지먼트를 보관 처리하시겠습니까?',
+        // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+        'cancel_claim_title' => '클레임 취소',
+        'cancel_claim' => '이 클레임을 취소하시겠습니까? 소개란의 토큰이 무효가 되며 처음부터 다시 시작해야 합니다.',
+        'accept_anyway_claim_title' => '무조건 수락',
+        'accept_anyway_claim' => '채널 소개란에서 토큰을 찾지 못한 상태로 이 클레임을 수락하시겠습니까?',
         'cancel_event' => '이 이벤트를 취소하시겠습니까?',
         'delete_service' => '이 서비스를 삭제하시겠습니까?',
         'delete_inference' => '이 레코드를 삭제하시겠습니까? 되돌릴 수 없습니다.',

@@ -25,6 +25,9 @@ class PublicContentResource extends JsonResource
             'url' => $this->url,
             'published_at' => $this->published_at?->toIso8601String(),
             'scheduled_at' => $this->scheduled_at?->toIso8601String(),
+            // Region hint: expose, never hide. Null = unrestricted.
+            'region_allowed' => $this->region_allowed,
+            'region_blocked' => $this->region_blocked,
             'platform_key' => $this->platform?->key instanceof \BackedEnum
                 ? $this->platform->key->value
                 : $this->platform?->key,

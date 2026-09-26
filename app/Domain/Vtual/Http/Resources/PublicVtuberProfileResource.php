@@ -5,6 +5,7 @@ namespace App\Domain\Vtual\Http\Resources;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Services\CreatorService;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -18,6 +19,8 @@ use Illuminate\Support\Number;
  */
 class PublicVtuberProfileResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * Applied content-grid filters (already clamped by the controller).
      *
@@ -85,6 +88,10 @@ class PublicVtuberProfileResource extends JsonResource
                     'subscriber_count_formatted' => $channel->subscriber_count !== null
                         ? Number::format($channel->subscriber_count)
                         : null,
+                    // Metrics freshness (TASK.md:494): the guest channel list
+                    // shows how old the subscriber count is, so a stale number
+                    // is never mistaken for a live one.
+                    ...$this->dateFields('last_synced_at', $channel->last_synced_at),
                 ])->values()->all(),
             ),
             'links' => $this->whenLoaded(
@@ -110,6 +117,9 @@ class PublicVtuberProfileResource extends JsonResource
                     'thumbnail_url' => $content->thumbnail_url,
                     'url' => $content->url,
                     'published_at' => $content->published_at?->toIso8601String(),
+                    // Region hint: expose, never hide. Null = unrestricted.
+                    'region_allowed' => $content->region_allowed,
+                    'region_blocked' => $content->region_blocked,
                     'platform_key' => $content->platform?->key instanceof \BackedEnum
                         ? $content->platform->key->value
                         : $content->platform?->key,

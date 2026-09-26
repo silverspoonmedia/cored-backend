@@ -12,9 +12,17 @@ return [
     // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
     'set_settlement' => '设为结算货币',
     'remove' => '移除',
+    // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+    'verify_claim' => '验证认领',
+    'accept_anyway' => '无需验证直接接受',
     'confirm' => [
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'archive_management' => '确定要归档该管理机构吗？',
+        // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
+        'cancel_claim_title' => '取消认领',
+        'cancel_claim' => '确定要取消该认领吗？简介中的令牌将失效，您需要重新开始。',
+        'accept_anyway_claim_title' => '无需验证直接接受',
+        'accept_anyway_claim' => '在频道简介中找不到令牌的情况下，确定要接受该认领吗？',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'cancel_event' => '确定要取消该活动吗？',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave

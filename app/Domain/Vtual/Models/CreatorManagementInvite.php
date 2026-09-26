@@ -7,6 +7,8 @@ use App\Domain\Vtual\Enums\ManagementInviteStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * Invite linking (or creating) a vTuber profile into a management org.
@@ -16,8 +18,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CreatorManagementInvite extends Model
 {
     use HasUuids;
+    use LogsActivity;
 
     protected $table = 'vtual_creator_management_invites';
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        // `token` is a bearer secret for the invite-respond endpoint: log the
+        // lifecycle without ever writing it into the activity log.
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logExcept(['token'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('vtual');
+    }
 
     protected $fillable = [
         'management_id',

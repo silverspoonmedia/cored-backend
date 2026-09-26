@@ -19,7 +19,7 @@ class YoutubeAtomFeedParserTest extends TestCase
     #[Test]
     public function parse_entries_reads_fixture_feed(): void
     {
-        $body = file_get_contents(base_path('tests/fixtures/vtual/youtube-channel-feed.xml'));
+        $body = file_get_contents(base_path('tests/Fixtures/vtual/youtube-channel-feed.xml'));
         $this->assertIsString($body);
 
         $entries = $this->parser->parseEntries($body);
@@ -31,7 +31,7 @@ class YoutubeAtomFeedParserTest extends TestCase
     #[Test]
     public function extract_video_ids_returns_unique_ids(): void
     {
-        $body = file_get_contents(base_path('tests/fixtures/vtual/youtube-channel-feed.xml'));
+        $body = file_get_contents(base_path('tests/Fixtures/vtual/youtube-channel-feed.xml'));
         $this->assertIsString($body);
 
         $ids = $this->parser->extractVideoIds($body);
@@ -72,7 +72,7 @@ class YoutubeAtomFeedParserTest extends TestCase
     #[Test]
     public function extract_deleted_video_ids_empty_for_normal_feed(): void
     {
-        $body = file_get_contents(base_path('tests/fixtures/vtual/youtube-channel-feed.xml'));
+        $body = file_get_contents(base_path('tests/Fixtures/vtual/youtube-channel-feed.xml'));
         $this->assertIsString($body);
 
         $this->assertTrue($this->parser->extractDeletedVideoIds($body)->isEmpty());

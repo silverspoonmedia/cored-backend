@@ -29,10 +29,6 @@ return [
         'show_success' => '공개 vTuber 프로필을 불러왔습니다.',
         'contents_success' => '공개 콘텐츠 피드를 불러왔습니다.',
         'landing_success' => '공개 랜딩 데이터를 불러왔습니다.',
-        'stats_success' => '공개 플랫폼 통계를 불러왔습니다.',
-        'live_success' => '공개 라이브 목록을 불러왔습니다.',
-        'schedule_success' => '공개 예정 일정을 불러왔습니다.',
-        'events_success' => '공개 예정 이벤트를 불러왔습니다.',
         'management_show_success' => '공개 매니지먼트 프로필을 불러왔습니다.',
     ],
     'merge' => [
@@ -291,6 +287,9 @@ return [
         'upstream_error' => ':platform 요청에 실패했습니다(HTTP :status).',
         'upstream_error_detail' => ':platform 요청에 실패했습니다(HTTP :status): :detail',
         'upstream_connection_error' => ':platform에 연결하지 못했습니다.',
+        // curated at 2026-09-25T21:30:00+07:00 — upstream retry/quota ops log lines
+        'upstream_retry_scheduled' => ':platform 요청이 실패했습니다(HTTP :status). :delay밀리초 후 :attempt번째 재시도를 진행합니다.',
+        'upstream_quota_exhausted' => ':platform 할당량이 소진되었습니다(HTTP 429). 할당량이 초기화된 후 다시 시도하세요.',
         'probe_success' => '플랫폼 API 점검이 완료되었습니다.',
         'probe_failed' => '플랫폼 API 점검에 예기치 않게 실패했습니다.',
         'probe_ids_required' => '이 메서드에는 하나 이상의 ID가 필요합니다.',

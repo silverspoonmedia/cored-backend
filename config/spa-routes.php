@@ -101,6 +101,7 @@ return [
         'vtual.orphans.index',
         'vtual.orphans.create',
         'vtual.orphans.edit',
+        'vtual.claims.index',
         'vtual.managements.index',
         'vtual.managements.create',
         'vtual.managements.edit',

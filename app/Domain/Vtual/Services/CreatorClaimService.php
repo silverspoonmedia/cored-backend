@@ -18,6 +18,7 @@ use App\Domain\Vtual\Models\CreatorClaim;
 use App\Domain\Vtual\Models\CreatorClaimBlock;
 use App\Domain\Vtual\Models\CreatorMember;
 use App\Domain\Vtual\Support\VtualClaimRealtime;
+use App\Domain\Vtual\Support\VtualClaimsStaffRealtime;
 use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -48,34 +49,46 @@ class CreatorClaimService
     /**
      * Pending claims for the actor.
      *
-     * @return Collection<int, CreatorClaim>
+     * @return array{items: Collection<int, CreatorClaim>, total: int}
      */
-    public function listMine(User $actor): Collection
+    public function listMine(User $actor, int $perPage = 15, int $page = 1): array
     {
-        return CreatorClaim::query()
+        $query = CreatorClaim::query()
             ->where('user_id', $actor->id)
             ->where('status', CreatorClaimStatus::Pending)
             ->with(['creator', 'channel.platform', 'verifiedChannel.platform'])
-            ->orderByDesc('created_at')
+            ->orderByDesc('created_at');
+
+        $total = (clone $query)->count();
+        $items = $query
+            ->forPage(max(1, $page), max(1, $perPage))
             ->get();
+
+        return ['items' => $items, 'total' => $total];
     }
 
     /**
      * All pending claims (staff queue).
      *
-     * @return Collection<int, CreatorClaim>
+     * @return array{items: Collection<int, CreatorClaim>, total: int}
      */
-    public function listPendingForStaff(User $staff): Collection
+    public function listPendingForStaff(User $staff, int $perPage = 15, int $page = 1): array
     {
         if (! $staff->can('manage any vtual resource')) {
             throw new VtualException(__('api/vtual.policy.denied'), 403);
         }
 
-        return CreatorClaim::query()
+        $query = CreatorClaim::query()
             ->where('status', CreatorClaimStatus::Pending)
             ->with(['creator', 'channel.platform', 'verifiedChannel.platform', 'user'])
-            ->orderBy('created_at')
+            ->orderBy('created_at');
+
+        $total = (clone $query)->count();
+        $items = $query
+            ->forPage(max(1, $page), max(1, $perPage))
             ->get();
+
+        return ['items' => $items, 'total' => $total];
     }
 
     public function show(User $actor, string $claimId): CreatorClaim
@@ -161,6 +174,7 @@ class CreatorClaimService
         });
 
         app(VtualClaimRealtime::class)->progress($claim, 'started');
+        app(VtualClaimsStaffRealtime::class)->fromClaim($claim, 'started');
 
         return $claim;
     }
@@ -197,6 +211,7 @@ class CreatorClaimService
 
         $fresh = $claim->fresh(['creator', 'channel.platform', 'user']) ?? $claim;
         app(VtualClaimRealtime::class)->progress($fresh, 'verify_queued');
+        app(VtualClaimsStaffRealtime::class)->fromClaim($fresh, 'verify_queued');
 
         return $fresh;
     }
@@ -426,6 +441,7 @@ class CreatorClaimService
 
         $fresh = $claim->fresh(['creator', 'channel.platform']) ?? $claim;
         app(VtualClaimRealtime::class)->progress($fresh, 'cancelled');
+        app(VtualClaimsStaffRealtime::class)->fromClaim($fresh, 'cancelled');
 
         return $fresh;
     }
@@ -436,7 +452,7 @@ class CreatorClaimService
         ?User $staff,
         ?Channel $verifiedChannel = null,
     ): CreatorClaim {
-        return DB::transaction(function () use ($claim, $via, $staff, $verifiedChannel): CreatorClaim {
+        $completed = DB::transaction(function () use ($claim, $via, $staff, $verifiedChannel): CreatorClaim {
             $locked = CreatorClaim::query()->whereKey($claim->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== CreatorClaimStatus::Pending) {
                 throw new VtualException(__('api/vtual.claim.not_pending'), 422);
@@ -483,6 +499,10 @@ class CreatorClaimService
 
             return $locked->fresh(['creator.members', 'channel.platform', 'user']) ?? $locked;
         });
+
+        app(VtualClaimsStaffRealtime::class)->fromClaim($completed, 'completed');
+
+        return $completed;
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Domain\Vtual\Enums\CreatorClaimVerifyPoolStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
 use App\Domain\Vtual\Events\CreatorClaimProgressChanged;
+use App\Domain\Vtual\Events\CreatorClaimStaffChanged;
 use App\Domain\Vtual\Events\PlatformCredentialChanged;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\CreatorClaimVerifyPoolItem;
@@ -124,7 +125,7 @@ class CreatorClaimVerifyPoolServiceTest extends TestCase
         ]);
         // PlatformCredentialChanged fires from activateYoutubeCredential()
         // below (broadcast-gated only) — fake it so Pusher is never hit.
-        Event::fake([CreatorClaimProgressChanged::class, PlatformCredentialChanged::class]);
+        Event::fake([CreatorClaimProgressChanged::class, PlatformCredentialChanged::class, CreatorClaimStaffChanged::class]);
 
         $this->activateYoutubeCredential();
         [$orphan, $channel] = $this->seedOrphanWithChannel();
@@ -134,6 +135,13 @@ class CreatorClaimVerifyPoolServiceTest extends TestCase
 
         Http::fake([
             'www.googleapis.com/youtube/v3/channels*' => Http::response(['error' => 'upstream'], 502),
+        ]);
+        // 502 is retried upstream; keep the pool test fast.
+        config([
+            'vtual.http.retry.times' => 2,
+            'vtual.http.retry.base_ms' => 1,
+            'vtual.http.retry.max_ms' => 1,
+            'vtual.http.retry.jitter' => false,
         ]);
 
         $flushed = $this->pool->flush(force: true);

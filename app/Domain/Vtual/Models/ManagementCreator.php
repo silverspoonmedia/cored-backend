@@ -5,12 +5,24 @@ namespace App\Domain\Vtual\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class ManagementCreator extends Model
 {
     use HasUuids;
+    use LogsActivity;
 
     protected $table = 'vtual_management_creators';
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('vtual');
+    }
 
     protected $fillable = [
         'management_id',

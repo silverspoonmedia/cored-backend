@@ -73,6 +73,7 @@ class MenuSeederTest extends TestCase
                         'type' => 'p',
                         'children' => [
                             ['name' => 'My vTuber profiles', 'route' => 'vtual.profiles.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'My claims', 'route' => 'vtual.claims.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Managements', 'route' => 'vtual.managements.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Events', 'route' => 'vtual.events.index', 'type' => 'c', 'children' => []],
                         ],
@@ -137,6 +138,7 @@ class MenuSeederTest extends TestCase
                         'type' => 'p',
                         'children' => [
                             ['name' => 'Orphan vTubers', 'route' => 'vtual.orphans.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Claims queue', 'route' => 'vtual.claims.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Managements', 'route' => 'vtual.managements.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Platform credentials', 'route' => 'vtual.platform-credentials.index', 'type' => 'c', 'children' => []],
                         ],
@@ -202,6 +204,17 @@ class MenuSeederTest extends TestCase
                 ['layout' => MenuLayout::SIDEBAR, 'roles' => ['Admin', 'Root']],
             ],
             $this->managementsNodeRoles(),
+        );
+        // Both vtual.claims.index nodes are role-gated, not membership-gated:
+        // the Products child is the owner hub (product roles), the
+        // Administration child the staff queue (internal staff roles). Neither
+        // relies on rule 7, so both carry stored roles.
+        $this->assertSame(
+            [
+                ['layout' => MenuLayout::SIDEBAR, 'roles' => ['Admin', 'Moderator', 'Root']],
+                ['layout' => MenuLayout::SIDEBAR, 'roles' => ['Vtual Admin', 'Vtual Editor', 'Vtual vTuber']],
+            ],
+            $this->claimsNodeRoles(),
         );
         $this->assertSame(
             ['Admin', 'Root'],
@@ -269,7 +282,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(54, Menu::query()->count());
+        $this->assertSame(56, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -278,7 +291,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(54, Menu::query()->count());
+        $this->assertSame(56, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -397,6 +410,32 @@ class MenuSeederTest extends TestCase
             ])
             ->sortBy(fn (array $row): int => $row['roles'] === [] ? 0 : 1)
             ->values()
+            ->all();
+    }
+
+    /**
+     * Both "claims" nodes share the `vtual.claims.index` route: the Products
+     * child ("My claims") is the owner hub, the Administration child ("Claims
+     * queue") the staff queue. Ordered by English name, so the staff node
+     * ("Claims queue") comes first.
+     *
+     * @return list<array{layout: string, roles: list<string>}>
+     */
+    private function claimsNodeRoles(): array
+    {
+        return Menu::query()
+            ->where('route', 'vtual.claims.index')
+            ->orderBy('name->en')
+            ->get()
+            ->map(fn (Menu $menu): array => [
+                'layout' => $menu->layout,
+                'roles' => $menu->roles
+                    ->where('guard_name', 'api')
+                    ->pluck('name')
+                    ->sort()
+                    ->values()
+                    ->all(),
+            ])
             ->all();
     }
 

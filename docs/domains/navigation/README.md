@@ -153,6 +153,7 @@ php artisan db:seed --class=MenuSeeder
     - DMCA Blocklist — `archivd.blocklist.index`; Root, Admin, Moderator, Management, Archivd Admin
   - **vTual** — parent route `vtual.profiles.index`; Vtual vTuber, Vtual Editor, Vtual Admin (+ any vTual management member via rule 6)
     - My vTuber profiles — `vtual.profiles.index`
+    - My claims — `vtual.claims.index`; Vtual vTuber, Vtual Editor, Vtual Admin
     - Managements — `vtual.managements.index`; **no stored roles** — member-only via rule 6 (safe only while the route stays in `MANAGEMENT_MEMBER_ROUTES`)
     - Events — `vtual.events.index`; **no stored roles** — same rule-7 member-only pattern (event submission is an org Owner/Admin power)
 - **Administration**
@@ -176,6 +177,7 @@ php artisan db:seed --class=MenuSeeder
     - Error log — `error-logs.index`
   - **vTual** — parent route `vtual.orphans.index`; Root, Admin, Moderator
     - Orphan vTubers — `vtual.orphans.index`
+    - Claims queue — `vtual.claims.index`; Root, Admin, Moderator
     - Managements — `vtual.managements.index`; Root, Admin (staff manage orgs; membership never grants this branch because the parent route is not in `MANAGEMENT_MEMBER_ROUTES`)
     - Platform credentials — `vtual.platform-credentials.index` (Root, Admin)
   - **Settings** — Root, Admin (single hub for all `settings.*` groups)
@@ -188,6 +190,8 @@ php artisan db:seed --class=MenuSeeder
   - **Navigation** — Root, Admin, Moderator, Management
     - Menu list — `menus.index`
     - Trashed menus — `menus.trashed`
+
+Two nodes share the `vtual.claims.index` route: **My claims** (Products → vTual) is the owner side of the claims hub, **Claims queue** (Administration → vTual) the staff side. Both carry **stored roles**, so neither reaches the rule-6/rule-7 membership fallback: `vtual.claims.index` is not in `MANAGEMENT_MEMBER_ROUTES`, and an empty-role node it is not. A vTual role holder without `manage any vtual resource` therefore still reaches its own claims, while the staff *tab* inside the single view is what the permission gates — the view, the `claims/pending` endpoint and the `private-vtual.claims` channel all require the same permission. Do not collapse the two nodes into one: the audiences reach the screen from different sidebars.
 
 Navbar contains one **Home** shortcut using `dashboard`. Archivd and vTual parent routes stack Domain Access and activation gates across their branches. Microstock remains discoverable through Services and the Archivd workspace switcher, with no dynamic-menu node.
 
@@ -218,7 +222,7 @@ Menu mutations (create/update/delete/trash/restore) ping the `navigation.menus` 
 ## Tests
 
 - `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.
-- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 49-row sidebar/navbar/vtual tree, all-seven-locale (`en`/`id`/`ja`/`ko`/`zh_CN`/`ar`/`ru`) `name` translations, selected role pivots (both `vtual.managements.index` rows: Products member-only `[]`, Administration `['Admin','Root']`; `vtual.events.index` Products `[]`), vtual `hash` anchors, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
+- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 56-row sidebar/navbar/vtual tree, all-seven-locale (`en`/`id`/`ja`/`ko`/`zh_CN`/`ar`/`ru`) `name` translations, selected role pivots (both `vtual.managements.index` rows: Products member-only `[]`, Administration `['Admin','Root']`; `vtual.events.index` Products `[]`; both `vtual.claims.index` rows carry stored roles — Administration `['Admin','Moderator','Root']`, Products `['Vtual Admin','Vtual Editor','Vtual vTuber']`), vtual `hash` anchors, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
 - `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederConformanceTest.php` asserts every seeded row satisfies the same rules the Store/Update FormRequests enforce (type enum, layout enum, h→p→c hierarchy with flat-layout `p` roots, parent-layout match, route via `SpaRouteRegistry`, hash/icon/name max lengths, all-locale non-empty `name`, audience validity + role-pivot invariant, contiguous sibling order) so editing a seeded node never trips validation.
 - `tests/Domain/Navigation/Unit/Enums/MenuAudienceTest.php` locks the four audience cases and their predicates (`allowsGuests`, `requiresUser`, `usesRoles`, `isGuestOnly`).
 - `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuTest.php` covers menu CRUD including SPA symbolic route acceptance and garbage route rejection, the audience default/round-trip and both audience error paths (`role` without roles, roles outside `role`), pivot clearing when the audience leaves `role`, plus `zh-CN` alias acceptance on translatable maps (store/update, mixed-key merge, unknown-locale rejection).
