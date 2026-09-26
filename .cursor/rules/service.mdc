@@ -1,0 +1,32 @@
+---
+description: Service catalog, FX checkout, entitlement lifecycle invariants
+globs: app/Domain/Service/**,routes/api/v1/service.php,config/service.php,database/seeders/ServiceCatalogSeeder.php,docs/domains/service/**
+alwaysApply: false
+---
+
+# Service
+
+Core domain that sells the product: catalog, multi-currency FX checkout that settles **IDR**, entitlement lifecycle, and fulfillment into product domains. It is the primary invoiceable source (`service_purchase`). It is **not** the PaymentGateway `Subscription` model — that table is a free-text demo morph.
+
+- **Entitlement is separate from product activation.** `service_entitlements` (Active/Grace/Expired + `quantity`) is the paid layer; `product_activations` answers "may this user use the product at all". `hasActivePaidArchivd` gates paid features inside Archivd (collaborative workspaces), never product access. Never make one gate the other.
+- **Money is `decimal(15,2)`** everywhere (same as invoices). Settlement currency is `platform.service.settlement_currency` (IDR).
+- **FX: settle IDR, snapshot the rate.** `ExchangeRateService` prefers the forever L1 entry when `fetched_at` is inside the freshness window, else a fresh DB snapshot in the window, else Frankfurter + INSERT into `exchange_rate_snapshots`. `platform.frankfurter.cache_ttl` is a **freshness window in seconds, not a Laravel Cache TTL** — aged L1 entries are forgotten and rebuilt. Round with `currencies.decimal_places` (IDR whole rupiah).
+- Same-currency (IDR→IDR) skips HTTP and writes no snapshot; a zero-charge purchase skips FX entirely (`provider = zero_charge`).
+- **Credit is computed from `list_amount`, never from net `charge`/`display` after discount.** Legacy rows without `list_amount` fall back to `display_amount`, then catalog list. A $0 charge fulfills immediately (no Midtrans invoice), and the next switch still credits from the stored list.
+- **Archivd storage periods are a fixed +30 days** (`ArchivdBillingPeriod`), not calendar `addMonth`; the credit divisor uses the same 30 days.
+- Main plan change: `renew` (same `service_id`, stack `ends_at`) / `upgrade` (target storage > current) / `downgrade` (target < current, surplus credit → extra days). Charge = `max(0, list_new − unused_credit)`; `unused_credit = (remaining_days / 30) × last_paid_list_amount`. Paid up/down expires other mains and sets `ends_at = now + 30 days + surplus_days`.
+- **Addons share one anniversary clock.** First buy (or rebuy after expiry) sets `ends_at = now + 30 days` (or joins the user's existing active addon anniversary); an additional unit increments `quantity` and **leaves `ends_at` unchanged**. When the anniversary is due or a stack renewal is pending, a **unit checkout is blocked (422)** — pay the stack first.
+- The anniversary invoice is **one** pending invoice for the whole stack (`service_addon_renewals` + lines, morph `service_addon_renewal`), never one per unit. Paying it extends **all** addon `ends_at` by +30 days with quantities unchanged. There is no auto-charge.
+- **Free tier is not a catalog SKU.** Runtime free always comes from `config('archivd.default_quota_bytes')` (5 GiB) and is always stacked; the seeder deletes any legacy `archivd.plan.free`. `effective_bytes = free + (active_or_grace main.storage_bytes) + Σ(active_or_grace storage_addon.storage_bytes × quantity)`; the workspace-slot addon has `storage_bytes = 0` and contributes no GiB.
+- `Service::isArchivdStoragePlan()` requires `storage_bytes > 0` (excludes the slot SKU); `isAddonPlan()` covers storage **and** slot addons; `isWorkspaceSlotAddon()` is the slot-only check. Paid-collab queries keep using `storage_bytes > 0`.
+- **Grace blocks uploads but keeps files.** Any paid Archivd line past `ends_at` enters grace for `platform.service.grace_days` (7) — uploads blocked, effective bytes still computed, one notification. On grace end the line expires, quota is recomputed, and `enforceToLimit(effective)` purges overflow: sort `created_at ASC, id ASC`, accumulate sizes, soft-delete the DB rows and hard-delete S3 for the overflow.
+- Fulfillment runs through `ServiceFulfillmentService`: activate/extend entitlement → `ArchivdQuotaRecomputeService` → `ensureProductActive` (maps `fulfillment_target` to a product and keeps an **implicit** activation Active; never auto-activates an explicit product) → `microstock_ai_credits` via `AiCreditService::creditFromPurchase`.
+- Scheduler is load-bearing: `service:process-entitlements` and `service:process-addon-renewals` hourly (`schedule:work`/cron must run) or grace, expiry and purge silently never happen.
+- `quantity` is addon-only and bounded by `platform.service.purchase_max_quantity` (99), exposed to clients as `GET /api/v1/services/options` `purchase_max_quantity` — **never hardcode 99** in the SPA. A main plan must be `quantity = 1` (`quantity_main_plan_fixed`).
+- **Settlement/FX internals are staff-only** (`view invoice`): `settlement_currency`, `settlement_amount`, `fx_rate` + companions, `fx_provider`, `fx_rate_snapshot_id`. Buyers see display/charge amounts, never treasury FX.
+- Permissions: `view service` (all roles incl. User), `manage service` (Root/Admin), `purchase service` (also accepts `initiate payment`).
+- Realtime after successful persist (`ServiceRealtime`, gated on `BroadcastConnection::isConfigured()`): `services.catalog` (permission `view service`) → `.service.catalog.changed` / `.service.purchase.changed`; `settings.currencies` (permission `view settings`) → `.service.currency.changed`.
+- Deploy order: migrate through `2026_07_18_110002` → `CurrencySeeder` → `ServiceCatalogSeeder`.
+- Tests: `composer test -- --filter=Service` (plus `--filter=EnforceFreeTierQuota`, `--filter=ArchivdBilling`); key suites `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `ArchivdPlanQuotaMatrixTest`, `WorkspaceCollaborativeWorksTest`.
+
+Detail: [docs/domains/service/reference.md](../../docs/domains/service/reference.md).

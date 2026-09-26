@@ -1,6 +1,6 @@
 # Crypto activity & envelope encryption assessment
 
-Security and audit assessment for envelope encryption (OCI KMS) and `log_name: crypto` activity entries. Complements [activity-log.md](../domains/activity-log/README.md) and [envelope-encryption.md](../domains/payment-gateway/encryption.md).
+Security and audit assessment for envelope encryption (OCI KMS) and `log_name: crypto` activity entries. Complements [activity-log.md](../domains/activity-log/README.md) and [envelope-encryption.md](../platform/envelope-encryption.md).
 
 **Last reviewed:** 2026-09-15
 
@@ -133,7 +133,7 @@ Before enabling envelope encryption in production:
 6. Choose `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` vs KMS cost vs plaintext retention risk
 7. Choose `ENCRYPTION_AUDIT_DECRYPTS` (`cache_miss` vs `always`) for compliance needs
 8. Plan Redis key purge for incident response (`encryption:flush-decrypted-cache {context}` — bulk flush not implemented)
-9. Optional: enable `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS` temporarily to trace invoice payload decrypt sources — see [envelope-encryption.md](../domains/payment-gateway/encryption.md#invoice-payload-decrypt-tracing)
+9. Optional: enable `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS` temporarily to trace invoice payload decrypt sources — see [envelope-encryption.md](../platform/reference-envelope-encryption.md#invoice-payload-decrypt-tracing)
 
 ---
 
@@ -142,7 +142,7 @@ Before enabling envelope encryption in production:
 | Item | Notes |
 |------|-------|
 | `DecryptedValueCache::flushAll()` | No-op; bulk `encryption:flush-decrypted-cache` without context exits with error — Redis SCAN purge deferred |
-| Session envelope (legacy) | Disabled by default; use `SESSION_ENCRYPT` instead — see [envelope-encryption.md](../domains/payment-gateway/encryption.md#tiered-encryption) |
+| Session envelope (legacy) | Disabled by default; use `SESSION_ENCRYPT` instead — see [envelope-encryption.md](../platform/reference-envelope-encryption.md#tiers) |
 | No encrypt audit | Writes and `encryption:migrate-p0` do not create crypto log rows |
 | `decryptWithoutCache()` | Public, unaudited — only safe when called from audited paths |
 | Legacy pass-through | Non-envelope values may return as-is during migration |
@@ -152,6 +152,6 @@ Before enabling envelope encryption in production:
 
 ## Related docs
 
-- [envelope-encryption.md](../domains/payment-gateway/encryption.md) — architecture and commands
-- [oci-kms.md](../domains/payment-gateway/encryption.md) — KMS connectivity
+- [envelope-encryption.md](../platform/envelope-encryption.md) — architecture and commands
+- [oci-kms.md](../platform/envelope-encryption.md) — KMS connectivity
 - [activity-log.md](../domains/activity-log/README.md) — log namespaces and API

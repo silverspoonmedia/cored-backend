@@ -32,7 +32,7 @@ use Tests\TestCase;
  * marks the case skipped, so the absence shows up in the PHPUnit summary instead of
  * hiding behind a green run. That matters because CI runs without the sibling by
  * design — see `.github/workflows/ci.yml` and the coverage table in
- * `docs/platform/localization.md`.
+ * `docs/platform/reference-localization.md`.
  */
 class LocaleGuardTest extends TestCase
 {

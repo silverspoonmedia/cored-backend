@@ -22,7 +22,7 @@ Implementation: `app/Console/Commands/PintCommand.php` — Symfony Process, `ign
 
 `.github/workflows/ci.yml` — two jobs, `locale` (`Localization guards (sibling-free)`) and `backend` (`Backend suite (sqlite in-memory)`), on `push` to `main` / `master` / `main-sandbox` / `main-staging` and on every `pull_request`.
 
-Both jobs are deliberately narrow in the same way: they run only checks that need **one** repo, so the workflow carries no credentials. Which defect classes the `locale` job covers, and which four guards need the sibling checkout, is the table in [localization.md — CI coverage vs manual runs](localization.md#ci-coverage-vs-manual-runs). An earlier version of this workflow checked out `monolith-vue-workers` as a sibling so all six guards could run; it failed at the checkout step on every run, because both repos are private and `GITHUB_TOKEN` is scoped to the repo running the workflow. It was narrowed rather than patched with a personal access token.
+Both jobs are deliberately narrow in the same way: they run only checks that need **one** repo, so the workflow carries no credentials. Which defect classes the `locale` job covers, and which four guards need the sibling checkout, is the table in [reference-localization.md — CI coverage vs manual runs](reference-localization.md#ci-coverage-vs-manual-runs). An earlier version of this workflow checked out `monolith-vue-workers` as a sibling so all six guards could run; it failed at the checkout step on every run, because both repos are private and `GITHUB_TOKEN` is scoped to the repo running the workflow. It was narrowed rather than patched with a personal access token.
 
 ### `locale` job
 
@@ -87,4 +87,4 @@ env:
 
 `COLUMNS: '200'` widens Collision's output. The runner's default is 80 columns, which truncated findings to `file_get_contents(/ho…` — the opposite of a readable gate.
 
-**No branch protection.** Both repos are private on the GitHub **free** plan, so required status checks are unavailable: `gh api repos/silverspoonmedia/monolith/branches/main/protection` answers `403 Upgrade to GitHub Pro or make this repository public`. Nothing on GitHub blocks a merge with a red run. The day-to-day process, and the gap this leaves for SPA-only pull requests, is in [localization.md — PR & merge process](localization.md#pr--merge-process).
+**No branch protection.** Both repos are private on the GitHub **free** plan, so required status checks are unavailable: `gh api repos/silverspoonmedia/monolith/branches/main/protection` answers `403 Upgrade to GitHub Pro or make this repository public`. Nothing on GitHub blocks a merge with a red run. The day-to-day process, and the gap this leaves for SPA-only pull requests, is in [reference-localization.md — PR & merge process](reference-localization.md#pr--merge-process).

@@ -1,17 +1,25 @@
 ---
 description: Patch locale keys; never dump whole lang JSON files
-globs: lang/**,app/**,routes/**,database/seeders/**,resources/**,docs/platform/localization.md
+globs: lang/**,app/**,routes/**,database/seeders/**,docs/platform/localization.md,docs/platform/reference-localization.md,docs/platform/naming-conventions.md
 alwaysApply: false
 ---
 
 # Localization (backend)
 
-All supported locales in the same change (`en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru`). English is the source.
+All supported locales in the same change (`en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru`). English is the source, never the destination. Read the always-on `i18n-guardrail.mdc` for the definition of done and the readability test before writing copy.
 
-- **Never `Read` an entire** `lang/{locale}.json` or a large PHP lang file. Grep the key, patch every locale, run `LocaleParityTest`.
-- **Never re-add a nested group to `lang/{locale}.json`.** JSON packs are consulted before PHP namespaces, so groups like `api`, `ui`, `web` shadow `lang/{locale}/*.php`; `LocaleUsageTest` fails the build if one reappears.
-- Prefer `lang/{locale}/*.php` for application strings.
+- **Never `Read` an entire** `lang/{locale}.json` or a large PHP lang file. Grep the key, patch every locale.
+- **Never re-add a nested group to `lang/{locale}.json`.** JSON packs are consulted before PHP namespaces, so groups like `api`, `ui`, `web` shadow `lang/{locale}/*.php`; `LocaleUsageTest` fails the build if one reappears. Prefer `lang/{locale}/*.php` for application strings.
 - **Flag every curated key** with `// curated at <ISO8601 +07:00> — <locale> curation wave` on the line above it; re-curating replaces the comment. Never flag without reviewing the consuming surface.
-- A key used in code but missing from every locale is a build failure (`LocaleUsageTest`), not a cosmetic bug.
-- Full rules, tooling, and the domain glossary: [docs/platform/localization.md](../../docs/platform/localization.md).
-- SPA JSON locales are in `monolith-vue-workers` — same patch-key rule, plus a `src/i18n/curation-log.json` entry per curated key; `npm run check:i18n`.
+- A key used in code but defined in no locale is a build failure (`LocaleUsageTest`), not a cosmetic bug.
+- Gate: `php artisan test --filter=Locale` — includes `LocaleGuardTest`, which shells out to `scripts/locale-prose-scan.php`, `locale-rawkey-scan.php`, `locale-dynamic-key-check.php`, `locale-pack-parity.php`, `locale-flat-pack-parity.php`, `locale-glossary-scan.php`. Without the sibling `monolith-vue-workers` checkout the four cross-repo guards are **skipped**, so that run is not a green run.
+- SPA locale JSON lives in `monolith-vue-workers` — same patch-key rule plus a `src/i18n/curation-log.json` entry per curated key; `npm run check:i18n`.
+
+## Resolution and placement
+
+- Backend order: `users.locale` → `X-SPA-Locale` header → `locale` cookie → `config('app.locale')`, via `SetLocale` on `web` and `api`. The SPA accepts `zh-CN` at the boundary and canonicalizes to `zh_CN`; never store or return the alias.
+- Application strings → `lang/{locale}/{ui,menu,notifications,mail,list_actions}.php`, `web/*.php` (only what surviving server PHP resolves), `api/*.php`, `forms/*.php`. A screen only the SPA reads belongs in the SPA JSON, not in a new `web/*.php`.
+- Package-managed packs (`validation.php`, `auth.php`, `passwords.php`, `actions.php`, `pagination.php`, `http-statuses.php`) are curated and flagged like application files — `lang:update` overwrites them (it also runs from `composer update`'s `post-update-cmd`), so re-review after every upgrade and recover with `git checkout -- lang/`.
+- Flat pack `lang/{locale}.json` is in curation scope: owned scalars mirror their canonical PHP owner (`http-statuses` → `ui` → `actions` → first `web/*`), unowned package chrome is curated against the target language. `locale-flat-pack-parity.php` is the guard.
+- Mirrored packs (`validation`, `http-statuses`, `auth`, `passwords`, `pagination`) must read identically to the SPA copy — settle one wording per key, then mirror. `actions.*` is deliberately not mirrored.
+- Glossary, tooling, coverage, CI matrix: [docs/platform/reference-localization.md](../../docs/platform/reference-localization.md). Settled terms and banned variants: [docs/platform/naming-conventions.md](../../docs/platform/naming-conventions.md).

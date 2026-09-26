@@ -2,7 +2,7 @@
 
 Assessment of how **authentication and session lifecycle** events are observed in this application, and how they map to **Spatie activitylog** (`activity_log`, `log_name: auth`) versus other logging surfaces.
 
-See also [JWT authentication & RBAC](../domains/identity/README.md), [Activity log](../domains/activity-log/README.md), and `SECURITY_AUDIT.md` (FINDING-019).
+See also [JWT authentication & RBAC](../domains/identity/README.md), [Activity log](../domains/activity-log/README.md), and [`security-audit-2026-06-16.md`](security-audit-2026-06-16.md) (FINDING-019).
 
 ---
 

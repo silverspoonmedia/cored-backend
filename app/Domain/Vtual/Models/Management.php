@@ -20,9 +20,9 @@ class Management extends Model
     protected $table = 'vtual_managements';
 
     /**
-     * Management audit trail (TASK.md:228). Log name `vtual` groups every
+     * Management audit trail (docs/archive/bootstrap-task-2026-08.md:228). Log name `vtual` groups every
      * management-scoped mutation; personal creator/channel/content surfaces
-     * are deliberately excluded — see docs/domains/vtual/README.md.
+     * are deliberately excluded — see docs/domains/vtual/reference.md.
      */
     public function getActivitylogOptions(): LogOptions
     {

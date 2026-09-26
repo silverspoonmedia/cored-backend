@@ -1,6 +1,6 @@
-# Envelope encryption & OCI KMS
+# Envelope encryption & OCI KMS — reference
 
-Tiered crypto for sensitive columns. KEK = OCI KMS master key; DEK per value (AES-256-GCM).
+Detail behind [envelope-encryption.md](envelope-encryption.md): tiers, components, the decrypt-cache TTL map, the P0 column inventory, env, and OCI connectivity.
 
 ## Tiers
 
@@ -23,13 +23,13 @@ Tiered crypto for sensitive columns. KEK = OCI KMS master key; DEK per value (AE
 
 ## Billing rules
 
-- One KEK (`OCI_KMS_KEY_ID`); many DEKs  
-- Decrypt cache + fingerprint; skip re-encrypt when plaintext unchanged  
-- No KMS retry loops on IAM failure  
+- One KEK (`OCI_KMS_KEY_ID`); many DEKs
+- Decrypt cache + fingerprint; skip re-encrypt when plaintext unchanged
+- No KMS retry loops on IAM failure
 
 ### Decrypt cache TTL
 
-Aligned with [cache-policy.md](../../platform/cache-policy.md): forever by default; invalidate on encrypt / cast set / flush.
+Aligned with [cache-policy.md](cache-policy.md): forever by default; invalidate on encrypt / cast set / flush.
 
 | Config | Meaning |
 |--------|---------|
@@ -90,7 +90,7 @@ Exit codes on verify: 0 ok; 1 config; 2 auth; 3 IAM; 4 network; 5 other. On 3 �
 
 ## Activity log
 
-Decrypt events: [activity-log](../activity-log/README.md). Historical deep dive: [archive/crypto-activity-assessment.md](../../archive/crypto-activity-assessment.md).
+Decrypt events: [activity-log](../domains/activity-log/README.md). Historical deep dive: [archive/crypto-activity-assessment.md](../archive/crypto-activity-assessment.md).
 
 Audit-trail PII is itself encrypted: `activity_log.properties` keys `ip_address`, `user_agent`, `email` are envelopes written by `LogActivityAction::beforeLogging()` and decrypted in `ActivityLogResource` / the Archivd workspace feed. `activity_log` is listed in `audit_excluded_resource_types` (viewing the trail must not append `crypto` rows to it). Note the cost: `CryptoActivityRecorder` writes a `crypto` row *inside* `EnvelopeEncryptionService::decrypt()`, so each audited decrypt performs one extra DEK wrap — keep `ENCRYPTION_AUDIT_DECRYPTS=cache_miss`.
 
@@ -103,5 +103,6 @@ composer test -- --filter=Oci
 
 ## Related
 
-- [platform/environment.md](../../platform/environment.md)
-- [payment-gateway README](README.md)
+- [envelope-encryption.md](envelope-encryption.md) — brief
+- [environment.md](environment.md)
+- [payment-gateway README](../domains/payment-gateway/README.md)

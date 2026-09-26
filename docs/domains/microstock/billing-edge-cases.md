@@ -1,8 +1,8 @@
 # Microstock AI billing — edge cases and hardening
 
-Companion to [README § AI billing](README.md#ai-billing-prepaid-credits). Documents usage/billing behavior for the vision → thinking pipeline so successful provider work is recorded, settled, and auditable.
+Companion to [README § AI billing](reference.md#ai-billing-prepaid-credits). Documents usage/billing behavior for the vision → thinking pipeline so successful provider work is recorded, settled, and auditable.
 
-**Operator UI:** reconcile `microstock_ai_usage_events` and `microstock_ai_credit_transactions` against the **Usage & balance** page (`GET /apps/archivd/microstock/usage`) — prepaid ledger tab, AI usage detail tab, and (Root / Admin / Moderator) **Platform overview** tab. See [Usage & balance UI](README.md#usage--balance-ui).
+**Operator UI:** reconcile `microstock_ai_usage_events` and `microstock_ai_credit_transactions` against the **Usage & balance** page (`GET /apps/archivd/microstock/usage`) — prepaid ledger tab, AI usage detail tab, and (Root / Admin / Moderator) **Platform overview** tab. See [Usage & balance UI](reference.md#usage--balance-ui).
 
 ## Flow (post-hardening)
 
@@ -53,7 +53,7 @@ Partial then full success (retry after vision-only charge): `settleSuccessfulAna
 
 ## Provisional model consolidation
 
-After ops curates provider rates for a model that was billed provisionally, `UnknownModelBillingConsolidationService` reconciles settled prepaid usage whose snapshot `rate_source = unknown_provisional` (same provider + model slug, `consolidated_at` null). Cheaper curated rate → `adjustment` credit; more expensive → `adjustment` debit (balance may go negative). Daily-free rows update reporting fields only. See [Inference — unknown model workflow](../inference/README.md#unknown-model-workflow) and [README § Provisional model consolidation](README.md#provisional-model-consolidation).
+After ops curates provider rates for a model that was billed provisionally, `UnknownModelBillingConsolidationService` reconciles settled prepaid usage whose snapshot `rate_source = unknown_provisional` (same provider + model slug, `consolidated_at` null). Cheaper curated rate → `adjustment` credit; more expensive → `adjustment` debit (balance may go negative). Daily-free rows update reporting fields only. See [Inference — unknown model workflow](../inference/reference.md#unknown-model-workflow) and [README § Provisional model consolidation](reference.md#provisional-model-consolidation).
 
 ## Idempotency and race guards
 

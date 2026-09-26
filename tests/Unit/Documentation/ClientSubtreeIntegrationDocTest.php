@@ -4,6 +4,13 @@ namespace Tests\Unit\Documentation;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Guards the client-project subtree how-to.
+ *
+ * The page is a human how-to (brief: purpose + pointer table + commands), so the
+ * test asserts the shape and the load-bearing commands rather than prose. The two
+ * scripts it documents are asserted separately by `CoreScriptTest`.
+ */
 class ClientSubtreeIntegrationDocTest extends TestCase
 {
     private string $docPath;
@@ -11,12 +18,16 @@ class ClientSubtreeIntegrationDocTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->docPath = dirname(__DIR__, 3).DIRECTORY_SEPARATOR.'docs'.DIRECTORY_SEPARATOR.'client-subtree-integration.md';
+        $this->docPath = dirname(__DIR__, 3).DIRECTORY_SEPARATOR.'docs'.DIRECTORY_SEPARATOR.'integration'.DIRECTORY_SEPARATOR.'client-subtree.md';
     }
 
-    public function test_documentation_file_exists(): void
+    public function test_documentation_file_exists_in_the_integration_bucket(): void
     {
         $this->assertFileExists($this->docPath);
+        $this->assertFileDoesNotExist(
+            dirname(__DIR__, 3).DIRECTORY_SEPARATOR.'docs'.DIRECTORY_SEPARATOR.'client-subtree-integration.md',
+            'Subject files do not live at the docs/ root — see .cursor/rules/docs-pakem.mdc.'
+        );
     }
 
     public function test_documentation_has_required_sections(): void
@@ -24,28 +35,25 @@ class ClientSubtreeIntegrationDocTest extends TestCase
         $content = file_get_contents($this->docPath);
 
         foreach ([
-            '# Client Project Integration via Git Subtree',
-            '## 1. Architecture Overview',
-            '## 2. Client Project Folder Structure',
-            '## 3. Integration Strategy',
-            '## 4. Setup Commands',
-            '## 5. Daily Workflow Commands',
-            '## 6. Script: update-core.sh',
-            '## 7. Script: push-core.sh',
-            '## 8. Quick Reference Card',
+            '# Client project integration via git subtree',
+            '## 1. Architecture overview',
+            '## 2. Folder structure',
+            '## 3. Integration strategy',
+            '## 4. Setup (new client project)',
+            '## 5. Daily workflow',
+            '## 6. Quick reference',
         ] as $section) {
             $this->assertStringContainsString($section, $content);
         }
     }
 
-    public function test_documentation_contains_required_subtree_workflow_terms(): void
+    public function test_documentation_contains_the_subtree_workflow_commands(): void
     {
         $content = file_get_contents($this->docPath);
 
         foreach ([
             'https://github.com/silverspoonmedia/monolith.git',
             'core/',
-            'Git Subtree',
             'git subtree add',
             'git subtree pull',
             'git subtree push',
@@ -63,69 +71,32 @@ class ClientSubtreeIntegrationDocTest extends TestCase
         foreach ([
             'composer.json',
             'bootstrap/app.php',
-            'artisan',
-            'public/index.php',
-            'Application::configure',
-            'withRouting',
             'core/routes/',
             'core/config/',
             'php artisan migrate',
-            'php artisan test',
+            'php artisan route:list',
+            'php artisan db:seed',
         ] as $term) {
             $this->assertStringContainsString($term, $content);
         }
     }
 
-    public function test_documentation_explains_psr4_overlay_strategy(): void
+    public function test_documentation_explains_the_psr4_overlay(): void
     {
         $content = file_get_contents($this->docPath);
 
-        $this->assertStringContainsString('PSR-4 Overlay', $content);
+        $this->assertStringContainsString('PSR-4 overlay', $content);
         $this->assertStringContainsString('"App\\\\": ["app/", "core/app/"]', $content);
-        $this->assertMatchesRegularExpression('/Composer.*searches paths in order/i', $content);
+        $this->assertMatchesRegularExpression('/resolves `app\/` before `core\/app\/`/', $content);
     }
 
-    public function test_documentation_includes_client_project_tree(): void
+    public function test_documentation_references_both_core_scripts(): void
     {
         $content = file_get_contents($this->docPath);
 
-        $this->assertStringContainsString('client-project/', $content);
-        $this->assertStringContainsString('├── core/', $content);
-        $this->assertStringContainsString('├── app/', $content);
-        $this->assertStringContainsString('└── README.md', $content);
-    }
-
-    public function test_documentation_includes_update_core_script_requirements(): void
-    {
-        $content = file_get_contents($this->docPath);
-
-        foreach ([
-            'update-core.sh',
-            'set -euo pipefail',
-            'MONOLITH_URL',
-            'git remote add',
-            'git fetch',
-            'git subtree pull',
-            '--squash',
-            'Checking for config differences',
-        ] as $term) {
-            $this->assertStringContainsString($term, $content);
-        }
-    }
-
-    public function test_documentation_includes_push_core_script_requirements(): void
-    {
-        $content = file_get_contents($this->docPath);
-
-        foreach ([
-            'push-core.sh',
-            'git diff-index',
-            'git subtree push',
-            'Continue? [y/N]',
-            'WARNING',
-            'Push complete',
-        ] as $term) {
-            $this->assertStringContainsString($term, $content);
+        foreach (['update-core.sh', 'push-core.sh'] as $script) {
+            $this->assertStringContainsString($script, $content);
+            $this->assertFileExists(dirname(__DIR__, 3).DIRECTORY_SEPARATOR.$script);
         }
     }
 
@@ -133,24 +104,23 @@ class ClientSubtreeIntegrationDocTest extends TestCase
     {
         $content = file_get_contents($this->docPath);
 
-        $this->assertMatchesRegularExpression('/read[-\s]?only.*upstream|read[-\s]?only.*core/i', $content);
+        $this->assertMatchesRegularExpression('/read[-\s]?only.*upstream/i', $content);
         $this->assertMatchesRegularExpression('/config.*diff|diff.*config/i', $content);
-        $this->assertMatchesRegularExpression('/override.*contribute|contribute.*upstream/i', $content);
-        $this->assertMatchesRegularExpression('/squash.*history|history.*squash/i', $content);
+        $this->assertMatchesRegularExpression('/override vs contribute/i', $content);
+        $this->assertMatchesRegularExpression('/squash/i', $content);
     }
 
-    public function test_documentation_is_english_and_laravel_13_specific(): void
+    public function test_documentation_stays_a_brief(): void
     {
-        $content = file_get_contents($this->docPath);
+        // Same definition of "line count" as scripts/docs-guard.php: a trailing
+        // newline terminates the last line, it does not start a new one.
+        $contents = rtrim((string) file_get_contents($this->docPath), "\r\n");
+        $lines = substr_count($contents, "\n") + 1;
 
-        foreach ([
-            'Laravel 13',
-            'Architecture Overview',
-            'Integration Strategy',
-            'Setup Commands',
-            'Daily Workflow',
-        ] as $term) {
-            $this->assertStringContainsString($term, $content);
-        }
+        $this->assertLessThanOrEqual(
+            90,
+            $lines,
+            'The subtree how-to is a human brief; long design notes belong in docs/archive/.'
+        );
     }
 }

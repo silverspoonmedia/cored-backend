@@ -14,7 +14,7 @@
  * Details: docs/archive/microstock-probes/sonnet5_gpt56_combo_summary.md
  */
 return [
-    // Dual-lane pipeline queues (see docs/domains/microstock/README.md#operations-queue-worker).
+    // Dual-lane pipeline queues (see docs/domains/microstock/reference-pipeline.md#stage-decoupling-mvp---dual-lane-pipeline).
     'queues' => [
         'collection_vision' => env('MICROSTOCK_AI_COLLECTION_VISION_QUEUE', 'microstock-collection-vision'),
         'collection_thinking' => env('MICROSTOCK_AI_COLLECTION_THINKING_QUEUE', 'microstock-collection-thinking'),

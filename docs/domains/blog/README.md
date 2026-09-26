@@ -37,8 +37,8 @@ Sidebar: Workspace header › **Blog** parent (route `blog.posts.index`) with Po
 
 ## Row actions (query list)
 
-`PostQueryRowActions` attaches per-row `actions[]`: `edit` (nav → `blog.posts.edit`) and `delete` (mutate `DELETE blog/posts/{id}`, gated `manage posts`, confirmation copy `lang/*/list_actions.php` → `delete_post`). `PostTrashedQueryRowActions` attaches `restore` (mutate `POST blog/posts/{id}/restore`, gated `restore posts`). Pinned by `BlogPostApiTest`. Contract: [list-display-modes.md](../platform/list-display-modes.md).
+`PostQueryRowActions` attaches per-row `actions[]`: `edit` (nav → `blog.posts.edit`) and `delete` (mutate `DELETE blog/posts/{id}`, gated `manage posts`, confirmation copy `lang/*/list_actions.php` → `delete_post`). `PostTrashedQueryRowActions` attaches `restore` (mutate `POST blog/posts/{id}/restore`, gated `restore posts`). Pinned by `BlogPostApiTest`. Contract: [list-display-modes.md](../../platform/list-display-modes.md).
 
 ## SPA surface
 
-Views in `monolith-vue-workers/src/views/blog/`, composables `src/composables/blog/` (incl. `useBlogMedia` multipart upload), editor `src/components/blog/RichTextEditor.vue` (Tiptap, headless) and `src/components/blog/FeaturedImagePicker.vue` (takes the full `BlogMedia` object so existing posts preview the stored URL, not the UUID). Contract details: [vue-workers-spa.md](../integration/vue-workers-spa.md).
+Views in `monolith-vue-workers/src/views/blog/`, composables `src/composables/blog/` (incl. `useBlogMedia` multipart upload), editor `src/components/blog/RichTextEditor.vue` (Tiptap, headless) and `src/components/blog/FeaturedImagePicker.vue` (takes the full `BlogMedia` object so existing posts preview the stored URL, not the UUID). Contract details: [vue-workers-spa.md](../../integration/vue-workers-spa.md).

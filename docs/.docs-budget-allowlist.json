@@ -1,0 +1,4 @@
+{
+  "$comment": "Living docs that exceed their kind budget (see docs_guard_doc_kind() in scripts/docs-guard.php: brief 90, deep-dive 400, tracker 500, glossary 200, edge-case 200). Every entry carries a reason and must shrink as the doc is touched: split the invariants into a .cursor/rules/*.mdc file, move narrative into docs/archive/. Enforced by scripts/docs-guard.php; an entry whose file now fits is itself a finding, so the list can only shrink. Empty since Wave C/D: every living doc now fits its kind budget.",
+  "files": {}
+}

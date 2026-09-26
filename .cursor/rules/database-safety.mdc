@@ -1,0 +1,17 @@
+---
+description: Destructive DB commands, test bootstrap, migration portability
+globs: database/**,tests/**,phpunit.xml,composer.json
+alwaysApply: false
+---
+
+# Database safety
+
+Dev MySQL + prod PostgreSQL 16 parity; PHPUnit runs **SQLite `:memory:`**. Destructive ops on the wrong connection wipe dev data.
+
+- Canonical test command: `composer test` (runs `config:clear` first), or `composer test -- --filter=…`. Bare `php artisan test` is guarded by `tests/bootstrap.php`.
+- Never run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on a non-sqlite connection without `ALLOW_DESTRUCTIVE_DB=true`. Guard chain: `tests/TestCase.php` (fails if `database.default !== sqlite`), `DestructiveDatabaseCommandGuard`, `ConsoleSafetyServiceProvider`.
+- Cached config overrides `phpunit.xml`: `config:cache` bakes `DB_CONNECTION=mysql`, and `RefreshDatabase` then wipes MySQL. Always `composer test`.
+- Migrations must stay portable MySQL 8.x ↔ PostgreSQL 16: explicit `uuid` FK columns, no driver-specific enums, bounded strings + PHP enums own allowed values, explicit casts for JSON↔text, rollbacks reject existing NULLs before NOT NULL.
+- Diagnostics: `php artisan db:migration-diagnose {table}` (driver, schema, indexes, FKs). Run matrix verification against disposable databases only.
+- Recovery: `php artisan db:seed` (recreates roles/settings/menus, not invoices). Full reset only when intentional, with `ALLOW_DESTRUCTIVE_DB=true`.
+- Full guide: [docs/platform/database-safety.md](../../docs/platform/database-safety.md).

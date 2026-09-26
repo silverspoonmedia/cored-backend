@@ -1,12 +1,30 @@
 ---
 description: Env profiles, curate, secrets vs system_settings
-globs: .env*,config/*.php,app/Console/Commands/Env/**,app/Support/Environment/**
+globs: .env*,config/*.php,app/Console/Commands/*Env*.php,app/Support/Environment*.php,database/seeders/*SettingsSeeder.php
 alwaysApply: false
 ---
 
 # Environment & config
 
-- `.env` is **Tier A secrets / infra only**. Operational knobs → `system_settings`. Product secrets → envelope-encrypted tables.
-- Runtime registry reads: `setting()` / `setting_config()` — never `env()` outside config files; never `config()` for registry-backed paths in domain code.
+Three tiers — never mix them.
+
+| Tier | Storage | Runtime read |
+|------|---------|--------------|
+| A — secrets/infra | `.env` + `config/*.php` `env()` bindings | `config()` at bootstrap only |
+| B — operational knobs | `system_settings` (Settings UI, plaintext) | `setting()` / `setting_config()` → cached snapshot |
+| C — product secrets | dedicated envelope-encrypted tables | model cast → `EnvelopeEncryptionService` |
+
+- Runtime reads of registry settings go through `setting()` / `setting_config()` only — **never `env()` outside config files**, never `config()` for registry-backed paths in domain code.
+- New Tier B knob: `SettingRegistry` entry → `SettingsSeeder` → translations in all seven locales → `SettingRegistryTranslationTest`. **No new env var.** Never put Tier B values in `.env`.
+- New Tier C secret: dedicated migration + model with envelope cast + admin UI. Never registry, never `.env`.
+- **`APP_ENV=local` only:** dev Tier B overrides live in [config/settings-local.php](../../config/settings-local.php) + [LocalSettingsSeeder](../../database/seeders/LocalSettingsSeeder.php) (`upsertMany`, after `SettingsSeeder`). Never change `config/*.php` literals or `.env` for local-only knobs. Tier C local wiring: gitignored `database/seeders/data/ai-connections.local.php`.
 - Keyword **`curate the env`**: `php artisan env:curate --dry-run`, then `php artisan env:curate` (`--sync-snapshot` when needed). Never hand-edit `.env` layout.
-- Details: [docs/platform/environment.md](../../docs/platform/environment.md), [docs/platform/configuration-policy.md](../../docs/platform/configuration-policy.md).
+
+## Env file contract
+
+- One `.env` at boot; `.env.example` is the master catalog and `.env.{local,staging,production}.example` are the committed profile templates. `env:install {profile}` bootstraps, `env:switch {profile}` swaps through a transactional backup, `env:restore` rolls a failed mutation back.
+- **Assignment key parity is mandatory:** master, all three profile templates, and `EnvironmentVariableCatalog::types()` expose the **same live `KEY=` assignments**. A commented `# KEY=…` line does not count — `env:curate` only sees real assignments. Lock: `EnvProfileSyncTest` + `EnvironmentTemplateQuotingTest`.
+- Typed quoting is catalog-owned: strings always double-quoted, bool/int/null unquoted. Add every key as a live assignment in all four files, never as a commented example.
+- **PHP 8.4 required**, not 8.3 — `composer.json` `php: ^8.4` and the lock file enforce it.
+- Never bare `config:cache`: use `config:rebuild` (clear → verify secrets → cache → re-verify). `JWT_SECRET` is written by the guarded Monolith writer, not standalone `jwt:secret`.
+- Details: [docs/platform/environment.md](../../docs/platform/environment.md), [docs/platform/reference-environment.md](../../docs/platform/reference-environment.md), [docs/platform/configuration-policy.md](../../docs/platform/configuration-policy.md), [docs/platform/reference-configuration-policy.md](../../docs/platform/reference-configuration-policy.md), inventory [docs/platform/reference-settings.md](../../docs/platform/reference-settings.md).

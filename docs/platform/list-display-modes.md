@@ -53,7 +53,7 @@ Response `data` for `users` / `roles`: flat `{ results: [{ id, text }], paginati
 
 Implementation: Identity `LookupService` / `LookupController`. There are no web proxies — the SPA calls these directly.
 
-Consumer: the SPA `FormSelect2` component wraps jQuery Select2 and unwraps this envelope in `src/utils/select2-lookup.ts` — see [vue-workers-spa.md](../integration/vue-workers-spa.md#formselect2) and [ui-patterns.md — Nested selects](../../../monolith-vue-workers/docs/ui-patterns.md) for how the nested `menus` tree is flattened into one-level optgroups.
+Consumer: the SPA `FormSelect2` component wraps jQuery Select2 and unwraps this envelope in `src/utils/select2-lookup.ts` — see [vue-workers-spa.md](../integration/reference-vue-workers-spa.md#formselect2) and [ui-patterns.md — Nested selects](../../../monolith-vue-workers/docs/ui-patterns.md) for how the nested `menus` tree is flattened into one-level optgroups.
 
 ## Related
 
@@ -61,4 +61,4 @@ Consumer: the SPA `FormSelect2` component wraps jQuery Select2 and unwraps this 
 - [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — SPA mapper (`mapQueryRowActions`); views must not invent keys
 - [domains/identity/README.md](../domains/identity/README.md) — lookup permissions; users query-mode `actions[]`
 - [domains/navigation/README.md](../domains/navigation/README.md) — why the menu tree opts out of query paging; menus list `actions[]`
-- [web/ui-patterns.md](../web/ui-patterns.md) — archived Blade UI notes these sections were extracted from
+- [archive/ui-patterns-blade.md](../archive/ui-patterns-blade.md) — archived Blade UI notes these sections were extracted from

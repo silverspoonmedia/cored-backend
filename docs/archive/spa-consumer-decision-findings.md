@@ -1,6 +1,6 @@
 # SPA consumer decision findings (archived)
 
-Snapshot of non-blocking SPA (or former Blade-JS) decisions that are **not** API business rules. Living contract: [integration/vue-workers-spa.md](../integration/vue-workers-spa.md#mimic-doctrine). Do not “fix” these as part of a contract change.
+Snapshot of non-blocking SPA (or former Blade-JS) decisions that are **not** API business rules. Living contract: [integration/vue-workers-spa.md](../integration/reference-vue-workers-spa.md#mimic-doctrine). Do not “fix” these as part of a contract change.
 
 Blocking cases (client `canAffordAnalysis` math, sync-status default `'midtrans'`, hardcoded purchase qty `99`) were moved to the API.
 

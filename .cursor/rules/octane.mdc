@@ -1,0 +1,18 @@
+---
+description: Octane/Swoole long-lived worker safety
+globs: app/**
+alwaysApply: false
+---
+
+# Octane / Swoole readiness
+
+Octane is not installed yet; every change must already survive long-lived Swoole workers. A PHP-FPM process dies per request, an Octane worker does not — leaked state hits the next request.
+
+- **No mutable guard state without cleanup.** Prefer no custom JWT claims. If mutating TTL/guards, wrap in `try/finally` and reset: `Auth::forgetGuards()`, `app()->forgetInstance('tymon.jwt')`, `app()->forgetInstance('tymon.jwt.manager')`.
+- **No static properties for request data.** Constants fine; static caches of query/user results are not.
+- **Singletons must be stateless.** Request-aware services use `bind()` / `scoped()`, never `singleton()` with mutable fields.
+- **No `env()` outside `config/`.** Runtime reads use `config()`; registry-backed settings use `setting()` / `setting_config()` (`environment.mdc`).
+- **No `config()->set()` during a request** — service providers at boot, or tests, only.
+- No superglobal writes (`$_COOKIE`, `$_SERVER`), no manual output buffering, no blocking `sleep` on the request path.
+- Production Octane drivers: session `database`/`redis` (never `file`), cache + queue Redis.
+- Full guide and install checklist: [docs/platform/octane.md](../../docs/platform/octane.md).

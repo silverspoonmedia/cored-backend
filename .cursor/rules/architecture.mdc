@@ -1,0 +1,20 @@
+---
+description: Domain module registry — kind core|product, locked lifecycle, namespaces
+globs: app/Domain/**,config/domains.php
+alwaysApply: false
+---
+
+# Domain modules
+
+Domain code lives under `app/Domain/{Domain}/`; `config/domains.php` is the registry.
+
+- Two independent axes, never collapsed into one label: `kind` (`core` = foundation, `product` = sold surface) and, products only, `locked` (whether `domain:remove` refuses). Core is additionally pinned by `DomainManager::PLATFORM_CORE` — flipping `kind` in config cannot make a core domain removable.
+- **Never** run `domain:remove` on a core domain, or on a product while `locked => true`. Unlock is a deliberate `config/domains.php` edit; there is no `domain:unlock`.
+- `domain:make` always scaffolds a **product** (locked by default) with `Http/{Controllers,Requests,Resources}`, `Services`, `Repositories`, `Models`, tests, and `{Name}RoleSeeder`; it never touches migrations. `domain:remove` deletes PHP/routes/tests/provider only — migrations stay.
+- Namespaces: `App\Domain\{Domain}\Models|Services|Http\{Controllers,Requests,Resources}`. Shared infra stays `App\Support\*`, `App\Http\Middleware\*`, `App\Repositories\Eloquent\EloquentCrudRepository`.
+- **Do not** import one domain's services into another. `App\Domain\Identity\Models\{User,Role,Permission}` is the sanctioned hub; anything else is explicit and documented.
+- **Do not** conflate the module registry with the other axes that reuse `core`/`product`: RBAC `domain_kind` on Spatie roles/permissions (Identity only), per-user product activation (`product_activations` + `product.active`), per-domain visibility (`product_domain_visibilities` + `domain.access:{Domain}`), and `product_analytics` counters. Each has its own owner and its own gate.
+- Product H-RBAC: add roles/permissions with `domain_kind = product` and globally unique names (`Billing Admin`, never a second `Admin`). Never overload or rename core roles.
+- New product routes: gate with `domain.access:{Name}` **before** `product.active:{Name}` / `permission:`.
+- Loader order is presentation only — core requires first, product last, in `routes/api/v1.php`, `bootstrap/providers.php`, and `config/domains.php`. It never changes URL paths or route names.
+- Details: [docs/platform/architecture.md](../../docs/platform/architecture.md), [docs/platform/reference-architecture.md](../../docs/platform/reference-architecture.md).

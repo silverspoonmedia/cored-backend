@@ -12,7 +12,7 @@
  *   - `machine` — single tokens that are correct in every locale because they are
  *     not copy: brands, protocols, formats, acronyms, enum values the API itself
  *     defines (`pending`, `live`, `public`), and named runtime components.
- *   - `glossary` — the Domain glossary table from `docs/platform/localization.md`,
+ *   - `glossary` — the Domain glossary table from `docs/platform/naming-conventions.md`,
  *     machine-readable. For a Latin-script target (`id`) it decides *which* English
  *     words are watched: a term whose settled `id` rendering is the same word
  *     (`workspace`, `channel`, `checkout`, `invoice`) is accepted, and one whose
@@ -103,7 +103,7 @@ $machine = [
     'primary', 'only', 'fallback',
 ];
 
-// Domain glossary — `docs/platform/localization.md#domain-glossary`. One row per
+// Domain glossary — `docs/platform/naming-conventions.md#domain-glossary`. One row per
 // concept; the key is the English term the scan watches for in `id` mode.
 $glossary = [
     'workspace' => ['id' => 'workspace', 'ja' => 'ワークスペース', 'ko' => '워크스페이스', 'zh_CN' => '工作区', 'ar' => 'مساحة العمل', 'ru' => 'рабочая область'],

@@ -12,7 +12,7 @@ Optional per-user daily free AI analyses for product discovery. Enabled via **Se
 | `microstock.daily_free.limit_per_user` | `microstock.daily_free.limit_per_user` | `5` | Max analyses per user per calendar day |
 | `microstock.daily_free.timezone` | `microstock.daily_free.timezone` | `UTC` | Calendar day boundary for reset |
 
-On **`APP_ENV=local`**, `migrate:fresh --seed` / `db:seed` applies `enabled=true` and `limit_per_user=1_000_000` via [`LocalSettingsSeeder`](../../database/seeders/LocalSettingsSeeder.php) — prod-safe config literals stay `false` / `5`.
+On **`APP_ENV=local`**, `migrate:fresh --seed` / `db:seed` applies `enabled=true` and `limit_per_user=1_000_000` via [`LocalSettingsSeeder`](../../../database/seeders/LocalSettingsSeeder.php) — prod-safe config literals stay `false` / `5`.
 
 **Env (Tier A — queue names only) + Settings (Tier B — free model aliases):**
 
@@ -104,4 +104,4 @@ Insufficient prepaid credits (422) may include `daily_free` snapshot in the erro
 
 When daily free is enabled, the **Lock & Describe** modal shows a mandatory **Free / Paid** selector. Free mode uses the daily allowance first and falls back to prepaid; Paid mode ignores the daily allowance and bills every file to prepaid credits. The collection billing line in the modal footer updates live as the user toggles the selector.
 
-Daily free allowance also appears on the **Usage & balance** page summary (`GET /apps/archivd/microstock/usage`) and in the collection billing line. Free-tier usage rows show `billing_source = daily_free` on the **AI usage detail** tab; they do not appear in the prepaid ledger tab. Root / Admin / Moderator users see daily-free subsidized cost in the **Platform overview** tab. See [Usage & balance UI](README.md#usage--balance-ui).
+Daily free allowance also appears on the **Usage & balance** page summary (`GET /apps/archivd/microstock/usage`) and in the collection billing line. Free-tier usage rows show `billing_source = daily_free` on the **AI usage detail** tab; they do not appear in the prepaid ledger tab. Root / Admin / Moderator users see daily-free subsidized cost in the **Platform overview** tab. See [Usage & balance UI](reference.md#usage--balance-ui).

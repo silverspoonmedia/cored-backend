@@ -1,93 +1,19 @@
 # Domain Access — Public/Private product-domain gate
 
-Kernel feature (`App\Support\DomainAccess`, mirrors `App\Support\Product`) that gates each **product** domain by a global `public` | `private` flag, configurable from the SPA (**Administration → Domain Access**, route `domain-access.index`) by Root/Admin only. It is a **fourth axis**, distinct from module taxonomy (`config/domains.php`), the RBAC catalog (`domain_kind`), and per-user product activation (`product_activations`).
+Kernel feature that gates each **product** domain by a global `public|private` flag, configurable from the SPA (**Administration → Access control → Product domain access**) by Root/Admin. Invariants: [.cursor/rules/domain-access.mdc](../../../.cursor/rules/domain-access.mdc).
 
-## Concept
+It is a fourth axis, distinct from module taxonomy (`config/domains.php`), the RBAC catalog (`domain_kind`), and per-user product activation (`product_activations`). Default is `public`, so enabling it changes nothing until a domain is flipped; a `private` domain then admits Root, Admin, and holders of `Beta tester {Domain}` (or `access {domain} product`). Route middleware blocks requests only, so a second enforcement point in the navigation menu hides the link for viewers without access. Code lives in `app/Support/DomainAccess/`.
 
-| Visibility | Who can reach the domain |
-|------------|--------------------------|
-| `public` (default) | Everyone (unchanged legacy behavior) |
-| `private` | `Root`, `Admin`, and holders of `Beta tester {Domain}` (or the `access {domain} product` permission) |
-
-Root/Admin always bypass. Default is `public`, so enabling the feature does not change existing access until a domain is flipped to `private`.
-
-## Moving parts
-
-| Piece | Location |
-|-------|----------|
-| Visibility store | `product_domain_visibilities` (`product_key` unique, `visibility`) |
-| Enum | `App\Support\DomainAccess\Enums\DomainVisibility` (`Public`\|`Private`) |
-| Model | `App\Support\DomainAccess\Models\ProductDomainVisibility` |
-| Service | `App\Support\DomainAccess\DomainAccessService` — `visibilityFor`, `setVisibility`, `canAccess`, request-scoped cache |
-| Naming | `App\Support\DomainAccess\ProductNames` — `label`, `betaRole`, `accessPermission` |
-| Middleware | `domain.access:{Domain}` → `DomainAccessGate` (alias in `DomainAccessServiceProvider`) |
-| Admin SPA | Vue Router `domain-access.index` → `/apps/domain-access` (toggle visibility per product key) |
-| Admin API | `GET /api/v1/admin/domain-access`, `PUT /api/v1/admin/domain-access/{key}` (`view`/`manage domain access` perms) — consumed directly by the SPA; no server `web` route |
-| Beta role seeding | `Database\Seeders\Concerns\SeedsBetaTesterRole` + `DomainAccessSeeder` (built-ins) |
-
-## Naming derivation
-
-Product key is StudlyCase (e.g. `Archivd`). `ProductNames` derives:
-
-- label: `Archivd`
-- beta role: `Beta tester Archivd`
-- access permission: `access Archivd product`
-
-## Beta tester role
-
-`Beta tester {Domain}` is `domain_kind = product` with **`level = null`**. Null keeps it out of the H-RBAC ladder (`RoleService` ignores null levels) and sidesteps the `unique(domain_kind, level)` constraint entirely — so any number of product domains can seed a beta role without hand-picking level offsets. The `access {domain} product` permission is granted to the beta role and to core `Root`/`Admin`.
-
-## Enforcement
-
-`domain.access:{Domain}` is layered **before** `product.active:{Domain}` / `permission:` on both the web and API product route groups:
-
-```php
-// routes/api/v1/{slug}.php
-Route::middleware(['auth:api', 'domain.access:Archivd', 'product.active:Archivd'])->group(...);
-
-// routes/web/{slug}.php
-Route::middleware('domain.access:Archivd')->group(...);
-```
-
-Denials: API → 403 JSON via `ApiResponder::error`; web → `abort(403)`. Unauthenticated on a private domain → 401.
-
-## Menu visibility
-
-Route middleware only blocks requests — it does not hide the sidebar link. A second enforcement point in the navigation menu makes a private domain's links disappear for viewers without access.
-
-`MenuRepository::nodeVisibleLeafRules` (`app/Domain/Navigation/Repositories/Eloquent/MenuRepository.php`) resolves a node's product via `ProductRegistry::productKeyByMenuRoute($node['route'])` (reverse lookup of `config/products.php` `menu_routes`), then calls `DomainAccessService::canAccess($user, $productKey)`. If it returns false the node is hidden; empty headers/parents are then pruned by `shouldPruneEmptyBranch`. This is **guest-aware** (runs even for guests, unlike the activation check) and stacks with the existing per-user activation gate:
-
-```php
-if ($productKey !== null) {
-    if (! $this->domainAccess->canAccess($user, $productKey)) {
-        return false; // Private + no access → hide link
-    }
-    if ($user && ! $this->productActivations->isActive($user->id, $productKey)) {
-        return false; // existing activation gate (auth only)
-    }
-}
-```
-
-Domain Access, product activation, and RBAC run when `MenuRepository` **builds** the presented navigation tree (on cache miss). The `menus.navigation.snapshot` stays product/user-agnostic and stores real DB routes — gates never see presentational `#`. Changing Public/Private via `setVisibility` bumps the presented-tree epoch (`bumpPresentedTreeEpoch`) so every viewer rebuilds. See [Navigation — Caching](../navigation/README.md#caching) and [cache-policy](../../platform/cache-policy.md). New domains still need their routes listed in `config/products.php` `menu_routes` to be gated (same requirement as the activation gate).
-
-## Admin config screen
-
-- Sidebar node **Administration → Access control → Product domain access**, restricted to Root/Admin via `menu_roles`.
-- Card grid of product domains with a Public/Private switch gated by `@can('manage domain access')`; the toggle PUTs to the web proxy which forwards to the API.
-- i18n: `lang/{en,id,ja,ko,zh_CN,ar,ru}/domain-access.php`.
-
-## Realtime
-
-Visibility toggles ping the `domain-access` private channel (permission `view domain access`) as `.domain.visibility.changed` — payload `{ product_key, visibility }`. SPA: `useAdminRealtime.ts` (dashboards/nav consumers refetch on ping).
-
-## `domain:make` pipeline
-
-`domain:make {Name}` generates `database/seeders/{Name}RoleSeeder.php` (Beta tester role + permission + Public visibility row via `SeedsBetaTesterRole`) and registers `$this->call({Name}RoleSeeder::class)` in `DatabaseSeeder`. `domain:remove` deletes the seeder file and unregisters that call line from `DatabaseSeeder`; `DomainCommandsTest` asserts both directions (generated on make, gone after remove) and backs up `DatabaseSeeder.php` so the injected call never leaks into the working tree. Run `php artisan db:seed --class={Name}RoleSeeder` after scaffolding.
-
-**A failed scaffold leaves a directory git cannot see.** `MakeDomainRoleSeederPipelineTest` scaffolds a throwaway `DomainAccessProbe` domain and tears it down. If a run dies between directory creation and config registration, the leftover is `app/Domain/DomainAccessProbe/` with empty subdirectories — and **empty directories are not tracked**, so `git status` stays clean while the next run fails on `Domain [DomainAccessProbe] already exists.` The test's `tearDown` now checks `directoryExists()` as well as `isRegistered()`, so the next run repairs the tree; if you hit that message in a tree that never ran the test, delete the directory by hand.
-
-## Tests
-
-`tests/Domain/DomainAccess/`: service matrix, gate middleware (web + API), admin API authorization, seeder assertions, and the `domain:make` seeder-generation pipeline.
-
-`tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php`: menu link hiding — Public shows for activated users; Private hides the link (and prunes the empty header) for plain users and guests, but keeps it for Root and `Beta tester {Domain}`.
+| Need | Path |
+|------|------|
+| Code | `app/Support/DomainAccess/` — `DomainAccessService`, `ProductNames`, `DomainAccessGate` |
+| Config | [`config/domains.php`](../../../config/domains.php) · [`config/products.php`](../../../config/products.php) `menu_routes` |
+| Table | `product_domain_visibilities` (`product_key` unique, `visibility`) |
+| API | [`routes/api/v1/domain-access.php`](../../../routes/api/v1/domain-access.php) — `GET /api/v1/admin/domain-access`, `PUT …/{key}` |
+| SPA | Vue Router `domain-access.index` → `/apps/domain-access` (no server `web` route) |
+| Seeding | `DomainAccessSeeder` + `Database\Seeders\Concerns\SeedsBetaTesterRole` |
+| Realtime | `domain-access` private channel — `.domain.visibility.changed` |
+| Translations | `lang/*/domain-access.php` |
+| Tests | `tests/Domain/DomainAccess/` · `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` |
+| Pakem | [.cursor/rules/domain-access.mdc](../../../.cursor/rules/domain-access.mdc) |
+| Related | [navigation](../navigation/README.md) (menu visibility) · [product-activations](../product-activations/README.md) (activation axis) · [platform/cache-policy.md](../../platform/cache-policy.md) (presented-tree epoch) |

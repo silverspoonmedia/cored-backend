@@ -1,0 +1,23 @@
+# Task scope tags (mandatory)
+
+Default is `[fullstack]` when no tag is given. The tag affects **layer coverage only** — every other rule file stays mandatory regardless of tag.
+
+| Tag | Touch |
+|-----|-------|
+| `[fullstack]` | API + SPA (sibling repo) + translations + menu route registry parity |
+| `[backend]` | API layer only: routes, controllers, form requests, policies, repositories, resources, migrations, models, tests |
+| `[frontend]` | SPA layer in `monolith-vue-workers` only (assumes the API already exists) |
+
+## `[fullstack]` layer table
+
+| Layer | What to touch |
+|-------|----------------|
+| API | Versioned routes `/api/v1/*`, controllers, form requests, policies, repositories, resources |
+| Web (server) | `routes/web/*.php` only — public share, payment return, OAuth callback. No Blade views |
+| SPA | Screens, forms, listings in `monolith-vue-workers` |
+| Navigation | Menu `route` column = SPA Vue Router symbolic name; keep `config/spa-routes.php` ↔ `MenuSeeder` ↔ SPA router in sync |
+| Translation | All user-facing strings, every supported locale |
+| API shape | Canonical envelope only — see `api-resources.mdc` |
+| Other | Migrations, seeders, models, events/listeners, notifications, tests, the owning brief + rule file |
+
+An API-only or SPA-only change without its counterpart layers is **incomplete** unless the tag says otherwise.

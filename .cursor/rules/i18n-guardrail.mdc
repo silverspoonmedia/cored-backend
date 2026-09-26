@@ -1,6 +1,6 @@
 ---
 description: Any user-facing copy change — all locales, contextual, readable
-globs: lang/**,app/**,routes/**,database/seeders/**,resources/**,src/i18n/**,src/views/**,src/components/**,src/composables/**,src/**/*.vue,src/**/*.ts,docs/platform/localization.md,docs/i18n.md
+globs: lang/**,app/**,routes/**,database/seeders/**,resources/**,src/i18n/**,src/views/**,src/components/**,src/composables/**,src/**/*.vue,src/**/*.ts,docs/platform/localization.md,docs/platform/naming-conventions.md,docs/i18n.md
 alwaysApply: true
 ---
 
@@ -17,7 +17,7 @@ Translation is the first thing a user sees. A perfectly built feature nobody can
 ## Order of work
 
 1. Read the **consuming surface** — the `.vue`/`.php` file that renders the string. Never translate from the English value alone.
-2. Look up the term in the **Domain glossary** ([localization.md](../../docs/platform/localization.md#domain-glossary)). A settled term is not a suggestion.
+2. Look up the term in the **Domain glossary** ([naming-conventions.md](../../docs/platform/naming-conventions.md#domain-glossary)). A settled term is not a suggestion.
 3. Settle **one** wording per key, then mirror it. Do not let two copies drift.
 4. Apply to all locales, flag each curated key (`// curated at <ISO8601+07:00> — <locale> curation wave`; SPA equivalent: a `src/i18n/curation-log.json` entry).
 5. Run the gates below. Fix, do not suppress.
@@ -61,4 +61,4 @@ php artisan test --filter=Locale
 cd ../monolith-vue-workers && npm run check:i18n
 ```
 
-Details: [localization.md](../../docs/platform/localization.md) (backend), [i18n.md](../../../monolith-vue-workers/docs/i18n.md) (SPA).
+Details: [localization.md](../../docs/platform/localization.md) + [naming-conventions.md](../../docs/platform/naming-conventions.md) (backend), [i18n.md](../../../monolith-vue-workers/docs/i18n.md) (SPA).
