@@ -37,7 +37,7 @@ The Blade admin targeted WCAG 2.1 AA, guarded by a Blade-specific test that no l
 | Toggle buttons | `aria-pressed` | `checkout.js` channel buttons |
 | Interactive divs | `role="button"` + `tabindex="0"` + Enter/Space handler | archivd dropzone (`ArDropzone.vue`), move-tree items |
 
-Archivd authenticated browse was a **domain-local Vue island** (soft-nav, listing, bulk, upload dropzone, Microstock chrome) rather than a global AdminLTE SPA. Historical asset map: [domains/archivd/reference-realtime.md — UI architecture / SPA shell](../domains/archivd/reference-realtime.md#ui-architecture--spa-shell).
+Archivd authenticated browse was a **domain-local Vue island** (soft-nav, listing, bulk, upload dropzone, Microstock chrome) rather than a global AdminLTE SPA. Historical asset map: [domains/archivd/reference-realtime.md — UI architecture / SPA shell](../domains/archivd/reference-realtime.md#ui-architecture--spa-shell-historical).
 
 ## Vue islands (obsolete concept)
 
@@ -104,7 +104,7 @@ Adopted in: `notifications/index`, `services/index`, `error-logs/index`, `activi
 
 ## Toasts (replacing window.alert)
 
-Toast routing goes through `window.MonolithSwal.toastMessage(message, type)` — a SweetAlert2 toast mixin (position `top-end`, 4s timer, progress bar, pause on hover). The legacy `.monolith-toast` CSS component (defined in `monolith-overrides.css`) is retained for domain consumers that build toast elements manually (checkout, channels-admin, domain-access, inference rate-plans) via local `showToast(message, type)` helpers; Archivd Vue island uses `MonolithSwal` via `useArchivd`. Those containers expose `role="status"` + `aria-live="polite"`. `window.alert` is forbidden — use `MonolithSwal.alert` (modal) or `MonolithSwal.toastMessage` (toast). Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+Toast routing goes through `window.MonolithSwal.toastMessage(message, type)` — a SweetAlert2 toast mixin (position `top-end`, 4s timer, progress bar, pause on hover). The legacy `.monolith-toast` CSS component (defined in `monolith-overrides.css`) is retained for domain consumers that build toast elements manually (checkout, channels-admin, domain-access, inference rate-plans) via local `showToast(message, type)` helpers; Archivd Vue island uses `MonolithSwal` via `useArchivd`. Those containers expose `role="status"` + `aria-live="polite"`. `window.alert` is forbidden — use `MonolithSwal.alert` (modal) or `MonolithSwal.toastMessage` (toast). Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/reference.md#realtime-invoice-status-no-hard-reload).
 
 ## SweetAlert2 / confirmations
 

@@ -72,5 +72,5 @@ Per-stage durations are in the same ballpark — E2E adds job orchestration over
 
 ## Related
 
-- Stage decoupling MVP: [`../README.md`](../README.md#stage-decoupling-mvp)
+- Stage decoupling MVP: [`../../domains/microstock/reference-pipeline.md`](../../domains/microstock/reference-pipeline.md#stage-decoupling-mvp--dual-lane-pipeline)
 - Legacy TPS baseline (other folder): [`sonnet5_gpt56_codex_thinking_summary.md`](sonnet5_gpt56_codex_thinking_summary.md)

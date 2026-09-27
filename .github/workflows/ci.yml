@@ -26,6 +26,15 @@ name: CI
 # guards ran". The `backend` job reruns those locale tests as part of the whole suite;
 # the narrow job stays because its direct guard runs name the offending key and locale
 # in the job log, which an aggregated PHPUnit failure does not.
+#
+# The docs guard sits in the same position, for the same reason. The `backend` job
+# covers it through `DocsStructureGuardTest` (`--repo=backend`), which reaches every
+# doc, rule and root README in this repo. Links that leave this repo cannot be resolved
+# here, so both guards report them as `unverified` rather than broken, and
+# `scripts/docs-cross-repo-links.php` is the fail-closed check for a machine that has
+# both checkouts. The behaviour is still covered on the runner: `DocsCrossRepoLinkTest`
+# drives the same library against a two-repo fixture. Coverage table:
+# `docs/platform/reference-tooling.md` § the docs gates.
 
 on:
   push:

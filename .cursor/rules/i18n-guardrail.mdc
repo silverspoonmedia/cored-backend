@@ -1,6 +1,6 @@
 ---
 description: Any user-facing copy change — all locales, contextual, readable
-globs: lang/**,app/**,routes/**,database/seeders/**,resources/**,src/i18n/**,src/views/**,src/components/**,src/composables/**,src/**/*.vue,src/**/*.ts,docs/platform/localization.md,docs/platform/naming-conventions.md,docs/i18n.md
+globs: lang/**,app/**,routes/**,database/seeders/**,docs/platform/localization.md,docs/platform/naming-conventions.md
 alwaysApply: true
 ---
 
@@ -58,7 +58,7 @@ php scripts/locale-glossary-scan.php       # settled terms and banned variants
 php scripts/locale-pack-parity.php         # framework packs, both repos
 php scripts/locale-flat-pack-parity.php    # flat pack vs its PHP owners
 php artisan test --filter=Locale
-cd ../monolith-vue-workers && npm run check:i18n
+cd ../monolith-vue-workers; npm run check:i18n   # `;` not `&&` — PowerShell rejects `&&`
 ```
 
 Details: [localization.md](../../docs/platform/localization.md) + [naming-conventions.md](../../docs/platform/naming-conventions.md) (backend), [i18n.md](../../../monolith-vue-workers/docs/i18n.md) (SPA).

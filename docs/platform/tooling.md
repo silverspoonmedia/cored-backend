@@ -6,6 +6,7 @@ Developer tooling that is not a test: formatting, and the two-job GitHub Actions
 |------|------|
 | Pint usage | below |
 | CI job steps, why each one exists, expected skip/risky counts | [reference-tooling.md](reference-tooling.md) |
+| Which docs gates CI runs, and which need both checkouts | [reference-tooling.md — the docs gates](reference-tooling.md#the-docs-gates) |
 | Which defect class each `locale` job step covers | [reference-localization.md — CI coverage vs manual runs](reference-localization.md#ci-coverage-vs-manual-runs) |
 | PR & merge process, and the gap left for SPA-only pull requests | [reference-localization.md — PR & merge process](reference-localization.md#pr--merge-process) |
 | Localization gates the `locale` job runs | [localization.md](localization.md) |
@@ -36,7 +37,10 @@ php artisan test                 # whole backend suite — what the `backend` CI
 php artisan test --filter=Documentation
 php artisan test --filter=Locale
 php scripts/docs-guard.php
+php scripts/docs-cross-repo-links.php   # needs both checkouts; skipped links are reported, not failed
 ```
+
+The last four are the **docs** gates. Their normative statement, and the SPA half (`npm run check:docs`, `npm run check:i18n`), is owned by [.cursor/rules/docs-pakem.mdc](../../.cursor/rules/docs-pakem.mdc) — run them from there when a task touches documentation; this list is the operational copy for the whole backend. Which of them CI actually runs, and the cross-repo half it cannot, is in [reference-tooling.md — the docs gates](reference-tooling.md#the-docs-gates).
 
 Reproduce the `backend` job locally before pushing — same command, same in-memory database:
 

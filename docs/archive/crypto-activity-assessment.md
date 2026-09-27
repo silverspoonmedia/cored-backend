@@ -108,7 +108,7 @@ The value logged is the **OCID of the KMS master key** copied into envelope JSON
 
 ## Audit-trail PII (2026-09-15)
 
-`activity_log.properties` keys `ip_address`, `user_agent`, `email` are now envelope-encrypted at rest for **every** log name (`auth`, `user`, `crypto`, `archivd.workspace`). Write choke point `LogActivityAction::beforeLogging()` → `SensitiveActivityProperties::encryptInPlace()`; read choke point `SensitiveActivityPropertyPresenter::forApi()`. Non-PII keys stay plaintext so `properties->key` JSON queries keep working. Full detail: [activity-log](../domains/activity-log/README.md#pii-at-rest-envelope-encryption).
+`activity_log.properties` keys `ip_address`, `user_agent`, `email` are now envelope-encrypted at rest for **every** log name (`auth`, `user`, `crypto`, `archivd.workspace`). Write choke point `LogActivityAction::beforeLogging()` → `SensitiveActivityProperties::encryptInPlace()`; read choke point `SensitiveActivityPropertyPresenter::forApi()`. Non-PII keys stay plaintext so `properties->key` JSON queries keep working. Full detail: [activity-log](../domains/activity-log/reference.md#pii-at-rest-envelope-encryption).
 
 Consequences for the crypto trail:
 
@@ -133,7 +133,7 @@ Before enabling envelope encryption in production:
 6. Choose `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` vs KMS cost vs plaintext retention risk
 7. Choose `ENCRYPTION_AUDIT_DECRYPTS` (`cache_miss` vs `always`) for compliance needs
 8. Plan Redis key purge for incident response (`encryption:flush-decrypted-cache {context}` — bulk flush not implemented)
-9. Optional: enable `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS` temporarily to trace invoice payload decrypt sources — see [envelope-encryption.md](../platform/reference-envelope-encryption.md#invoice-payload-decrypt-tracing)
+9. Optional: enable `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS` temporarily to trace invoice payload decrypt sources — see [envelope-encryption.md](../platform/reference-envelope-encryption.md#env-encryption)
 
 ---
 
@@ -146,7 +146,7 @@ Before enabling envelope encryption in production:
 | No encrypt audit | Writes and `encryption:migrate-p0` do not create crypto log rows |
 | `decryptWithoutCache()` | Public, unaudited — only safe when called from audited paths |
 | Legacy pass-through | Non-envelope values may return as-is during migration |
-| P1 PII columns | Blind-index infrastructure only; column migrations deferred. **Audit-trail PII done:** `activity_log.properties` `ip_address` / `user_agent` / `email` are envelope-encrypted (2026-09-15) — [activity-log](../domains/activity-log/README.md#pii-at-rest-envelope-encryption) |
+| P1 PII columns | Blind-index infrastructure only; column migrations deferred. **Audit-trail PII done:** `activity_log.properties` `ip_address` / `user_agent` / `email` are envelope-encrypted (2026-09-15) — [activity-log](../domains/activity-log/reference.md#pii-at-rest-envelope-encryption) |
 
 ---
 

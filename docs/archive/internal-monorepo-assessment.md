@@ -176,7 +176,7 @@ Post-cleanup verification: `.\scripts\remove-empty-dirs.ps1 -WhatIf` reports **n
 
 Cleanup script: [`scripts/remove-empty-dirs.ps1`](../../scripts/remove-empty-dirs.ps1) (bottom-up delete, file-count guard).
 
-**Follow-up (same day):** the Phase 3 provider split and stray-test relocation (see [internal-monorepo-porting.md](./internal-monorepo-porting.md#remaining-follow-ups-optional)) left 14 more empty shells (`app/Exceptions/Auth`, `tests/Unit/Services/Auth`, `tests/Feature/Auth`, `tests/Feature/Views`, and nested `Http/Controllers/API/*` leaves under `tests/Feature` and `tests/Unit`). Removed the same way; `composer test` → **386 passed** after cleanup.
+**Follow-up (same day):** the Phase 3 provider split and stray-test relocation (see [internal-monorepo-porting.md](./internal-monorepo-porting.md#remaining-follow-ups)) left 14 more empty shells (`app/Exceptions/Auth`, `tests/Unit/Services/Auth`, `tests/Feature/Auth`, `tests/Feature/Views`, and nested `Http/Controllers/API/*` leaves under `tests/Feature` and `tests/Unit`). Removed the same way; `composer test` → **386 passed** after cleanup.
 
 **Out of scope:** `storage/framework/cache/data/*` (Laravel runtime cache, not porting debris).
 

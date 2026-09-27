@@ -11,7 +11,7 @@ Repeatable defensive audit for this Laravel app. Frequency: quarterly, major rel
 
 ### When running an audit
 
-1. Read the archived audit [`archive/security-audit-2026-06-16.md`](../archive/security-audit-2026-06-16.md) (history, open findings).
+1. Read the archived audit [`archive/security-audit-2026-06-16.md`](../archive/security-audit-2026-06-16.md) — the posture is a snapshot, but its **open findings are the current tracker** (see [archive/README.md](../archive/README.md) status column).
 2. Audit against OWASP A01–A10 (access control, misconfig, supply chain, crypto, injection, insecure design, auth failures, integrity, logging, SSRF — use current checklist in agent prompt).
 3. `composer audit`, `npm audit`, `php artisan route:list`.
 4. Mark findings NEW / RECURRING / STILL OPEN; patch CRITICAL/HIGH; update the archived audit file for the new date.

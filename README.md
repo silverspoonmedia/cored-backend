@@ -2,14 +2,14 @@
 
 Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; the global surface is health checks (`GET /api/ping`, `GET /whatsup`).
 
-It is the **API backend** for the sibling **Monolith-Vue-Workers** SPA ? the sole browser UI ? which consumes `/api/v1/*` cross-site with HttpOnly cookies and CSRF double-submit. Minimal server `web` routes remain for public share, payment return, and OAuth callbacks. Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,Archivd,Vtual,Microstock,...}/`.
+It is the **API backend** for the sibling **Monolith-Vue-Workers** SPA — the sole browser UI — which consumes `/api/v1/*` cross-site with HttpOnly cookies and CSRF double-submit. Minimal server `web` routes remain for public share, payment return, and OAuth callbacks. Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,Archivd,Vtual,Microstock,...}/`.
 
 ## Documentation
 
 | Need | Open |
 |------|------|
-| Agent pakem (always-on) | [AGENTS.md](AGENTS.md) ? the `.cursor/rules/*.mdc` file for the area |
-| Doc map, placement rules, brief template | [docs/README.md](docs/README.md) ? [.cursor/rules/docs-pakem.mdc](.cursor/rules/docs-pakem.mdc) |
+| Agent pakem (always-on) | [AGENTS.md](AGENTS.md) — the `.cursor/rules/*.mdc` file for the area |
+| Doc map, placement rules, brief template | [docs/README.md](docs/README.md) — [.cursor/rules/docs-pakem.mdc](.cursor/rules/docs-pakem.mdc) |
 | Task scope tags (`[fullstack]`/`[backend]`/`[frontend]`) | [.cursor/rules/task-scope.mdc](.cursor/rules/task-scope.mdc) |
 | API + SPA contract | [docs/integration/vue-workers-spa.md](docs/integration/vue-workers-spa.md) (open only when the contract moves) |
 | History, audits, progress trackers | [docs/archive/](docs/archive/) |
@@ -26,7 +26,7 @@ All documentation is written in **English**. Update the owning doc and rule file
 
 PHP 8.4, not 8.3: the locked `silverspoonmedia/pdf-tools` (dev-main) and `symfony/*` 8.1 require `^8.4`, so `composer install` refuses the lock file on 8.3. The same pin is in [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
-No Node.js toolchain is needed here ? this repo has no frontend stack or `package.json`. On **Laragon** (Windows), enable PHP 8.4+ and create a MySQL database named `monolith` (or adjust `DB_DATABASE`).
+No Node.js toolchain is needed here — this repo has no frontend stack or `package.json`. On **Laragon** (Windows), enable PHP 8.4+ and create a MySQL database named `monolith` (or adjust `DB_DATABASE`).
 
 **Windows shells:** chain commands with `;`, not `&&` (PowerShell rejects `&&` on the shipped versions). Example: `cd monolith; php artisan migrate; php artisan db:seed`.
 
@@ -39,14 +39,14 @@ php artisan db:seed         # roles, permissions, settings, menus, sample users
 
 Adjust at least `APP_URL` and `DB_*` in `.env`. Environment profiles, secrets vs `system_settings`, and the `curate the env` routine: [docs/platform/environment.md](docs/platform/environment.md) + [docs/platform/configuration-policy.md](docs/platform/configuration-policy.md).
 
-Seeded sample users: `admin@example.com` (Admin) ? `manager@example.com` (Management) ? `finance@example.com` (Moderator) ? `user@example.com` (User) ? password `123456789`.
+Seeded sample users: `admin@example.com` (Admin) — `manager@example.com` (Management) — `finance@example.com` (Moderator) — `user@example.com` (User) — password `123456789`.
 
 ```bash
 php artisan serve           # API only
 composer run dev            # HTTP server + queue worker + log tail
 ```
 
-`php artisan db:seed` replaces **all** menu rows (the authoritative `MenuSeeder`); never run it to patch one menu entry ? see [navigation README](docs/domains/navigation/README.md#authoritative-seeding).
+`php artisan db:seed` replaces **all** menu rows (the authoritative `MenuSeeder`); never run it to patch one menu entry — see [navigation README](docs/domains/navigation/README.md).
 
 ## Verify the install
 
@@ -56,7 +56,7 @@ composer run dev            # HTTP server + queue worker + log tail
 | Login | `POST /api/v1/auth/login` with `admin@example.com` / `123456789` |
 | Authenticated profile | `GET /api/v1/auth/me` |
 | Tests | `composer test` (preferred; clears config cache first) |
-| Code style | `php artisan pint` ? see [docs/platform/tooling.md](docs/platform/tooling.md) |
+| Code style | `php artisan pint` — see [docs/platform/tooling.md](docs/platform/tooling.md) |
 
 ## Security
 
@@ -82,7 +82,7 @@ php artisan pint                 # format PHP
 composer test                    # PHPUnit (sqlite in-memory)
 ```
 
-Never run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on a non-sqlite connection without `ALLOW_DESTRUCTIVE_DB=true` ? see [docs/platform/database-safety.md](docs/platform/database-safety.md).
+Never run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on a non-sqlite connection without `ALLOW_DESTRUCTIVE_DB=true` — see [docs/platform/database-safety.md](docs/platform/database-safety.md).
 
 ## License
 

@@ -50,6 +50,25 @@ Do not "fix" either by adding `--fail-on-risky` or by deleting the skip: the fir
 
 `DocsStructureGuardTest` adds a third non-passed count on the runner: it **skips**, because the docs guard spans both repos and the sibling is private. The test asserts the guard fails loudly in that case rather than reporting a false green, so the skip is visible in the summary instead of hiding behind a pass.
 
+## The docs gates
+
+`php artisan test` carries three documentation suites, and the docs guard is not a CI step of its own:
+
+| Gate | Runner | Needs the sibling |
+|---|---|---|
+| `php scripts/docs-guard.php` | `backend` job, through `DocsStructureGuardTest` | No — it runs `--repo=backend` when the sibling is absent |
+| `php artisan test --filter=Documentation` | `backend` job | No; `DocsCrossRepoLinkTest` and `DocsBudgetGuardTest` skip the sibling half |
+| `php scripts/docs-cross-repo-links.php` | **nothing** — developer machine only | Yes |
+
+The third row is the honest gap. Links that leave this repo (`../../../monolith-vue-workers/…`, `../../../../gateway/…`) cannot be resolved on the runner: both repos are private, so `GITHUB_TOKEN` cannot read the sibling, and an earlier attempt to check it out failed at the step before any test ran (see the `locale` job note above). The guard therefore treats an absent sibling as **unverifiable, not broken** — correct, but it means a green run proves nothing about those links.
+
+Two things narrow the gap without a credential:
+
+- `docs-cross-repo-links.php` is the fail-closed check for the present-sibling case. Run it locally, and after any change that moves a file the sibling links to.
+- Both guards print the skip on their OK line (`… N cross-repo link(s) unverified — sibling checkout absent`), so a green run cannot be misread as "every link was checked".
+
+The behaviour itself is covered on the runner: `DocsCrossRepoLinkTest` drives the same library against a throwaway two-repo fixture, asserting that an absent sibling is skipped, a missing target is reported, and a dead `#anchor` is reported. Closing the gap fully needs a fine-grained PAT scoped to read the sibling — deliberately not taken; the workflow carries no credentials by design.
+
 ## Job-level `env:`
 
 Job-level `env:` is what lets the install and test steps run with no database service:
