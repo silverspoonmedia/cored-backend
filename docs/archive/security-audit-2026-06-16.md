@@ -391,7 +391,7 @@ CSP (Content-Security-Policy) intentionally omitted to avoid breaking remaining 
 **OWASP Category:** A03:2025 - Software Supply Chain Failures  
 **Title:** pdf-tools Dependency Uses dev-main Branch  
 **Severity:** Medium  
-**Status:** Open  
+**Status:** Patched (2026-09-27)  
 
 **File/Route/Endpoint:**
 - `composer.json` lines 8-23
@@ -408,10 +408,16 @@ The `silverspoonmedia/pdf-tools` dependency uses a custom VCS repository with a 
 Package is not published to Packagist with proper version tagging.
 
 **Patch Applied:**
-NOT PATCHED — Coordination needed with the silverspoonmedia team to tag stable releases or pin to a commit hash.
+PATCHED 2026-09-27 — the constraint is pinned to a commit hash, so `composer update` can no longer move the branch underneath us:
+
+```json
+"silverspoonmedia/pdf-tools": "dev-main#9a199aecf5a28b87af51810246e4b1c4207d8862",
+```
+
+`9a199ae…` is the revision `composer.lock` had already resolved, so the pin changes the *constraint* only and installs the identical code. Requesting an upstream tag stays open as an upstream nicety, not as a security action — the commit pin is the mitigation.
 
 **Recommendation:**
-Pin to commit hash: `"silverspoonmedia/pdf-tools": "dev-main#abc123def456"`
+Superseded by the patch above. When `silverspoonmedia` tags a release, move to `^1.0` (or whatever they publish) and drop the hash pin.
 
 ---
 
@@ -785,10 +791,10 @@ N/A — Already secure.
 |----------|-------|--------|
 | **Critical** | 2 | 2 Patched (FINDING-001, FINDING-013) |
 | **High** | 2 | 2 Patched (FINDING-003, FINDING-004) |
-| **Medium** | 5 | 4 Patched (FINDING-005, FINDING-006, FINDING-019), 1 Open (FINDING-007) |
+| **Medium** | 5 | 5 Patched (FINDING-005, FINDING-006, FINDING-007, FINDING-019) |
 | **Low** | 2 | 2 Accepted Risk (FINDING-010, FINDING-011) |
 | **Info/Good** | 9 | All Clean |
-| **TOTAL** | 20 | 19 Resolved, 1 Open (requires external coordination) |
+| **TOTAL** | 20 | 20 Resolved |
 
 ### Patched Findings
 
@@ -809,12 +815,12 @@ N/A — Already secure.
 - ✅ **ALL HIGH FINDINGS PATCHED**
 
 #### Medium:
-1. **FINDING-007** — pdf-tools dependency pin (requires coordination with external maintainer — NOT FEASIBLE to patch internally)
+- ✅ **ALL MEDIUM FINDINGS PATCHED** (FINDING-007 pinned 2026-09-27)
 
 #### Low:
 - ✅ **ALL LOW FINDINGS ACCEPTED RISK**
 
-**Conclusion:** 19 of 20 findings have been resolved. Only 1 finding remains and requires external coordination.
+**Conclusion:** All 20 findings are resolved. The dependency-supply-chain finding that needed external coordination is mitigated by pinning the commit hash.
 
 ### Files Changed
 
@@ -858,7 +864,7 @@ rg "DB::raw|whereRaw|orderByRaw|selectRaw" --type php
 
 1. **Playground routes in non-production** — Demo CRUD surface remains available in local/staging; ensure `APP_ENV=production` in production deploys (guard verified by automated test)
 2. **Rate limiting needs distributed solution** — Single-server throttle is not effective against distributed attacks
-3. **Dependency pinning** — pdf-tools can change without notice
+3. **Dependency pinning** — RESOLVED 2026-09-27: pdf-tools is pinned to a commit hash (FINDING-007)
 4. **CSP not implemented** — Security headers middleware is active; Content-Security-Policy intentionally omitted to avoid breaking remaining CDN font/icon assets (Source Sans, Bootstrap Icons) and Vite hot reload
 5. **Auth logging is file-based** — Login/logout/failed-login events are logged locally; centralized logging and alerting recommended for production
 
@@ -872,7 +878,7 @@ rg "DB::raw|whereRaw|orderByRaw|selectRaw" --type php
 
 **Short Term (This Sprint):**
 5. ✅ Implement security headers middleware (FINDING-006)
-6. Pin pdf-tools dependency or request tagging (FINDING-007)
+6. ✅ Pin pdf-tools dependency or request tagging (FINDING-007) — done 2026-09-27
 7. ✅ Add login/logout/failed-login logging (FINDING-019)
 8. Add feature tests for authorization bypass scenarios
 
@@ -919,7 +925,7 @@ This audit does not guarantee the application is "100% secure." Security is an o
 **Breakdown:**
 - Critical: 2 (FINDING-001, FINDING-013) - both PATCHED
 - High: 2 (FINDING-003, FINDING-004) - both PATCHED  
-- Medium: 5 (FINDING-005, FINDING-006, FINDING-007, FINDING-019, others) - 4 PATCHED, 1 open
+- Medium: 5 (FINDING-005, FINDING-006, FINDING-007, FINDING-019, others) - all PATCHED
 - Low: 2 (FINDING-010, FINDING-011) - accepted risk
 - Info/Good: 9 - all clean
 
@@ -929,11 +935,12 @@ This audit does not guarantee the application is "100% secure." Security is an o
 3. Session security configuration documented (HIGH/MEDIUM)
 4. Security headers middleware implemented (MEDIUM)
 5. Auth event logging implemented (MEDIUM)
+6. pdf-tools pinned to a commit hash (MEDIUM, 2026-09-27)
 
-**Status:** 19/20 findings resolved (95% completion rate)
+**Status:** 20/20 findings resolved
 - All CRITICAL vulnerabilities patched
 - All HIGH vulnerabilities patched
-- 80% of MEDIUM vulnerabilities patched (1 requires external coordination)
+- All MEDIUM vulnerabilities patched
 - System production-ready with deployment checklist
 
 **Files Modified:** 12 files (routes, middleware, events, listeners, config, docs)
@@ -941,3 +948,27 @@ This audit does not guarantee the application is "100% secure." Security is an o
 **Next Audit:** Recommended Q3 2026 or after major feature releases
 
 **Notes:** First comprehensive security audit. Established baseline security posture. Created reusable audit procedure in `docs/platform/security.md`.
+
+---
+
+## Addendum — 2026-09-27 re-verification
+
+The audit is a snapshot; this section records what a re-run found, so the frozen narrative above is not mistaken for current state.
+
+### FINDING-007 closed
+
+`silverspoonmedia/pdf-tools` moved from `dev-main` to `dev-main#9a199aecf5a28b87af51810246e4b1c4207d8862` in [`composer.json`](../../composer.json). The hash is the revision `composer.lock` had already resolved, so the installed code is byte-identical and the constraint can no longer drift on `composer update`. See the finding above for the detail.
+
+### FINDING-008 no longer holds — transitive advisories found and fixed
+
+FINDING-008 recorded `composer audit` as clean. That was true on 2026-06-16 and **false by 2026-08-03**: the advisory database gained entries against three transitive dependencies. The re-run found **18 advisories across 3 packages**, all reachable through Laravel/`aws-sdk-php`/`pusher-php-server` rather than through first-party code:
+
+| Package | Was | Now | Advisories |
+|---|---|---|---|
+| `guzzlehttp/guzzle` | 7.12.1 | 7.15.5 | 7 (1 high: noncanonical host bypasses host-based checks; 6 medium: cookie scope/disclosure, Referer fragment leak, unbounded response cookies, `Proxy-Authorization` to origin) |
+| `guzzlehttp/psr7` | 2.12.1 | 2.13.1 | 1 medium |
+| `league/commonmark` | 2.8.2 | 2.10.3 | 10 (8 high: markdown parser denial-of-service class) |
+
+`guzzlehttp/promises` was bumped 2.5.0 → 2.5.3 as a required side effect (guzzle 7.15.x requires `^2.5.1`). After the update, `composer audit` reports **no security vulnerability advisories found**.
+
+**Lesson for the procedure:** "composer audit was clean at audit time" is a snapshot, not a standing property. A dated re-run belongs in the recurring audit step described in [platform/security.md](../../platform/security.md), and the `backend` CI job is where a regression would surface first.

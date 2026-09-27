@@ -11,9 +11,9 @@ Repeatable defensive audit for this Laravel app. Frequency: quarterly, major rel
 
 ### When running an audit
 
-1. Read the archived audit [`archive/security-audit-2026-06-16.md`](../archive/security-audit-2026-06-16.md) — the posture is a snapshot, but its **open findings are the current tracker** (see [archive/README.md](../archive/README.md) status column).
+1. Read the archived audit [`archive/security-audit-2026-06-16.md`](../archive/security-audit-2026-06-16.md) — the posture is a snapshot. All 20 findings are resolved (FINDING-007 pinned 2026-09-27), so there is **no open-findings tracker**; treat it as the baseline to compare against, and read its dated addendum for what a later re-run changed.
 2. Audit against OWASP A01–A10 (access control, misconfig, supply chain, crypto, injection, insecure design, auth failures, integrity, logging, SSRF — use current checklist in agent prompt).
-3. `composer audit`, `npm audit`, `php artisan route:list`.
+3. `composer audit`, `npm audit`, `php artisan route:list`. **Re-run `composer audit` on every pass even when the previous one was clean** — advisories are published against versions that were already installed (FINDING-008 was recorded clean on 2026-06-16 and 18 transitive advisories existed by 2026-08-03).
 4. Mark findings NEW / RECURRING / STILL OPEN; patch CRITICAL/HIGH; update the archived audit file for the new date.
 
 ### Agent prompt skeleton
@@ -30,6 +30,44 @@ php artisan route:list
 ```
 
 Full long-form prompt and history templates lived in the pre-reorg security procedure; keep results in a dated file under [archive/](../archive/).
+
+## Secret hygiene and rotation
+
+### A tracked env file is a leak, not a template
+
+`.env.example` and the `.env.{local,staging,production}.example` templates are the only env files that may be committed, and they must hold **empty or placeholder** values. Anything else is a leak the moment it is pushed: git history keeps it after the file is deleted, so untracking is not remediation on its own.
+
+`.gitignore` therefore uses a blanket pattern rather than an explicit list:
+
+```gitignore
+.env
+.env.*
+!.env.example
+!.env.local.example
+!.env.production.example
+!.env.staging.example
+```
+
+The explicit list it replaced (`.env`, `.env.backup`, `.env.profile`, `.env.local`, `.env.staging`, `.env.production`, `.env.*.local`) enumerated suffixes and missed `.env.pre-archivd-backup`, which was committed with a live `APP_KEY`, `PUSHER_APP_SECRET`, `HCAPTCHA_SECRET`, a real OCI KMS crypto endpoint and production webhook hosts. A new suffix must never be able to reintroduce that: the blanket pattern ignores every `.env*` at any depth and the `!` entries re-allow the templates only.
+
+### Rotation runbook
+
+Rotation is a **provider-first** procedure. Rotate at the provider, then update the active `.env`, then verify. Doing it in the other order leaves the app failing against a revoked credential while the leaked value is still valid.
+
+| Secret | Where it is rotated | Notes |
+|---|---|---|
+| `APP_KEY` | `php artisan key:generate --force` | Appends the retired key to `APP_PREVIOUS_KEYS` so existing ciphertext still decrypts (`config/app.php` `previous_keys`). Do not hand-edit the two lines — `EnvironmentKeyWriter` owns the anchor pair, and `KeyGenerateCommandTest` covers the rotation. |
+| `ENCRYPTION_BLIND_INDEX_PEPPER` | Manual | A changed pepper breaks every blind-index lookup; existing rows must be re-indexed, not just re-hashed. Treat as a migration, not a config edit. |
+| `PUSHER_APP_ID` / `_KEY` / `_SECRET` | Pusher dashboard | The SPA's `VITE_PUSHER_APP_KEY` must move in the same change or realtime goes silent. |
+| `HCAPTCHA_SECRET` / `HCAPTCHA_SITEKEY` | hCaptcha dashboard | The sitekey is public and lives in the SPA bundle; the secret is backend-only. |
+| `OCI_KMS_*` | OCI IAM | Rotate the credential, then `php artisan oci:kms-verify` (exit `3` = IAM, `1` = config, `2` = auth, `4` = network, `5` = other). |
+| Webhook credentials | Payment provider dashboards | `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` point at a host; the signing keys live in the provider dashboard. |
+
+After a rotation: `php artisan config:rebuild`, then `php artisan encryption:flush-decrypted-cache` when a key or secret that feeds decryption moved.
+
+### Why a tracked-file leak is closed by rotation, not by history rewriting
+
+Removing a file from the working tree does not remove it from git history, and rewriting history on a shared repository invalidates every existing clone, breaks open pull requests, and is not recoverable on the GitHub free plan. Rotating the leaked values is what makes the historical copy worthless — the committed string is then a dead credential. Treat the rewrite as unnecessary once rotation has happened, and record the incident rather than attempting surgery.
 
 ## Authentication activity coverage
 
