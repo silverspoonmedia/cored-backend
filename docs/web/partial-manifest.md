@@ -71,6 +71,6 @@ The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came 
 ## Related
 
 - [blade-admin.md](blade-admin.md) — what remains on the `web` stack after removal
-- [ui-patterns.md](ui-patterns.md) — **archived** UX patterns referencing these partials
+- [archive/ui-patterns-blade.md](../archive/ui-patterns-blade.md) — **archived** UX patterns referencing these partials
 - [domains/vtual/README.md](../domains/vtual/README.md) — live vTual SPA surfaces
 - [domains/archivd/README.md](../domains/archivd/README.md) — removed Blade island history

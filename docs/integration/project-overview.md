@@ -10,16 +10,10 @@ High-level summary of the two projects and their relationship. For the detailed 
 flowchart TB
     Browser["Browser"] --> Edge["Cloudflare Edge"]
     Edge --> Tunnel["Cloudflare Tunnel<br>outbound-only connector"]
-    subgraph Monolith["Monolith (Laravel 13)"]
-        API["REST API /api/v1/*<br>Business logic, RBAC, audit, JWT"]
-        Web["Web stack (server only)<br>share / payment / OAuth"]
-    end
-    Tunnel --> API
-    Tunnel --> Web
-    subgraph VueWorkers["Monolith-Vue-Workers (Vue 3 + CF Workers)"]
-        SPA["SPA<br>Static assets only<br>HttpOnly __Host-spa_jwt"]
-    end
-    SPA -->|"direct browser API: credentials + CSRF + public marker"| Edge
+    Tunnel --> API["Monolith API /api/v1/*<br>logic, RBAC, audit, JWT"]
+    Tunnel --> Web["Monolith web stack<br>share / payment / OAuth"]
+    SPA["SPA (CF Workers)<br>static assets, HttpOnly __Host-spa_jwt"]
+    SPA -->|"direct API: credentials + CSRF + marker"| Edge
     Browser --> Web
     Web -->|"redirect"| SPA
     API -->|"Pusher WS"| SPA
@@ -40,10 +34,7 @@ The SPA is an **API-consumer** — no business logic lives in the frontend. All 
 | Config | `.env` for secrets/infra, `system_settings` (plaintext) for operational knobs, envelope encryption for product-domain secrets |
 | i18n | Supported locales: [platform/localization.md](../platform/localization.md) |
 | Storage | MySQL/PostgreSQL, S3-compatible via Flysystem |
-
-### Web stack (server endpoints only)
-
-`routes/web.php` keeps redirects and provider callbacks — no Blade views, no JWT cookie bridge. See [web/blade-admin.md](../web/blade-admin.md).
+| Web stack | `routes/web.php` keeps redirects and provider callbacks only — no Blade views, no JWT cookie bridge ([web/blade-admin.md](../web/blade-admin.md)) |
 
 ## Monolith-Vue-Workers — SPA frontend (API-consumer)
 
@@ -52,34 +43,30 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | Aspect | Detail |
 |--------|--------|
 | Framework | Vue 3 + Vite 8 + TypeScript |
-| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Three Wrangler environments from one codebase: manual via `npm run deploy:production` → worker `monolith-spa-prod` (bakes `.env.production`), `npm run deploy:sandbox` → worker `monolith-spa-sandbox` (bakes `.env.sandbox`), `npm run deploy:staging` → worker `monolith-spa-staging` (bakes `.env.staging`), or automatic via GitHub Actions branch deploy (push `main` → production, `main-sandbox` → sandbox, `main-staging` → staging — `monolith-vue-workers/docs/deployment.md`). Each path pairs `vite build --mode <env>` with `wrangler deploy --env <env>`. Static SPA assets do not invoke the isolate; current Worker code does not proxy API or auth. **All API traffic goes direct from the browser through the API hostname and Cloudflare Tunnel** (cross-site cookie + CSRF nonce) and does not target this Worker route. Do not add API proxy logic — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
+| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Three Wrangler environments from one codebase: manual via `npm run deploy:production` → worker `monolith-spa-prod` (bakes `.env.production`), `npm run deploy:sandbox` → worker `monolith-spa-sandbox` (bakes `.env.sandbox`), `npm run deploy:staging` → worker `monolith-spa-staging` (bakes `.env.staging`), or automatic via GitHub Actions branch deploy (push `main` → production, `main-sandbox` → sandbox, `main-staging` → staging — `monolith-vue-workers/docs/deployment.md`). Each path pairs `vite build --mode <env>` with `wrangler deploy --env <env>`. Static SPA assets do not invoke the isolate; current Worker code does not proxy API or auth. **All API traffic goes direct from the browser through the API hostname and Cloudflare Tunnel** (cross-site cookie + CSRF nonce) and does not target this Worker route. Do not add API proxy logic — see [vue-workers-spa.md — Worker invocation vs static assets](reference-vue-workers-spa.md#worker-invocation-vs-static-assets). |
 | API | Same `/api/v1/*` endpoints — no business logic in SPA |
 | Auth | Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted). JS does not store the JWT; direct data calls use `credentials: 'include'` + double-submit `X-CSRF-Token`. Versioned API calls also carry public `X-SPA-Origin: 1`; `RequireSpaRequestHeader` rejects missing/invalid markers while `OPTIONS` and provider webhooks stay reachable. `RequireSpaOrigin` remains audit-only. Cloudflare Tunnel (external config) protects origin reachability; it does not prove that a request came from the official SPA. |
-| Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` + `throttle:broadcast`; path defined once in `App\Support\Broadcasting\BroadcastAuthEndpoint` (route file + `BroadcastConnection::socketClientConfig()`), SPA waits for the CSRF cookie-settle gate before authorizing — [security.md — invariant](../platform/security.md#broadcastingauth-invariant) |
-| Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), covering shell bootstrap, Archivd browse/workspace detail, navigation and notification edit, users, services, payments, inference, microstock, and vTual multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
+| Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` + `throttle:broadcast`; path defined once in `App\Support\Broadcasting\BroadcastAuthEndpoint` (route file + `BroadcastConnection::socketClientConfig()`), SPA waits for the CSRF cookie-settle gate before authorizing — [reference-security.md — invariant](../platform/reference-security.md#broadcastingauth-invariant) |
+| Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests) covers shell bootstrap and the multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min — [invocation budget controls](reference-vue-workers-spa.md#invocation-budget-controls) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |
-| i18n | `vue-i18n` JSON locales (locale list: [platform/localization.md](../platform/localization.md)); `npm run check:i18n`; SPA `zh-CN` maps to backend `zh_CN`; Arabic RTL — sibling `monolith-vue-workers/docs/i18n.md`; generic API errors use locale keys |
+| i18n | `vue-i18n` JSON locales (list: [platform/localization.md](../platform/localization.md)); `npm run check:i18n`; SPA `zh-CN` maps to backend `zh_CN`; Arabic RTL |
 | UI | AdminLTE 4 / Bootstrap 5 / jQuery / Select2 (ported from former Blade admin) |
-| Realtime | Laravel Echo + Pusher only — no polling fallback. Echo auto-reconnect is the recovery path; on reconnect the SPA fires a resync bus (re-pulls unread count + registered listings) |
+| Realtime | Laravel Echo + Pusher only — no polling fallback; on reconnect the SPA fires a resync bus (unread count + registered listings) |
 
 ### Auth model
 
 The SPA uses HttpOnly `__Host-spa_jwt`, minted by Laravel on the API origin (`SameSite=None; Secure`). All API requests go direct from the browser to Laravel. Direct requests authenticate via the cookie and pass a double-submit CSRF nonce on mutations. XSS cannot read the JWT; it can still session-ride.
 
-Multi-tab: the cookie is shared. `BroadcastChannel('monolith-auth')` only coordinates refresh so one tab calls `auth/refresh` (blacklist race) and broadcasts `logout` — messages do **not** carry the JWT. Hydrate is `GET auth/me`.
-
-Backend `AuthService::refreshFromToken` preserves the `remember` flag via the `rm` custom claim (`jwt.persistent_claims`) so a remember-me session does not silently downgrade on refresh.
+Multi-tab: the cookie is shared. `BroadcastChannel('monolith-auth')` only coordinates refresh so one tab calls `auth/refresh` (blacklist race) and broadcasts `logout` — messages do **not** carry the JWT. Hydrate is `GET auth/me`. Backend `AuthService::refreshFromToken` preserves the `remember` flag via the `rm` custom claim (`jwt.persistent_claims`) so a remember-me session does not silently downgrade on refresh.
 
 ### Realtime
 
 Two live-update patterns:
 
 - **Pattern A — Bell-driven listing reload:** `UserActivityNotificationReceived` on `App.Models.User.{id}` carries a `table_id`; the bell forwards it to `useListingReload` registry; registered listing views refetch. Active on `UsersView` (`users-table`), `InferenceModelCardsView` (`inference-model-cards-table`).
-- **Pattern B — Direct channel subscription:** domain-specific private channels via singleton composables — `useArchivdRealtime.ts` (9 events on `archivd.user.{userId}`, incl. `.file.stats.changed`, plus a 6-event `archivd.workspace.{id}` binding retargeted from `route.query.workspace_id`), `usePaymentRealtime.ts` (invoice status + routing catalog + `payments.admin` with 4 ref-counted streams), vTual claim via `useVtualClaimRealtime.ts`, vTual creator/credentials/management via `useVtualRealtime.ts`, AI connections via `useAiConnectionsRealtime.ts` (`ai.connections`).
+- **Pattern B — Direct channel subscription:** domain-specific private channels via singleton composables (`useArchivdRealtime.ts`, `usePaymentRealtime.ts`, `useVtualClaimRealtime.ts`, `useVtualRealtime.ts`, `useAiConnectionsRealtime.ts`).
 
-Channel lifecycle is not per-composable: every binding goes through `src/composables/echo/channelRegistry.ts` (`acquireChannel` / `createRealtimeChannel` / `createKeyedRealtimeChannel`), ref-counted per channel name, attach deferred until Echo exists. SPA-side detail: sibling [api-client.md — Channel lifecycle](../../../monolith-vue-workers/docs/api-client.md#channel-lifecycle-goes-through-the-registry); guard test `tests/echoConventions.test.ts`.
-
-See [vue-workers-spa.md — Realtime](vue-workers-spa.md#realtime) for full channel inventory.
+Channel lifecycle is not per-composable: every binding goes through `src/composables/echo/channelRegistry.ts`, ref-counted per channel name, attach deferred until Echo exists. Full channel inventory: [vue-workers-spa.md — Realtime](reference-vue-workers-spa.md#realtime).
 
 ## Navigation menus
 
@@ -89,7 +76,7 @@ Menu rows store **SPA Vue Router symbolic route names** (e.g. `dashboard`, `user
 
 | Variable | Monolith | Vue-Workers |
 |----------|----------|-------------|
-| `SPA_URL` | Redirect target for `/`, share links, payment return, OAuth callback — minting matrix: [vue-workers-spa — Production URL minting](vue-workers-spa.md#production-url-minting-spa_url) | SPA origin |
+| `SPA_URL` | Redirect target for `/`, share links, payment return, OAuth callback — minting matrix: [vue-workers-spa — Production URL minting](reference-vue-workers-spa.md#production-url-minting-spa_url) | SPA origin |
 | `APP_URL` | API origin (JWT cookie domain) | `VITE_API_BASE_URL` target |
 
 See [vue-workers-spa.md](vue-workers-spa.md) for the full contract.

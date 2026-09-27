@@ -6,7 +6,7 @@ Session handoff guide for the **logical monorepo** migration inside Project Mono
 
 - [internal-monorepo-assessment.md](./internal-monorepo-assessment.md) — why, domain map, phases, deferrals
 - [domain-modules.md](../platform/architecture.md) — conventions and how to add a domain
-- [ai-agent-guide.md](../agents/core-rules.md) — agent workflow and downstream sync sessions
+- [ai-agent-guide.md](../../AGENTS.md) — agent workflow and downstream sync sessions
 
 ---
 
@@ -106,7 +106,7 @@ Domain controllers **extend** kernel base classes and **import** kernel concerns
 
 ## Bootstrap changes
 
-[`bootstrap/app.php`](../bootstrap/app.php):
+[`bootstrap/app.php`](../../bootstrap/app.php):
 
 ```php
 ->withEvents(discover: [
@@ -158,7 +158,7 @@ routes/web/notification.php
 
 ## Test migration
 
-[`phpunit.xml`](../phpunit.xml) defines three suites:
+[`phpunit.xml`](../../phpunit.xml) defines three suites:
 
 | Suite | Path |
 |-------|------|
@@ -176,8 +176,8 @@ One-shot porting scripts (`migrate-domain-*`, `fix-domain-*`, `scripts/domains/*
 
 | Script | Purpose |
 |--------|---------|
-| [`scripts/remove-empty-dirs.ps1`](../scripts/remove-empty-dirs.ps1) | Optional empty-dir cleanup (`-WhatIf`) |
-| [`scripts/test-workspace.ps1`](../scripts/test-workspace.ps1) | Run Monolith + Gateway + Frontend tests |
+| [`scripts/remove-empty-dirs.ps1`](../../scripts/remove-empty-dirs.ps1) | Optional empty-dir cleanup (`-WhatIf`) |
+| `scripts/test-workspace.ps1` | Run Monolith + Gateway + Frontend tests — **deleted** with the three-repo workspace |
 
 **Day-2 domain management** (add/remove modules): see [domain-modules.md](../platform/architecture.md) — `php artisan domain:list|make|remove`.
 
@@ -226,7 +226,7 @@ composer dump-autoload                           # required after moving/renamin
 composer test                                    # run for current pass count (historical snapshots: 392–395+ in 2026-07-10 assessment)
 php artisan domain:list                          # kind core|product + removal never|locked|removable (see platform/architecture.md)
 .\scripts\remove-empty-dirs.ps1 -WhatIf          # expect: no empty dirs in scope
-.\scripts\test-workspace.ps1                     # Monolith + Gateway + Frontend
+# .\scripts\test-workspace.ps1                   # deleted with the three-repo workspace
 php artisan route:list --path=api/v1/approvals   # confirm approval routes
 ```
 

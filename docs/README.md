@@ -1,119 +1,95 @@
 # Documentation index — Monolith
 
-Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **platform**, **web**, and **integration** buckets. Do **not** add new subject files at `docs/*.md` root — put content under the correct folder.
+Two surfaces, one owner per topic (see [.cursor/rules/docs-pakem.mdc](../.cursor/rules/docs-pakem.mdc)):
 
-**Language:** English only.
+- **Human briefs** live here in `docs/` — one paragraph of orientation plus a pointer table.
+- **Agent pakem** lives in [`.cursor/rules/*.mdc`](../.cursor/rules/) — imperative rules, glob-scoped, self-sufficient. [`AGENTS.md`](../AGENTS.md) is the always-on map.
+
+Every living brief is listed in this index; narrative, audits and progress trackers belong in [archive/](archive/). **Language: English only.**
 
 ## Start here
 
 | Need | Open |
 |------|------|
-| Agent scope | [agents/core-rules.md](agents/core-rules.md) · root [AGENTS.md](../AGENTS.md) · [agents/context-budget.md](agents/context-budget.md) |
+| Agent pakem map | [AGENTS.md](../AGENTS.md) · rules in [.cursor/rules/](../.cursor/rules/) |
 | IDE workspace | [Monolith-Backend.code-workspace](../Monolith-Backend.code-workspace) · sibling `Monolith-SPA.code-workspace` · [Monolith-Fullstack.code-workspace](../Monolith-Fullstack.code-workspace) for contract work |
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
-| Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [configuration-policy.md](platform/configuration-policy.md) |
-| Blade admin (removed — SPA is sole UI) | [web/blade-admin.md](web/blade-admin.md) |
+| Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [platform/configuration-policy.md](platform/configuration-policy.md) |
 | Project overview (Monolith + Vue-Workers) | [integration/project-overview.md](integration/project-overview.md) |
-| SPA frontend (Vue-Workers; separate project) | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) |
-| Auth URI layout | Authenticated SPA under **`/apps/*`** (Vue Router names unprefixed); guest/public at site root; API `/api/v1/*` unchanged — [vue-workers-spa — `/apps` shell](integration/vue-workers-spa.md) · [architecture — Routes](platform/architecture.md#routes) |
+| SPA frontend contract | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) (contract changes only) |
+| Auth URI layout | Authenticated SPA under **`/apps/*`** (Vue Router names unprefixed); guest/public at site root; API `/api/v1/*` unchanged — [architecture — Routes](platform/reference-architecture.md#routes) |
 
 ## Platform (kernel / cross-cutting)
+
+[platform/README.md](platform/README.md) is the sub-index for this tree.
 
 | Document | Topic |
 |----------|-------|
 | [architecture.md](platform/architecture.md) | Logical monorepo, kind core\|product + locked lifecycle, routes, namespaces |
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
-| [api-envelope.md](platform/api-envelope.md) | Canonical JSON envelope (`status`/`message`/`data`), error mapping (401/403/404/419/422/429), `/batch` partial-failure contract |
-| [commands.md](platform/commands.md) | Artisan command index (env, domains, payments, vtual, microstock, ai, cache, i18n) |
+| [api-envelope.md](platform/api-envelope.md) | Canonical JSON envelope, error mapping, `/batch` partial-failure contract |
+| [commands.md](platform/commands.md) | Artisan command index |
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
-| [list-display-modes.md](platform/list-display-modes.md) | `display_mode=query` list contract, query-mode `actions[]` (live SPA row buttons), `/api/v1/lookups/*` |
+| [list-display-modes.md](platform/list-display-modes.md) | `display_mode=query` list contract, `actions[]`, `/api/v1/lookups/*` |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
-| [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache, PHP 8.4 requirement |
-| [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract, agent checklist |
-| [cache-policy.md](platform/cache-policy.md) | Project-wide forever Cache + invalidate; driver-agnostic; exceptions |
-| [api-aggregation.md](platform/api-aggregation.md) | Aggregation rules: standalone-first, SPA-only, backend fan-in via `/batch`; gate condition |
+| [environment.md](platform/environment.md) | `.env` profiles, typed quoting, `env:curate`, PHP 8.4 requirement |
+| [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract |
+| [cache-policy.md](platform/cache-policy.md) | Forever cache + explicit invalidation; key inventory |
+| [api-aggregation.md](platform/api-aggregation.md) | Aggregation rules: standalone-first, backend fan-in via `/batch` |
 | [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
-| [localization.md](platform/localization.md) | Backend multi-locale rules (canonical supported-locale list, parity, locale resolution), `curated at` flag convention, curation tooling, CI vs manual guard coverage, ICU digit caveat, coverage status per locale; SPA guard: `monolith-vue-workers/npm run check:i18n` |
-| [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
+| [localization.md](platform/localization.md) | Locale list, resolution order, parity guards, curation tooling |
+| [naming-conventions.md](platform/naming-conventions.md) | Settled translation terms per locale + drift logs (glossary) |
+| [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, migration portability, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
-| [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization**, CORS perimeter incl. the `broadcasting/auth` invariant |
-| [tooling.md](platform/tooling.md) | Laravel Pint wrapper; CI workflow (job, runner PHP 8.4 pin, sqlite `:memory:` env, why the four cross-repo guards are not gated) |
+| [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, response minimization, CORS perimeter |
+| [envelope-encryption.md](platform/envelope-encryption.md) | Tiered crypto, OCI KMS, decrypt cache, P0 columns |
+| [tooling.md](platform/tooling.md) | Pint usage, gate list |
+
+**Platform deep dives:** [reference-architecture.md](platform/reference-architecture.md) · [reference-api-routing.md](platform/reference-api-routing.md) · [reference-commands.md](platform/reference-commands.md) · [reference-crud.md](platform/reference-crud.md) · [reference-environment.md](platform/reference-environment.md) · [reference-configuration-policy.md](platform/reference-configuration-policy.md) · [reference-settings.md](platform/reference-settings.md) · [reference-security.md](platform/reference-security.md) · [reference-localization.md](platform/reference-localization.md) · [reference-envelope-encryption.md](platform/reference-envelope-encryption.md) · [reference-tooling.md](platform/reference-tooling.md)
 
 ## Domains (`app/Domain/*`)
 
-| Domain | Document |
-|--------|----------|
-| Identity | [domains/identity/README.md](domains/identity/README.md) — JWT, 2FA, H-RBAC, users |
-| Navigation | [domains/navigation/README.md](domains/navigation/README.md) — menu tree |
-| Notification | [domains/notification/README.md](domains/notification/README.md) — bell, role vs user |
-| ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail; filterable log names `user`, `menu`, `auth`, `vtual` (the vTual management trail); PII (`ip_address` / `user_agent` / `email`) envelope-encrypted at rest |
-| ErrorLog | [domains/error-log/README.md](domains/error-log/README.md) — grouped persistent app errors |
-| PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) · routing policy [Routing_Rules.md](domains/payment-gateway/Routing_Rules.md) + [Routing_Price.yaml](domains/payment-gateway/Routing_Price.yaml) |
-| Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, Archivd grace/purge (core domain) |
-| Blog | [domains/blog/README.md](domains/blog/README.md) — posts, categories, tags, WYSIWYG media (core domain) |
-| Inference | [domains/inference/README.md](domains/inference/README.md) — AI model catalog, provider model rates, per-usage rate snapshots (core domain) |
-| Ai | [domains/ai/README.md](domains/ai/README.md) — central AI transport: `ai_connections` (Tier C endpoint + key), Test gate, slug binding per consumer, legacy env import (core domain) |
-| Archivd | [domains/archivd/README.md](domains/archivd/README.md) — nested folders, multi-disk S3, Gateway hybrid upload (25 MB parts, `gateway.silverspoon.me`), paid link share, collab workspaces, live listing via SPA (product, locked) |
-| vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator (product, locked); public SPA `/vtual` + `/vtual/vtubers/{slug}` + `/vtual/managements/{slug}`; authenticated SPA screens: orphans + platform-credentials + profiles manage + claims hub + events + managements + vtuber hub + read profile; naming [naming-conventions.md](domains/vtual/naming-conventions.md); progress [implementation-status.md](domains/vtual/implementation-status.md) (actionable engineering backlog **closed 2026-09-25** — remaining rows are deferred technical follow-ups or product-blocked decisions, each with a named next step or blocker); ops [archive/vtual-youtube-stability-assessment-2026-08-07.md](archive/vtual-youtube-stability-assessment-2026-08-07.md); legacy audit [archive/vtual-legacy-audit.md](archive/vtual-legacy-audit.md) |
-| Microstock | [domains/microstock/README.md](domains/microstock/README.md) — microstock asset mgmt on Archivd system workspace: AI metadata, prepaid AI billing + usage/balance UI (ledger, usage detail, admin platform tab), CSV export, encrypted marketplace creds (product, locked) |
-| Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — kernel runtime-access registry for product domains |
-| Domain Access | [domains/domain-access/README.md](domains/domain-access/README.md) — kernel Public/Private visibility gate + Beta tester roles for product domains |
+| Domain | Brief |
+|--------|-------|
+| Identity | [domains/identity/README.md](domains/identity/README.md) — JWT, 2FA, H-RBAC, users; deep dive [reference.md](domains/identity/reference.md) |
+| Navigation | [domains/navigation/README.md](domains/navigation/README.md) — menu tree, visibility, cache; deep dive [reference.md](domains/navigation/reference.md) |
+| Notification | [domains/notification/README.md](domains/notification/README.md) — bell, role vs user; deep dive [reference.md](domains/notification/reference.md) |
+| ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail, `vtual` log, PII envelopes; deep dive [reference.md](domains/activity-log/reference.md) |
+| ErrorLog | [domains/error-log/README.md](domains/error-log/README.md) — grouped persistent app errors; deep dive [reference.md](domains/error-log/reference.md) |
+| PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) — Midtrans/iPaymu, invoices, channels; deep dive [reference.md](domains/payment-gateway/reference.md) · credentials [platform/envelope-encryption.md](platform/envelope-encryption.md) |
+| Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, FX→IDR, Archivd grace/purge; deep dive [reference.md](domains/service/reference.md) |
+| Blog | [domains/blog/README.md](domains/blog/README.md) — posts, categories, tags, media |
+| Inference | [domains/inference/README.md](domains/inference/README.md) — model catalog, provider rates, rate snapshots; deep dive [reference.md](domains/inference/reference.md) |
+| Ai | [domains/ai/README.md](domains/ai/README.md) — central AI transport, connections, slug binding; deep dive [reference.md](domains/ai/reference.md) |
+| Archivd | [domains/archivd/README.md](domains/archivd/README.md) — nested folders, multi-disk S3, Gateway upload, paid share, workspaces; deep dive [reference.md](domains/archivd/reference.md) · [reference-upload.md](domains/archivd/reference-upload.md) · [reference-realtime.md](domains/archivd/reference-realtime.md) |
+| vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator; deep dive [reference.md](domains/vtual/reference.md) · [reference-api.md](domains/vtual/reference-api.md) · [reference-ingestion.md](domains/vtual/reference-ingestion.md) · [reference-classification.md](domains/vtual/reference-classification.md); naming [naming-conventions.md](domains/vtual/naming-conventions.md); progress [implementation-status.md](domains/vtual/implementation-status.md); removed Blade UI [ui-archive.md](domains/vtual/ui-archive.md) |
+| Microstock | [domains/microstock/README.md](domains/microstock/README.md) — AI metadata on an Archivd system workspace; deep dive [reference.md](domains/microstock/reference.md) · [reference-pipeline.md](domains/microstock/reference-pipeline.md) · [reference-api.md](domains/microstock/reference-api.md); [daily-free-trial.md](domains/microstock/daily-free-trial.md) · [billing-edge-cases.md](domains/microstock/billing-edge-cases.md) |
+| Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — runtime-access registry; deep dive [reference.md](domains/product-activations/reference.md) |
+| Domain Access | [domains/domain-access/README.md](domains/domain-access/README.md) — Public/Private gate + Beta roles |
 
 ## Web surface (archived Blade)
 
-The browser UI lives in the sibling SPA. These three are kept for history only — the live list/lookup contract is [platform/list-display-modes.md](platform/list-display-modes.md).
+The browser UI lives in the sibling SPA. These are historical only; the live list/lookup contract is [platform/list-display-modes.md](platform/list-display-modes.md).
 
 | Document | Topic |
 |----------|-------|
-| [blade-admin.md](web/blade-admin.md) | Blade removal stub — what remains on the `web` stack |
-| [partial-manifest.md](web/partial-manifest.md) | Archived Blade partial inventory |
-| [ui-patterns.md](web/ui-patterns.md) | Archived Blade UI patterns — do not recreate; port to the SPA |
+| [web/blade-admin.md](web/blade-admin.md) | Blade removal stub — what remains on the `web` stack |
+| [web/partial-manifest.md](web/partial-manifest.md) | Archived Blade partial inventory |
 
 ## Integration
 
 | Document | Topic |
 |----------|-------|
-| [project-overview.md](integration/project-overview.md) | Monolith (API-first backend + server web endpoints) and Monolith-Vue-Workers (sole SPA frontend, separate project) — architecture and relationship |
-| [vue-workers-spa.md](integration/vue-workers-spa.md) | Leading Vue 3 SPA frontend (Cloudflare Workers, sibling repo) — API contracts, `SPA_URL` minting, type alignment, i18n runtime/fallbacks, batch hydration, realtime (channel registry + `broadcasting/auth` endpoint SoT), CI, production checklist |
+| [project-overview.md](integration/project-overview.md) | Monolith and Monolith-Vue-Workers — architecture and relationship |
+| [vue-workers-spa.md](integration/vue-workers-spa.md) | SPA contract: API shapes, `SPA_URL` minting, i18n runtime, batch hydration, realtime registry, CI; deep dive [reference-vue-workers-spa.md](integration/reference-vue-workers-spa.md) |
+| [client-subtree.md](integration/client-subtree.md) | Consuming this repo as a `core/` git subtree in a client project |
 
 ## Archive (not daily reading)
 
-Historical assessments and one-shot audits: [archive/](archive/) — includes [archive/microstock-probes/](archive/microstock-probes/) (AI probe summaries) and archived vTual assessments. Prefer living docs above. Archive files may mention a former three-repo workflow; that model is dissolved — use living guides for current behavior.
+[archive/](archive/) holds historical assessments, one-shot audits, the original bootstrap brief ([bootstrap-task-2026-08.md](archive/bootstrap-task-2026-08.md)), the [security audit](archive/security-audit-2026-06-16.md), the [archived Blade UI patterns](archive/ui-patterns-blade.md), the [SPA consumer decision findings](archive/spa-consumer-decision-findings.md), and [microstock probe summaries](archive/microstock-probes/). Archive files may mention a former three-repo workflow; that model is dissolved.
 
-## Rules for new documentation (mandatory)
+## Writing docs
 
-**Never create a new subject file at `docs/*.md` root** (except this index). Every new guide belongs in a **bucket** below. Prefer **editing an existing domain/platform file** over inventing a parallel subject.
+Read [.cursor/rules/docs-pakem.mdc](../.cursor/rules/docs-pakem.mdc) first — it owns the brief template, size budgets, placement table and anti-patterns. Prefer editing an existing brief over adding a file; never add a subject file at `docs/*.md` root and never recreate `docs/agents/`.
 
-### Where to put new content
-
-| If the topic is… | Put it here | File pattern |
-|------------------|-------------|--------------|
-| A business domain under `app/Domain/{Name}/` | `docs/domains/{kebab-name}/` | Prefer `README.md`; split only when a subtopic is large (e.g. `encryption.md`) |
-| Kernel / cross-cutting (routes, CRUD pattern, UUID, env, i18n, DB safety, Octane, security process, tooling) | `docs/platform/` | One concern per file; extend existing when possible |
-| Blade admin only (removed — historical reference) | `docs/web/` | e.g. `blade-admin.md` stub, archived `partial-manifest.md` |
-| External clients / third-party integration wiring | `docs/integration/` | Prefer one concern per file; only when not domain-owned |
-| Agent scope | `docs/agents/` | `core-rules.md` + [context-budget.md](agents/context-budget.md); further agent ops pages only when justified |
-| One-shot assessment, migration narrative, audit snapshot, design dump | `docs/archive/` | Not linked from daily learning paths except as “historical” |
-
-### Decision checklist (before writing a new file)
-
-1. **Does a living guide already own this?** → Edit that file (section + anchor). Do not add `docs/foo-bar.md`.
-2. **Is it domain-owned business behavior?** → `docs/domains/{domain}/README.md` (or a sibling under that folder).
-3. **Is it shared kernel / convention?** → `docs/platform/`.
-4. **Is it Blade UX plumbing, not domain rules?** → `docs/web/`.
-5. **Is it external client / third-party integration?** → `docs/integration/`.
-6. **Is it historical only?** → `docs/archive/` (do not bloat living guides).
-7. **New `app/Domain/*` module?** → Add `docs/domains/{name}/README.md` and a row in **this index** in the same task.
-8. **Language:** English only. Keep living guides **compact**; long design notes go to archive.
-
-### Anti-patterns (reject these)
-
-| Anti-pattern | Why |
-|--------------|-----|
-| New `docs/some-feature.md` at root | Subject sprawl — breaks domain learning path |
-| Third parallel guide for the same topic | Horizontal duplication (notifications ×3 was the anti-pattern) |
-| Mixing current product surface with gap analysis / dual-status dumps | Living docs go stale; archive the dump |
-| Changing behavior without updating the matching living guide | Code and docs drift |
-| Skipping this index after adding a domain folder | Agents and humans lose the map |
-
-Full-stack, localization, Octane, and database-safety task rules still apply — see root [README.md](../README.md).
+Domain brief → `docs/domains/{kebab}/README.md`; kernel → `docs/platform/`; external wiring → `docs/integration/`; historical → `docs/archive/`. Add the new file to this index in the same task, then run `php scripts/docs-guard.php`.

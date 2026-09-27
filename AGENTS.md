@@ -1,28 +1,53 @@
 # AI Agents — Monolith
 
-**Role:** Laravel 13 backend — domain logic, database, JWT/RBAC, versioned API (`/api/v1/*`), and minimal server-side `web` routes (OAuth callbacks, payment return, public share). The **sole browser UI** is the sibling `monolith-vue-workers` SPA. The `[frontend]` scope tag here means SPA-facing API/resources/URLs (`SpaPublicUrl`, menu route names), not Blade views.
+**Role:** Laravel 13 backend — domain logic, database, JWT/RBAC, versioned API (`/api/v1/*`), and minimal server-side `web` routes (OAuth callbacks, payment return, public share). The **sole browser UI** is the sibling `monolith-vue-workers` SPA. The `[frontend]` scope tag here means SPA-facing API/resources/URLs, not Blade views.
 
 ## Workspace split
 
-This IDE workspace may load any subset of:
+- This repo is the only backend; `monolith-vue-workers` is the only frontend; `gateway` is shared CF Workers infra (own `AGENTS.md`).
+- Open **one side by default**: [Monolith-Backend.code-workspace](Monolith-Backend.code-workspace) or the sibling SPA workspace. [Monolith-Fullstack.code-workspace](Monolith-Fullstack.code-workspace) only when the API↔SPA contract moves.
+- Never create Blade views here. Integration summary: [docs/integration/project-overview.md](docs/integration/project-overview.md); contract: [docs/integration/vue-workers-spa.md](docs/integration/vue-workers-spa.md) (open only when endpoints, headers, cookies/CSRF, envelopes, or route names change).
 
-- `c:\laragon\www\monolith\` — this repo (backend)
-- `c:\laragon\www\monolith-vue-workers\` — SPA frontend
-- `c:\laragon\www\gateway\` — Silverspoon Gateway (own `AGENTS.md`)
+## Protocol
 
-Open **one side by default**. Workspace files: [Monolith-Backend.code-workspace](Monolith-Backend.code-workspace) (this repo), sibling [Monolith-SPA.code-workspace](../monolith-vue-workers/Monolith-SPA.code-workspace), [Monolith-Fullstack.code-workspace](Monolith-Fullstack.code-workspace) only when the API↔SPA contract moves. Scope work to loaded projects only.
+1. **Assess before changing** — open the owning rule for the area you touch (table below) and the file's nearest test. No blind edits.
+2. **Update docs and rules with every task** — the owning brief in `docs/` and the rule file when an invariant moved. `wrap up the docs` = session-wide consolidation of code ↔ docs ↔ rules across both repos.
+3. **Respect scope and context** — tag the task `[fullstack]`/`[backend]`/`[frontend]`, and follow the context budget. User-facing copy follows the always-on i18n guardrail.
 
-- **This repo** is the only backend. **monolith-vue-workers** is the only frontend. **Gateway** is shared CF Workers infra.
-- This repo has no frontend stack. Never create Blade views here.
-- Integration: [project-overview.md](docs/integration/project-overview.md) (summary) + [vue-workers-spa.md](docs/integration/vue-workers-spa.md) (contract). Open the contract doc **only** when endpoints, headers, cookies/CSRF, envelopes, or route names change.
+## Rule map (all `.cursor/rules/*.mdc`)
 
-## Agent protocol
+| Rule | Fires when |
+|------|-----------|
+| `docs-pakem.mdc` *(always-on)* | Writing or moving any doc, brief, or rule file |
+| `task-scope.mdc` *(always-on)* | Deciding which layers a task must touch |
+| `context-budget.mdc` *(always-on)* | Choosing a workspace / what to open |
+| `i18n-guardrail.mdc` *(always-on)* | Adding or editing user-facing copy |
+| `architecture.mdc` | `app/Domain/**`, `config/domains.php` — domain kind/lifecycle, namespaces, dependency direction |
+| `api-routing.mdc` | `routes/api/**`, `bootstrap/app.php` — global vs versioned layer, `v{N}` loader, route names |
+| `api-resources.mdc` | `app/**/Http/**`, `routes/api/**` — envelope + response minimization |
+| `crud.mdc` | `app/Repositories/**`, `**/Http/Controllers/**`, `**/Http/Requests/**` — shared repository, FormRequest DRY |
+| `envelope-encryption.mdc` | `app/Support/Encryption/**`, `app/Support/Oci/**`, `config/encryption.php` — Tier C crypto |
+| `i18n-lang.mdc` | Touching `lang/**`, a translated string, or the locale guards |
+| `environment.mdc` | `.env`, `config/*.php`, settings tiers, `curate the env` |
+| `settings.mdc` | `app/Support/Settings/**`, `config/settings*.php`, `*SettingsSeeder.php` — snapshot chain, permissions, labels |
+| `security.mdc` | `config/cors.php`, `bootstrap/app.php`, `app/Http/Middleware/**`, `app/Support/Security/**` — perimeter + audit procedure |
+| `database-safety.mdc` | `database/**`, `tests/**`, `phpunit.xml`, destructive commands |
+| `octane.mdc` | Any file under `app/**` (long-lived worker safety) |
+| `cache-policy.mdc` | `app/Domain/**`, `app/Support/**` — cache lifetime and invalidation |
+| `navigation-menus.mdc` | Menu seeder, tree, visibility gates, navigation cache |
+| `blog.mdc` | `app/Domain/Blog/**`, blog routes/config — HTMLPurifier whitelist, slug, media disk |
+| `identity.mdc` | `app/Domain/Identity/**`, auth/JWT/RBAC config |
+| `notification.mdc` | `app/Domain/Notification/**`, bell config/seeder |
+| `domain-access.mdc` | `app/Support/DomainAccess/**`, Domain Access routes/config |
+| `activity-log.mdc` | `app/Domain/ActivityLog/**`, audit trail config/API |
+| `error-log.mdc` | `app/Domain/ErrorLog/**`, error-log config/API |
+| `inference.mdc` | `app/Domain/Inference/**`, catalog seeder, rate config |
+| `ai.mdc` | `app/Domain/Ai/**`, AI connection config/seeder |
+| `service.mdc` | `app/Domain/Service/**`, catalog seeder, FX/service config |
+| `product-activations.mdc` | `app/Support/Product/**`, product registry config |
+| `payment-gateway.mdc` | `app/Domain/PaymentGateway/**`, payment config/routing |
+| `vtual.mdc` / `vtual-content.mdc` | `app/Domain/Vtual/**`, `routes/api/v1/vtual*.php` |
+| `archivd.mdc` | `app/Domain/Archivd/**`, Archivd routes/config |
+| `microstock.mdc` | `app/Domain/Microstock/**`, microstock routes/config |
 
-Rules 1–9 in [core-rules.md](docs/agents/core-rules.md) apply. Open that file and the owning platform/domain guide **only when the matching rule is in play** — do not re-read them on every task. Context budget: [docs/agents/context-budget.md](docs/agents/context-budget.md).
-
-1. **Assess before changing.** Read the guide for the area you are touching. No blind edits. Prefer `[backend]` or `[frontend]` unless the contract actually moves ([core-rules.md](docs/agents/core-rules.md) rule 1).
-2. **Update docs with every task.** Same-task living docs. Keyword `wrap up the docs` = session-wide consolidation. Localization + SPA contract: [localization.md](docs/platform/localization.md) and [vue-workers-spa.md](docs/integration/vue-workers-spa.md), plus the SPA README when its workflow changes.
-3. **`curate the env`.** `php artisan env:curate --dry-run`, then `php artisan env:curate` (`--sync-snapshot` when needed). Never hand-edit `.env` layout. [environment.md](docs/platform/environment.md).
-4. **Load on demand** (not always-on essays): menus / `MenuSeeder` → [navigation README](docs/domains/navigation/README.md); config & secrets → [configuration-policy.md](docs/platform/configuration-policy.md); domain cache → [cache-policy.md](docs/platform/cache-policy.md); local settings seed → [configuration-policy.md](docs/platform/configuration-policy.md#local-profile-overrides); user-facing copy → [localization.md](docs/platform/localization.md) (patch keys; never dump locale files) plus the always-on [.cursor/rules/i18n-guardrail.mdc](.cursor/rules/i18n-guardrail.mdc) — all locales, contextual, readable, then `php artisan test --filter=Locale`.
-
-**Doc map:** [docs/README.md](docs/README.md). Backend work stays here; SPA work stays in the sibling.
+Doc map: [docs/README.md](docs/README.md). History and audits: [docs/archive/](docs/archive/). Backend work stays here; SPA work stays in the sibling.

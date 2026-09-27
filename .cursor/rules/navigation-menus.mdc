@@ -1,6 +1,6 @@
 ---
-description: Dynamic menu construction — MenuSeeder, spa-routes, RBAC, cache
-globs: app/Domain/Navigation/**,database/seeders/MenuSeeder.php,config/spa-routes.php,config/products.php
+description: Dynamic menu construction — MenuSeeder, spa-routes, RBAC, visibility, cache
+globs: app/Domain/Navigation/**,database/seeders/MenuSeeder.php,routes/api/v1/navigation.php,config/spa-routes.php,config/products.php,config/navigation.php,docs/domains/navigation/**
 alwaysApply: false
 ---
 
@@ -8,11 +8,19 @@ alwaysApply: false
 
 Before creating or changing dynamic menus, read [docs/domains/navigation/README.md](../../docs/domains/navigation/README.md).
 
-- Every menu `route` is a SPA Vue Router **symbolic name** listed in `config/spa-routes.php` (and present in `monolith-vue-workers/src/router`). Never a URL.
-- Each product parent route appears in `config/products.php` `menu_routes`.
-- Every referenced role must already be seeded. `MenuSeeder` is the sole authoritative tree.
-- Group under Workspace / Products / Administration; submenus instead of duplicate hubs; contiguous sibling `order`; `en`/`id`/`ja` (and remaining locales) on names; exact RBAC.
-- Product-bound routes on product parents so Domain Access + activation gates protect children.
-- Parents may store a real product route in the DB; `navigationTree` masks a parent’s `route` to `#` while it has visible children, and restores the stored route when children are all pruned.
-- Two-tier forever cache (snapshot + presented). Rebuild active and trashed rows transactionally; flush navigation cache only after commit. Never seed debug/test/probe nodes.
-- Lock tree + rebuild/visibility with tests. Update the Navigation guide and every affected domain guide in the same task.
+- Every menu `route` is a SPA Vue Router **symbolic name** listed in `config/spa-routes.php` (and present in `monolith-vue-workers/src/router`). Never a URL. Validation goes through `App\Support\Navigation\SpaRouteRegistry`: the `menu` allow-list plus any remaining Laravel `Route::has()` name, minus `deny` (auth/public-utility names are rejected even when `Route::has()` would pass).
+- Each product parent route appears in `config/products.php` `menu_routes`. Every referenced role must already be seeded.
+- Every `MenuSeeder` run **force-deletes all active and trashed rows** and rebuilds the canonical tree inside one transaction; a failure restores the prior tree. After commit it flushes the snapshot and bumps the epoch — no separate cache command. Never seed debug/test/probe nodes.
+- Structure: `h` root → `p` under `h` → `c` under `p`, contiguous sibling `order` within `(layout, parent_id, type)`. Flat template layouts (`navbar`, `vtual`) also accept parentless `p` roots; `sidebar` requires the header root. Parent and child share a layout; layout is fixed after create.
+- Group under Workspace / Products / Administration; submenus instead of duplicate hubs; all locales on `name`; exact RBAC. A seeded node's `audience` is derived from its declared roles (`[] ? auth : role`) unless set explicitly — never let a node carry role pivots under a non-role audience.
+- **Audience is the only visibility axis:** `all` | `auth` (default) | `role` | `guest`. `menu_roles` exists **only** for `role` and must be non-empty there; validation rejects every illegal combination and `MenuService` clears the pivots as soon as the stored audience leaves `role`. The `auth` default is identical in the DB column, the request, the repository and the factory — no layer invents its own.
+- Product-bound routes belong on **product parents** so the Domain Access and activation gates cover their children. Both gates resolve `ProductRegistry::productKeyByMenuRoute` from the **stored DB route**, never the presentational `#`.
+- A node is visible only if it **and every ancestor** pass, in order: exclude list → include list → audience → Domain Access (`canAccess`, runs for guests too) → product activation (authenticated only; guests skip) → vTual management membership (`MANAGEMENT_MEMBER_ROUTES`) → attached roles (no roles = open to viewers that passed the earlier rules). Empty headers and non-navigable parents are pruned; a parent keeps a real route as a leaf when all children are hidden.
+- **Presentation mask:** a `p` node with visible children is emitted with `route = '#'` (expand-only); when every child is pruned the stored route returns. Admin flat list / CRUD always expose real DB routes.
+- Two-tier forever cache: `menus.navigation.snapshot` (primitives, never hydrated Eloquent) + `menus.navigation.tree_epoch`, then `menus.navigation.presented.{epoch}.{locale}.{layout}.{viewer}`. A presented-tree hit must **not** query the `menus` table.
+- Invalidate exactly as wide as the change: menu/role writes and `menu:flush-cache` forget the snapshot **and** bump the epoch (all presented keys miss); a Domain Access upsert bumps the epoch; a product-activation change or a menu-RBAC role sync forgets only that user's presented keys; a vTual membership change forgets that user's keys **and** fires a targeted `.menu.tree.changed` with `target_user_id`. Flush navigation cache only after commit.
+- `Menus are a UX tree only` — no `domain` / `domain_kind` column. Never add menu schema just to mirror the module registry or the RBAC catalog.
+- Menu CRUD, `MenuSeeder` and `monolith-vue-workers/src/router` must stay in sync; a route that leaves `config/spa-routes.php` breaks validation for every node using it.
+- Lock the tree and visibility with tests. Update this brief, the deep dive, and every affected domain brief in the same task.
+
+Detail: [docs/domains/navigation/reference.md](../../docs/domains/navigation/reference.md).

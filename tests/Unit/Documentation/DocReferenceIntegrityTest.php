@@ -53,6 +53,11 @@ class DocReferenceIntegrityTest extends TestCase
             $files[] = $relative;
         }
 
+        // Agent pakem lives in .cursor/rules/*.mdc — same reference contract.
+        foreach (glob($root.'/.cursor/rules/*.mdc') ?: [] as $rule) {
+            $files[] = str_replace('\\', '/', substr($rule, strlen($root) + 1));
+        }
+
         sort($files);
 
         return $files;

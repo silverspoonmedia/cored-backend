@@ -68,8 +68,8 @@ return [
         'timeout' => 20,
 
         /*
-        | Upstream 429 / 5xx resilience (TASK.md:275 quota exhaustion,
-        | TASK.md:306 exponential backoff + jitter).
+        | Upstream 429 / 5xx resilience (docs/archive/bootstrap-task-2026-08.md:275 quota exhaustion,
+        | docs/archive/bootstrap-task-2026-08.md:306 exponential backoff + jitter).
         |
         | Retry lives inside one HTTP call — never around a pool loop, or a
         | stalled pool doubles its own work. 401/403 belong to the credential

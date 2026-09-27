@@ -1,0 +1,24 @@
+---
+description: Inference model catalog, provider rates, rate-snapshot billing invariants
+globs: app/Domain/Inference/**,routes/api/v1/inference.php,config/inference.php,database/seeders/InferenceCatalogSeeder.php,docs/domains/inference/**
+alwaysApply: false
+---
+
+# Inference
+
+Core domain for the AI model catalog and token pricing. It owns **rates**; the endpoint and key live in [ai.mdc](ai.mdc).
+
+- **Provider-first pricing.** Customer billable = provider cost × markup from the provider actually used. There is no separate public list-price plan; never reintroduce one.
+- Four tables, four roles: `ai_model_cards` (identity), `ai_inference_providers` (upstream routing), `ai_provider_model_rates` (mutable pricing, unique on `inference_provider_id` + `model_card_id`), `ai_model_rate_snapshots` (immutable usage).
+- **Never bill from a mutable rate row.** Every `AiBillingService::recordUsage` HTTP row captures a snapshot through `AiModelRateSnapshotService::capture($resolvedModel, $providerSlug)` and stores its FK on the usage event. Snapshots dedupe on `(inference_provider_id, model_slug, input_per_million_usd, output_per_million_usd)`.
+- `rate_source` on the snapshot is a closed vocabulary: `known` | `unknown_provisional` | `config_default`. It is the audit trail for why a number was charged — never leave it null.
+- **Unregistered resolved slug** (no `ai_provider_model_rates` row on the active provider) bills at provisional rates from `inference.unknown_model_rates.*` (`platform.inference.unknown_*`), calls `ensureModelCard(..., markNeedsClassification: true)`, and raises one deduped `inference_unregistered_model` notification (forever flag `inference:unregistered_model_notify:{slug}` via `Cache::add`, forgotten once the model is classified). Empty unknown-rate keys skip that branch and fall through to `inference.default_rates` (`rate_source = config_default`).
+- Curating the rate (`PUT …/providers/{id}/rates` → `InferenceCatalogService::syncProviderRates()`) must run consolidation: `UnknownModelBillingConsolidationService` recalculates settled prepaid usage and posts ledger **adjustments** (refund or extra debit), guarded by `consolidated_at` for idempotency.
+- `platform.inference.default_*` rates are **bootstrap fallbacks** for when no DB row exists yet — never the primary source.
+- Microstock's provider slug for `recordUsage` is its own Tier B setting (`microstock.ai.inference_provider_slug`), separate from `platform.inference.default_provider_slug`. Do not unify them.
+- Seeded catalog: `InferenceCatalogSeeder` writes cards and per-provider rates. Its `MODEL_RATES` array is a PHP array keyed by slug, so a duplicate or blank slug silently overwrites an earlier entry — check the resulting rows, not the array, when adding a model.
+- Admin UI under **Administration → Inference**, permissions `view inference catalog` / `manage inference catalog`. Catalog and provider lists emit query-mode `actions[]`; provider show supports bulk rate sync.
+- Realtime: `inference.catalog` private channel (permission `view inference catalog`) → `.inference.catalog.changed` with `{entity, action, entity_id}`.
+- Tests: `php artisan test --filter=Inference` (provisional rates, `isRegisteredOnProvider`, rate sync clearing the classification flag) plus Microstock `UnknownModelBillingTest` (consolidation refund/debit, negative balance).
+
+Detail: [docs/domains/inference/reference.md](../../docs/domains/inference/reference.md).

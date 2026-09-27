@@ -1,14 +1,23 @@
 ---
-description: Archivd domain — API, quota, upload, workspaces
-globs: app/Domain/Archivd/**,routes/api/v1/archivd.php,config/archivd.php,docs/domains/archivd/**
+description: Archivd upload/quota/share/workspace invariants
+globs: app/Domain/Archivd/**,routes/api/v1/archivd.php,routes/web/archivd-public.php,config/archivd.php,config/filesystems.php,docs/domains/archivd/**
 alwaysApply: false
 ---
 
 # Archivd
 
-Read the **Agent entry** at the top of [docs/domains/archivd/README.md](../../docs/domains/archivd/README.md) before the rest of that guide.
+- **Control plane vs data plane.** init / sign-parts / complete / abort / mint-download-URL always run in Monolith against S3 with the SDK; only part **bytes** go to the Gateway Worker or direct S3. Complete uses a row lock (`lockForUpdate`); pending non-expired sessions **reserve** owner quota; `max_concurrent_uploads` is enforced server-side.
+- **Upload sessions** (`ARCHIVD_uploads`): chunk/part layout frozen at init (`chunk_size`/`part_count`), **no resume** — a dead upload restarts. Parts upload in parallel (`max_concurrent_parts`, default 3); progress is the sum of per-part loaded bytes and speed is a 5 s sliding window (never a cumulative average). A 403 expired-part PUT is re-signed and retried once per part. `archivd:prune-stale-uploads` (hourly, `withoutOverlapping`) aborts orphaned multiparts — arm 2 is S3-truth via `listParts()`, and a `ListParts` error **skips** the candidate (never abort blind).
+- **Display names:** preferred name kept when free in that owner+folder; on complete or move a collision auto-renames to `{stem} ({maxN+1}).{ext}` (`UniqueDisplayNameAllocator`). Manual rename still rejects exact sibling collisions (422). S3 object keys (`archivd/{user_id}/{objectId}`) are random, never renamed, and the API `path` is the object id only. Clients must render the name from the complete/move response, not the original client filename.
+- **Downloads are always a 302** to a storage URL (Gateway HMAC GetObject, or direct S3 temporary URL) — Monolith never streams file bytes. Edge caching keys on bucket+object (never the signed query), ranges bypass the cache, objects > 512 MB stream from origin. HMAC signs the **full** object key + upload alias; never put the raw token in a URL.
+- **Never shorten an upload URL.** `/uploader/{alias}/{userId}/{objectId}` must carry the full object key; shortening requires coordinated Gateway `keyPrefix` remapping (Vault download path is the sanctioned short form). Monolith disk and Gateway must be path-style on the same host or `Complete` fails `NoSuchUpload`. Gateway Smart Placement must stay **off**.
+- **Bucket/Worker CORS:** expose `ETag` (multipart) and list every browser-direct origin; full-page download navigation needs no CORS.
+- **Quota/entitlement:** `QuotaService::storageStateFor` is memoized per owner per request; `ServiceEntitlementService` probes paid/grace; variant bytes exclude soft-deleted files. Public share (`anyone_with_link`) requires a **paid** owner — free/grace → 422 `public_share_requires_paid` even if the DB says otherwise; setting `private` is always allowed.
+- **Workspaces:** only **Active** workspaces consume slots; archiving frees one and create always inserts a new row (no reactivate-first-archived). Slot expiry that leaves `used > limit` blocks new creates but never auto-archives. Personal trees never mix with team trees; `GET browse?workspace_id=` for a team, omit for personal — never leak personal through a workspace.
+- **File payload:** `workspace: {id, kind, name}` is exposed when loaded; the `microstock` key appears **only** for `workspace.kind === 'microstock'` (the SPA gates on `file.workspace?.kind`, not on key presence).
+- **Microstock workspace gate:** `initiate()` rejects (422) an upload with no `folder_id` or into a locked collection; the client mirrors this per queued file.
+- **Single/bulk action parity is mandatory:** a new mutating action ships both the per-row/context path and the bulk path (bar + multi context) unless inherently single-entity (then mark N/A in the reference matrix). Never add a row-only mutator and leave the bulk bar lagging.
+- **Realtime:** private `archivd.user.{id}` for live listing (soft-refetch), not the notification bell bus. Channel auth + events: `docs/integration/vue-workers-spa.md`.
+- **Background processes must be running** or behavior silently stops: queue worker (`microstock:queue-work` — checksum, AI jobs) and scheduler (`archivd:prune-stale-uploads`). `ARCHIVD_DEBUG_LOG_REQUESTS=true` is local-only — never in production.
 
-- Code: `app/Domain/Archivd/`. API: `routes/api/v1/archivd.php`.
-- Do not read the entire domain README for a one-file fix — open the file under edit plus its test.
-- SPA screens live in the sibling repo (`src/views/archivd/`, `src/composables/archivd/`). Touch them only in a `[fullstack]` / `[frontend]` task.
-- Never `Read` all locale JSON files; patch keys via Grep.
+Full detail: [reference.md](../../docs/domains/archivd/reference.md) (concepts, visibility, quota) · [reference-upload.md](../../docs/domains/archivd/reference-upload.md) (upload pipeline, S3/Gateway, checksums, public share) · [reference-realtime.md](../../docs/domains/archivd/reference-realtime.md) (live listing, SPA shell, soft-nav).

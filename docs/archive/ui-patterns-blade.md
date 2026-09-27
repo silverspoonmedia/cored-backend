@@ -1,6 +1,6 @@
 # Blade UI patterns (archived)
 
-> **Archived — nothing here is live.** The in-repo Blade + AdminLTE 4 admin was removed; see [blade-admin.md](blade-admin.md). Every file path, asset, component tag, and JS module below is deleted. This document is kept as the record of what the Blade admin did and which conventions the SPA inherited or deliberately dropped. Do **not** follow it as a spec, and do **not** recreate these patterns in Monolith — UI belongs in `monolith-vue-workers`.
+> **Archived — nothing here is live.** The in-repo Blade + AdminLTE 4 admin was removed; see [blade-admin.md](../web/blade-admin.md). Every file path, asset, component tag, and JS module below is deleted. This document is kept as the record of what the Blade admin did and which conventions the SPA inherited or deliberately dropped. Do **not** follow it as a spec, and do **not** recreate these patterns in Monolith — UI belongs in `monolith-vue-workers`.
 >
 > **The live parts moved out.** The `display_mode` list contract, the row-action payload, and the `/api/v1/lookups/*` API are all API-layer concerns and now live in **[platform/list-display-modes.md](../platform/list-display-modes.md)**. Cite that file, not this one.
 
@@ -37,7 +37,7 @@ The Blade admin targeted WCAG 2.1 AA, guarded by a Blade-specific test that no l
 | Toggle buttons | `aria-pressed` | `checkout.js` channel buttons |
 | Interactive divs | `role="button"` + `tabindex="0"` + Enter/Space handler | archivd dropzone (`ArDropzone.vue`), move-tree items |
 
-Archivd authenticated browse was a **domain-local Vue island** (soft-nav, listing, bulk, upload dropzone, Microstock chrome) rather than a global AdminLTE SPA. Historical asset map: [domains/archivd/README.md — UI architecture / SPA shell](../domains/archivd/README.md#ui-architecture--spa-shell).
+Archivd authenticated browse was a **domain-local Vue island** (soft-nav, listing, bulk, upload dropzone, Microstock chrome) rather than a global AdminLTE SPA. Historical asset map: [domains/archivd/reference-realtime.md — UI architecture / SPA shell](../domains/archivd/reference-realtime.md#ui-architecture--spa-shell-historical).
 
 ## Vue islands (obsolete concept)
 
@@ -104,7 +104,7 @@ Adopted in: `notifications/index`, `services/index`, `error-logs/index`, `activi
 
 ## Toasts (replacing window.alert)
 
-Toast routing goes through `window.MonolithSwal.toastMessage(message, type)` — a SweetAlert2 toast mixin (position `top-end`, 4s timer, progress bar, pause on hover). The legacy `.monolith-toast` CSS component (defined in `monolith-overrides.css`) is retained for domain consumers that build toast elements manually (checkout, channels-admin, domain-access, inference rate-plans) via local `showToast(message, type)` helpers; Archivd Vue island uses `MonolithSwal` via `useArchivd`. Those containers expose `role="status"` + `aria-live="polite"`. `window.alert` is forbidden — use `MonolithSwal.alert` (modal) or `MonolithSwal.toastMessage` (toast). Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+Toast routing goes through `window.MonolithSwal.toastMessage(message, type)` — a SweetAlert2 toast mixin (position `top-end`, 4s timer, progress bar, pause on hover). The legacy `.monolith-toast` CSS component (defined in `monolith-overrides.css`) is retained for domain consumers that build toast elements manually (checkout, channels-admin, domain-access, inference rate-plans) via local `showToast(message, type)` helpers; Archivd Vue island uses `MonolithSwal` via `useArchivd`. Those containers expose `role="status"` + `aria-live="polite"`. `window.alert` is forbidden — use `MonolithSwal.alert` (modal) or `MonolithSwal.toastMessage` (toast). Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/reference.md#realtime-invoice-status-no-hard-reload).
 
 ## SweetAlert2 / confirmations
 
@@ -178,7 +178,7 @@ Reference: `users/partials/activity-history.blade.php`.
 ## Related
 
 - [platform/list-display-modes.md](../platform/list-display-modes.md) — the live contract extracted from this file
-- [blade-admin.md](blade-admin.md) — what remains on the `web` stack
+- [blade-admin.md](../web/blade-admin.md) — what remains on the `web` stack
 - [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — the SPA that replaced all of the above
 
 ## Known bridge gaps (realtime)

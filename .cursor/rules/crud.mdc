@@ -1,0 +1,26 @@
+---
+description: CRUD layering, shared repository, FormRequest DRY, dual-field resources
+globs: app/Repositories/**,app/Domain/**/Http/Controllers/**,app/Domain/**/Http/Requests/**
+alwaysApply: false
+---
+
+# CRUD layering
+
+Flow: `HTTP → Form Request → Controller → Service → Repository → Model`. Each layer stays in its lane.
+
+| Layer | Does | Never |
+|-------|------|-------|
+| Form Request | Validation, `authorize()`, input normalization | Business rules, data access |
+| Controller | Validated input → Service → envelope | Validation, Eloquent, business rules |
+| Service | Business rules, orchestration | HTTP-shape validation, raw queries |
+| Repository | Query / persist | Business logic |
+| Model | Mapping, casts, relations | App workflow |
+
+- Business failures throw `BusinessRuleException` subclasses — **not** `ValidationException`.
+- Use the shared `App\Repositories\Eloquent\EloquentCrudRepository` only for straightforward CRUD with the rules in a Service. Complex queries, multi-table transactions, upserts, or named persistence methods get a dedicated interface under `App\Domain\{Domain}\Repositories\Contracts\`. **Never** add domain methods to the shared repository.
+- Standard five-action CRUD → `Route::apiResource(..., )->except(['create', 'edit'])`. Do **not** use `apiResource` when you need extra actions, query-mode paging, per-verb permissions, or optional-auth reads.
+- FormRequests: keep separate Store/Update classes for route binding, share only the **rules body** through a domain `Http/Requests/Concerns/*` class. Never `$request->validate()` in a controller. Normalization belongs in `prepareForValidation`.
+- Controllers return the canonical envelope via `App\Traits\ApiResponse` and always `resolveResource()` first — never pass a raw `JsonResource` as `data`.
+- Presentation: `*_formatted` / `*_human` companions are built in Eloquent Resources with `App\Http\Resources\Concerns\FormatsPresentation` + `App\Support\Presentation\{Date,Money,Byte}Presenter`. Null raw → null companion. Raw types stay for math and interop. **Never** reformat in a service, model, or the SPA.
+- New CRUD ships: FormRequest, Service + exceptions, repository, Resource(s), thin controller, tests under `tests/Domain/{Domain}/`, routes in `routes/api/v1/{slug}.php`.
+- Details: [docs/platform/crud.md](../../docs/platform/crud.md), [docs/platform/reference-crud.md](../../docs/platform/reference-crud.md).

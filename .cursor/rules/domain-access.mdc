@@ -1,0 +1,27 @@
+---
+description: Domain Access — Public/Private product-domain gate invariants
+globs: app/Support/DomainAccess/**,routes/api/v1/domain-access.php,config/domains.php,lang/*/domain-access.php,docs/domains/domain-access/**
+alwaysApply: false
+---
+
+# Domain Access
+
+Kernel feature (`App\Support\DomainAccess`), not a `app/Domain/*` module. Gates each **product** domain by a global `public|private` flag.
+
+- It is a **fourth axis**. Do not conflate it with `config/domains.php` taxonomy, the Spatie `domain_kind` RBAC catalog, or per-user `product_activations`.
+- **Default is `public`**, so shipping the feature changes nothing until a domain is flipped. Never default a new domain to `private`.
+- `Root` and `Admin` always bypass. A `private` domain admits holders of `Beta tester {Domain}` or the `access {domain} product` permission.
+- `ProductNames` derives all three names from the StudlyCase product key: label `Archivd`, role `Beta tester Archivd`, permission `access Archivd product`. Never hand-write them.
+- The beta role is `domain_kind = product` with **`level = null`**. Null keeps it out of the H-RBAC ladder and sidesteps `unique(domain_kind, level)` — **never** assign it a level to "fit the ladder".
+- **Middleware order is load-bearing:** `domain.access:{Domain}` runs **before** `product.active:{Domain}` and `permission:` on both the API and web product route groups.
+- Denials: API → 403 through `ApiResponder::error` (envelope); web → `abort(403)`; unauthenticated on a private domain → **401**, never 403.
+- Route middleware does not hide the sidebar. The second enforcement point is `MenuRepository::nodeVisibleLeafRules`, which resolves the node's product via `ProductRegistry::productKeyByMenuRoute($node['route'])` then calls `canAccess`. It is **guest-aware** (unlike the activation check) and stacks with it. Empty parents are pruned by `shouldPruneEmptyBranch`.
+- Gates run when `MenuRepository` **builds** the presented tree, on cache miss. The `menus.navigation.snapshot` stays product/user-agnostic and stores real DB routes — never let a gate write presentational `#` into it.
+- `setVisibility` bumps the presented-tree epoch (`bumpPresentedTreeEpoch`) so every viewer rebuilds. Toggle without the bump serves stale sidebars.
+- A new product domain must list its routes in `config/products.php` `menu_routes` or it is not gated — same requirement as the activation gate.
+- `domain:make {Name}` generates `database/seeders/{Name}RoleSeeder.php` (beta role + permission + `public` visibility row via `SeedsBetaTesterRole`) and registers the `$this->call(...)` line in `DatabaseSeeder`; `domain:remove` reverses both. After scaffolding run `php artisan db:seed --class={Name}RoleSeeder`.
+- **A failed scaffold can leave a directory git cannot see.** If a run dies between directory creation and config registration, `app/Domain/{Name}/` survives with empty subdirectories, `git status` stays clean, and the next run fails `Domain [{Name}] already exists.` Delete the directory by hand.
+- Realtime: the `domain-access` private channel (permission `view domain access`) emits `.domain.visibility.changed` with `{product_key, visibility}`.
+- Tests: `tests/Domain/DomainAccess/` (service matrix, web+API gate, admin API authorization, seeder assertions, `domain:make` pipeline) and `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php`.
+
+Brief: [docs/domains/domain-access/README.md](../../docs/domains/domain-access/README.md).

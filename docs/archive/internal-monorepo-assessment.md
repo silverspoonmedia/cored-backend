@@ -2,7 +2,7 @@
 
 This document records the assessment, decisions, and outcomes for organizing **Project Monolith** as an internal logical monorepo. Gateway and Frontend remain **separate git repositories** with their own history.
 
-Canonical workspace context: [agents/core-rules.md](../agents/core-rules.md).
+Canonical workspace context: [AGENTS.md](../../AGENTS.md) + [`.cursor/rules/`](../../.cursor/rules/).
 
 ---
 
@@ -174,9 +174,9 @@ Empty folders have **no runtime impact** (routes already use `App\Domain\*`) but
 
 Post-cleanup verification: `.\scripts\remove-empty-dirs.ps1 -WhatIf` reports **no empty directories in scope**; `composer test` → **386 passed**.
 
-Cleanup script: [`scripts/remove-empty-dirs.ps1`](../scripts/remove-empty-dirs.ps1) (bottom-up delete, file-count guard).
+Cleanup script: [`scripts/remove-empty-dirs.ps1`](../../scripts/remove-empty-dirs.ps1) (bottom-up delete, file-count guard).
 
-**Follow-up (same day):** the Phase 3 provider split and stray-test relocation (see [internal-monorepo-porting.md](./internal-monorepo-porting.md#remaining-follow-ups-optional)) left 14 more empty shells (`app/Exceptions/Auth`, `tests/Unit/Services/Auth`, `tests/Feature/Auth`, `tests/Feature/Views`, and nested `Http/Controllers/API/*` leaves under `tests/Feature` and `tests/Unit`). Removed the same way; `composer test` → **386 passed** after cleanup.
+**Follow-up (same day):** the Phase 3 provider split and stray-test relocation (see [internal-monorepo-porting.md](./internal-monorepo-porting.md#remaining-follow-ups)) left 14 more empty shells (`app/Exceptions/Auth`, `tests/Unit/Services/Auth`, `tests/Feature/Auth`, `tests/Feature/Views`, and nested `Http/Controllers/API/*` leaves under `tests/Feature` and `tests/Unit`). Removed the same way; `composer test` → **386 passed** after cleanup.
 
 **Out of scope:** `storage/framework/cache/data/*` (Laravel runtime cache, not porting debris).
 
@@ -233,5 +233,5 @@ Closed 2026-07-09:
 - [domain-modules.md](../platform/architecture.md) — conventions and how to add a domain
 - [internal-monorepo-porting.md](./internal-monorepo-porting.md) — porting implementation reference (migration order, scripts, gotchas)
 - [api-routing.md](../platform/api-routing.md) — global vs versioned API
-- [spa-gateway-integration.md](../integration/spa-gateway.md) — three-project wiring
-- [ai-agent-guide.md](../agents/core-rules.md) — agent workflow and downstream sync sessions
+- [spa-gateway-integration.md](../integration/project-overview.md) — three-project wiring (historical; the Gateway/Frontend split is dissolved)
+- [ai-agent-guide.md](../../AGENTS.md) — agent workflow and downstream sync sessions

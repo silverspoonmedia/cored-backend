@@ -1,6 +1,6 @@
 # Cache policy — Monolith
 
-Canonical rules for Laravel `Cache` usage. Agent protocol: [AGENTS.md](../../AGENTS.md); core rule: [core-rules.md](../agents/core-rules.md). Tier B settings snapshot is a special case of this contract — see [configuration-policy.md](configuration-policy.md#cache-contract-tier-b).
+Canonical rules for Laravel `Cache` usage. Agent protocol: [AGENTS.md](../../AGENTS.md); core rule: [cache-policy.mdc](../../.cursor/rules/cache-policy.mdc). Tier B settings snapshot is a special case of this contract — see [configuration-policy.md](reference-configuration-policy.md#cache-contract-tier-b).
 
 ## Rules (mandatory)
 
@@ -31,7 +31,7 @@ Write → forget / bump epoch → next read rebuilds
 
 ## FX freshness (not Cache TTL)
 
-`platform.frankfurter.cache_ttl` is a **freshness window** (Settings → Platform), not a Laravel Cache expiration. L1 entries are forever. On read, if `fetched_at` is older than the window, forget the key and rebuild from a fresh DB snapshot or Frankfurter. See [Service — Multi-currency / FX](../domains/service/README.md#multi-currency--fx).
+`platform.frankfurter.cache_ttl` is a **freshness window** (Settings → Platform), not a Laravel Cache expiration. L1 entries are forever. On read, if `fetched_at` is older than the window, forget the key and rebuild from a fresh DB snapshot or Frankfurter. See [Service — Multi-currency / FX](../domains/service/reference.md#multi-currency--fx).
 
 ## Explicit exceptions (short TTL allowed)
 
@@ -64,13 +64,13 @@ These are leases, security expiries, or rate limits — **not** source-of-truth 
 
 - [configuration-policy.md](configuration-policy.md) — Tier B forever snapshot
 - [settings.md](settings.md) — settings inventory (incl. FX freshness window)
-- [navigation README](../domains/navigation/README.md#caching) — two-tier menu cache; Domain Access upsert → presented epoch bump
-- [domain-access README](../domains/domain-access/README.md#menu-visibility) — Public/Private gate + epoch invalidation
+- [navigation README](../domains/navigation/reference.md#caching) — two-tier menu cache; Domain Access upsert → presented epoch bump
+- [domain-access README](../domains/navigation/reference.md#visibility-navigation-tree) — Public/Private gate + epoch invalidation
 - [product-activations README](../domains/product-activations/README.md) — insights forever aggregate + activation → per-user presented forget
-- [service README — FX](../domains/service/README.md#multi-currency--fx) — forever L1 + freshness
+- [service README — FX](../domains/service/reference.md#multi-currency--fx) — forever L1 + freshness
 - [identity README](../domains/identity/README.md) — Spatie century-scale permission cache
 - [notification README](../domains/notification/README.md) — audience snapshot; inference unregistered-model forever dedup
 - [inference README](../domains/inference/README.md) — unregistered-model notify dedup key
-- [ai README — Resolution](../domains/ai/README.md#resolution) — default-slug forever cache + `forget()` on mutation
-- [payment-gateway encryption](../domains/payment-gateway/encryption.md) — decrypt cache
+- [ai README — Resolution](../domains/ai/reference.md#resolution) — default-slug forever cache + `forget()` on mutation
+- [envelope-encryption.md](envelope-encryption.md) — decrypt cache
 - [octane.md](octane.md) — no request state on statics; shared cache store in production

@@ -24,7 +24,7 @@ use Illuminate\Support\Collection;
  * - Documented exception: video methods append a debug-only content_type +
  *   content_category preview (never persisted — persistence happens on hydrate).
  * - When gateway methods are added/removed/renamed for manual testing, update METHODS,
- *   run(), request validation, web i18n, tests, and docs/domains/vtual/README.md in the same PR.
+ *   run(), request validation, web i18n, tests, and docs/domains/vtual/reference.md in the same PR.
  */
 class PlatformApiProbeService
 {

@@ -11,7 +11,7 @@
 //
 // The per-locale maps below are the machine-readable half of the "Domain
 // glossary" and "Glossary drift found while preparing the … wave" sections of
-// `docs/platform/localization.md`. Add a rejected variant here in the same change
+// `docs/platform/naming-conventions.md`. Add a rejected variant here in the same change
 // that settles the term, so the decision is enforced instead of merely documented.
 //
 // Two checks per locale, both scanned over the backend `lang/{locale}/**/*.php`,

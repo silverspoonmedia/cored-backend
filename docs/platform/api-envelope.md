@@ -44,7 +44,7 @@ Read-only fan-in (`GET`/`HEAD` sub-requests only, ≤ 10, 10 s wall-clock; `Batc
 - Outer validation failures (missing/too many `requests`) are normal 422 envelope errors.
 - Throttle: one outer token (`throttle:30,1`) + each sub-request charged to the shared `api` limiter so batch cannot bypass the global budget.
 
-Full consumer rules: [api-aggregation.md](api-aggregation.md) and [integration/vue-workers-spa.md — Invocation budget controls](../integration/vue-workers-spa.md#invocation-budget-controls).
+Full consumer rules: [api-aggregation.md](api-aggregation.md) and [integration/vue-workers-spa.md — Invocation budget controls](../integration/reference-vue-workers-spa.md#invocation-budget-controls).
 
 ## Related
 

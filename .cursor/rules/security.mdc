@@ -1,0 +1,29 @@
+---
+description: CORS perimeter, cookie/CSRF contract, audit and secret hygiene
+globs: config/cors.php,bootstrap/app.php,app/Http/Middleware/**,app/Support/Security/**
+alwaysApply: false
+---
+
+# Security perimeter
+
+## CORS
+
+- `config/cors.php` `allowed_origins` is `APP_URL` + `SPA_URL` + `CORS_EXTRA_ORIGINS` — **never** `*`. `supports_credentials = true` because the SPA authenticates with the HttpOnly `__Host-spa_jwt` cookie, and credentialed CORS forbids a wildcard.
+- The **allowlist decides**, not the framework shortcut: `App\Support\Http\AllowlistCorsService` is bound over `Fruitcake\Cors\CorsService` and re-runs `isOriginAllowed()` after both writers, stripping a grant for an origin that is not on the list (the stock single-origin shortcut writes `allowedOrigins[0]` without comparing the request `Origin`).
+- `paths` must keep `broadcasting/auth`: `withRouting(channels: ...)` registers a web-group twin at `/broadcasting/auth` that `api/*` does not match. `CorsBroadcastAuthTest` fails if any route ending in `broadcasting/auth` is unmatched.
+- API errors must keep the CORS headers: CSRF mismatch returns a JSON 419 envelope instead of `abort()`, and 401/403 paths throw `HttpResponseException` with `ApiResponder::error(...)`. `StampApiCors` covers responses that still skip `HandleCors`.
+- `X-SPA-Origin` is an anti-noise marker. It is trivially forgeable — **never** treat it as authentication or origin proof.
+
+## Secrets and logging
+
+- Never log passwords, TOTP secrets, recovery codes, tokens, or envelope plaintext. ErrorLog context goes through `ErrorContextRedactor`.
+- Secrets live per tier ([environment.mdc](environment.mdc)): Tier A `.env`, Tier C envelope-encrypted credential tables. Never in a config literal, a doc, or a log line.
+- Never put a Cloudflare Access service token or any secret in `VITE_*` — the SPA bundle is public.
+- `bootstrap/app.php` trusts all proxies. That is only acceptable while direct origin access is proven impossible; `X-Forwarded-*` values are never authentication.
+
+## Response contract
+
+- Response data minimization is owned by [api-resources.mdc](api-resources.mdc) — a JSON Resource is a per-viewer contract, gated in the Resource, never in the SPA.
+- Every new list/show endpoint ships one wrong-viewer 403 test and one sensitive-field-absent test (`Tests\Concerns\AssertsPayloadHygiene`).
+- Login throttling is identity-scoped and failure-only (`AuthLoginThrottle`), with a separate per-IP backstop — not route middleware.
+- Audit procedure, auth activity coverage, CORS internals: [docs/platform/reference-security.md](../../docs/platform/reference-security.md).

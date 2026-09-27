@@ -1,0 +1,18 @@
+---
+description: Global vs versioned API route layers and version discipline
+globs: routes/api/**,bootstrap/app.php
+alwaysApply: false
+---
+
+# API routing
+
+Two **independent** layers. They do not evolve into each other.
+
+- **Global** `/api/*` is a small stable surface — liveness only (`GET /api/ping` in `routes/api.php`). **Versioned** `/api/v{N}/*` carries all product business logic.
+- **Never** expose the same endpoint on both layers, and never break a versioned contract in place. A breaking change is a new version: `routes/api/v{N}.php` loader, `prefix('api/v{N}')` + `name('api.v{N}.')` in `bootstrap/app.php`, controllers under `App\Domain\{Domain}\Http\Controllers\API\V{N}`.
+- One loader per version; domain files (`routes/api/v{N}/{domain}.php`) hold the endpoints with paths relative to the version prefix. Keep the `// Core` requires before `// Product`, and re-order once when `domain:make` appends a new product mid-file.
+- New endpoints go in `routes/api/v1/{domain}.php` — not in the loader, not in `routes/web.php`.
+- `routes/web.php` is **server endpoints only** (public share, payment return, OAuth callback). Authenticated browser UI is the SPA under `/apps/*`; never add a Blade view or a page route here.
+- `POST /api/v1/broadcasting/auth` is the SPA's broadcast authorizer, defined once in `App\Support\Broadcasting\BroadcastAuthEndpoint`. The CSRF-guarded web twin at `/broadcasting/auth` exists and must stay in `config/cors.php` `paths`.
+- Verify with `php artisan route:list --path=api`.
+- Details: [docs/platform/api-routing.md](../../docs/platform/api-routing.md), [docs/platform/reference-api-routing.md](../../docs/platform/reference-api-routing.md).

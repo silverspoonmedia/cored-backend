@@ -1,0 +1,26 @@
+---
+description: Notification engine — type/audience contract, realtime payload, read state
+globs: app/Domain/Notification/**,routes/api/v1/notification.php,config/notifications.php,lang/*/notifications.php,database/seeders/NotificationTypeSettingSeeder.php,docs/domains/notification/**
+alwaysApply: false
+---
+
+# Notification (activity bell)
+
+Hybrid engine: **types and triggers live in code** (`NotificationType`), **audience lives in the DB** (`notification_type_settings` + pivots). It is not Laravel's `notifications` table, and it is not [activity-log.mdc](activity-log.mdc).
+
+- One row + role/user pivots; per-user read state in `activity_notification_reads`. A viewer sees a notification if a role matches **OR** they are a targeted user.
+- **Never hardcode an audience in code and never dispatch from a controller.** The owning **service** dispatches `ActivityNotificationEvent`; `NotificationService::emit()` resolves the audience from settings. The listener is auto-discovered — never register it twice.
+- **Role broadcast vs personal user is a decision, not a default:** anyone with the role (including future assignees) → role broadcast; only specific people → user pivots; the edited user learning about it → `notify_subject_user` / personal to subject.
+- **A personal dispatch must pass `roles: []` explicitly.** `resolveAudience` only skips the setting's roles when an override is given, so a stray role pivot on the setting (old manual/admin edit) broadcasts the personal note to those roles — an admin editing another user would see "Your account was updated" in their own bell. Fix = force `roles: []` at dispatch **and** `sync([])` in the seeder.
+- One event may fire **two** notifications on purpose: `account_updated` (personal, the subject) and `user_updated` (broadcast, drives the admin list reload). Never merge them — the personal note must not reach admin bells.
+- The **audience snapshot cache is primitives only** (`notification_type_settings.snapshot` → `type → {notify_subject_user, roles[], users[]}`). Never cache hydrated Eloquent models: with `CACHE_STORE=database`/redis the value is serialized and a class/relation change deserializes into `__PHP_Incomplete_Class`, throwing a `TypeError` on the next emit. Model-returning methods (`findByType`/`read`/`listAll`) query fresh; only `resolveAudience` reads the snapshot. Seeder / `syncRoles` / `syncUsers` flush it.
+- **Realtime contract after persist:** `UserActivityNotificationReceived` on private `App.Models.User.{userId}` as `.activity-notification.received` with `{type, table_id, unread_count}`. `unread_count` is the recipient's **absolute** count — the bell applies it and never increments locally or calls HTTP per event. `table_id` is `null` for types with no list screen; it tells a registered listing to reload (Pattern A via `useListingReload`) and is **per-recipient**, so a shared admin list reloads only when a **role-broadcast** notification carries the `table_id`, never from a personal note.
+- **The SPA ignores `polling`.** Backend stores `polling` vs `realtime` (`platform.notifications.delivery`), but browser delivery is Echo/Pusher only; empty `VITE_PUSHER_APP_KEY` disables Echo entirely. Reconnect recovery is `onEchoResync` (unread count + recent list + registered listings), **not** a timer. Periodic unread-count or listing HTTP while Echo is connected is a regression.
+- For hosted Pusher, `BroadcastConnection::clientConfig()` exposes `cluster` but leaves `host` null; `api-{cluster}.pusher.com` is the **REST** endpoint and must never be passed as `wsHost`. Explicit non-default hosts stay valid for self-hosted/Sockudo.
+- **Not this bus:** Archivd live listing (`archivd.user.*` / `archivd.workspace.*` + domain events) and payment invoice status (`payments.invoice.{invoiceId}`) have no `NotificationType` and no `table_id`. They share the SPA Echo singleton; they do not ride this event.
+- Mark-all / single-read are in-place API mutations (`POST notifications/read-all`, `…/{id}/read`) returning `{marked, unread: 0}` — the SPA updates badge and list locally with no redirect. Cross-tab sync rides `BroadcastChannel('activity-notifications.{userId}')`; without it the acting tab still updates and siblings reconcile on the next WS event.
+- API requires `view notification`. The **Workspace → Notifications** page (`notifications.index`) carries no menu-role pivot — it is available to authenticated viewers that pass the navigation audience rules, and is distinct from the navbar bell.
+- New type = one PR: enum case (+ `icon()` / `defaultRoles()` / `tableId()`), all-locale translations under `types.{value}`, `NotificationTypeSettingSeeder` row + roles, dispatch from the owning service, tests, optional `tableId` + SPA listing registry entry.
+- Tests: `php artisan test tests/Domain/Notification` + `tests/Unit/Support/Broadcasting/BroadcastConnectionTest.php`; SPA `npm test`.
+
+Detail: [docs/domains/notification/reference.md](../../docs/domains/notification/reference.md).

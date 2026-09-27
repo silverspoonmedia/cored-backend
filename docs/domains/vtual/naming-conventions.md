@@ -128,6 +128,6 @@ Core role **Management** may call vTual **API** with `manage any vtual resource`
 
 ## Related
 
-- [README.md — Concepts](README.md#concepts) — entity glossary
+- [README.md — Concepts](reference.md#concepts) — entity glossary
 - [identity/README.md](../identity/README.md) — core role ladder
 - [navigation/README.md](../navigation/README.md) — menu `roles` arrays use Spatie **role names**

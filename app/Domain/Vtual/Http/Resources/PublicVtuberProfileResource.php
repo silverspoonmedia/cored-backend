@@ -88,7 +88,7 @@ class PublicVtuberProfileResource extends JsonResource
                     'subscriber_count_formatted' => $channel->subscriber_count !== null
                         ? Number::format($channel->subscriber_count)
                         : null,
-                    // Metrics freshness (TASK.md:494): the guest channel list
+                    // Metrics freshness (docs/archive/bootstrap-task-2026-08.md:494): the guest channel list
                     // shows how old the subscriber count is, so a stale number
                     // is never mistaken for a live one.
                     ...$this->dateFields('last_synced_at', $channel->last_synced_at),

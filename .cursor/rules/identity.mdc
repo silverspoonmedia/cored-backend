@@ -1,0 +1,38 @@
+---
+description: Identity auth, JWT cookie, throttle, H-RBAC and lookups invariants
+globs: app/Domain/Identity/**,routes/api/v1/identity.php,routes/web/identity-oauth-callback.php,config/auth.php,config/jwt.php,config/permission.php,lang/*/auth.php,lang/*/passwords.php,docs/domains/identity/**
+alwaysApply: false
+---
+
+# Identity
+
+Auth, roles/permissions, user management, lookups. Auth is **not** on the global `/api/*` surface — only versioned v1.
+
+- **The SPA never sees the JWT.** Login/register/refresh/2FA-login set the HttpOnly `__Host-spa_jwt` cookie (`Secure`, `Path=/`, no `Domain`, `SameSite=None`) and **strip `data.token` from the JSON body**. Machine clients use `Authorization: Bearer`. Never add a path that returns the raw token to a browser.
+- `AuthService::refresh()` must fall back to the cookie when no `Authorization` header exists — otherwise a cookie-mode session hard-expires at `jwt.ttl` instead of refreshing.
+- **Logout sets a persistent barrier before the API call.** No subsequent cold-boot `auth/me` may restore authenticated state (including a direct `/apps/dashboard`) until `applyAuth()` handles a successful login, registration or 2FA session. Logout deletes the cookie with the same `__Host-`, `Path=/`, `Secure`, `SameSite=None`, host-only attributes Laravel used at issuance.
+- A blacklisted JWT is dead: `auth/me` carrying the same Bearer token or a stale cookie must return **401**.
+- **Login throttle lives in the domain, not in route middleware.** `AuthLoginThrottle` is called from `AuthService::login()` / `loginWithTwoFactorToken()`; `POST auth/login` and `auth/two-factor/login` must **not** carry `throttle:*`.
+  - Identity scope = **email + client IP** (2FA scope = `2fa:` + sha1 of the challenge token). Never key the limiter on IP alone — that locks out every user behind one NAT/CGNAT/office address.
+  - **Failure-only counting:** `RateLimiter::hit()` runs only after `InvalidCredentialsException` / `InvalidTwoFactorCodeException`. 422 validation rejects, CSRF failures, hCaptcha failures and successful logins never consume quota.
+  - **Success resets** the identity counter; the IP backstop (`ip_backstop_max`, default 20/min) is never cleared by a successful login.
+  - Locked response is a 429 envelope with `Retry-After` / `X-RateLimit-*` (handler in `bootstrap/app.php`). Register keeps `throttle:5,1,auth-register` with its own prefix so registrations never share a counter with logins.
+- **`remember` survives refresh.** `refreshFromToken` resolves it in order: request body `remember` → `rm` claim on the original token (`jwt.persistent_claims`) → `false`. Login, 2FA login and register all inject `rm` through `AuthService::customClaims()`. Dropping this silently downgrades a remember-me session to a short TTL and breaks SPA cross-tab sync.
+- hCaptcha (when `platform.hcaptcha.enabled`): login, register, forgot-password, reset-password and 2FA login all require `h-captcha-response` through `HcaptchaVerifier` + the `ValidatesHcaptcha` trait. Never enable it for a subset of those surfaces.
+- **`domain_kind`** (`core` | `product`) on roles and permissions is catalog ownership, **not** the module registry in `config/domains.php` and **not** a Gate input. Permission checks stay **name-based**.
+- Spatie names stay globally unique on `(name, guard_name)`; a product module must not reuse a core name (`Admin`, `view user`, …). Prefer `Archivd Admin`.
+- **H-RBAC uses core roles only.** `level` is nullable and unique per `domain_kind`; lower number = higher authority (Root 1, Admin 100, Moderator 200, Management 300, User 400). Actor level = **min** of their **core** roles with a non-null level; product roles are ignored for hierarchy math.
+  - List/show: target min core level **≥** actor level. Update/delete: **every** target core role level **>** actor level. Assign role: core role level **>** actor level (`/users/assignable-roles` is core-only).
+  - Soft delete; cannot delete self (422). `{user}` is a UUID.
+- Query-mode `GET /api/v1/users` rows carry `actions[]` from `UserQueryRowActions`: always `edit`, `delete` only when the actor has `delete user` and the row is not self. Paged query-mode without `search` uses SQL `LIMIT` (`UserRepository::paginateVisibleToActorLevel`); `search` keeps the PHP recursive matcher so hits stay unchanged.
+- `GET /api/v1/lookups/*` is the only paginated select source: `users`/`roles` return flat `{id, text}`, `menus` returns a nested tree per root group (paginate per root, search keeps ancestors, hydrate `ids[]` stays flat).
+- **Register side-effect:** `AuthService::register` inserts a `product_activations` row (`state = active`, `source = register_hook`) for every implicit product in `config/products.php`. A failure is logged and must **not** abort registration — the `product.active` middleware lazy-creates on first hit.
+- **OAuth path parameter is `{oauth_provider}`, constrained with `whereIn` `OAuthProvider::values()`.** Never name it `{provider}`: Inference binds `{provider}` globally to `InferenceProvider` and would 404 `"Data not found."` for `discord`.
+- OAuth callback stays on Monolith web (`auth.discord.callback`); identity is the **encrypted state**, not a session cookie. `return_to` origins are allowlisted to `APP_URL` and `SPA_URL`, paths must start with `/apps/`, and the SPA passes `return_path` only (the API prefixes `SPA_URL`). Empty `SPA_URL` → authorize-url **503**.
+- `identity_oauth_accounts` stores envelope-encrypted tokens plus the **full** Discord connection snapshot (documented safe fields only — no secrets). Stale snapshots auto-refresh at `identity.discord.connections_snapshot_max_age_minutes` (default 60).
+- `App\Support\SpaPublicUrl` is the single mint for browser-facing links (password reset, email verify, Archivd `share_url`, iPaymu hosted return/cancel) when `config('services.spa.url')` is non-empty.
+- Realtime fires **after** a successful persist, gated on `BroadcastConnection::isConfigured()`, payload ids + `action` only: `rbac.roles` / `rbac.users` (permission `view user`), the legacy `rbac` channel, and self-only `App.Models.User.{id}` (`.auth.state.changed`, `.auth.security.changed`).
+- Octane: no sticky claims; run the cleanup guards after token operations ([octane.mdc](octane.mdc)).
+- Tests: `tests/Domain/Identity/`; prefer `composer test -- --filter=…`.
+
+Detail: [docs/domains/identity/reference.md](../../docs/domains/identity/reference.md).

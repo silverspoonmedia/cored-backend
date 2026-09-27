@@ -1,0 +1,21 @@
+---
+description: Forever cache + explicit invalidation for domain data
+globs: app/Domain/**,app/Support/**,config/cache.php
+alwaysApply: false
+---
+
+# Cache policy — forever + invalidate
+
+Any `Cache` entry holding domain or derived data follows this contract. Tier B settings snapshot is a specialization — see `environment.mdc` and [docs/platform/reference-configuration-policy.md](../../docs/platform/reference-configuration-policy.md#cache-contract-tier-b).
+
+1. **Lifetime storage** — `rememberForever` / `forever`. Do not expire snapshot data "just in case".
+2. **Rebuild on miss** — absent key → load from DB / recompute → store forever.
+3. **Invalidate on data change** — writes `forget` the key or bump an epoch. Never rely on wall-clock expiry for correctness.
+4. **Driver-agnostic** — must work on the default `database` store. **No `Cache::tags`.** Store serialization-safe arrays/scalars, not Eloquent graphs.
+5. **Short TTL only for documented exceptions**: `Cache::lock`, broadcast/realtime throttles, 2FA challenge tokens, JWT blacklist.
+
+Known keys and their invalidation owners (settings snapshot, navigation snapshot + presented epoch, notification audiences, product insights, Spatie permission cache, `encryption.decrypted.*`, `fx.frankfurter.*`, `ai.connection.default_slug`) are inventoried in [docs/platform/cache-policy.md](../../docs/platform/cache-policy.md) — add a row there when you add a forever key.
+
+`platform.frankfurter.cache_ttl` is a **freshness window**, not a Laravel TTL: the entry stays forever and is forgotten when `fetched_at` ages out.
+
+Recovery commands: `settings:rebuild-cache`, `menu:flush-cache`, `encryption:flush-decrypted-cache`, `permission:cache-reset`.

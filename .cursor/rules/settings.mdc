@@ -1,0 +1,33 @@
+---
+description: Runtime settings registry, snapshot cache, Settings UI contract
+globs: app/Support/Settings/**,config/settings*.php,database/seeders/*SettingsSeeder.php
+alwaysApply: false
+---
+
+# Runtime settings
+
+Operational knobs live in `system_settings` (Tier B) — never in `.env`. Tier boundaries: [environment.mdc](environment.mdc), [docs/platform/reference-configuration-policy.md](../../docs/platform/reference-configuration-policy.md).
+
+## Read path
+
+- Domain code reads a registry key through `setting()` / `setting_config()` only. Never `config()` for a registry-backed path, never `config()->set()`, never `env()` outside `config/*.php`.
+- `App\Support\Settings\SettingsReader` → `SystemSettingRepository::snapshot()` → `Cache::get('system_settings.snapshot')`, rebuilt on miss. Forever TTL, rebuild on write, boot warm. Recovery: `php artisan settings:rebuild-cache`.
+- Fallback when a key has no DB row (pre-seed): the owning `config/*.php` **PHP literal** default — not `env()`.
+- Parent array reads (`setting_config('microstock.ai.vision')`) overlay registered descendant leaf overrides onto the config array so Tier A secrets and Tier B knobs stay coherent without `config()->set()`.
+
+## New Tier B knob
+
+1. Add the `SettingRegistry` definition; `SettingsSeeder` picks it up (`firstOrCreate` from the config literal).
+2. Add `fields.<dotted-key>` to `lang/{en,id,ja,ko,zh_CN,ar,ru}/web/settings.php` — dotted keys are **literal** quoted keys, not nested arrays. Keep `SettingRegistryTranslationTest` green.
+3. Enum-like keys declare registry `options` (values only) and ship `web/settings.options.{key}.{value}` labels in all seven locales.
+4. **No new `.env` key.** Local-only dev defaults go to `config/settings-local.php` + `LocalSettingsSeeder`, never config literals.
+5. Update [docs/platform/reference-settings.md](../../docs/platform/reference-settings.md).
+
+## Settings UI / API
+
+- SPA hub: `/apps/settings/platform`, `/apps/archivd/settings`, `/apps/microstock/settings`, `/apps/vtual/settings`. Gated on `view settings` / `manage settings`.
+- `PUT /api/v1/admin/settings/{group}` takes **underscore aliases** of the dotted registry key (`platform.jwt.ttl` → `platform_jwt_ttl`); GET returns dotted keys. `UpdateSettingsGroupRequest` accepts either shape.
+- Labels are resolved with vue-i18n `tm()`/`rt()` on the literal dotted key. `t('web.settings.fields.' + key)` is wrong — vue-i18n splits on `.`.
+- A registry definition with no `fields.<key>` in a locale renders a raw key to the user: a defect, not a fallback.
+- Adding a core permission means re-running `RoleSeeder` **and** the product seeders (`ArchivdRoleSeeder`, `VtualRoleSeeder`), then `permission:cache-reset`. Never full `DatabaseSeeder` on an existing database.
+- Details: [docs/platform/settings.md](../../docs/platform/settings.md).

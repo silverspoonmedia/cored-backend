@@ -1,0 +1,29 @@
+---
+description: API envelope and per-viewer response data minimization
+globs: app/**/Http/**,routes/api/**,app/Support/ApiResponder.php
+alwaysApply: false
+---
+
+# API resources & envelope
+
+One envelope for every `/api/*` response, produced centrally by `App\Support\ApiResponder` + the renderers in `bootstrap/app.php`:
+
+```json
+{ "status": "success|error", "message": "…", "data": { … } }
+```
+
+- Builders are `ApiResponder::success($data, $message, $code)` / `ApiResponder::error($message, $code, $data)`. Controllers return Resources, domain code throws — **never hand-assemble a different shape**.
+- Validation failures (FormRequest) stay Laravel's `{message, errors}` 422 shape, **not** the envelope.
+- CSRF mismatch returns `ApiResponder::error(..., 419)` as a response, not an `abort()`, so `HandleCors` can stamp `Access-Control-*`.
+- `/batch` is read-only fan-in: outer 200 always, `meta: {failed, total}`, per-entry `{status, body}`. Callers inspect per-entry status.
+- Error mapping table: [docs/platform/api-envelope.md](../../docs/platform/api-envelope.md).
+
+## Response data minimization (mandatory)
+
+A JSON Resource is a **per-viewer contract**, not a model dump.
+
+- Gate sensitive keys with `$this->when($request->user()?->can(...))` **or** split into a dedicated Resource. Never "hide it in the SPA" while the JSON still carries it.
+- Guest/unauthenticated endpoints must not reuse owner Resources.
+- Never emit: credential secrets or envelope plaintext; live accept/claim **tokens** to anyone but the token owner; upstream provider cost/rates to customers; FX/settlement internals to buyers; other users' emails to non-staff; storage `path`/`disk`/`checksum`/`region` to non-owner/non-staff.
+- Every new list/show endpoint ships one **wrong-viewer 403** test and one **sensitive-field-absent** test (`Tests\Concerns\AssertsPayloadHygiene`).
+- Full rules: [docs/platform/reference-security.md](../../docs/platform/reference-security.md#response-data-minimization-mandatory).
