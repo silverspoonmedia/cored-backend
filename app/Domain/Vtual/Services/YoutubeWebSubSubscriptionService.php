@@ -3,12 +3,15 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\IncidentKind;
+use App\Domain\Vtual\Enums\IncidentSeverity;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Enums\WebsubSubscriptionStatus;
 use App\Domain\Vtual\Integrations\Youtube\YoutubeChannelVideoFeedClient;
 use App\Domain\Vtual\Integrations\Youtube\YoutubeFeedTopicParser;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\WebsubSubscription;
+use App\Domain\Vtual\Support\VtualIncidentRecorder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -62,8 +65,20 @@ class YoutubeWebSubSubscriptionService
                 'last_error' => 'Hub subscribe HTTP '.$response->status(),
             ])->save();
 
+            $this->recordIncident(
+                IncidentSeverity::Critical,
+                'YouTube WebSub subscribe failed',
+                'Hub subscribe HTTP '.$response->status(),
+                $channel,
+                ['http_status' => $response->status()],
+            );
+
             return $subscription->refresh();
         }
+
+        // The hub accepted the subscribe (202) — but the subscription is only
+        // really healthy once the hub verification callback flips it to Active.
+        // The incident therefore stays open until attemptMarkVerified() succeeds.
 
         return $subscription->refresh();
     }
@@ -124,6 +139,8 @@ class YoutubeWebSubSubscriptionService
                 'subscribed_at' => now(),
                 'last_error' => null,
             ])->save();
+
+            $this->resolveIncidentForSubscription($subscription);
 
             return true;
         }
@@ -306,5 +323,55 @@ class YoutubeWebSubSubscriptionService
         $externalId = trim((string) $channel->external_id);
 
         return $externalId !== '' && str_starts_with($externalId, 'UC');
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function recordIncident(
+        IncidentSeverity $severity,
+        string $title,
+        string $detail,
+        Channel $channel,
+        array $context = [],
+    ): void {
+        app(VtualIncidentRecorder::class)->record(
+            kind: IncidentKind::Websub,
+            severity: $severity,
+            title: $title,
+            detail: $detail,
+            context: $context + ['channel_external_id' => $channel->external_id],
+            platformId: $channel->platform_id !== null ? (string) $channel->platform_id : null,
+            channelId: (string) $channel->id,
+        );
+    }
+
+    private function resolveIncident(Channel $channel): void
+    {
+        $platformId = $channel->platform_id !== null ? (string) $channel->platform_id : null;
+
+        app(VtualIncidentRecorder::class)->resolve(
+            kind: IncidentKind::Websub,
+            title: 'YouTube WebSub subscribe failed',
+            platformId: $platformId,
+            channelId: (string) $channel->id,
+        );
+    }
+
+    /**
+     * Recovery path from the hub verification callback, where the channel may
+     * not be loaded on the subscription yet.
+     */
+    private function resolveIncidentForSubscription(WebsubSubscription $subscription): void
+    {
+        $channel = $subscription->channel;
+
+        if ($channel === null) {
+            $channel = Channel::query()->find($subscription->channel_id);
+        }
+
+        if ($channel !== null) {
+            $this->resolveIncident($channel);
+        }
     }
 }

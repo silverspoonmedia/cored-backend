@@ -202,6 +202,15 @@ final class SettingRegistry
             'vtual.content_classification.ai.min_confidence' => self::def('vtual', SettingType::Float, 'vtual.content_classification.ai.min_confidence'),
             'vtual.content_classification.ai.cache_ttl_hours' => self::def('vtual', SettingType::Int, 'vtual.content_classification.ai.cache_ttl_hours'),
             'vtual.content_classification.ai.connection' => self::def('vtual', SettingType::String, 'vtual.content_classification.ai.connection'),
+
+            // vTual — integration incident recorder (ops triage)
+            'vtual.incidents.enabled' => self::def('vtual', SettingType::Bool, 'vtual.incidents.enabled'),
+
+            // vTual — historical metric snapshots (append-only timeline)
+            'vtual.metrics.enabled' => self::def('vtual', SettingType::Bool, 'vtual.metrics.enabled'),
+            'vtual.metrics.channel_interval_minutes' => self::def('vtual', SettingType::Int, 'vtual.metrics.channel_interval_minutes'),
+            'vtual.metrics.content_interval_minutes' => self::def('vtual', SettingType::Int, 'vtual.metrics.content_interval_minutes'),
+            'vtual.metrics.retention_days' => self::def('vtual', SettingType::Int, 'vtual.metrics.retention_days'),
         ];
     }
 

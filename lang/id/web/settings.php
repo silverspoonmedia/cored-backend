@@ -223,6 +223,15 @@ return [
         'vtual.content_classification.ai.min_confidence' => 'Keyakinan minimum audit AI',
         'vtual.content_classification.ai.cache_ttl_hours' => 'Cache hasil audit AI (jam)',
         'vtual.content_classification.ai.connection' => 'Koneksi audit AI (kosong = default)',
+        'vtual.incidents.enabled' => 'Perekam insiden aktif (triage integrasi vTual)',
+        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
+        'vtual.metrics.enabled' => 'Riwayat metrik aktif (snapshot vTual)',
+        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
+        'vtual.metrics.channel_interval_minutes' => 'Interval metrik kanal (menit)',
+        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
+        'vtual.metrics.content_interval_minutes' => 'Interval metrik CCV live (menit)',
+        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
+        'vtual.metrics.retention_days' => 'Retensi riwayat metrik (hari)',
     ],
     'hints' => [
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
@@ -263,6 +272,9 @@ return [
         'vtual.claim.discord_verify_enabled' => 'Izinkan pengguna memverifikasi klaim yatim dengan mencocokkan akun YouTube/Twitch yang tertaut di Discord.',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'vtual.channel_claim.discord_verify_enabled' => 'Izinkan pemilik profil memverifikasi klaim kanal melalui akun YouTube/Twitch yang tertaut di Discord.',
+        'vtual.incidents.enabled' => 'Catat kegagalan integrasi vTual (WebSub, EventSub, kredensial, ingest) sebagai insiden terkelompok yang bisa ditriase. Matikan saat gangguan platform menyeluruh agar antrean tetap terbaca.',
+        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
+        'vtual.metrics.enabled' => 'Tambahkan sampel jumlah pelanggan / penonton bersamaan ke tabel riwayat pada setiap penyegaran. Matikan untuk menyimpan kolom nilai saat ini saja.',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => 'Berapa lama snapshot koneksi Discord tersimpan dipercaya sebelum kegagalan verifikasi memicu penyegaran langsung melalui Discord API.',
     ],

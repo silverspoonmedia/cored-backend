@@ -14,6 +14,7 @@ use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\ChannelFetchPoolItem;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Support\VtualChannelRealtime;
+use App\Domain\Vtual\Support\VtualMetricRecorder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -342,6 +343,10 @@ class ChannelFetchPoolService
 
             $channel->forceFill($this->snapshotAttributesFromDto($dto))->save();
             $updated[] = $channel;
+
+            // Timeline: the point-in-time column was just overwritten, so this is
+            // the only moment the previous value's successor can be recorded.
+            app(VtualMetricRecorder::class)->recordChannel($channel);
 
             if ($channel->visibility === ChannelVisibility::Public
                 && $channel->discovery_source === ChannelDiscoverySource::DiscordConnection

@@ -68,6 +68,16 @@ class Management extends Model
     }
 
     /**
+     * Delegated per-creator capability grants (additive on top of the role).
+     *
+     * @return HasMany<ManagementCreatorGrant, $this>
+     */
+    public function creatorGrants(): HasMany
+    {
+        return $this->hasMany(ManagementCreatorGrant::class, 'management_id');
+    }
+
+    /**
      * @return MorphMany<ExternalLink, $this>
      */
     public function externalLinks(): MorphMany

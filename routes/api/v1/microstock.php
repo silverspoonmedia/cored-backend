@@ -41,6 +41,10 @@ Route::middleware(['auth:api', 'domain.access:Microstock', 'product.active:Micro
             ->whereUuid('folder')->name('collections.export');
         Route::get('collections/{folder}/download', [CollectionController::class, 'download'])
             ->whereUuid('folder')->name('collections.download');
+        Route::post('collections/{folder}/upload', [CollectionController::class, 'upload'])
+            ->whereUuid('folder')->name('collections.upload');
+        Route::get('collections/{folder}/upload', [CollectionController::class, 'uploadStatus'])
+            ->whereUuid('folder')->name('collections.upload.status');
 
         Route::get('credentials', [CredentialController::class, 'index'])->name('credentials.index');
         Route::post('credentials', [CredentialController::class, 'store'])->name('credentials.store');

@@ -3,6 +3,7 @@
 namespace App\Domain\Vtual\Http\Controllers\API\V1;
 
 use App\Domain\Vtual\Http\Requests\AssignCreatorRequest;
+use App\Domain\Vtual\Http\Requests\StoreManagementCreatorGrantRequest;
 use App\Domain\Vtual\Http\Requests\StoreManagementInviteRequest;
 use App\Domain\Vtual\Http\Requests\StoreManagementRequest;
 use App\Domain\Vtual\Http\Requests\UpdateManagementMemberRequest;
@@ -202,6 +203,47 @@ class ManagementController extends Controller
         return $this->successResponse(
             $this->resolveResource(new ManagementMemberResource($updated)),
             __('api/vtual.management.member_updated'),
+        );
+    }
+
+    /**
+     * Delegated per-creator capability grants (additive on top of the role).
+     */
+    public function storeCreatorGrant(StoreManagementCreatorGrantRequest $request, Management $management): JsonResponse
+    {
+        $this->authorize('update', $management);
+
+        $grant = $this->managements->grantCreatorCapability(
+            $request->user(),
+            $management->id,
+            (string) $request->validated('member_id'),
+            (string) $request->validated('creator_id'),
+            (string) $request->validated('capability'),
+        );
+
+        return $this->successResponse(
+            [
+                'id' => $grant->id,
+                'member_id' => $grant->member_id,
+                'creator_id' => $grant->creator_id,
+                'capability' => $grant->capability instanceof \BackedEnum ? $grant->capability->value : $grant->capability,
+                'creator_display_name' => $grant->creator?->display_name,
+                'member_user_name' => $grant->member?->user?->name,
+            ],
+            __('api/vtual.management.grant_created'),
+            201,
+        );
+    }
+
+    public function destroyCreatorGrant(Request $request, Management $management, string $grant): JsonResponse
+    {
+        $this->authorize('update', $management);
+
+        $this->managements->revokeCreatorGrant($request->user(), $management->id, $grant);
+
+        return $this->successResponse(
+            null,
+            __('api/vtual.management.grant_revoked'),
         );
     }
 }

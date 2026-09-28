@@ -5,7 +5,11 @@ use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Support\InvoiceChannelAuthorizer;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Models\CreatorClaim;
+use App\Domain\Vtual\Models\Management;
+use App\Domain\Vtual\Services\CreatorAccessService;
+use App\Domain\Vtual\Services\ManagementAccessService;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function (User $user, string $id): bool {
@@ -63,18 +67,24 @@ Broadcast::channel('vtual.platform-credentials', function (User $user): bool {
     return $user->can('view vtual platform credentials');
 });
 
+// Integration incident triage queue ping. Payload is ids + enums only — the
+// incident title/detail carry platform error text, so the list refetches.
+Broadcast::channel('vtual.incidents', function (User $user): bool {
+    return $user->can('view vtual incident');
+});
+
 Broadcast::channel('vtual.creator.{creatorId}', function (User $user, string $creatorId): bool {
-    $creator = \App\Domain\Vtual\Models\Creator::query()->find($creatorId);
+    $creator = Creator::query()->find($creatorId);
 
     return $creator !== null
-        && app(\App\Domain\Vtual\Services\CreatorAccessService::class)->canView($creator, $user);
+        && app(CreatorAccessService::class)->canView($creator, $user);
 });
 
 Broadcast::channel('vtual.management.{managementId}', function (User $user, string $managementId): bool {
-    $management = \App\Domain\Vtual\Models\Management::query()->find($managementId);
+    $management = Management::query()->find($managementId);
 
     return $management !== null
-        && app(\App\Domain\Vtual\Services\ManagementAccessService::class)->canView($management, $user);
+        && app(ManagementAccessService::class)->canView($management, $user);
 });
 
 Broadcast::channel('navigation.menus', function (User $user): bool {

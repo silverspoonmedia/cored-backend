@@ -18,6 +18,7 @@ final class WorkerQueues
         'collection_vision_free',
         'collection_thinking_free',
         'solo_free',
+        'upload',
     ];
 
     /**

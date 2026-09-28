@@ -33,6 +33,36 @@ return [
     'collection_processing' => 'Collection analysis started.',
     'collection_status' => 'Collection status loaded.',
     'collection_exported' => 'Collection exported.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_disabled' => 'Marketplace upload is turned off on this platform.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_marketplace_unsupported' => 'Uploads to :marketplace are not supported yet.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_not_ready' => 'Curate the collection first — only a reviewed or exported collection can be uploaded.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_nothing_finalized' => 'No finalized metadata in this collection to upload.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_filename_invalid' => 'The filename :name cannot be uploaded. Rename it to letters, digits, dots, dashes or underscores.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_filename_duplicate' => 'Two files in this collection share the filename :name. Rename one of them.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_credential_incomplete' => 'The marketplace credential is missing its host or username.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_auth_failed' => 'The marketplace rejected these credentials.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_host_key_mismatch' => 'The marketplace host key does not match the configured fingerprint.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_remote_path_failed' => 'The remote folder :path could not be created.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_failed_manifest' => 'The metadata file :name could not be uploaded.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_failed_file' => 'The file :name could not be uploaded.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_failed' => 'The marketplace upload failed.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_queued' => 'Marketplace upload queued.',
+    // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+    'upload_status_loaded' => 'Upload status loaded.',
     'insufficient_ai_credits' => 'Insufficient AI credits. Purchase an AI credit pack from Services before running analysis.',
     'billing_loaded' => 'AI billing status loaded.',
     'ledger_loaded' => 'Billing ledger loaded.',

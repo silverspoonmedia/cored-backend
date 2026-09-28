@@ -11,6 +11,7 @@ use App\Domain\Vtual\Models\CreatorClaim;
 use App\Domain\Vtual\Models\CreatorClaimVerifyPoolItem;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Support\VtualClaimRealtime;
+use App\Domain\Vtual\Support\VtualMetricRecorder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -162,6 +163,10 @@ class CreatorClaimVerifyPoolService
                         $claim->channel->forceFill(
                             app(ChannelFetchPoolService::class)->snapshotAttributesFromDto($dto)
                         )->save();
+
+                        // Timeline: claim verification refreshes the snapshot too,
+                        // so it samples the channel like the pool flush does.
+                        app(VtualMetricRecorder::class)->recordChannel($claim->channel);
                     }
 
                     try {

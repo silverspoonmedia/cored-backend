@@ -115,6 +115,22 @@ return [
         'analyze' => 'Начать анализ',
         'export_csv' => 'Экспорт CSV',
         'download_csv' => 'Скачать CSV',
+        // curated at 2026-09-27T20:30:00+07:00 - ru curation wave
+        'upload_marketplace' => 'Загрузить в магазин',
+        // curated at 2026-09-27T20:30:00+07:00 - ru curation wave
+        'upload_no_credentials' => 'Учётных данных магазина пока нет. Добавьте их.',
+        // curated at 2026-09-27T20:30:00+07:00 - ru curation wave
+        'upload_manage_credentials' => 'Управление учётными данными',
+        // curated at 2026-09-27T20:30:00+07:00 - ru curation wave
+        'credential_status_failed' => 'Ошибка',
+        // curated at 2026-09-27T20:30:00+07:00 - ru curation wave
+        'upload_status_queued' => 'Загрузка в магазин добавлена в очередь.',
+        // curated at 2026-09-27T20:30:00+07:00 - ru curation wave
+        'upload_status_uploading' => 'Загрузка в магазин…',
+        // curated at 2026-09-27T20:30:00+07:00 - ru curation wave
+        'upload_status_uploaded' => 'Загружено в магазин.',
+        // curated at 2026-09-27T20:30:00+07:00 - ru curation wave
+        'upload_status_failed' => 'Не удалось загрузить в магазин.',
         'status_locked' => 'Коллекция заблокирована. Готова к анализу.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'status_processing' => 'ИИ анализирует эту коллекцию…',

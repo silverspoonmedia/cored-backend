@@ -110,6 +110,22 @@ return [
         'analyze' => '分析を開始',
         'export_csv' => 'CSVをエクスポート',
         'download_csv' => 'CSVをダウンロード',
+        // curated at 2026-09-27T20:30:00+07:00 - ja curation wave
+        'upload_marketplace' => 'マーケットプレイスへアップロード',
+        // curated at 2026-09-27T20:30:00+07:00 - ja curation wave
+        'upload_no_credentials' => 'マーケットプレイスの認証情報がまだありません。先に追加してください。',
+        // curated at 2026-09-27T20:30:00+07:00 - ja curation wave
+        'upload_manage_credentials' => '認証情報を管理',
+        // curated at 2026-09-27T20:30:00+07:00 - ja curation wave
+        'credential_status_failed' => '失敗',
+        // curated at 2026-09-27T20:30:00+07:00 - ja curation wave
+        'upload_status_queued' => 'マーケットプレイスへのアップロードを受け付けました。',
+        // curated at 2026-09-27T20:30:00+07:00 - ja curation wave
+        'upload_status_uploading' => 'マーケットプレイスへアップロード中…',
+        // curated at 2026-09-27T20:30:00+07:00 - ja curation wave
+        'upload_status_uploaded' => 'マーケットプレイスへアップロードしました。',
+        // curated at 2026-09-27T20:30:00+07:00 - ja curation wave
+        'upload_status_failed' => 'マーケットプレイスへのアップロードに失敗しました。',
         'status_locked' => 'コレクションをロックしました。分析の準備ができました。',
         // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
         'status_processing' => 'AI がこのコレクションを分析しています…',

@@ -44,6 +44,36 @@ return [
     'collection_status' => '컬렉션 상태를 불러왔습니다.',
     // curated at 2026-09-23T11:22:12+07:00 — ko curation wave
     'collection_exported' => '컬렉션을 내보냈습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_disabled' => '이 플랫폼에서는 마켓플레이스 업로드가 사용 중지되어 있습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_marketplace_unsupported' => ':marketplace 로의 업로드는 아직 지원되지 않습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_not_ready' => '먼저 컬렉션을 정리하세요. 검토 또는 내보내기 완료 상태의 컬렉션만 업로드할 수 있습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_nothing_finalized' => '이 컬렉션에는 업로드할 확정된 메타데이터가 없습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_invalid' => '파일 이름 :name 은(는) 업로드할 수 없습니다. 영문자, 숫자, 마침표, 하이픈, 밑줄로 바꾸세요.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_duplicate' => '이 컬렉션에 파일 이름 :name 이(가) 중복되어 있습니다. 하나의 이름을 바꾸세요.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_credential_incomplete' => '마켓플레이스 자격 증명에 호스트 또는 사용자 이름이 없습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_auth_failed' => '마켓플레이스가 이 자격 증명을 거부했습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_host_key_mismatch' => '마켓플레이스 호스트 키가 설정된 지문과 일치하지 않습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_remote_path_failed' => '원격 폴더 :path 을(를) 만들 수 없습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_manifest' => '메타데이터 파일 :name 을(를) 업로드할 수 없습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_file' => '파일 :name 을(를) 업로드할 수 없습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed' => '마켓플레이스 업로드에 실패했습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_queued' => '마켓플레이스 업로드가 대기열에 등록되었습니다.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_status_loaded' => '업로드 상태를 불러왔습니다.',
     // curated at 2026-09-23T13:18:49+07:00 — ko curation wave: register normalized to 해요체
     'insufficient_ai_credits' => 'AI 크레딧이 부족합니다. 분석을 실행하기 전에 서비스에서 AI 크레딧 팩을 구매하세요.',
     // curated at 2026-09-23T11:22:12+07:00 — ko curation wave

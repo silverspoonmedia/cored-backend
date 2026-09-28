@@ -44,6 +44,36 @@ return [
     'collection_processing' => '集合分析已开始。',
     'collection_status' => '集合状态已加载。',
     'collection_exported' => '集合已导出。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_disabled' => '此平台已停用上传到市场。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_marketplace_unsupported' => '尚不支持上传到 :marketplace。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_not_ready' => '请先整理集合——只有已审核或已导出的集合才能上传。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_nothing_finalized' => '此集合中没有可上传的已定稿元数据。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_invalid' => '文件名 :name 无法上传。请改为字母、数字、句点、连字符或下划线。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_duplicate' => '此集合中有两个文件使用文件名 :name。请重命名其中一个。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_credential_incomplete' => '市场凭证缺少主机或用户名。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_auth_failed' => '市场拒绝了此凭证。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_host_key_mismatch' => '市场主机密钥与配置的指纹不匹配。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_remote_path_failed' => '无法创建目标文件夹 :path。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_manifest' => '元数据文件 :name 上传失败。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_file' => '文件 :name 上传失败。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed' => '上传到市场失败。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_queued' => '已加入上传到市场的队列。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_status_loaded' => '上传状态已加载。',
     // curated at 2026-09-22T12:07:33+07:00 — zh_CN curation wave
     'insufficient_ai_credits' => 'AI 积分不足。运行分析前，请先在服务页面购买 AI 积分包。',
     'billing_loaded' => 'AI 计费状态已加载。',

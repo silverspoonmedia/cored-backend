@@ -14,6 +14,8 @@ use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Content;
 use App\Domain\Vtual\Models\ContentAppearance;
+use App\Domain\Vtual\Support\VtualContentStatusRecorder;
+use App\Domain\Vtual\Support\VtualMetricRecorder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +53,7 @@ class ContentService
      *     content_category_detail?: string|null,
      *     content_type?: string|ContentKind|null,
      *     category_id?: string|null,
+     *     category_name?: string|null,
      *     duration_seconds?: int|null,
      *     topic_categories?: list<string>|null,
      *     tags?: list<string>|null,
@@ -73,6 +76,11 @@ class ContentService
                 ->where('external_id', $externalId)
                 ->lockForUpdate()
                 ->first();
+
+            // Session timeline: the status this row carried before the hydrate, so
+            // a real transition can be told apart from a refresh of the same state
+            // (a six-hour stream is polled ~180 times and moves twice).
+            $previousStatus = $content?->status;
 
             $attrs = [
                 'creator_id' => $lockedChannel->creator_id,
@@ -97,6 +105,10 @@ class ContentService
                 'content_type' => $this->resolveKind($data),
                 'region_allowed' => $this->resolveRegionList($data['region_allowed'] ?? null),
                 'region_blocked' => $this->resolveRegionList($data['region_blocked'] ?? null),
+                // Uploader tags: a classification signal the backfill command and
+                // the AI drainer both need from the stored row. Internal — never
+                // serialized by ContentResource / PublicContentResource.
+                'tags' => $this->resolveTags($data['tags'] ?? null),
                 // Re-available: a successful hydrate clears any tombstone.
                 'first_unavailable_at' => null,
             ];
@@ -116,7 +128,21 @@ class ContentService
             // No-op unless the AI audit is enabled; never blocks hydrate.
             $this->aiAudit->enqueueIfEligible($content);
 
-            return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
+            $fresh = $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
+
+            // Timeline: hydrate is where CCV arrives (live poll, EventSub push,
+            // feed backfill). Only live rows are sampled — see the recorder.
+            app(VtualMetricRecorder::class)->recordContent($fresh);
+
+            // Session timeline: one row per observed transition of this content
+            // row, which *is* the broadcast (stream session id = external_id).
+            app(VtualContentStatusRecorder::class)->record(
+                $fresh,
+                $fresh->status,
+                $previousStatus,
+            );
+
+            return $fresh;
         }, 3);
     }
 
@@ -205,10 +231,23 @@ class ContentService
                 return;
             }
 
+            $previous = $content->status;
+
             $content->forceFill([
                 'status' => ContentStatus::Unavailable,
                 'first_unavailable_at' => $content->first_unavailable_at ?? now(),
             ])->save();
+
+            // Session timeline: a tombstone is the end of the row's usefulness —
+            // the platform no longer returns it. Idempotent like the status itself:
+            // the first mark records the transition, later ones see no change.
+            if ($previous !== ContentStatus::Unavailable) {
+                app(VtualContentStatusRecorder::class)->record(
+                    $content,
+                    ContentStatus::Unavailable,
+                    $previous,
+                );
+            }
         }, 3);
     }
 
@@ -234,6 +273,13 @@ class ContentService
                     'status' => ContentStatus::Ended,
                     'ended_at' => $content->ended_at ?? now(),
                 ])->save();
+
+                // Session timeline: the end of the broadcast this row represents.
+                app(VtualContentStatusRecorder::class)->record(
+                    $content,
+                    ContentStatus::Ended,
+                    ContentStatus::Live,
+                );
             }
 
             return $liveRows->count();
@@ -448,12 +494,14 @@ class ContentService
      * Filters (all optional, already validated by the caller):
      * - `platform`: platform key (`youtube`, `twitch`, ...) on the primary host
      * - `type`: content type (`live` | `archive` | `vod`)
+     * - `content_type`: music layer (`music` | `non_music`) — rows the classifier
+     *   left unknown (null) match neither, because "unknown" is not "non-music"
      * - `sort`: `newest` (default, live rows pinned first) | `oldest`
      *
      * Visibility rules (archived primary channel, unavailable tombstone,
      * creator + appearances scope) apply regardless of the filters.
      *
-     * @param  array{platform?: string|null, type?: string|null, sort?: string|null}  $filters
+     * @param  array{platform?: string|null, type?: string|null, content_type?: string|null, sort?: string|null}  $filters
      * @return LengthAwarePaginator<int, Content>
      */
     public function paginateForPublicProfile(
@@ -463,6 +511,7 @@ class ContentService
     ): LengthAwarePaginator {
         $platform = $filters['platform'] ?? null;
         $type = $filters['type'] ?? null;
+        $contentType = $filters['content_type'] ?? null;
         $oldestFirst = ($filters['sort'] ?? 'newest') === 'oldest';
 
         $query = Content::query()
@@ -479,6 +528,10 @@ class ContentService
             ->when(
                 is_string($type) && $type !== '',
                 fn ($q) => $q->where('type', $type),
+            )
+            ->when(
+                is_string($contentType) && $contentType !== '',
+                fn ($q) => $q->where('content_type', $contentType),
             )
             ->with(['channel', 'creator', 'platform', 'appearances']);
 
@@ -625,6 +678,7 @@ class ContentService
             'title' => $data['title'] ?? null,
             'description' => $data['description'] ?? null,
             'category_id' => $data['category_id'] ?? null,
+            'category_name' => $data['category_name'] ?? null,
             'duration_seconds' => $data['duration_seconds'] ?? null,
             'topic_categories' => $data['topic_categories'] ?? null,
             'tags' => $data['tags'] ?? null,
@@ -656,5 +710,41 @@ class ContentService
         }
 
         return $codes === [] ? null : array_keys($codes);
+    }
+
+    /**
+     * Uploader tags → stored JSON, de-duplicated and trimmed. An empty list is
+     * stored as null so "no tags" and "tags cleared upstream" look identical —
+     * the same convention `resolveRegionList` uses.
+     *
+     * @return list<string>|null
+     */
+    private function resolveTags(mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $tags = [];
+        foreach ($value as $tag) {
+            if (! is_string($tag)) {
+                continue;
+            }
+
+            $tag = trim($tag);
+            if ($tag === '') {
+                continue;
+            }
+
+            // Platform tag limits are generous but a hostile/huge payload must
+            // not bloat the row; keep the first 40 distinct labels.
+            if (count($tags) >= 40) {
+                break;
+            }
+
+            $tags[$tag] = true;
+        }
+
+        return $tags === [] ? null : array_keys($tags);
     }
 }

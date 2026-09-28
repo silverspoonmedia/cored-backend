@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Vtual\Feature\Http\Controllers\API\V1;
 
+use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\ContentAppearanceRole;
@@ -9,11 +10,22 @@ use App\Domain\Vtual\Enums\ContentCategory;
 use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
+use App\Domain\Vtual\Enums\CreatorMemberRole;
 use App\Domain\Vtual\Enums\EntityStatus;
+use App\Domain\Vtual\Enums\ExternalLinkKind;
+use App\Domain\Vtual\Enums\VtualEventStatus;
 use App\Domain\Vtual\Models\Channel;
+use App\Domain\Vtual\Models\Content;
+use App\Domain\Vtual\Models\ContentAppearance;
 use App\Domain\Vtual\Models\Creator;
+use App\Domain\Vtual\Models\CreatorMember;
+use App\Domain\Vtual\Models\Management;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Models\VtualEvent;
+use App\Domain\Vtual\Support\PublicLandingCache;
+use App\Support\Settings\Repositories\Contracts\SystemSettingRepositoryInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -221,16 +233,16 @@ class VtualPublicApiTest extends TestCase
     public function public_profile_is_claimable_false_when_owned_and_exposes_links(): void
     {
         $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
-        $user = \App\Domain\Identity\Models\User::factory()->create();
-        \App\Domain\Vtual\Models\CreatorMember::query()->create([
+        $user = User::factory()->create();
+        CreatorMember::query()->create([
             'creator_id' => $creator->id,
             'user_id' => $user->id,
-            'role' => \App\Domain\Vtual\Enums\CreatorMemberRole::Owner,
+            'role' => CreatorMemberRole::Owner,
         ]);
         $creator->externalLinks()->create([
             'label' => 'Discord',
             'url' => 'https://discord.gg/example',
-            'kind' => \App\Domain\Vtual\Enums\ExternalLinkKind::Social,
+            'kind' => ExternalLinkKind::Social,
             'sort_order' => 0,
         ]);
 
@@ -252,13 +264,13 @@ class VtualPublicApiTest extends TestCase
         $channel = $creator->channels()->firstOrFail();
 
         for ($i = 1; $i <= 13; $i++) {
-            \App\Domain\Vtual\Models\Content::query()->create([
+            Content::query()->create([
                 'creator_id' => $creator->id,
                 'channel_id' => $channel->id,
                 'platform_id' => $this->youtube->id,
                 'external_id' => 'vod-'.$i,
-                'type' => \App\Domain\Vtual\Enums\ContentType::Vod,
-                'status' => \App\Domain\Vtual\Enums\ContentStatus::Uploaded,
+                'type' => ContentType::Vod,
+                'status' => ContentStatus::Uploaded,
                 'title' => 'VOD '.$i,
                 'published_at' => now()->subDays($i),
             ]);
@@ -296,26 +308,26 @@ class VtualPublicApiTest extends TestCase
         $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
         $channel = $creator->channels()->firstOrFail();
 
-        \App\Domain\Vtual\Models\Content::query()->create([
+        Content::query()->create([
             'creator_id' => $creator->id,
             'channel_id' => $channel->id,
             'platform_id' => $this->youtube->id,
             'external_id' => 'vod-music',
-            'type' => \App\Domain\Vtual\Enums\ContentType::Vod,
-            'status' => \App\Domain\Vtual\Enums\ContentStatus::Uploaded,
+            'type' => ContentType::Vod,
+            'status' => ContentStatus::Uploaded,
             'title' => 'Music VOD',
             'content_type' => ContentKind::Music,
             'content_category' => ContentCategory::Cover,
             'published_at' => now()->subDay(),
         ]);
 
-        \App\Domain\Vtual\Models\Content::query()->create([
+        Content::query()->create([
             'creator_id' => $creator->id,
             'channel_id' => $channel->id,
             'platform_id' => $this->youtube->id,
             'external_id' => 'vod-game',
-            'type' => \App\Domain\Vtual\Enums\ContentType::Vod,
-            'status' => \App\Domain\Vtual\Enums\ContentStatus::Uploaded,
+            'type' => ContentType::Vod,
+            'status' => ContentStatus::Uploaded,
             'title' => 'Game VOD',
             'content_type' => ContentKind::NonMusic,
             'published_at' => now()->subDays(2),
@@ -331,6 +343,26 @@ class VtualPublicApiTest extends TestCase
         $this->assertSame('cover', $byTitle['Music VOD']['content_category']);
         $this->assertSame('non_music', $byTitle['Game VOD']['content_type']);
         $this->assertNull($byTitle['Game VOD']['content_category']);
+    }
+
+    #[Test]
+    public function public_profile_contents_never_expose_internal_uploader_tags(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+
+        $tagged = $this->vodContent($creator, 'vod-tagged', 'Tagged', now()->subDay());
+        $tagged->forceFill(['tags' => ['歌ってみた', 'supercell']])->save();
+
+        $items = $this->getJson('/api/v1/vtual/public/vtubers/neon-fox')
+            ->assertOk()
+            ->json('data.contents.items');
+
+        $row = collect($items)->firstWhere('title', 'Tagged');
+
+        // Tags are a classification signal, not presentation copy. Leaking them
+        // would also publish the raw platform payload key by key.
+        $this->assertNotNull($row);
+        $this->assertArrayNotHasKey('tags', $row);
     }
 
     #[Test]
@@ -366,13 +398,13 @@ class VtualPublicApiTest extends TestCase
         $channel = $creator->channels()->firstOrFail();
 
         for ($i = 1; $i <= 5; $i++) {
-            \App\Domain\Vtual\Models\Content::query()->create([
+            Content::query()->create([
                 'creator_id' => $creator->id,
                 'channel_id' => $channel->id,
                 'platform_id' => $this->youtube->id,
                 'external_id' => 'vod-'.$i,
-                'type' => \App\Domain\Vtual\Enums\ContentType::Vod,
-                'status' => \App\Domain\Vtual\Enums\ContentStatus::Uploaded,
+                'type' => ContentType::Vod,
+                'status' => ContentStatus::Uploaded,
                 'title' => 'VOD '.$i,
                 'published_at' => now()->subDays($i),
             ]);
@@ -524,7 +556,7 @@ class VtualPublicApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.event', null);
 
-        app(\App\Support\Settings\Repositories\Contracts\SystemSettingRepositoryInterface::class)
+        app(SystemSettingRepositoryInterface::class)
             ->upsertMany([
                 'vtual.landing.event.title' => 'Community Showcase',
                 'vtual.landing.event.starts_at' => '2026-09-01T20:00:00+09:00',
@@ -543,7 +575,7 @@ class VtualPublicApiTest extends TestCase
     {
         $this->activeCreatorWithPublicChannel('Neon Fox', 100);
 
-        app(\App\Support\Settings\Repositories\Contracts\SystemSettingRepositoryInterface::class)
+        app(SystemSettingRepositoryInterface::class)
             ->upsertMany([
                 'vtual.landing.event.title' => 'Broken',
                 'vtual.landing.event.starts_at' => 'not-a-date',
@@ -557,7 +589,7 @@ class VtualPublicApiTest extends TestCase
     #[Test]
     public function landing_carries_stats_live_and_schedule_subsets(): void
     {
-        \App\Domain\Vtual\Support\PublicLandingCache::flush();
+        PublicLandingCache::flush();
 
         $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 1500);
         $this->liveContent($creator, 'live-1');
@@ -579,7 +611,7 @@ class VtualPublicApiTest extends TestCase
     #[Test]
     public function schedule_excludes_past_and_untitled_rows(): void
     {
-        \App\Domain\Vtual\Support\PublicLandingCache::flush();
+        PublicLandingCache::flush();
 
         $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
         $this->scheduledContent($creator, 'sched-past', 'Past stream', now()->subDay());
@@ -596,34 +628,34 @@ class VtualPublicApiTest extends TestCase
     #[Test]
     public function landing_events_expose_upcoming_rows_only(): void
     {
-        \App\Domain\Vtual\Support\PublicLandingCache::flush();
+        PublicLandingCache::flush();
 
-        $management = \App\Domain\Vtual\Models\Management::query()->create([
+        $management = Management::query()->create([
             'slug' => 'org-alpha',
             'name' => 'Org Alpha',
             'status' => EntityStatus::Active,
         ]);
 
-        \App\Domain\Vtual\Models\VtualEvent::query()->create([
+        VtualEvent::query()->create([
             'management_id' => $management->id,
             'slug' => 'anniversary-live',
             'title' => 'Anniversary Live',
             'starts_at' => now()->addDays(2),
-            'status' => \App\Domain\Vtual\Enums\VtualEventStatus::Scheduled->value,
+            'status' => VtualEventStatus::Scheduled->value,
         ]);
-        \App\Domain\Vtual\Models\VtualEvent::query()->create([
+        VtualEvent::query()->create([
             'management_id' => $management->id,
             'slug' => 'past-event',
             'title' => 'Past event',
             'starts_at' => now()->subDay(),
-            'status' => \App\Domain\Vtual\Enums\VtualEventStatus::Ended->value,
+            'status' => VtualEventStatus::Ended->value,
         ]);
-        \App\Domain\Vtual\Models\VtualEvent::query()->create([
+        VtualEvent::query()->create([
             'management_id' => $management->id,
             'slug' => 'cancelled-event',
             'title' => 'Cancelled event',
             'starts_at' => now()->addDay(),
-            'status' => \App\Domain\Vtual\Enums\VtualEventStatus::Cancelled->value,
+            'status' => VtualEventStatus::Cancelled->value,
         ]);
 
         $items = $this->getJson('/api/v1/vtual/public/landing')
@@ -639,24 +671,24 @@ class VtualPublicApiTest extends TestCase
     #[Test]
     public function landing_exposes_events_key_and_flushes_on_event_save(): void
     {
-        \App\Domain\Vtual\Support\PublicLandingCache::flush();
+        PublicLandingCache::flush();
 
         $this->getJson('/api/v1/vtual/public/landing')
             ->assertOk()
             ->assertJsonPath('data.events', []);
 
-        $management = \App\Domain\Vtual\Models\Management::query()->create([
+        $management = Management::query()->create([
             'slug' => 'org-beta',
             'name' => 'Org Beta',
             'status' => EntityStatus::Active,
         ]);
 
-        \App\Domain\Vtual\Models\VtualEvent::query()->create([
+        VtualEvent::query()->create([
             'management_id' => $management->id,
             'slug' => 'debut-showcase',
             'title' => 'Debut Showcase',
             'starts_at' => now()->addDays(5),
-            'status' => \App\Domain\Vtual\Enums\VtualEventStatus::Scheduled->value,
+            'status' => VtualEventStatus::Scheduled->value,
         ]);
 
         $payload = $this->getJson('/api/v1/vtual/public/landing')
@@ -717,6 +749,53 @@ class VtualPublicApiTest extends TestCase
         $this->assertSame(['A VOD'], $titlesFor('vod'));
         $this->assertSame(['An archive'], $titlesFor('archive'));
         $this->assertSame(['Live now'], $titlesFor('live'));
+    }
+
+    #[Test]
+    public function public_profile_filters_contents_by_content_type(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+        $channel = $creator->channels()->firstOrFail();
+
+        $this->contentRow($creator, $channel, $this->youtube, 'music-1', 'A cover', ContentType::Vod, ContentStatus::Uploaded, now()->subDay(), ContentKind::Music);
+        $this->contentRow($creator, $channel, $this->youtube, 'non-music-1', 'A gameplay VOD', ContentType::Vod, ContentStatus::Uploaded, now()->subDays(2), ContentKind::NonMusic);
+        // Unclassified: the classifier has not decided yet, so it matches neither chip.
+        $this->contentRow($creator, $channel, $this->youtube, 'unknown-1', 'An unclassified VOD', ContentType::Vod, ContentStatus::Uploaded, now()->subDays(3));
+
+        $titlesFor = fn (string $kind): array => collect(
+            $this->getJson('/api/v1/vtual/public/vtubers/neon-fox?content_type='.$kind)
+                ->assertOk()
+                ->assertJsonPath('data.contents.filters.content_type', $kind)
+                ->json('data.contents.items'),
+        )->pluck('title')->all();
+
+        $this->assertSame(['A cover'], $titlesFor('music'));
+        $this->assertSame(['A gameplay VOD'], $titlesFor('non_music'));
+
+        $unfiltered = $this->getJson('/api/v1/vtual/public/vtubers/neon-fox')
+            ->assertOk()
+            ->assertJsonPath('data.contents.filters.content_type', null)
+            ->assertJsonPath('data.contents.pagination.total', 3)
+            ->json('data.contents.items');
+
+        $this->assertCount(3, $unfiltered);
+    }
+
+    #[Test]
+    public function public_profile_clamps_unknown_content_type_filter(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+        $channel = $creator->channels()->firstOrFail();
+
+        $this->contentRow($creator, $channel, $this->youtube, 'music-1', 'A cover', ContentType::Vod, ContentStatus::Uploaded, now()->subDay(), ContentKind::Music);
+        $this->contentRow($creator, $channel, $this->youtube, 'non-music-1', 'A gameplay VOD', ContentType::Vod, ContentStatus::Uploaded, now()->subDays(2), ContentKind::NonMusic);
+
+        $payload = $this->getJson('/api/v1/vtual/public/vtubers/neon-fox?content_type=nope')
+            ->assertOk()
+            ->json('data.contents');
+
+        $this->assertNull($payload['filters']['content_type']);
+        $this->assertSame(2, $payload['pagination']['total']);
     }
 
     #[Test]
@@ -806,7 +885,7 @@ class VtualPublicApiTest extends TestCase
 
         $collab = $this->contentRow($host, $hostChannel, $this->youtube, 'collab-1', 'Collab VOD', ContentType::Vod, ContentStatus::Uploaded, now());
 
-        \App\Domain\Vtual\Models\ContentAppearance::query()->create([
+        ContentAppearance::query()->create([
             'content_id' => $collab->id,
             'channel_id' => $guestChannel->id,
             'creator_id' => $guest->id,
@@ -856,8 +935,9 @@ class VtualPublicApiTest extends TestCase
         ContentType $type,
         ContentStatus $status,
         \DateTimeInterface $publishedAt,
-    ): \App\Domain\Vtual\Models\Content {
-        return \App\Domain\Vtual\Models\Content::query()->create([
+        ?ContentKind $contentType = null,
+    ): Content {
+        return Content::query()->create([
             'creator_id' => $creator->id,
             'channel_id' => $channel->id,
             'platform_id' => $platform->id,
@@ -867,13 +947,14 @@ class VtualPublicApiTest extends TestCase
             'title' => $title,
             'url' => 'https://example.test/watch/'.$externalId,
             'published_at' => $publishedAt,
+            'content_type' => $contentType,
         ]);
     }
 
     private function activeCreatorWithPublicChannel(string $name, int $subscribers): Creator
     {
         $creator = Creator::query()->create([
-            'slug' => \Illuminate\Support\Str::slug($name),
+            'slug' => Str::slug($name),
             'display_name' => $name,
             'status' => EntityStatus::Active,
         ]);
@@ -897,17 +978,17 @@ class VtualPublicApiTest extends TestCase
         ]);
     }
 
-    private function liveContent(Creator $creator, string $externalId): \App\Domain\Vtual\Models\Content
+    private function liveContent(Creator $creator, string $externalId): Content
     {
         $channel = $creator->channels()->firstOrFail();
 
-        return \App\Domain\Vtual\Models\Content::query()->create([
+        return Content::query()->create([
             'creator_id' => $creator->id,
             'channel_id' => $channel->id,
             'platform_id' => $this->youtube->id,
             'external_id' => $externalId,
-            'type' => \App\Domain\Vtual\Enums\ContentType::Live,
-            'status' => \App\Domain\Vtual\Enums\ContentStatus::Live,
+            'type' => ContentType::Live,
+            'status' => ContentStatus::Live,
             'title' => 'Live now',
             'url' => 'https://youtube.com/watch?v='.$externalId,
             'published_at' => now(),
@@ -919,16 +1000,16 @@ class VtualPublicApiTest extends TestCase
         string $externalId,
         string $title,
         \DateTimeInterface $scheduledAt,
-    ): \App\Domain\Vtual\Models\Content {
+    ): Content {
         $channel = $creator->channels()->firstOrFail();
 
-        return \App\Domain\Vtual\Models\Content::query()->create([
+        return Content::query()->create([
             'creator_id' => $creator->id,
             'channel_id' => $channel->id,
             'platform_id' => $this->youtube->id,
             'external_id' => $externalId,
-            'type' => \App\Domain\Vtual\Enums\ContentType::Live,
-            'status' => \App\Domain\Vtual\Enums\ContentStatus::Scheduled,
+            'type' => ContentType::Live,
+            'status' => ContentStatus::Scheduled,
             'title' => $title === '' ? null : $title,
             'url' => 'https://youtube.com/watch?v='.$externalId,
             'scheduled_at' => $scheduledAt,
@@ -942,16 +1023,16 @@ class VtualPublicApiTest extends TestCase
         \DateTimeInterface $publishedAt,
         ?Channel $channel = null,
         ?string $url = 'default',
-    ): \App\Domain\Vtual\Models\Content {
+    ): Content {
         $channel ??= $creator->channels()->firstOrFail();
 
-        return \App\Domain\Vtual\Models\Content::query()->create([
+        return Content::query()->create([
             'creator_id' => $creator->id,
             'channel_id' => $channel->id,
             'platform_id' => $this->youtube->id,
             'external_id' => $externalId,
-            'type' => \App\Domain\Vtual\Enums\ContentType::Vod,
-            'status' => \App\Domain\Vtual\Enums\ContentStatus::Uploaded,
+            'type' => ContentType::Vod,
+            'status' => ContentStatus::Uploaded,
             'title' => $title === '' ? null : $title,
             'url' => $url === 'default' ? 'https://youtube.com/watch?v='.$externalId : $url,
             'published_at' => $publishedAt,

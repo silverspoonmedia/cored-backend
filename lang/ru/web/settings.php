@@ -300,6 +300,15 @@ return [
         'vtual.content_classification.ai.cache_ttl_hours' => 'Кэш результатов ИИ-аудита (часов)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.content_classification.ai.connection' => 'Подключение ИИ для аудита (пусто = по умолчанию)',
+        'vtual.incidents.enabled' => 'Запись инцидентов включена (разбор сбоев интеграции vTual)',
+        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
+        'vtual.metrics.enabled' => 'История метрик включена (снимки vTual)',
+        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
+        'vtual.metrics.channel_interval_minutes' => 'Интервал метрик канала (минут)',
+        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
+        'vtual.metrics.content_interval_minutes' => 'Интервал метрик live CCV (минут)',
+        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
+        'vtual.metrics.retention_days' => 'Хранение истории метрик (дней)',
     ],
     'hints' => [
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
@@ -350,6 +359,9 @@ return [
         'vtual.claim.discord_verify_enabled' => 'Разрешить пользователям подтверждать заявки на сирот по совпадению связанных с Discord аккаунтов YouTube/Twitch.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.channel_claim.discord_verify_enabled' => 'Разрешить владельцам профилей подтверждать заявки на привязку каналов по совпадению связанных с Discord аккаунтов YouTube/Twitch.',
+        'vtual.incidents.enabled' => 'Записывать сбои интеграции vTual (WebSub, EventSub, учётные данные, загрузка данных) как сгруппированные инциденты для разбора. Отключите при общем сбое платформы, чтобы очередь оставалась читаемой.',
+        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
+        'vtual.metrics.enabled' => 'Добавлять снимок числа подписчиков и одновременных зрителей в таблицы истории при каждом обновлении. Отключите, чтобы хранить только текущие значения.',
         'identity.discord.connections_snapshot_max_age_minutes' => 'Как долго сохранённые снимки подключений Discord считаются достоверными, прежде чем промах проверки вызовет живое обновление через Discord API.',
     ],
     'options' => [

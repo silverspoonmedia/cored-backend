@@ -14,6 +14,11 @@ return [
     // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
     'verify_claim' => 'Verify claim',
     'accept_anyway' => 'Accept anyway',
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+    'acknowledge_incident' => 'Acknowledge',
+    'resolve_incident' => 'Resolve',
+    'open_credential' => 'Open credential',
+    'open_profile' => 'Open profile',
     'confirm' => [
         'archive_management' => 'Archive this management?',
         'cancel_event' => 'Cancel this event?',
@@ -36,5 +41,8 @@ return [
         'delete_ai_connection' => 'Delete this AI connection permanently? Consumers bound to its slug lose their endpoint until you bind another one.',
         'remove_blocklist_title' => 'Remove Entry',
         'remove_blocklist' => 'Remove this hash from the blocklist? Files with this checksum will be able to be shared publicly again.',
+        // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+        'resolve_incident_title' => 'Resolve incident',
+        'resolve_incident' => 'Mark this incident resolved? It reopens automatically if the failure happens again.',
     ],
 ];

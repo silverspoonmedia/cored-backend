@@ -14,6 +14,7 @@ use App\Domain\Vtual\Http\Controllers\API\V1\OrphanCreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformApiProbeController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformCredentialController;
+use App\Domain\Vtual\Http\Controllers\API\V1\VtualIncidentController;
 use App\Domain\Vtual\Http\Controllers\API\V1\VtuberProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -200,6 +201,15 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
             ->whereUuid(['management', 'member'])
             ->name('managements.members.update');
         // Member removal is unified through invite cancel (accepted → revoked).
+
+        // Delegated per-creator capability grants — same gate as member
+        // management, because delegating one creator is member management.
+        Route::post('managements/{management}/creator-grants', [ManagementController::class, 'storeCreatorGrant'])
+            ->whereUuid('management')
+            ->name('managements.creatorGrants.store');
+        Route::delete('managements/{management}/creator-grants/{grant}', [ManagementController::class, 'destroyCreatorGrant'])
+            ->whereUuid(['management', 'grant'])
+            ->name('managements.creatorGrants.destroy');
     });
 
     // Creator-invite management (vTuber profile linking). Same gates as
@@ -293,6 +303,23 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
             // Manual PlatformApiGateway probe (Root/Admin). Hits live YouTube/Twitch.
             Route::post('platform-api/probe', PlatformApiProbeController::class)
                 ->name('platform-api.probe');
+        });
+
+        // Integration incident triage queue. Read and manage are separate core
+        // permissions so a support role can watch the queue without the power to
+        // close an incident someone else is still working.
+        Route::middleware('permission:view vtual incident')->group(function (): void {
+            Route::get('incidents', [VtualIncidentController::class, 'index'])
+                ->name('incidents.index');
+            Route::get('incidents/{incident}', [VtualIncidentController::class, 'show'])
+                ->whereUuid('incident')
+                ->name('incidents.show');
+        });
+
+        Route::middleware('permission:manage vtual incident')->group(function (): void {
+            Route::patch('incidents/{incident}/status', [VtualIncidentController::class, 'updateStatus'])
+                ->whereUuid('incident')
+                ->name('incidents.status');
         });
     });
 });

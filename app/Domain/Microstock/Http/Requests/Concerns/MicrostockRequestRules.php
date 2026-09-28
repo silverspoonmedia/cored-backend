@@ -48,4 +48,14 @@ trait MicrostockRequestRules
             'secret' => ['required', 'array'],
         ];
     }
+
+    /**
+     * @return array<string, list<mixed>>
+     */
+    protected function uploadCollectionRules(): array
+    {
+        return [
+            'credential_id' => ['required', 'uuid'],
+        ];
+    }
 }

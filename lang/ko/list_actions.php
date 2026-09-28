@@ -14,6 +14,11 @@ return [
     // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
     'verify_claim' => '클레임 검증',
     'accept_anyway' => '무조건 수락',
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+    'acknowledge_incident' => '확인 처리',
+    'resolve_incident' => '해결 처리',
+    'open_credential' => '자격 증명 열기',
+    'open_profile' => '프로필 열기',
     'confirm' => [
         'archive_management' => '이 매니지먼트를 보관 처리하시겠습니까?',
         // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
@@ -39,5 +44,8 @@ return [
         'delete_ai_connection' => '이 AI 연결을 영구적으로 삭제하시겠습니까? 해당 슬러그에 바인딩된 소비자는 다른 연결을 바인딩할 때까지 엔드포인트를 사용할 수 없게 됩니다.',
         'remove_blocklist_title' => '항목 제거',
         'remove_blocklist' => '이 해시를 차단 목록에서 제거하시겠습니까? 이 체크섬을 가진 파일이 다시 공개적으로 공유될 수 있습니다.',
+        // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+        'resolve_incident_title' => '인시던트 해결',
+        'resolve_incident' => '이 인시던트를 해결됨으로 표시하시겠습니까? 같은 장애가 다시 발생하면 자동으로 다시 열립니다.',
     ],
 ];

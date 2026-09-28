@@ -42,6 +42,14 @@ class ContentAiClassifier
      *     duration_seconds?: int|null,
      *     topic_categories?: list<string>|null,
      *     tags?: list<string>|null,
+     *     channel_title?: string|null,
+     *     program_verdict?: array{
+     *         content_type?: string|null,
+     *         content_category?: string|null,
+     *         content_category_detail?: string|null,
+     *         signal?: string|null,
+     *         catalog?: string|null,
+     *     }|null,
      * }  $video
      * @return array{is_music: bool, category: ?ContentCategory, detail: ?string, confidence: float}|null
      */
@@ -96,6 +104,14 @@ class ContentAiClassifier
      *     duration_seconds?: int|null,
      *     topic_categories?: list<string>|null,
      *     tags?: list<string>|null,
+     *     channel_title?: string|null,
+     *     program_verdict?: array{
+     *         content_type?: string|null,
+     *         content_category?: string|null,
+     *         content_category_detail?: string|null,
+     *         signal?: string|null,
+     *         catalog?: string|null,
+     *     }|null,
      * }  $video
      * @return array{category: ContentCategory, detail: ?string, confidence: float}|null
      */
@@ -339,6 +355,12 @@ class ContentAiClassifier
             - cover: a performance of an existing song written by someone else (歌ってみた, covered by, cover).
             - detail: for covers only, the best-known original song attribution "Artist - Track" if you are confident; otherwise null.
 
+            The program classifier already ran and its verdict is provided as evidence. It is authoritative
+            for any layer it decided (a stated content type, or a stated sub-category): do not contradict it,
+            and fill in only the layers it left undecided. When the evidence includes a catalogue match,
+            treat that as the strongest available signal for original vs cover — a catalogue artist equal to
+            the uploader means the uploader wrote the song (original), a different artist means a cover.
+
             Japanese vTuber culture is the primary context (utaite / vocaloid covers). The category id and
             topics are hints only — vTubers file covers under Gaming or People & Blogs, so trust the
             title and description over the category id.
@@ -378,7 +400,65 @@ class ContentAiClassifier
             $lines[] = 'Uploader tags: '.implode(', ', array_slice($tags, 0, 25));
         }
 
+        $channelTitle = trim((string) ($video['channel_title'] ?? ''));
+        if ($channelTitle !== '') {
+            $lines[] = 'Uploader channel: '.$channelTitle;
+        }
+
+        $evidence = $this->evidenceLines($video['program_verdict'] ?? null);
+        if ($evidence !== []) {
+            $lines[] = 'Program classifier verdict (authoritative where stated):';
+            foreach ($evidence as $line) {
+                $lines[] = '  - '.$line;
+            }
+        }
+
         return implode("\n", $lines);
+    }
+
+    /**
+     * Render the program pass's verdict as prompt evidence.
+     *
+     * Only layers the program pass actually decided are reported. A null
+     * content_type means the program pass abstained, and saying "content type:
+     * unknown" would invite the model to fill it in as if it were a finding.
+     *
+     * @return list<string>
+     */
+    private function evidenceLines(mixed $verdict): array
+    {
+        if (! is_array($verdict)) {
+            return [];
+        }
+
+        $lines = [];
+
+        $type = trim((string) ($verdict['content_type'] ?? ''));
+        if ($type !== '') {
+            $lines[] = 'content type: '.$type;
+        }
+
+        $category = trim((string) ($verdict['content_category'] ?? ''));
+        if ($category !== '') {
+            $lines[] = 'sub-category: '.$category;
+        }
+
+        $detail = trim((string) ($verdict['content_category_detail'] ?? ''));
+        if ($detail !== '') {
+            $lines[] = 'attribution already found: '.$detail;
+        }
+
+        $signal = trim((string) ($verdict['signal'] ?? ''));
+        if ($signal !== '' && $signal !== 'none') {
+            $lines[] = 'deciding signal: '.$signal;
+        }
+
+        $catalog = trim((string) ($verdict['catalog'] ?? ''));
+        if ($catalog !== '') {
+            $lines[] = 'iTunes catalogue match: '.$catalog;
+        }
+
+        return $lines;
     }
 
     /**

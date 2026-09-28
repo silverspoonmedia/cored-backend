@@ -5,10 +5,12 @@ namespace App\Domain\Vtual\Services;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\CreatorMemberRole;
 use App\Domain\Vtual\Enums\ManagementMemberRole;
+use App\Domain\Vtual\Enums\VtualGrantCapability;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Models\CreatorMember;
 use App\Domain\Vtual\Models\ManagementMember;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +19,8 @@ class CreatorAccessService
     public const REQUEST_ROLES = 'vtual.creator.roles';
 
     public const REQUEST_MGMT_ROLES = 'vtual.creator.mgmt_roles';
+
+    public const REQUEST_GRANTS = 'vtual.creator.grants';
 
     public function findOrFail(string $creatorId): Creator
     {
@@ -60,6 +64,40 @@ class CreatorAccessService
             ->first();
 
         return $member?->role;
+    }
+
+    /**
+     * Highest delegated capability the actor holds over this creator
+     * (docs/domains/vtual/reference-capability-grants.md).
+     *
+     * Additive by design: the row only ever *widens* access, so callers must
+     * consult it **after** the role checks. A grant is scoped to a live org
+     * roster entry — the creator must still be actively assigned to the same
+     * management, otherwise the delegation is inert.
+     */
+    public function grantForCreator(Creator $creator, User $actor): ?VtualGrantCapability
+    {
+        $values = $this->grantQuery($actor)
+            ->where('g.creator_id', $creator->id)
+            ->pluck('g.capability');
+
+        return VtualGrantCapability::best($values);
+    }
+
+    /**
+     * Base query: the actor's grants over creators actively assigned to the
+     * same management. Shared by the single and batched lookups.
+     */
+    private function grantQuery(User $actor): QueryBuilder
+    {
+        return DB::table('vtual_management_creator_grants as g')
+            ->join('vtual_management_members as m', 'm.id', '=', 'g.member_id')
+            ->join('vtual_management_creators as mc', function ($join): void {
+                $join->on('mc.management_id', '=', 'g.management_id')
+                    ->on('mc.creator_id', '=', 'g.creator_id')
+                    ->whereNull('mc.left_at');
+            })
+            ->where('m.user_id', $actor->id);
     }
 
     public function roleFor(Creator $creator, User $actor): ?CreatorMemberRole
@@ -144,6 +182,66 @@ class CreatorAccessService
         $request->attributes->set(self::REQUEST_MGMT_ROLES, $mgmt);
     }
 
+    /**
+     * Batched delegated-grant lookup for a page of creators, so a roster or
+     * list resource stays one query instead of N.
+     *
+     * @param  iterable<mixed>  $creators
+     */
+    public function primeGrantLookup(Request $request, iterable $creators, User $actor): void
+    {
+        $ids = [];
+        foreach ($creators as $creator) {
+            if ($creator instanceof Creator) {
+                $ids[(string) $creator->id] = true;
+            }
+        }
+
+        if ($ids === []) {
+            return;
+        }
+
+        /** @var array<string, VtualGrantCapability|null> $grants */
+        $grants = $request->attributes->get(self::REQUEST_GRANTS, []);
+        $newIds = array_keys(array_diff_key($ids, $grants));
+
+        if ($newIds === []) {
+            return;
+        }
+
+        foreach ($newIds as $id) {
+            // Absent = checked, nothing granted. Keeps the map complete so a
+            // second resource in the same request never re-queries.
+            $grants[$id] = null;
+        }
+
+        $rows = $this->grantQuery($actor)
+            ->whereIn('g.creator_id', $newIds)
+            ->get(['g.creator_id', 'g.capability']);
+
+        foreach ($rows->groupBy('creator_id') as $creatorId => $group) {
+            $capability = VtualGrantCapability::best($group->pluck('capability'));
+            if ($capability !== null) {
+                $grants[(string) $creatorId] = $capability;
+            }
+        }
+
+        $request->attributes->set(self::REQUEST_GRANTS, $grants);
+    }
+
+    public function grantForCreatorRequest(Creator $creator, User $actor, Request $request): ?VtualGrantCapability
+    {
+        /** @var array<string, VtualGrantCapability|null> $grants */
+        $grants = $request->attributes->get(self::REQUEST_GRANTS, []);
+        $id = (string) $creator->id;
+
+        if (array_key_exists($id, $grants)) {
+            return $grants[$id];
+        }
+
+        return $this->grantForCreator($creator, $actor);
+    }
+
     public function roleForRequest(Creator $creator, User $actor, Request $request): ?CreatorMemberRole
     {
         /** @var array<string, CreatorMemberRole|null> $roles */
@@ -183,7 +281,14 @@ class CreatorAccessService
 
         // Active management assignment: any member role may view the linked
         // creator profile (Owner/Admin mutate below, Staff view-only).
-        return $this->managementRoleForCreator($creator, $actor) !== null;
+        if ($this->managementRoleForCreator($creator, $actor) !== null) {
+            return true;
+        }
+
+        // Delegated grant: additive only, consulted last.
+        $grant = $this->grantForCreator($creator, $actor);
+
+        return $grant !== null && $grant->atLeast(VtualGrantCapability::View);
     }
 
     public function canMutate(Creator $creator, User $actor): bool
@@ -200,8 +305,16 @@ class CreatorAccessService
         // Management Owner/Admin may edit linked creator profiles; Staff may not.
         $managementRole = $this->managementRoleForCreator($creator, $actor);
 
-        return $managementRole === ManagementMemberRole::Owner
-            || $managementRole === ManagementMemberRole::Admin;
+        if ($managementRole === ManagementMemberRole::Owner
+            || $managementRole === ManagementMemberRole::Admin) {
+            return true;
+        }
+
+        // Delegated grant: additive only, consulted last. This is the case the
+        // matrix exists for — a Staff member trusted with one named creator.
+        $grant = $this->grantForCreator($creator, $actor);
+
+        return $grant !== null && $grant->canMutate();
     }
 
     public function canManageMembers(Creator $creator, User $actor): bool

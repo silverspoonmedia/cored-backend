@@ -114,6 +114,13 @@ return [
         'event_cancelled' => 'تم إلغاء الفعالية.',
         'event_not_found' => 'لم يتم العثور على الفعالية لهذه الإدارة.',
         'event_not_actionable' => 'لا يمكن تغيير هذه الفعالية بعد الآن.',
+        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave: منح صلاحية الوصول لكل منشئ
+        'grants_list_success' => 'تم تحميل صلاحيات الوصول إلى منشئي المحتوى.',
+        'grant_created' => 'تم منح صلاحية الوصول إلى منشئ المحتوى.',
+        'grant_revoked' => 'تم إلغاء صلاحية الوصول إلى منشئ المحتوى.',
+        'grant_not_found' => 'لم يتم العثور على صلاحية الوصول إلى منشئ المحتوى.',
+        'grant_capability_invalid' => 'مستوى الوصول المطلوب منحه غير صالح.',
+        'grant_creator_not_assigned' => 'يجب ربط ملف منشئ المحتوى بهذه الإدارة قبل منح صلاحية الوصول.',
     ],
     'mail' => [
         'invite_subject' => 'دعوة للانضمام إلى :management',
@@ -239,6 +246,30 @@ return [
         'not_active' => 'بيانات الاعتماد غير نشطة.',
         'app_token_oauth_only' => 'تنطبق رموز وصول التطبيق على بيانات اعتماد oauth_app فقط.',
         'app_token_twitch_only' => 'إصدار رمز وصول التطبيق مطبق لـ Twitch فقط.',
+    ],
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incidents wave
+    'incident' => [
+        'list_success' => 'تم جلب حوادث التكامل بنجاح.',
+        'show_success' => 'تم جلب تفاصيل حادث التكامل بنجاح.',
+        'status_updated' => 'تم تحديث حالة الحادث بنجاح.',
+        'kinds' => [
+            'websub' => 'YouTube WebSub',
+            'eventsub' => 'Twitch EventSub',
+            'eventsub_notification' => 'تسليم Twitch EventSub',
+            'credential' => 'بيانات اعتماد المنصة',
+            'platform_http' => 'واجهة المنصة البرمجية',
+            'ingestion' => 'استيراد المحتوى',
+        ],
+        'severities' => [
+            'info' => 'معلومات',
+            'warning' => 'تحذير',
+            'critical' => 'حرج',
+        ],
+        'statuses' => [
+            'open' => 'مفتوح',
+            'acknowledged' => 'تم الاطلاع',
+            'resolved' => 'محلول',
+        ],
     ],
     'policy' => [
         'denied' => 'لا يسمح لك بتنفيذ هذا الإجراء.',

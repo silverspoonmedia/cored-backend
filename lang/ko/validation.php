@@ -3,60 +3,46 @@
 declare(strict_types=1);
 
 return [
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
     'accepted'               => ':attribute을(를) 동의해야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'accepted_if'            => ':attribute을(를) :other이(가) :value일 때 동의해야 합니다.',
+    'accepted_if'            => ':attribute을(를) :other이(가) :value이면 동의해야 합니다.',
     'active_url'             => ':attribute은(는) 유효한 URL이 아닙니다.',
     'after'                  => ':attribute은(는) :date 이후 날짜여야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'after_or_equal'         => ':attribute은(는) :date 이후이거나 같은 날짜여야 합니다.',
+    'after_or_equal'         => ':attribute은(는) :date 이후 날짜이거나 같은 날짜여야 합니다.',
     'alpha'                  => ':attribute은(는) 문자만 포함할 수 있습니다.',
     'alpha_dash'             => ':attribute은(는) 문자, 숫자, 대쉬(-), 밑줄(_)만 포함할 수 있습니다.',
     'alpha_num'              => ':attribute은(는) 문자와 숫자만 포함할 수 있습니다.',
     'any_of'                 => ':attribute은(는) 유효하지 않습니다.',
     'array'                  => ':attribute은(는) 배열이어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'ascii'                  => ':attribute은(는) 1바이트 영숫자 문자와 기호만 포함해야 합니다.',
+    'ascii'                  => ':attribute은 1바이트 영숫자 문자와 기호만 포함해야 합니다.',
     'before'                 => ':attribute은(는) :date 이전 날짜여야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'before_or_equal'        => ':attribute은(는) :date 이전이거나 같은 날짜여야 합니다.',
+    'before_or_equal'        => ':attribute은(는) :date 이전 날짜이거나 같은 날짜여야 합니다.',
     'between'                => [
         'array'   => ':attribute의 항목 수는 :min에서 :max 개의 항목이 있어야 합니다.',
         'file'    => ':attribute의 용량은 :min에서 :max 킬로바이트 사이여야 합니다.',
         'numeric' => ':attribute의 값은 :min에서 :max 사이여야 합니다.',
         'string'  => ':attribute의 길이는 :min에서 :max 문자 사이여야 합니다.',
     ],
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'boolean'                => ':attribute은(는) true 또는 false여야 합니다.',
+    'boolean'                => ':attribute은(는) true 또는 false 이어야 합니다.',
     'can'                    => ':attribute 필드에 승인되지 않은 값이 포함되어 있습니다.',
     'confirmed'              => ':attribute 확인 항목이 일치하지 않습니다.',
     'contains'               => ':attribute 필드에 필수 값이 누락되었습니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'current_password'       => '비밀번호가 올바르지 않습니다.',
+    'current_password'       => '패스워드가 일치하지 않습니다.',
     'date'                   => ':attribute은(는) 유효한 날짜가 아닙니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'date_equals'            => ':attribute은(는) :date과(와) 같은 날짜여야 합니다.',
+    'date_equals'            => ':attribute은(는) :date과(와) 같은날짜여야합니다.',
     'date_format'            => ':attribute이(가) :format 형식과 일치하지 않습니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'decimal'                => ':attribute은(는) 소수점 이하 :decimal자리여야 합니다.',
+    'decimal'                => ':attribute은 소수점 이하 :decimal자리여야 합니다.',
     'declined'               => ':attribute은(는) 거부되어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'declined_if'            => ':other이(가) :value일 때 :attribute은(는) 거부되어야 합니다.',
+    'declined_if'            => ':Other이(가) :value일때 :attribute은(는) 거부되어야 합니다.',
     'different'              => ':attribute와(과) :other은(는) 서로 달라야 합니다.',
     'digits'                 => ':attribute은(는) :digits 자리 숫자여야 합니다.',
     'digits_between'         => ':attribute은(는) :min에서 :max 자리 사이여야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'dimensions'             => ':attribute의 이미지 크기가 올바르지 않습니다.',
+    'dimensions'             => ':attribute은(는) 올바르지 않는 이미지 크기입니다.',
     'distinct'               => ':attribute 필드에 중복된 값이 있습니다.',
     'doesnt_contain'         => ':attribute 필드에는 다음 값들이 포함될 수 없습니다: :values.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'doesnt_end_with'        => ':attribute은(는) 다음 중 하나로 끝날 수 없습니다: :values.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'doesnt_start_with'      => ':attribute은(는) 다음 중 하나로 시작할 수 없습니다: :values.',
+    'doesnt_end_with'        => ':attribute은 다음 중 하나로 끝날 수 없습니다: :values.',
+    'doesnt_start_with'      => ':attribute은 다음 중 하나로 시작할 수 없습니다: :values.',
     'email'                  => ':attribute은(는) 유효한 이메일 주소여야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'encoding'               => ':attribute은(는) :encoding(으)로 인코딩되어야 합니다.',
+    'encoding'               => ':attribute은(는) :encoding (으)로 인코딩 되어야 합니다.',
     'ends_with'              => ':attribute은(는) 다음 중 하나로 끝나야 합니다: :values.',
     'enum'                   => ':attribute의 값이 잘못되었습니다.',
     'exists'                 => ':attribute이(가) 존재하지 않습니다.',
@@ -75,23 +61,19 @@ return [
         'numeric' => ':attribute의 값은 :value보다 같거나 커야 합니다.',
         'string'  => ':attribute의 길이는 :value보다 같거나 길어야 합니다.',
     ],
-    // curated at 2026-09-23T13:30:11+07:00 — ko curation wave: alignment pass (term unification, register, cross-side parity)
     'hcaptcha'               => '캡차 인증에 실패했습니다. 다시 시도하세요.',
     'hex_color'              => ':attribute 필드는 유효한 16진수 색상이어야 합니다.',
     'image'                  => ':attribute은(는) 이미지여야 합니다.',
     'in'                     => '선택된 :attribute은(는) 올바르지 않습니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'in_array'               => ':attribute 필드가 :other에 존재하지 않습니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'in_array_keys'          => ':attribute 필드에는 다음 키 중 하나 이상이 포함되어야 합니다: :values.',
+    'in_array'               => ':attribute 필드는 :other에 존재하지 않습니다.',
+    'in_array_keys'          => ':attribute 필드는 다음 중 하나 이상의 키를 포함해야 합니다: :values.',
     'integer'                => ':attribute은(는) 정수여야 합니다.',
     'ip'                     => ':attribute은(는) 유효한 IP 주소여야 합니다.',
     'ipv4'                   => ':attribute은(는) 유효한 IPv4 주소여야 합니다.',
     'ipv6'                   => ':attribute은(는) 유효한 IPv6 주소여야 합니다.',
     'json'                   => ':attribute은(는) JSON 문자열이어야 합니다.',
     'list'                   => ':attribute 필드는 목록이어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'lowercase'              => ':attribute은(는) 소문자여야 합니다.',
+    'lowercase'              => ':attribute은 소문자여야 합니다.',
     'lt'                     => [
         'array'   => ':attribute의 항목 수는 :value개 보다 작아야 합니다.',
         'file'    => ':attribute의 용량은 :value킬로바이트보다 작아야 합니다.',
@@ -111,8 +93,7 @@ return [
         'numeric' => ':attribute은(는) :max보다 클 수 없습니다.',
         'string'  => ':attribute은(는) :max자보다 클 수 없습니다.',
     ],
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'max_digits'             => ':attribute은(는) :max자리를 넘을 수 없습니다.',
+    'max_digits'             => ':attribute은 :max자리를 넘지 않아야 합니다.',
     'mimes'                  => ':attribute은(는) 다음의 파일 형식이어야 합니다: :values.',
     'mimetypes'              => ':attribute은(는) 다음의 파일 형식이어야 합니다: :values.',
     'min'                    => [
@@ -121,100 +102,67 @@ return [
         'numeric' => ':attribute은(는) 최소한 :min이어야 합니다.',
         'string'  => ':attribute은(는) 최소한 :min자이어야 합니다.',
     ],
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'min_digits'             => ':attribute은(는) :min자리 이상이어야 합니다.',
+    'min_digits'             => ':attribute은 :min자리 이상이어야 합니다.',
     'missing'                => ':attribute 필드가 없어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'missing_if'             => ':other이(가) :value일 때 :attribute 필드는 없어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'missing_unless'         => ':other이(가) :value이(가) 아닌 경우 :attribute 필드는 없어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'missing_with'           => ':values이(가) 있는 경우 :attribute 필드는 없어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'missing_with_all'       => ':values이(가) 모두 있는 경우 :attribute 필드는 없어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'multiple_of'            => ':attribute은(는) :value의 배수여야 합니다.',
+    'missing_if'             => ':Other이 :value일 때 :attribute 필드는 누락되어야 합니다.',
+    'missing_unless'         => ':Other이 :value이 아닌 경우 :attribute 필드는 누락되어야 합니다.',
+    'missing_with'           => ':Values이 있는 경우 :attribute 필드는 누락되어야 합니다.',
+    'missing_with_all'       => ':Values이 있는 경우 :attribute 필드는 누락되어야 합니다.',
+    'multiple_of'            => ':attribute 는 :value 의 배수여야 합니다.',
     'not_in'                 => '선택된 :attribute이(가) 올바르지 않습니다.',
     'not_regex'              => ':attribute의 형식이 올바르지 않습니다.',
     'numeric'                => ':attribute은(는) 숫자여야 합니다.',
     'password'               => [
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'letters'       => ':attribute은(는) 문자를 하나 이상 포함해야 합니다.',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'mixed'         => ':attribute은(는) 대문자와 소문자를 각각 하나 이상 포함해야 합니다.',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'numbers'       => ':attribute은(는) 숫자를 하나 이상 포함해야 합니다.',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'symbols'       => ':attribute은(는) 기호를 하나 이상 포함해야 합니다.',
-        // curated at 2026-09-23T13:18:50+07:00 — ko curation wave: register normalized to 해요체
-        'uncompromised' => '입력한 :attribute이(가) 데이터 유출로 노출되었습니다. 다른 :attribute을(를) 선택하세요.',
+        'letters'       => ':attribute은 적어도 하나의 문자를 포함해야 합니다.',
+        'mixed'         => ':attribute은 적어도 하나의 대문자와 하나의 소문자를 포함해야 합니다.',
+        'numbers'       => ':attribute은 적어도 하나의 숫자를 포함해야 합니다.',
+        'symbols'       => ':attribute은 적어도 하나의 기호를 포함해야 합니다.',
+        'uncompromised' => '주어진 :attribute이 데이터 유출로 나타났습니다. 다른 :attribute개를 선택하세요.',
     ],
     'present'                => ':attribute 필드가 있어야 합니다.',
     'present_if'             => ':other이 :value인 경우 :attribute 필드가 있어야 합니다.',
     'present_unless'         => ':other이 :value이 아닌 이상 :attribute 필드가 있어야 합니다.',
     'present_with'           => ':values이 있으면 :attribute 필드도 있어야 합니다.',
     'present_with_all'       => ':values이 있을 때 :attribute 필드도 있어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'prohibited'             => ':attribute은(는) 금지되어 있습니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'prohibited_if'          => ':other이(가) :value인 경우 :attribute은(는) 금지되어 있습니다.',
+    'prohibited'             => ':attribute (은)는 금지되어 있습니다.',
+    'prohibited_if'          => ':attribute (은)는 :other 이(가) :value 인 경우 금지되어 있습니다.',
     'prohibited_if_accepted' => ':attribute 필드는 :other이 허용되면 금지됩니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'prohibited_if_declined' => ':other이(가) 거부된 경우 :attribute은(는) 금지되어 있습니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'prohibited_unless'      => ':other이(가) :values에 없는 경우 :attribute은(는) 금지되어 있습니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'prohibits'              => ':attribute이(가) 있으면 :other은(는) 있을 수 없습니다.',
+    'prohibited_if_declined' => ':other이 감소 할 때 :attribute 필드는 금지됩니다.',
+    'prohibited_unless'      => ':attribute (은)는 :other 이(가) :value 이(가) 아닌 경우 금지되어 있습니다.',
+    'prohibits'              => ':attribute (은)는 :other 을(를) 금지합니다.',
     'regex'                  => ':attribute 형식이 올바르지 않습니다.',
     'required'               => ':attribute 필드는 필수입니다.',
     'required_array_keys'    => ':attribute 필드는 :values에 대한 항목을 포함해야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'required_if'            => ':other이(가) :value일 때 :attribute 필드는 필수입니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'required_if_accepted'   => ':other이(가) 허용된 경우 :attribute 필드는 필수입니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'required_if_declined'   => ':other이(가) 거부된 경우 :attribute 필드는 필수입니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'required_unless'        => ':other이(가) :values에 없는 경우 :attribute 필드는 필수입니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'required_with'          => ':values이(가) 있는 경우 :attribute 필드는 필수입니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'required_with_all'      => ':values이(가) 모두 있는 경우 :attribute 필드는 필수입니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'required_without'       => ':values이(가) 없는 경우 :attribute 필드는 필수입니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'required_without_all'   => ':values이(가) 모두 없는 경우 :attribute 필드는 필수입니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'same'                   => ':attribute은(는) :other과(와) 일치해야 합니다.',
+    'required_if'            => ':Other이(가) :value 일 때 :attribute 필드는 필수입니다.',
+    'required_if_accepted'   => ':Other이 승인되면 :attribute 필드가 필요합니다.',
+    'required_if_declined'   => ':other이 거부되는 경우 :attribute 필드가 필요합니다.',
+    'required_unless'        => ':Other이(가) :values에 없다면 :attribute 필드는 필수입니다.',
+    'required_with'          => ':Values이(가) 있는 경우 :attribute 필드는 필수입니다.',
+    'required_with_all'      => ':Values이(가) 모두 있는 경우 :attribute 필드는 필수입니다.',
+    'required_without'       => ':Values이(가) 없는 경우 :attribute 필드는 필수입니다.',
+    'required_without_all'   => ':Values이(가) 모두 없는 경우 :attribute 필드는 필수입니다.',
+    'same'                   => ':attribute와(과) :other은(는) 일치해야 합니다.',
     'size'                   => [
         'array'   => ':attribute은(는) :size개의 항목을 포함해야 합니다.',
         'file'    => ':attribute은(는) :size킬로바이트여야 합니다.',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'numeric' => ':attribute은(는) :size여야 합니다.',
+        'numeric' => ':attribute은(는) :size (이)여야 합니다.',
         'string'  => ':attribute은(는) :size자여야 합니다.',
     ],
     'starts_with'            => ':attribute은(는) :values 중 하나로 시작해야 합니다.',
     'string'                 => ':attribute은(는) 문자열이어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'timezone'               => ':attribute은(는) 올바른 시간대여야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'ulid'                   => ':attribute은(는) 유효한 ULID여야 합니다.',
+    'timezone'               => ':attribute은(는) 올바른 시간대 이어야 합니다.',
+    'ulid'                   => ':attribute은 유효한 ULID여야 합니다.',
     'unique'                 => ':attribute은(는) 이미 사용 중입니다.',
     'uploaded'               => ':attribute을(를) 업로드하지 못했습니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'uppercase'              => ':attribute은(는) 대문자여야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'url'                    => ':attribute은(는) 유효한 URL이어야 합니다.',
-    // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-    'uuid'                   => ':attribute은(는) 유효한 UUID여야 합니다.',
+    'uppercase'              => ':attribute은 대문자여야 합니다.',
+    'url'                    => ':attribute은(는) 형식은 올바르지 않습니다.',
+    'uuid'                   => ':attribute은(는) 유효한UUID여야합니다.',
     'attributes'             => [
         'address'                  => '주소',
         'affiliate_url'            => '제휴 URL',
         'age'                      => '나이',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'amount'                   => '금액',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'announcement'             => '공지',
+        'amount'                   => '양',
+        'announcement'             => '발표',
         'area'                     => '지역',
         'audience_prize'           => '관객상',
         'audience_winner'          => '관객 투표 우승자',
@@ -222,8 +170,7 @@ return [
         'birthday'                 => '생일',
         'body'                     => '내용',
         'city'                     => '도시',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'color'                    => '색상',
+        'color'                    => 'color',
         'company'                  => '회사',
         'compilation'              => '편집',
         'concept'                  => '콘셉트',
@@ -254,7 +201,6 @@ return [
         'gender'                   => '성별',
         'grand_prize'              => '대상',
         'group'                    => '그룹',
-        // curated at 2026-09-23T14:02:04+07:00 — missing hCaptcha attribute label
         'h-captcha-response'       => '캡차',
         'hour'                     => '시',
         'image'                    => '이미지',
@@ -290,11 +236,8 @@ return [
         'postal_code'              => '우편 번호',
         'preview'                  => '미리보기',
         'price'                    => '가격',
-        // curated at 2026-09-23T10:56:44+07:00 — ko curation wave
         'product_id'               => '제품 ID',
-        // curated at 2026-09-23T10:56:44+07:00 — ko curation wave
         'product_uid'              => '제품 UID',
-        // curated at 2026-09-23T10:56:44+07:00 — ko curation wave
         'product_uuid'             => '제품 UUID',
         'promo_code'               => '프로모션 코드',
         'province'                 => '주',
@@ -303,17 +246,14 @@ return [
         'recaptcha_response_field' => 'reCAPTCHA 응답 필드',
         'referee'                  => '심판',
         'referees'                 => '심판',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'region'                   => '지역',
+        'region'                   => 'region',
         'reject_reason'            => '거부 이유',
         'remember'                 => '기억하기',
         'restored_at'              => '복원 시간',
         'result_text_under_image'  => '이미지 아래의 결과 텍스트',
         'role'                     => '역할',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'rule'                     => '규칙',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'rules'                    => '규칙',
+        'rule'                     => '단일 규칙',
+        'rules'                    => '규칙 목록',
         'second'                   => '초',
         'sex'                      => '성별',
         'shipment'                 => '배송',
@@ -345,7 +285,6 @@ return [
         'value'                    => '값',
         'winner'                   => '우승자',
         'work'                     => '업무',
-        // curated at 2026-09-23T11:05:10+07:00 — ko curation wave
-        'year'                     => '연도',
+        'year'                     => '년',
     ],
 ];

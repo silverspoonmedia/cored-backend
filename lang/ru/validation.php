@@ -3,422 +3,253 @@
 declare(strict_types=1);
 
 return [
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'accepted'               => 'Поле :attribute должно быть принято.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'accepted_if'            => 'Поле :attribute должно быть принято, когда :other равно :value.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'active_url'             => 'Поле :attribute должно быть действительным URL.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'after'                  => 'Поле :attribute должно быть датой позже :date.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'after_or_equal'         => 'Поле :attribute должно быть датой не раньше :date.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'alpha'                  => 'Поле :attribute должно содержать только буквы.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'alpha_dash'             => 'Поле :attribute должно содержать только буквы, цифры, дефисы и подчёркивания.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'alpha_num'              => 'Поле :attribute должно содержать только буквы и цифры.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'any_of'                 => 'Поле :attribute недействительно.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'array'                  => 'Поле :attribute должно быть массивом.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'ascii'                  => 'Поле :attribute должно содержать только однобайтовые буквенно-цифровые символы и знаки.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'before'                 => 'Поле :attribute должно быть датой раньше :date.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'before_or_equal'        => 'Поле :attribute должно быть датой не позже :date.',
+    'accepted'               => 'Вы должны принять :attribute.',
+    'accepted_if'            => 'Вы должны принять :attribute, когда :other содержит :value.',
+    'active_url'             => 'Значение поля :attribute должно быть действительным URL адресом.',
+    'after'                  => 'Значение поля :attribute должно быть датой после :date.',
+    'after_or_equal'         => 'Значение поля :attribute должно быть датой после или равной :date.',
+    'alpha'                  => 'Значение поля :attribute может содержать только буквы.',
+    'alpha_dash'             => 'Значение поля :attribute может содержать только буквы, цифры, дефис и нижнее подчеркивание.',
+    'alpha_num'              => 'Значение поля :attribute может содержать только буквы и цифры.',
+    'any_of'                 => 'Значение поля :attribute не найдено в списке разрешённых.',
+    'array'                  => 'Значение поля :attribute должно быть массивом.',
+    'ascii'                  => 'Значение поля :attribute должно содержать только однобайтовые цифро-буквенные символы.',
+    'before'                 => 'Значение поля :attribute должно быть датой до :date.',
+    'before_or_equal'        => 'Значение поля :attribute должно быть датой до или равной :date.',
     'between'                => [
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'array'   => 'Поле :attribute должно содержать от :min до :max элементов.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'file'    => 'Поле :attribute должно быть от :min до :max килобайт.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'numeric' => 'Поле :attribute должно быть от :min до :max.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'string'  => 'Поле :attribute должно быть от :min до :max символов.',
+        'array'   => 'Количество элементов в поле :attribute должно быть от :min до :max.',
+        'file'    => 'Размер файла в поле :attribute должен быть от :min до :max Кб.',
+        'numeric' => 'Значение поля :attribute должно быть от :min до :max.',
+        'string'  => 'Количество символов в поле :attribute должно быть от :min до :max.',
     ],
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'boolean'                => 'Поле :attribute должно иметь значение true или false.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'can'                    => 'Поле :attribute содержит недопустимое значение.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'confirmed'              => 'Подтверждение поля :attribute не совпадает.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'contains'               => 'В поле :attribute отсутствует обязательное значение.',
+    'boolean'                => 'Значение поля :attribute должно быть логического типа.',
+    'can'                    => 'Значение поля :attribute должно быть авторизованным.',
+    'confirmed'              => 'Значение поля :attribute не совпадает с подтверждаемым.',
+    'contains'               => 'В поле :attribute отсутствует необходимое значение.',
     'current_password'       => 'Неверный пароль.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'date'                   => 'Поле :attribute должно быть действительной датой.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'date_equals'            => 'Поле :attribute должно быть датой, равной :date.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'date_format'            => 'Поле :attribute должно соответствовать формату :format.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'decimal'                => 'Поле :attribute должно иметь :decimal десятичных знаков.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'declined'               => 'Поле :attribute должно быть отклонено.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'declined_if'            => 'Поле :attribute должно быть отклонено, когда :other равно :value.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'different'              => 'Поля :attribute и :other должны различаться.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'digits'                 => 'Поле :attribute должно состоять из :digits цифр.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'digits_between'         => 'Поле :attribute должно содержать от :min до :max цифр.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'dimensions'             => 'Поле :attribute имеет недопустимые размеры изображения.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'distinct'               => 'Поле :attribute содержит повторяющееся значение.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'doesnt_contain'         => 'Поле :attribute не должно содержать ни одного из следующих значений: :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'doesnt_end_with'        => 'Поле :attribute не должно заканчиваться одним из следующих значений: :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'doesnt_start_with'      => 'Поле :attribute не должно начинаться с одного из следующих значений: :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'email'                  => 'Поле :attribute должно содержать корректный адрес электронной почты.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'encoding'               => 'Поле :attribute должно быть закодировано в :encoding.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'ends_with'              => 'Поле :attribute должно заканчиваться одним из следующих значений: :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'enum'                   => 'Выбранное значение для :attribute недействительно.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'exists'                 => 'Выбранное значение для :attribute недействительно.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'extensions'             => 'Поле :attribute должно иметь одно из следующих расширений: :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'file'                   => 'Поле :attribute должно быть файлом.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'filled'                 => 'Поле :attribute должно иметь значение.',
+    'date'                   => 'Значение поля :attribute должно быть корректной датой.',
+    'date_equals'            => 'Значение поля :attribute должно быть датой равной :date.',
+    'date_format'            => 'Значение поля :attribute должно соответствовать формату даты: :format.',
+    'decimal'                => 'Значение поля :attribute должно содержать :decimal цифр десятичных разрядов.',
+    'declined'               => 'Значение поля :attribute должно быть отклонено.',
+    'declined_if'            => 'Значение поля :attribute должно быть отклонено, когда :other содержит :value.',
+    'different'              => 'Значения полей :attribute и :other должны различаться.',
+    'digits'                 => 'Количество символов в поле :attribute должно быть равным :digits.',
+    'digits_between'         => 'Количество символов в поле :attribute должно быть от :min до :max.',
+    'dimensions'             => 'Изображение, указанное в поле :attribute, имеет недопустимые размеры.',
+    'distinct'               => 'Элементы в значении поля :attribute не должны повторяться.',
+    'doesnt_contain'         => 'Значение поля :attribute не должно содержать ни одного из следующих элементов: :values.',
+    'doesnt_end_with'        => 'Значение поля :attribute не должно заканчиваться одним из следующих: :values.',
+    'doesnt_start_with'      => 'Значение поля :attribute не должно начинаться с одного из следующих: :values.',
+    'email'                  => 'Значение поля :attribute должно быть действительным электронным адресом.',
+    'encoding'               => 'Значение поля :attribute должно быть в кодировке :encoding.',
+    'ends_with'              => 'Значение поля :attribute должно заканчиваться одним из следующих: :values',
+    'enum'                   => 'Значение поля :attribute отсутствует в списке разрешённых.',
+    'exists'                 => 'Значение поля :attribute не существует.',
+    'extensions'             => 'Файл в поле :attribute должен иметь одно из следующих расширений: :values.',
+    'file'                   => 'В поле :attribute должен быть указан файл.',
+    'filled'                 => 'Значение поля :attribute обязательно для заполнения.',
     'gt'                     => [
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'array'   => 'Поле :attribute должно содержать более :value элементов.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'file'    => 'Поле :attribute должно быть больше :value килобайт.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'numeric' => 'Поле :attribute должно быть больше :value.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'string'  => 'Поле :attribute должно быть больше :value символов.',
+        'array'   => 'Количество элементов в поле :attribute должно быть больше :value.',
+        'file'    => 'Размер файла, указанный в поле :attribute, должен быть больше :value Кб.',
+        'numeric' => 'Значение поля :attribute должно быть больше :value.',
+        'string'  => 'Количество символов в поле :attribute должно быть больше :value.',
     ],
     'gte'                    => [
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'array'   => 'Поле :attribute должно содержать :value элементов или больше.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'file'    => 'Поле :attribute должно быть не меньше :value килобайт.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'numeric' => 'Поле :attribute должно быть не меньше :value.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'string'  => 'Поле :attribute должно быть не меньше :value символов.',
+        'array'   => 'Количество элементов в поле :attribute должно быть :value или больше.',
+        'file'    => 'Размер файла, указанный в поле :attribute, должен быть :value Кб или больше.',
+        'numeric' => 'Значение поля :attribute должно быть :value или больше.',
+        'string'  => 'Количество символов в поле :attribute должно быть :value или больше.',
     ],
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
     'hcaptcha'               => 'Проверка капчи не пройдена. Попробуйте ещё раз.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'hex_color'              => 'Поле :attribute должно быть действительным шестнадцатеричным цветом.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'image'                  => 'Поле :attribute должно быть изображением.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'in'                     => 'Выбранное значение для :attribute некорректно.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'in_array'               => 'Поле :attribute должно существовать в :other.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'in_array_keys'          => 'Поле :attribute должно содержать хотя бы один из следующих ключей: :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'integer'                => 'Поле :attribute должно быть целым числом.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'ip'                     => 'Поле :attribute должно быть действительным IP-адресом.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'ipv4'                   => 'Поле :attribute должно быть действительным IPv4-адресом.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'ipv6'                   => 'Поле :attribute должно быть действительным IPv6-адресом.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'json'                   => 'Поле :attribute должно быть действительной JSON-строкой.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'list'                   => 'Поле :attribute должно быть списком.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'lowercase'              => 'Поле :attribute должно быть в нижнем регистре.',
+    'hex_color'              => 'Значение поля :attribute должно быть корректным цветом в HEX формате.',
+    'image'                  => 'Файл, указанный в поле :attribute, должен быть изображением.',
+    'in'                     => 'Значение поля :attribute отсутствует в списке разрешённых.',
+    'in_array'               => 'Значение поля :attribute должно быть указано в поле :other.',
+    'in_array_keys'          => 'Массив в значении поля :attribute должен иметь как минимум один из следующих ключей: :values.',
+    'integer'                => 'Значение поля :attribute должно быть целым числом.',
+    'ip'                     => 'Значение поля :attribute должно быть действительным IP-адресом.',
+    'ipv4'                   => 'Значение поля :attribute должно быть действительным IPv4-адресом.',
+    'ipv6'                   => 'Значение поля :attribute должно быть действительным IPv6-адресом.',
+    'json'                   => 'Значение поля :attribute должно быть JSON строкой.',
+    'list'                   => 'Значение поля :attribute должно быть списком.',
+    'lowercase'              => 'Значение поля :attribute должно быть в нижнем регистре.',
     'lt'                     => [
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'array'   => 'Поле :attribute должно содержать менее :value элементов.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'file'    => 'Поле :attribute должно быть меньше :value килобайт.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'numeric' => 'Поле :attribute должно быть меньше :value.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'string'  => 'Поле :attribute должно быть меньше :value символов.',
+        'array'   => 'Количество элементов в поле :attribute должно быть меньше :value.',
+        'file'    => 'Размер файла, указанный в поле :attribute, должен быть меньше :value Кб.',
+        'numeric' => 'Значение поля :attribute должно быть меньше :value.',
+        'string'  => 'Количество символов в поле :attribute должно быть меньше :value.',
     ],
     'lte'                    => [
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'array'   => 'Поле :attribute должно содержать не более :value элементов.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'file'    => 'Поле :attribute должно быть не больше :value килобайт.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'numeric' => 'Поле :attribute должно быть не больше :value.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'string'  => 'Поле :attribute должно быть не больше :value символов.',
+        'array'   => 'Количество элементов в поле :attribute должно быть :value или меньше.',
+        'file'    => 'Размер файла, указанный в поле :attribute, должен быть :value Кб или меньше.',
+        'numeric' => 'Значение поля :attribute должно быть равным или меньше :value.',
+        'string'  => 'Количество символов в поле :attribute должно быть :value или меньше.',
     ],
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'mac_address'            => 'Поле :attribute должно быть действительным MAC-адресом.',
+    'mac_address'            => 'Значение поля :attribute должно быть корректным MAC-адресом.',
     'max'                    => [
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'array'   => 'Поле :attribute должно содержать не более :max элементов.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'file'    => 'Поле :attribute должно быть не больше :max килобайт.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'numeric' => 'Поле :attribute должно быть не больше :max.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'string'  => 'Поле :attribute должно быть не больше :max символов.',
+        'array'   => 'Количество элементов в поле :attribute не может превышать :max.',
+        'file'    => 'Размер файла в поле :attribute не может быть больше :max Кб.',
+        'numeric' => 'Значение поля :attribute не может быть больше :max.',
+        'string'  => 'Количество символов в значении поля :attribute не может превышать :max.',
     ],
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'max_digits'             => 'Поле :attribute должно содержать не более :max цифр.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'mimes'                  => 'Поле :attribute должно быть файлом типа: :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'mimetypes'              => 'Поле :attribute должно быть файлом типа: :values.',
+    'max_digits'             => 'Значение поля :attribute не должно содержать больше :max цифр.',
+    'mimes'                  => 'Файл, указанный в поле :attribute, должен быть одного из следующих типов: :values.',
+    'mimetypes'              => 'Файл, указанный в поле :attribute, должен быть одного из следующих типов: :values.',
     'min'                    => [
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'array'   => 'Поле :attribute должно содержать не менее :min элементов.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'file'    => 'Поле :attribute должно быть не меньше :min килобайт.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'numeric' => 'Поле :attribute должно быть не меньше :min.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'string'  => 'Поле :attribute должно быть не меньше :min символов.',
+        'array'   => 'Количество элементов в поле :attribute должно быть не меньше :min.',
+        'file'    => 'Размер файла, указанный в поле :attribute, должен быть не меньше :min Кб.',
+        'numeric' => 'Значение поля :attribute должно быть не меньше :min.',
+        'string'  => 'Количество символов в поле :attribute должно быть не меньше :min.',
     ],
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'min_digits'             => 'Поле :attribute должно содержать не менее :min цифр.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'missing'                => 'Поле :attribute должно отсутствовать.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'missing_if'             => 'Поле :attribute должно отсутствовать, когда :other равно :value.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'missing_unless'         => 'Поле :attribute должно отсутствовать, если :other не равно :value.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'missing_with'           => 'Поле :attribute должно отсутствовать, когда присутствует :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'missing_with_all'       => 'Поле :attribute должно отсутствовать, когда присутствуют :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'multiple_of'            => 'Поле :attribute должно быть кратно :value.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'not_in'                 => 'Выбранное значение для :attribute недопустимо.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'not_regex'              => 'Неверный формат поля :attribute.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'numeric'                => 'Поле :attribute должно быть числом.',
+    'min_digits'             => 'Значение поля :attribute должно содержать не меньше :min цифр.',
+    'missing'                => 'Значение поля :attribute должно отсутствовать.',
+    'missing_if'             => 'Значение поля :attribute должно отсутствовать, когда :other содержит :value.',
+    'missing_unless'         => 'Значение поля :attribute должно отсутствовать, когда :other не содержит :value.',
+    'missing_with'           => 'Значение поля :attribute должно отсутствовать, если :values указано.',
+    'missing_with_all'       => 'Значение поля :attribute должно отсутствовать, когда указаны все :values.',
+    'multiple_of'            => 'Значение поля :attribute должно быть кратным :value',
+    'not_in'                 => 'Значение поля :attribute находится в списке запрета.',
+    'not_regex'              => 'Значение поля :attribute имеет некорректный формат.',
+    'numeric'                => 'Значение поля :attribute должно быть числом.',
     'password'               => [
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'letters'       => 'Поле :attribute должно содержать хотя бы одну букву.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'mixed'         => 'Поле :attribute должно содержать хотя бы одну заглавную и одну строчную букву.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'numbers'       => 'Поле :attribute должно содержать хотя бы одну цифру.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'symbols'       => 'Поле :attribute должно содержать хотя бы один символ.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'uncompromised' => 'Значение :attribute обнаружено в утечке данных. Выберите другое значение.',
+        'letters'       => 'Значение поля :attribute должно содержать хотя бы одну букву.',
+        'mixed'         => 'Значение поля :attribute должно содержать хотя бы одну прописную и одну строчную буквы.',
+        'numbers'       => 'Значение поля :attribute должно содержать хотя бы одну цифру.',
+        'symbols'       => 'Значение поля :attribute должно содержать хотя бы один символ.',
+        'uncompromised' => 'Значение поля :attribute обнаружено в утёкших данных. Пожалуйста, выберите другое значение для :attribute.',
     ],
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'present'                => 'Поле :attribute должно присутствовать.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'present_if'             => 'Поле :attribute должно присутствовать, когда :other равно :value.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'present_unless'         => 'Поле :attribute должно присутствовать, если :other не равно :value.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'present_with'           => 'Поле :attribute должно присутствовать, когда присутствует :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'present_with_all'       => 'Поле :attribute должно присутствовать, когда присутствуют :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'prohibited'             => 'Поле :attribute запрещено.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'prohibited_if'          => 'Поле :attribute запрещено, когда :other равно :value.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'prohibited_if_accepted' => 'Поле :attribute запрещено, когда :other принято.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'prohibited_if_declined' => 'Поле :attribute запрещено, когда :other отклонено.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'prohibited_unless'      => 'Поле :attribute запрещено, если :other не входит в :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'prohibits'              => 'Поле :attribute запрещает присутствие :other.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'regex'                  => 'Неверный формат поля :attribute.',
+    'present'                => 'Значение поля :attribute должно быть.',
+    'present_if'             => 'Значение поля :attribute должно быть когда :other содержит :value.',
+    'present_unless'         => 'Значение поля :attribute должно быть, если только :other не содержит :value.',
+    'present_with'           => 'Значение поля :attribute должно быть когда одно из :values присутствуют.',
+    'present_with_all'       => 'Значение поля :attribute должно быть когда все из значений присутствуют: :values.',
+    'prohibited'             => 'Значение поля :attribute запрещено.',
+    'prohibited_if'          => 'Значение поля :attribute запрещено, когда :other содержит :value.',
+    'prohibited_if_accepted' => 'Значение поля :attribute запрещено, если принято :other.',
+    'prohibited_if_declined' => 'Значение поля :attribute запрещено при отказе от :other.',
+    'prohibited_unless'      => 'Значение поля :attribute запрещено, если :other не состоит в :values.',
+    'prohibits'              => 'Значение поля :attribute запрещает присутствие :other.',
+    'regex'                  => 'Значение поля :attribute имеет некорректный формат.',
     'required'               => 'Поле :attribute обязательно.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'required_array_keys'    => 'Поле :attribute должно содержать записи для: :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'required_if'            => 'Поле :attribute является обязательным, если :other равен :value.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'required_if_accepted'   => 'Поле :attribute является обязательным, если принимается :other.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'required_if_declined'   => 'Поле :attribute является обязательным, если :other отклоняется.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'required_unless'        => 'Поле :attribute является обязательным, если :other не находится в :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'required_with'          => 'Поле :attribute является обязательным, если присутствует :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'required_with_all'      => 'Поле :attribute является обязательным, если присутствует :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'required_without'       => 'Поле :attribute является обязательным, если :values отсутствует.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'required_without_all'   => 'Поле :attribute является обязательным, если ни один из :values не присутствует.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'same'                   => 'Поле :attribute должно совпадать с :other.',
+    'required_array_keys'    => 'Массив, указанный в поле :attribute, обязательно должен иметь ключи: :values',
+    'required_if'            => 'Поле :attribute обязательно для заполнения, когда :other содержит :value.',
+    'required_if_accepted'   => 'Поле :attribute обязательно, когда :other принято.',
+    'required_if_declined'   => 'Поле :attribute обязательно, когда :other отклонено.',
+    'required_unless'        => 'Поле :attribute обязательно для заполнения, когда :other не содержит :values.',
+    'required_with'          => 'Поле :attribute обязательно для заполнения, когда :values указано.',
+    'required_with_all'      => 'Поле :attribute обязательно для заполнения, когда :values указано.',
+    'required_without'       => 'Поле :attribute обязательно для заполнения, когда :values не указано.',
+    'required_without_all'   => 'Поле :attribute обязательно для заполнения, когда ни одно из :values не указано.',
+    'same'                   => 'Значения полей :attribute и :other должны совпадать.',
     'size'                   => [
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'array'   => 'Поле :attribute должно содержать :size элементов.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'file'    => 'Поле :attribute должно быть :size килобайт.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'numeric' => 'Поле :attribute должно быть равно :size.',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'string'  => 'Поле :attribute должно быть :size символов.',
+        'array'   => 'Количество элементов в поле :attribute должно быть равным :size.',
+        'file'    => 'Размер файла, указанный в поле :attribute, должен быть равен :size Кб.',
+        'numeric' => 'Значение поля :attribute должно быть равным :size.',
+        'string'  => 'Количество символов в поле :attribute должно быть равным :size.',
     ],
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'starts_with'            => 'Поле :attribute должно начинаться с одного из следующих значений: :values.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'string'                 => 'Поле :attribute должно быть строкой.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'timezone'               => 'Поле :attribute должно быть действительным часовым поясом.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'ulid'                   => 'Поле :attribute должно быть действительным ULID.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'unique'                 => 'Такое значение поля :attribute уже занято.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'uploaded'               => 'Не удалось загрузить :attribute.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'uppercase'              => 'Поле :attribute должно быть в верхнем регистре.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'url'                    => 'Поле :attribute должно содержать корректный URL.',
-    // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-    'uuid'                   => 'Поле :attribute должно содержать корректный UUID.',
+    'starts_with'            => 'Поле :attribute должно начинаться с одного из следующих значений: :values',
+    'string'                 => 'Значение поля :attribute должно быть строкой.',
+    'timezone'               => 'Значение поля :attribute должно быть действительным часовым поясом.',
+    'ulid'                   => 'Значение поля :attribute должно быть корректным ULID.',
+    'unique'                 => 'Такое значение поля :attribute уже существует.',
+    'uploaded'               => 'Загрузка файла из поля :attribute не удалась.',
+    'uppercase'              => 'Значение поля :attribute должно быть в верхнем регистре.',
+    'url'                    => 'Значение поля :attribute не является ссылкой или имеет некорректный формат.',
+    'uuid'                   => 'Значение поля :attribute должно быть корректным UUID.',
     'attributes'             => [
         'address'                  => 'адрес',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'affiliate_url'            => 'партнёрская ссылка',
+        'affiliate_url'            => 'Партнёрская ссылка',
         'age'                      => 'возраст',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'amount'                   => 'сумма',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'announcement'             => 'объявление',
+        'amount'                   => 'количество',
+        'announcement'             => 'анонс',
         'area'                     => 'область',
         'audience_prize'           => 'приз зрительских симпатий',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
         'audience_winner'          => 'победитель зрительских симпатий',
         'available'                => 'доступно',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
         'birthday'                 => 'дата рождения',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'body'                     => 'текст',
+        'body'                     => 'контент',
         'city'                     => 'город',
         'color'                    => 'цвет',
         'company'                  => 'компания',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'compilation'              => 'сборник',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'concept'                  => 'концепция',
+        'compilation'              => 'компиляция',
+        'concept'                  => 'концепт',
         'conditions'               => 'условия',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'content'                  => 'содержимое',
+        'content'                  => 'контент',
         'contest'                  => 'конкурс',
         'country'                  => 'страна',
         'cover'                    => 'обложка',
         'created_at'               => 'создано в',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'creator'                  => 'автор',
+        'creator'                  => 'создатель',
         'currency'                 => 'валюта',
         'current_password'         => 'текущий пароль',
         'customer'                 => 'клиент',
         'date'                     => 'дата',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'date_of_birth'            => 'дата рождения',
+        'date_of_birth'            => 'день рождения',
         'dates'                    => 'даты',
         'day'                      => 'день',
         'deleted_at'               => 'удалено в',
         'description'              => 'описание',
         'display_type'             => 'тип отображения',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'district'                 => 'район',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'duration'                 => 'длительность',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'email'                    => 'электронная почта',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'excerpt'                  => 'отрывок',
+        'district'                 => 'округ',
+        'duration'                 => 'продолжительность',
+        'email'                    => 'email адрес',
+        'excerpt'                  => 'выдержка',
         'filter'                   => 'фильтр',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'finished_at'              => 'время завершения',
+        'finished_at'              => 'завершено в',
         'first_name'               => 'имя',
         'gender'                   => 'пол',
         'grand_prize'              => 'главный приз',
         'group'                    => 'группа',
-        // curated at 2026-09-23T14:02:04+07:00 — missing hCaptcha attribute label
         'h-captcha-response'       => 'капча',
         'hour'                     => 'час',
         'image'                    => 'изображение',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'image_desktop'            => 'изображение для ПК',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'image_main'               => 'главное изображение',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'image_mobile'             => 'изображение для мобильных',
+        'image_desktop'            => 'десктопное изображение',
+        'image_main'               => 'основное изображение',
+        'image_mobile'             => 'мобильное изображение',
         'images'                   => 'изображения',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
         'is_audience_winner'       => 'победитель зрительских симпатий',
         'is_hidden'                => 'скрыто',
         'is_subscribed'            => 'подписан',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
         'is_visible'               => 'отображается',
         'is_winner'                => 'победитель',
         'items'                    => 'элементы',
         'key'                      => 'ключ',
         'last_name'                => 'фамилия',
         'lesson'                   => 'урок',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'line_address_1'           => 'адрес, строка 1',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'line_address_2'           => 'адрес, строка 2',
+        'line_address_1'           => 'строка адреса 1',
+        'line_address_2'           => 'строка адреса 2',
         'login'                    => 'логин',
         'message'                  => 'сообщение',
         'middle_name'              => 'отчество',
         'minute'                   => 'минута',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'mobile'                   => 'мобильный телефон',
+        'mobile'                   => 'моб. номер',
         'month'                    => 'месяц',
         'name'                     => 'имя',
         'national_code'            => 'национальный код',
         'number'                   => 'номер',
         'password'                 => 'пароль',
         'password_confirmation'    => 'подтверждение пароля',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
         'phone'                    => 'номер телефона',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
         'photo'                    => 'фотография',
         'portfolio'                => 'портфолио',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'postal_code'              => 'почтовый индекс',
+        'postal_code'              => 'индекс',
         'preview'                  => 'предпросмотр',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'price'                    => 'цена',
+        'price'                    => 'стоимость',
         'product_id'               => 'ID продукта',
         'product_uid'              => 'UID продукта',
         'product_uuid'             => 'UUID продукта',
         'promo_code'               => 'промокод',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'province'                 => 'область',
+        'province'                 => 'провинция',
         'quantity'                 => 'количество',
         'reason'                   => 'причина',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'recaptcha_response_field' => 'поле ответа капчи',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'referee'                  => 'рефери',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'referees'                 => 'рефери',
+        'recaptcha_response_field' => 'ошибка капчи',
+        'referee'                  => 'жюри',
+        'referees'                 => 'жюри',
         'region'                   => 'регион',
         'reject_reason'            => 'причина отказа',
         'remember'                 => 'запомнить',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'restored_at'              => 'время восстановления',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
+        'restored_at'              => 'восстановлено в',
         'result_text_under_image'  => 'текст под изображением',
         'role'                     => 'роль',
         'rule'                     => 'правило',
@@ -426,42 +257,31 @@ return [
         'second'                   => 'секунда',
         'sex'                      => 'пол',
         'shipment'                 => 'доставка',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
         'short_text'               => 'короткое описание',
         'size'                     => 'размер',
         'skills'                   => 'навыки',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
         'slug'                     => 'слаг',
         'specialization'           => 'специализация',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'started_at'               => 'время начала',
+        'started_at'               => 'началось в',
         'state'                    => 'штат',
         'status'                   => 'статус',
         'street'                   => 'улица',
         'student'                  => 'студент',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'subject'                  => 'тема',
+        'subject'                  => 'заголовок',
         'tag'                      => 'тег',
         'tags'                     => 'теги',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'teacher'                  => 'преподаватель',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'terms'                    => 'условия',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'test_description'         => 'описание теста',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'test_locale'              => 'тестовая локаль',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'test_name'                => 'имя теста',
+        'teacher'                  => 'учитель',
+        'terms'                    => 'правила',
+        'test_description'         => 'тестовое описание',
+        'test_locale'              => 'тестовая локализация',
+        'test_name'                => 'тестовое имя',
         'text'                     => 'текст',
         'time'                     => 'время',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'title'                    => 'заголовок',
+        'title'                    => 'наименование',
         'type'                     => 'тип',
         'updated_at'               => 'обновлено в',
         'user'                     => 'пользователь',
-        // curated at 2026-09-23T17:00:46+07:00 — ru curation wave — validation pack sync
-        'username'                 => 'имя пользователя',
+        'username'                 => 'никнейм',
         'value'                    => 'значение',
         'winner'                   => 'победитель',
         'work'                     => 'работа',

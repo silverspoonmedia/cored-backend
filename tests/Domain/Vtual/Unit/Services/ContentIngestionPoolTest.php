@@ -5,6 +5,7 @@ namespace Tests\Domain\Vtual\Unit\Services;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ContentFetchPoolStatus;
+use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\PlatformKey;
@@ -13,14 +14,13 @@ use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
 use App\Domain\Vtual\Integrations\PlatformApiGateway;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Content;
-use App\Domain\Vtual\Models\ContentFetchPoolItem;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Services\ChannelContentFetchService;
 use App\Domain\Vtual\Services\ContentFetchPoolService;
+use App\Domain\Vtual\Services\ContentService;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Domain\Vtual\Services\LiveContentPollService;
 use App\Domain\Vtual\Services\PlatformVideoDtoMapper;
-use App\Domain\Vtual\Services\ContentService;
 use App\Domain\Vtual\Services\TwitchLiveStateService;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -228,6 +228,119 @@ class ContentIngestionPoolTest extends TestCase
             'external_id' => 'stream-40934652',
             'type' => ContentType::Archive->value,
             'status' => ContentStatus::Ended->value,
+        ]);
+    }
+
+    #[Test]
+    public function a_twitch_music_stream_is_classified_music_from_its_category(): void
+    {
+        // Twitch carries no topicCategories and no uploader tags; the category
+        // is the whole signal. Before H4 this row landed in the unknown bucket
+        // and waited on the AI audit.
+        $channel = $this->seedTwitchChannel('40934660');
+        $this->seedLiveRow($channel, 'stream-karaoke-0');
+
+        $gateway = Mockery::mock(PlatformApiGateway::class);
+        $gateway->shouldReceive('fetchStreamsByUserIds')
+            ->once()
+            ->andReturn(collect([
+                new PlatformStreamDto(
+                    platform: PlatformKey::Twitch,
+                    externalId: 'stream-karaoke-1',
+                    userExternalId: '40934660',
+                    userLogin: 'karaoke',
+                    userName: 'Karaoke VTuber',
+                    title: 'singing requests',
+                    gameName: 'Karaoke',
+                    thumbnailUrl: null,
+                    url: 'https://www.twitch.tv/karaoke',
+                    concurrentViewers: 42,
+                    startedAt: Carbon::parse('2026-09-07T00:00:00Z'),
+                    language: 'ja',
+                ),
+            ]));
+
+        $poll = new LiveContentPollService(
+            $gateway,
+            app(PlatformVideoDtoMapper::class),
+            app(ContentService::class),
+            app(TwitchLiveStateService::class),
+        );
+
+        $poll->poll();
+
+        $row = Content::query()
+            ->where('channel_id', $channel->id)
+            ->where('external_id', 'stream-karaoke-1')
+            ->firstOrFail();
+
+        $this->assertSame(ContentKind::Music, $row->content_type);
+        // The category is forwarded as a derived tag so the sub-category layer
+        // reads the same evidence the music layer did.
+        $this->assertSame(['Karaoke'], $row->tags);
+    }
+
+    #[Test]
+    public function a_twitch_non_music_stream_contributes_no_derived_tag(): void
+    {
+        $channel = $this->seedTwitchChannel('40934661');
+        $this->seedLiveRow($channel, 'stream-games-0');
+
+        $gateway = Mockery::mock(PlatformApiGateway::class);
+        $gateway->shouldReceive('fetchStreamsByUserIds')
+            ->once()
+            ->andReturn(collect([
+                new PlatformStreamDto(
+                    platform: PlatformKey::Twitch,
+                    externalId: 'stream-games-1',
+                    userExternalId: '40934661',
+                    userLogin: 'gamer',
+                    userName: 'Gaming VTuber',
+                    title: 'ranked grind',
+                    gameName: 'Valorant',
+                    thumbnailUrl: null,
+                    url: 'https://www.twitch.tv/gamer',
+                    concurrentViewers: 90,
+                    startedAt: Carbon::parse('2026-09-07T00:00:00Z'),
+                    language: 'en',
+                ),
+            ]));
+
+        $poll = new LiveContentPollService(
+            $gateway,
+            app(PlatformVideoDtoMapper::class),
+            app(ContentService::class),
+            app(TwitchLiveStateService::class),
+        );
+
+        $poll->poll();
+
+        $row = Content::query()
+            ->where('channel_id', $channel->id)
+            ->where('external_id', 'stream-games-1')
+            ->firstOrFail();
+
+        // A derived label for a non-music category would be indistinguishable
+        // from an uploader-authored tag, so none is written.
+        $this->assertNull($row->tags);
+        $this->assertNotSame(ContentKind::Music, $row->content_type);
+    }
+
+    /**
+     * The Twitch branch of the poll is driven by existing live rows, so a test
+     * that exercises it has to start from one.
+     */
+    private function seedLiveRow(Channel $channel, string $externalId): Content
+    {
+        return Content::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $channel->creator_id,
+            'channel_id' => $channel->id,
+            'platform_id' => $channel->platform_id,
+            'external_id' => $externalId,
+            'type' => ContentType::Live,
+            'status' => ContentStatus::Live,
+            'title' => 'Was Live',
         ]);
     }
 

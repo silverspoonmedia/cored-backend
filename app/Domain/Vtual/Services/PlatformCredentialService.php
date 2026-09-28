@@ -3,6 +3,8 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Vtual\Enums\IncidentKind;
+use App\Domain\Vtual\Enums\IncidentSeverity;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
 use App\Domain\Vtual\Enums\PlatformKey;
@@ -13,6 +15,7 @@ use App\Domain\Vtual\Models\PlatformCredential;
 use App\Domain\Vtual\Services\Probes\TwitchOauthAppProbe;
 use App\Domain\Vtual\Support\PlatformCredentialSecrets;
 use App\Domain\Vtual\Support\PlatformCredentialTestResult;
+use App\Domain\Vtual\Support\VtualIncidentRecorder;
 use App\Domain\Vtual\Support\VtualPlatformCredentialRealtime;
 use App\Support\Encryption\EnvelopeEncryptionService;
 use Illuminate\Database\Eloquent\Collection;
@@ -257,6 +260,21 @@ class PlatformCredentialService
 
         $this->realtime->fromCredential($updated, 'tested');
 
+        // A passing Test is the operator's own proof that the credential works,
+        // so it closes whatever this credential had open. Low-frequency and
+        // explicit — deliberately not hooked into markUsed(), which runs on
+        // every platform call and must stay query-free.
+        $recorder = app(VtualIncidentRecorder::class);
+
+        foreach (['Platform credential authentication failed', 'Platform credential call failed'] as $title) {
+            $recorder->resolve(
+                kind: IncidentKind::Credential,
+                title: $title,
+                platformId: (string) $updated->platform_id,
+                credentialId: (string) $updated->id,
+            );
+        }
+
         return new PlatformCredentialTestResult(
             ok: true,
             message: $result->message,
@@ -380,6 +398,23 @@ class PlatformCredentialService
 
         $credential->forceFill($attrs)->save();
 
+        // One incident per credential: the subject is the credential, so a
+        // second credential failing is a separate row, and a 401 storm on one
+        // credential stays a single row whose occurrence count keeps climbing.
+        app(VtualIncidentRecorder::class)->record(
+            kind: IncidentKind::Credential,
+            severity: IncidentSeverity::Critical,
+            title: 'Platform credential authentication failed',
+            detail: trim($message) !== '' ? $message : 'Platform rejected the credential (401/403).',
+            context: [
+                'consecutive_auth_failures' => $failures,
+                'failover_demoted' => $demoted,
+                'skip_until' => $credential->failover_skip_until?->toIso8601String(),
+            ],
+            platformId: (string) $credential->platform_id,
+            credentialId: (string) $credential->id,
+        );
+
         if (! $demoted) {
             return;
         }
@@ -435,6 +470,22 @@ class PlatformCredentialService
             'credential_id' => (string) $credential->id,
             'platform' => $platform,
         ]);
+
+        // Distinct title from the auth-failure incident: a credential can fail
+        // for a non-auth reason (expired runtime token, platform 5xx) and that
+        // is a different thing to fix than "the secret is rejected".
+        app(VtualIncidentRecorder::class)->record(
+            kind: IncidentKind::Credential,
+            severity: IncidentSeverity::Warning,
+            title: 'Platform credential call failed',
+            detail: $trimmed !== '' ? $trimmed : 'Platform credential failure',
+            context: [
+                'platform' => $platform,
+                'source' => 'mark_failed',
+            ],
+            platformId: (string) $credential->platform_id,
+            credentialId: (string) $credential->id,
+        );
     }
 
     /**

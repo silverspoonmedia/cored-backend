@@ -352,11 +352,22 @@ return [
         'cover_paren_keywords' => [
             '(cover)', '（cover）', '( cover )', '(カバー)', '（カバー）',
         ],
-        // Uploader-authored tag labels (snippet.tags). Read only on the hydrate
-        // path — stored rows do not persist tags.
+        // Uploader-authored tag labels (snippet.tags on YouTube; the Twitch
+        // live payload derives tags from the category — see `twitch_music_categories`).
         'tag_cover' => ['歌ってみた', '歌みた', 'うたってみた', 'cover', 'カバー'],
         'tag_original' => ['オリジナル曲', 'オリジナル楽曲', 'オリジナルmv', 'original song', 'original mv'],
         'tag_singing_stream' => ['歌枠', 'カラオケ枠', 'singing stream', 'karaoke stream'],
+        // Twitch `game_name` values that mean the stream is a music stream.
+        // Twitch exposes no `topicCategories` and no uploader tags, so the
+        // category (game) name is the only music signal a live row carries.
+        // Matched case-insensitively against `game_name`, and the same list
+        // feeds the tag vocabulary so the sub-category layer sees it too.
+        'twitch_music_categories' => [
+            'Music', 'Music & DJs', 'DJ', 'DJs', 'Karaoke', 'Singing',
+            'Musicians', 'Live Music', 'Piano', 'Guitar', 'Drumming',
+            'Music Production', 'Beatmaking', 'Composers', 'Soundtrack',
+            'Vocaloid', 'VTuber Music', 'I DJ',
+        ],
         'itunes' => [
             'enabled' => true,
             'base_url' => 'https://itunes.apple.com',
@@ -394,6 +405,58 @@ return [
             'min_confidence' => 0.7,
             'cache_ttl_hours' => 168,
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Integration incidents (ops triage)
+    |--------------------------------------------------------------------------
+    |
+    | The incident table groups a known integration failure (a dead WebSub
+    | subscription, a revoked credential, a platform call that spent its retry
+    | budget) into one row per distinct problem, with an occurrence count and a
+    | triage status. See VtualIncidentRecorder for the grouping rules.
+    |
+    | `enabled` is Tier B — Settings → vTual (vtual.incidents.enabled) — so ops
+    | can silence the recorder during a platform-wide outage without a deploy.
+    | The length caps are bootstrap config literals: they protect the column
+    | types, and raising them is a schema question, not a runtime knob.
+    |
+    */
+    'incidents' => [
+        'enabled' => true,
+        'max_detail_length' => 4000,
+        'max_context_json_length' => 16384,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Historical metric snapshots
+    |--------------------------------------------------------------------------
+    |
+    | Append-only timeline for the point-in-time metric columns. Sampling is
+    | bucketed (one row per subject per bucket, enforced by a unique index), so a
+    | burst of pushes inside one bucket collapses to a single row instead of
+    | hammering the table. See docs/domains/vtual/reference-metrics.md for the
+    | interval/retention decision, and VtualMetricRecorder for the writers.
+    |
+    | The three intervals and the retention window are Tier B — Settings → vTual
+    | (vtual.metrics.*) — because they are a product judgement about resolution
+    | versus storage, and ops must be able to widen retention without a deploy.
+    |
+    */
+    'metrics' => [
+        'enabled' => true,
+        // Channel subscriber counts move slowly; 15 minutes keeps a 90-day
+        // window at ~8.6k rows per channel.
+        'channel_interval_minutes' => 15,
+        // CCV is the reason a live-stream chart exists at all, so it samples at
+        // the poll cadence (vtual.live_poll.interval_minutes = 2) — one bucket
+        // per minute leaves room for the EventSub push to land in the same row.
+        'content_interval_minutes' => 1,
+        // 90 days ≈ two quarters of growth history, and keeps a 200-channel
+        // deployment under ~2M rows per table.
+        'retention_days' => 90,
     ],
 
     /*

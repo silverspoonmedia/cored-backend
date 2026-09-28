@@ -39,7 +39,7 @@ The job is the slow half of the workflow (the `locale` job is seconds). That is 
 
 ## A green run is `failed: 0`
 
-**A green run is `failed: 0`, not `passed == tests`.** The suite ends at `2233 tests, 2232 passed, 1 skipped, 1 risky` (measured 2026-09-24) and both non-passed counts are by design:
+**A green run is `failed: 0`, not `passed == tests`.** The suite ends at `2461 tests, 2460 passed, 1 skipped, 1 risky` (measured 2026-09-27) and both non-passed counts are by design:
 
 | Count | Source | Why it is expected |
 |---|---|---|
@@ -68,6 +68,12 @@ Two things narrow the gap without a credential:
 - Both guards print the skip on their OK line (`… N cross-repo link(s) unverified — sibling checkout absent`), so a green run cannot be misread as "every link was checked".
 
 The behaviour itself is covered on the runner: `DocsCrossRepoLinkTest` drives the same library against a throwaway two-repo fixture, asserting that an absent sibling is skipped, a missing target is reported, and a dead `#anchor` is reported. Closing the gap fully needs a fine-grained PAT scoped to read the sibling — deliberately not taken; the workflow carries no credentials by design.
+
+## The sibling's CI job
+
+`monolith-vue-workers/.github/workflows/ci.yml` runs `type-check` → `check:i18n` → `check:docs` → **`check:env`** → `test` → `build-only`, and the deploy workflow repeats the same gates before a build so a deploy can never bypass them.
+
+`npm run check:env` (`scripts/check-mode-env.mjs`) guards the **values** of the three tracked Vite mode files, which the branch→mode→env mapping never did — `.env.production` once shipped pointing at the sandbox API origin. It fails on a missing or empty required `VITE_*` key, a placeholder value, production or staging pointing at a host containing `sandbox`, two environments sharing an API origin, and a leftover `TODO`. A non-origin credential shared between environments (hCaptcha sitekey, Pusher app key) is a **warning**, not a failure: it is drift worth fixing, but it does not send traffic to the wrong backend. Adding an environment means adding it to `MODES` in that script; the operator-facing write-up is sibling [deployment.md](../../../monolith-vue-workers/docs/deployment.md), section *Mode file values*.
 
 ## Job-level `env:`
 

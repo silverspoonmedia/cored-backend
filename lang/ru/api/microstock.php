@@ -50,6 +50,36 @@ return [
     'collection_processing' => 'Анализ коллекции запущен.',
     'collection_status' => 'Статус коллекции загружен.',
     'collection_exported' => 'Коллекция экспортирована.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_disabled' => 'Загрузка в магазин отключена на этой платформе.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_marketplace_unsupported' => 'Загрузка в :marketplace пока не поддерживается.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_not_ready' => 'Сначала подготовьте коллекцию — загружать можно только проверенные или экспортированные коллекции.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_nothing_finalized' => 'В этой коллекции нет готовых метаданных для загрузки.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_invalid' => 'Файл :name нельзя загрузить. Переименуйте его, используя буквы, цифры, точки, дефисы или подчёркивания.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_duplicate' => 'В этой коллекции два файла с именем :name. Переименуйте один из них.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_credential_incomplete' => 'В учётных данных магазина не указан хост или имя пользователя.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_auth_failed' => 'Магазин отклонил эти учётные данные.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_host_key_mismatch' => 'Ключ хоста магазина не совпадает с настроенным отпечатком.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_remote_path_failed' => 'Не удалось создать папку :path.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_manifest' => 'Не удалось загрузить файл метаданных :name.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_file' => 'Не удалось загрузить файл :name.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed' => 'Не удалось загрузить в магазин.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_queued' => 'Загрузка в магазин добавлена в очередь.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_status_loaded' => 'Статус загрузки загружен.',
     // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
     'insufficient_ai_credits' => 'Недостаточно ИИ-кредитов. Приобретите пакет ИИ-кредитов в разделе «Сервисы» перед запуском анализа.',
     // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms

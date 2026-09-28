@@ -40,6 +40,8 @@ php scripts/docs-guard.php
 php scripts/docs-cross-repo-links.php   # needs both checkouts; skipped links are reported, not failed
 ```
 
+The SPA gates are `npm run check:docs`, `npm run check:i18n`, and `npm run check:env` (the mode-file value guard — see [reference-tooling.md — the sibling's CI job](reference-tooling.md#the-siblings-ci-job)).
+
 The last four are the **docs** gates. Their normative statement, and the SPA half (`npm run check:docs`, `npm run check:i18n`), is owned by [.cursor/rules/docs-pakem.mdc](../../.cursor/rules/docs-pakem.mdc) — run them from there when a task touches documentation; this list is the operational copy for the whole backend. Which of them CI actually runs, and the cross-repo half it cannot, is in [reference-tooling.md — the docs gates](reference-tooling.md#the-docs-gates).
 
 Reproduce the `backend` job locally before pushing — same command, same in-memory database:

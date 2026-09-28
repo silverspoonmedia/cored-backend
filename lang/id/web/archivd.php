@@ -121,6 +121,22 @@ return [
         'analyze' => 'Mulai analisis',
         'export_csv' => 'Ekspor CSV',
         'download_csv' => 'Unduh CSV',
+        // curated at 2026-09-27T20:30:00+07:00 - id curation wave
+        'upload_marketplace' => 'Unggah ke marketplace',
+        // curated at 2026-09-27T20:30:00+07:00 - id curation wave
+        'upload_no_credentials' => 'Belum ada kredensial marketplace. Tambahkan dulu.',
+        // curated at 2026-09-27T20:30:00+07:00 - id curation wave
+        'upload_manage_credentials' => 'Kelola kredensial',
+        // curated at 2026-09-27T20:30:00+07:00 - id curation wave
+        'credential_status_failed' => 'Gagal',
+        // curated at 2026-09-27T20:30:00+07:00 - id curation wave
+        'upload_status_queued' => 'Unggahan ke marketplace masuk antrean.',
+        // curated at 2026-09-27T20:30:00+07:00 - id curation wave
+        'upload_status_uploading' => 'Mengunggah ke marketplace…',
+        // curated at 2026-09-27T20:30:00+07:00 - id curation wave
+        'upload_status_uploaded' => 'Sudah diunggah ke marketplace.',
+        // curated at 2026-09-27T20:30:00+07:00 - id curation wave
+        'upload_status_failed' => 'Unggahan ke marketplace gagal.',
         // curated at 2026-09-21T17:04:06+07:00 — id curation wave
         'status_locked' => 'Koleksi terkunci. Siap dianalisis.',
         // curated at 2026-09-21T17:04:06+07:00 — id curation wave

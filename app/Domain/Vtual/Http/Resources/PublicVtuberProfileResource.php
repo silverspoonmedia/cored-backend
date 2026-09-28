@@ -4,6 +4,8 @@ namespace App\Domain\Vtual\Http\Resources;
 
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
+use App\Domain\Vtual\Models\Content;
+use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -15,7 +17,7 @@ use Illuminate\Support\Number;
  * Guest-safe public vTuber profile. No UUID, no claim URLs/tokens.
  * `is_claimable` is a directory fact (orphan vs owned), not a secret.
  *
- * @mixin \App\Domain\Vtual\Models\Creator
+ * @mixin Creator
  */
 class PublicVtuberProfileResource extends JsonResource
 {
@@ -24,12 +26,12 @@ class PublicVtuberProfileResource extends JsonResource
     /**
      * Applied content-grid filters (already clamped by the controller).
      *
-     * @var array{platform: string|null, type: string|null, sort: string}
+     * @var array{platform: string|null, type: string|null, content_type: string|null, sort: string}
      */
     private array $filters;
 
     /**
-     * @param  array{platform?: string|null, type?: string|null, sort?: string|null}  $filters
+     * @param  array{platform?: string|null, type?: string|null, content_type?: string|null, sort?: string|null}  $filters
      */
     public function __construct($resource, array $filters = [])
     {
@@ -38,6 +40,7 @@ class PublicVtuberProfileResource extends JsonResource
         $this->filters = [
             'platform' => $filters['platform'] ?? null,
             'type' => $filters['type'] ?? null,
+            'content_type' => $filters['content_type'] ?? null,
             'sort' => $filters['sort'] ?? 'newest',
         ];
     }
@@ -47,7 +50,7 @@ class PublicVtuberProfileResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        /** @var LengthAwarePaginator<int, \App\Domain\Vtual\Models\Content>|null $paginator */
+        /** @var LengthAwarePaginator<int, Content>|null $paginator */
         $paginator = $this->relationLoaded('profileContents')
             ? $this->getRelation('profileContents')
             : null;

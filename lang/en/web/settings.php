@@ -177,6 +177,11 @@ return [
         'vtual.content_classification.ai.min_confidence' => 'AI audit min confidence',
         'vtual.content_classification.ai.cache_ttl_hours' => 'AI audit result cache (hours)',
         'vtual.content_classification.ai.connection' => 'AI audit connection (empty = default)',
+        'vtual.incidents.enabled' => 'Incident recorder enabled (vTual integration triage)',
+        'vtual.metrics.enabled' => 'Metric history enabled (vTual snapshots)',
+        'vtual.metrics.channel_interval_minutes' => 'Channel metric interval (minutes)',
+        'vtual.metrics.content_interval_minutes' => 'Live CCV metric interval (minutes)',
+        'vtual.metrics.retention_days' => 'Metric history retention (days)',
     ],
     'hints' => [
         'platform.mail.from_address' => 'Global From address for outbound mail (transport credentials stay in .env).',
@@ -203,6 +208,8 @@ return [
         'vtual.claim.accept_anyway_enabled' => 'Allow users to accept a claim even when verification is inconclusive.',
         'vtual.claim.discord_verify_enabled' => 'Allow users to verify orphan claims by matching Discord-linked YouTube/Twitch accounts.',
         'vtual.channel_claim.discord_verify_enabled' => 'Allow profile owners to verify channel attach claims by matching Discord-linked YouTube/Twitch accounts.',
+        'vtual.incidents.enabled' => 'Record vTual integration failures (WebSub, EventSub, credentials, ingestion) as grouped, triageable incidents. Turn off during a platform-wide outage to keep the queue readable.',
+        'vtual.metrics.enabled' => 'Append a subscriber-count / concurrent-viewer sample to the history tables on every refresh. Turn off to keep the current-value columns only.',
         'identity.discord.connections_snapshot_max_age_minutes' => 'How long stored Discord connection snapshots are trusted before a verify miss triggers a live Discord API refresh.',
     ],
     'options' => [

@@ -200,6 +200,15 @@ return [
         'vtual.content_classification.ai.min_confidence' => 'AI監査の最低信頼度',
         'vtual.content_classification.ai.cache_ttl_hours' => 'AI監査結果キャッシュ（時間）',
         'vtual.content_classification.ai.connection' => 'AI 監査接続（空＝デフォルト）',
+        'vtual.incidents.enabled' => 'インシデント記録を有効化（vTual 連携のトリアージ）',
+        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
+        'vtual.metrics.enabled' => '指標履歴を有効化（vTual スナップショット）',
+        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
+        'vtual.metrics.channel_interval_minutes' => 'チャンネル指標の間隔（分）',
+        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
+        'vtual.metrics.content_interval_minutes' => 'ライブ CCV 指標の間隔（分）',
+        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
+        'vtual.metrics.retention_days' => '指標履歴の保持期間（日）',
     ],
     'hints' => [
         'platform.mail.from_address' => '送信メールのグローバルFromアドレス（輸送資格情報は.envのまま）。',
@@ -234,6 +243,9 @@ return [
         'vtual.claim.discord_verify_enabled' => 'Discord にリンクされた YouTube/Twitch アカウントを照合して、オーファンの申請を検証できるようにします。',
         // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
         'vtual.channel_claim.discord_verify_enabled' => 'プロフィールのオーナーが、Discord に連携された YouTube/Twitch アカウントの照合でチャンネル追加の申請を検証できるようにします。',
+        'vtual.incidents.enabled' => 'vTual 連携の失敗（WebSub、EventSub、認証情報、取り込み）をグループ化したトリアージ可能なインシデントとして記録します。プラットフォーム全体の障害時は、キューを読みやすく保つためオフにします。',
+        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
+        'vtual.metrics.enabled' => '更新のたびに登録者数・同時視聴者数のサンプルを履歴テーブルに追加します。オフにすると現在値の列だけを保持します。',
         // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => '検証に失敗したときに Discord API から最新情報を取得するまで、保存済みの Discord 接続スナップショットを信頼する時間です。',
     ],

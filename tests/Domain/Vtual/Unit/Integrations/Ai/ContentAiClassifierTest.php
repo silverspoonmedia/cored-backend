@@ -231,6 +231,84 @@ class ContentAiClassifierTest extends TestCase
     }
 
     #[Test]
+    public function program_verdict_and_catalogue_match_are_fed_into_the_user_prompt(): void
+    {
+        $this->bindAiConnection(self::ENDPOINT);
+        $this->configureAiKnobs();
+
+        Http::fake([
+            'ai.example.test/*' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => json_encode([
+                        'is_music' => true,
+                        'category' => 'cover',
+                        'confidence' => 0.9,
+                    ])]],
+                ],
+            ], 200),
+        ]);
+
+        $this->makeClassifier()->classifyContent([
+            'external_id' => 'vid-evidence',
+            'title' => '【GUMI】KING【Kanaria】',
+            'channel_title' => 'Kanaria',
+            'tags' => ['VOCALOID', 'オリジナル曲'],
+            'program_verdict' => [
+                'content_type' => 'music',
+                'content_category' => 'cover',
+                'content_category_detail' => 'Kanaria - KING',
+                'signal' => 'catalog_artist_mismatch',
+                'catalog' => 'Kanaria - KING',
+            ],
+        ]);
+
+        Http::assertSent(function ($request): bool {
+            $user = $request->data()['messages'][1]['content'] ?? '';
+
+            return str_contains($user, 'Uploader channel: Kanaria')
+                && str_contains($user, 'Program classifier verdict (authoritative where stated):')
+                && str_contains($user, 'content type: music')
+                && str_contains($user, 'sub-category: cover')
+                && str_contains($user, 'attribution already found: Kanaria - KING')
+                && str_contains($user, 'deciding signal: catalog_artist_mismatch')
+                && str_contains($user, 'iTunes catalogue match: Kanaria - KING');
+        });
+    }
+
+    #[Test]
+    public function an_abstaining_program_verdict_contributes_no_evidence_lines(): void
+    {
+        $this->bindAiConnection(self::ENDPOINT);
+        $this->configureAiKnobs();
+
+        Http::fake([
+            'ai.example.test/*' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => json_encode(['is_music' => true, 'category' => 'cover', 'confidence' => 0.9])]],
+                ],
+            ], 200),
+        ]);
+
+        $this->makeClassifier()->classifyContent([
+            'external_id' => 'vid-abstain',
+            'title' => '星を編む',
+            'program_verdict' => [
+                'content_type' => null,
+                'content_category' => null,
+                'content_category_detail' => null,
+            ],
+        ]);
+
+        Http::assertSent(function ($request): bool {
+            $user = $request->data()['messages'][1]['content'] ?? '';
+
+            // "unknown" would read as a finding and invite the model to echo it.
+            return ! str_contains($user, 'Program classifier verdict')
+                && ! str_contains($user, 'content type:');
+        });
+    }
+
+    #[Test]
     public function connection_timeout_overrides_the_stage_setting(): void
     {
         $this->bindAiConnection(self::ENDPOINT, timeoutSeconds: 42);

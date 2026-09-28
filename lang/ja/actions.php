@@ -3,26 +3,20 @@
 declare(strict_types=1);
 
 return [
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'accept'          => '承認',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'action'          => '操作',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'actions'         => '操作',
+    'accept'          => '承諾',
+    'action'          => 'アクション',
+    'actions'         => 'アクション',
     'add'             => '追加',
     'admin'           => '管理者',
     'agree'           => '同意',
     'archive'         => 'アーカイブ',
     'assign'          => '割当',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'associate'       => '関連付け',
+    'associate'       => '仲間',
     'attach'          => '添付',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'browse'          => '参照',
+    'browse'          => 'ブラウズ',
     'cancel'          => 'キャンセル',
     'choose'          => '選択',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'choose_file'     => 'ファイルを選択',
+    'choose_file'     => 'ファイルの選択',
     'choose_image'    => '画像の選択',
     'click_to_copy'   => 'クリックしてコピー',
     'close'           => '閉じる',
@@ -32,21 +26,17 @@ return [
     'confirm'         => '確認',
     'connect'         => '接続',
     'create'          => '作成',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'delete'          => '削除',
+    'delete'          => '消去',
     'detach'          => '切り離す',
     'details'         => '詳細',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'disable'         => '無効にする',
+    'disable'         => '無効化',
     'discard'         => '破棄',
     'done'            => '完了',
     'down'            => '下',
     'duplicate'       => '複製',
     'edit'            => '編集',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'enable'          => '有効にする',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'expand'          => '展開',
+    'enable'          => '有効化',
+    'expand'          => '拡大',
     'expand_all'      => 'すべて展開',
     'explanation'     => '説明',
     'export'          => 'エクスポート',
@@ -56,16 +46,12 @@ return [
     'hide'            => '非表示',
     'home'            => 'ホーム',
     'image'           => '画像',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'impersonate'     => '代理ログイン',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'impersonation'   => '代理ログイン',
+    'impersonate'     => 'なりすます',
+    'impersonation'   => 'なりすまし',
     'import'          => 'インポート',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'introduction'    => '概要',
+    'introduction'    => '導入',
     'like'            => 'いいね',
-    // curated at 2026-09-24T09:15:54+07:00 — ja curation wave: actions pack
-    'load'            => '読み込む',
+    'load'            => '負荷',
     'localize'        => 'ローカライズ',
     'log_in'          => 'ログイン',
     'log_out'         => 'ログアウト',
@@ -128,7 +114,6 @@ return [
     'up'              => '上',
     'update'          => '更新',
     'user'            => 'ユーザー',
-    // curated at 2026-09-24T09:43:18+07:00 — ja curation wave: multi-owner key — View agrees with ui/list_actions/web-archivd (表示)
-    'view'            => '表示',
+    'view'            => '閲覧',
     'yes'             => 'はい',
 ];

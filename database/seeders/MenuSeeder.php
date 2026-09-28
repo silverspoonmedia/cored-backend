@@ -430,6 +430,18 @@ class MenuSeeder extends Seeder
                                 'type' => 'c',
                                 'roles' => $adminRoles,
                             ],
+                            [
+                                // Integration incident triage. Core perms
+                                // (`view|manage vtual incident`), so Root/Admin
+                                // only — the same audience as the credentials
+                                // branch above, because most incidents are
+                                // credential and subscription failures.
+                                'name' => $this->translations('Incidents', 'Insiden', 'インシデント'),
+                                'icon' => 'bi bi-exclamation-triangle',
+                                'route' => 'vtual.incidents.index',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
                         ],
                     ],
                     [
@@ -804,6 +816,12 @@ class MenuSeeder extends Seeder
                 'zh_CN' => '平台凭据',
                 'ar' => 'بيانات اعتماد المنصة',
                 'ru' => 'Учётные данные платформ',
+            ],
+            'Incidents' => [
+                'ko' => '인시던트',
+                'zh_CN' => '事件',
+                'ar' => 'الحوادث',
+                'ru' => 'Инциденты',
             ],
             'Settings' => [
                 'ko' => '설정',

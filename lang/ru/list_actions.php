@@ -14,6 +14,11 @@ return [
     // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
     'verify_claim' => 'Проверить заявку',
     'accept_anyway' => 'Принять без проверки',
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+    'acknowledge_incident' => 'Принять к работе',
+    'resolve_incident' => 'Отметить решённым',
+    'open_credential' => 'Открыть учётные данные',
+    'open_profile' => 'Открыть профиль',
     'confirm' => [
         // curated at 2026-09-23T19:58:41+07:00 — ru curation wave: management entity settled on организация
         'archive_management' => 'Архивировать эту организацию?',
@@ -38,5 +43,8 @@ return [
         'delete_ai_connection' => 'Удалить это подключение ИИ навсегда? Потребители, привязанные к его слагу, потеряют эндпоинт, пока вы не привяжете другое.',
         'remove_blocklist_title' => 'Удалить запись',
         'remove_blocklist' => 'Убрать этот хеш из чёрного списка? Файлы с этой контрольной суммой снова смогут быть общедоступными.',
+        // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+        'resolve_incident_title' => 'Закрытие инцидента',
+        'resolve_incident' => 'Отметить инцидент решённым? При повторном сбое он откроется снова автоматически.',
     ],
 ];

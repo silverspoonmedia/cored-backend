@@ -2,6 +2,7 @@
 
 namespace App\Domain\Vtual\Http\Controllers\API\V1;
 
+use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Http\Resources\PublicContentResource;
@@ -79,12 +80,13 @@ class PublicVtuberController extends Controller
      * Content-grid filters for the guest profile. Unknown values are clamped to
      * the default (never 422) so a hand-edited guest URL still renders.
      *
-     * @return array{platform: string|null, type: string|null, sort: string}
+     * @return array{platform: string|null, type: string|null, content_type: string|null, sort: string}
      */
     private function contentFilters(Request $request): array
     {
         $platform = $request->query('platform');
         $type = $request->query('type');
+        $contentType = $request->query('content_type');
 
         return [
             'platform' => is_string($platform) && in_array($platform, PlatformKey::values(), true)
@@ -92,6 +94,12 @@ class PublicVtuberController extends Controller
                 : null,
             'type' => is_string($type) && in_array($type, ContentType::values(), true)
                 ? $type
+                : null,
+            // Music layer (`music` | `non_music`). Rows the classifier left
+            // unknown (null) match neither value — a deliberate exclusion, since
+            // "unknown" is not "non-music".
+            'content_type' => is_string($contentType) && in_array($contentType, ContentKind::values(), true)
+                ? $contentType
                 : null,
             'sort' => $request->query('sort') === 'oldest' ? 'oldest' : 'newest',
         ];

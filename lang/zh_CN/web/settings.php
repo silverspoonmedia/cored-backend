@@ -204,6 +204,15 @@ return [
         'vtual.content_classification.ai.min_confidence' => 'AI 审查最低置信度',
         'vtual.content_classification.ai.cache_ttl_hours' => 'AI 审查结果缓存（小时）',
         'vtual.content_classification.ai.connection' => 'AI 审查连接（留空 = 默认）',
+        'vtual.incidents.enabled' => '启用事件记录（vTual 集成分诊）',
+        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
+        'vtual.metrics.enabled' => '启用指标历史（vTual 快照）',
+        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
+        'vtual.metrics.channel_interval_minutes' => '频道指标间隔（分钟）',
+        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
+        'vtual.metrics.content_interval_minutes' => '直播 CCV 指标间隔（分钟）',
+        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
+        'vtual.metrics.retention_days' => '指标历史保留（天）',
     ],
     'hints' => [
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
@@ -239,6 +248,9 @@ return [
         'vtual.claim.accept_anyway_enabled' => '允许用户在验证结果不明确时仍接受认领。',
         'vtual.claim.discord_verify_enabled' => '允许用户通过匹配 Discord 关联的 YouTube/Twitch 账户来验证孤立认领。',
         'vtual.channel_claim.discord_verify_enabled' => '允许资料所有者通过匹配 Discord 关联的 YouTube/Twitch 账户来验证频道附加认领。',
+        'vtual.incidents.enabled' => '将 vTual 集成故障（WebSub、EventSub、凭证、采集）记录为可分组、可分诊的事件。平台级故障期间可关闭，以保持待办队列清晰可读。',
+        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
+        'vtual.metrics.enabled' => '每次刷新时向历史表追加订阅数与同时观看数样本。关闭后仅保留当前值字段。',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => '存储的 Discord 连接快照的有效期；超过该时长后，若验证未命中就会触发实时 Discord API 刷新。',
     ],

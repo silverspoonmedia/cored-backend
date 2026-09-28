@@ -100,6 +100,22 @@ return [
         'analyze' => 'بدء التحليل',
         'export_csv' => 'تصدير CSV',
         'download_csv' => 'تنزيل CSV',
+        // curated at 2026-09-27T20:30:00+07:00 - ar curation wave
+        'upload_marketplace' => 'الرفع إلى المتجر',
+        // curated at 2026-09-27T20:30:00+07:00 - ar curation wave
+        'upload_no_credentials' => 'لا توجد بيانات اعتماد للمتجر بعد. أضف واحدة أولًا.',
+        // curated at 2026-09-27T20:30:00+07:00 - ar curation wave
+        'upload_manage_credentials' => 'إدارة بيانات الاعتماد',
+        // curated at 2026-09-27T20:30:00+07:00 - ar curation wave
+        'credential_status_failed' => 'فشل',
+        // curated at 2026-09-27T20:30:00+07:00 - ar curation wave
+        'upload_status_queued' => 'تمت إضافة الرفع إلى المتجر إلى قائمة الانتظار.',
+        // curated at 2026-09-27T20:30:00+07:00 - ar curation wave
+        'upload_status_uploading' => 'جارٍ الرفع إلى المتجر…',
+        // curated at 2026-09-27T20:30:00+07:00 - ar curation wave
+        'upload_status_uploaded' => 'تم الرفع إلى المتجر.',
+        // curated at 2026-09-27T20:30:00+07:00 - ar curation wave
+        'upload_status_failed' => 'فشل الرفع إلى المتجر.',
         'status_locked' => 'المجموعة مقفلة وجاهزة للتحليل.',
         'status_processing' => 'يحلل الذكاء الاصطناعي هذه المجموعة…',
         'status_processing_degraded' => '(يستغرق وقتًا أطول من المعتاد)',

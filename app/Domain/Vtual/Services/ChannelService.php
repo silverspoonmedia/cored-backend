@@ -16,6 +16,7 @@ use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Jobs\RunChannelStubContentBackfillJob;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Support\VtualMetricRecorder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -226,6 +227,9 @@ class ChannelService
 
         $channel = $channel->load('platform');
         $this->activation->applyYoutubeActivationHooks($channel);
+
+        // Timeline: first snapshot a channel ever has (see VtualMetricRecorder).
+        app(VtualMetricRecorder::class)->recordChannel($channel);
 
         return $channel;
     }
