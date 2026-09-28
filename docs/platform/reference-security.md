@@ -52,18 +52,22 @@ The explicit list it replaced (`.env`, `.env.backup`, `.env.profile`, `.env.loca
 
 ### Rotation runbook
 
-Rotation is a **provider-first** procedure. Rotate at the provider, then update the active `.env`, then verify. Doing it in the other order leaves the app failing against a revoked credential while the leaked value is still valid.
+Rotation is a **provider-first** procedure. Rotate at the provider, then update the active `.env`, then verify. Doing it in the other order leaves the app failing against a revoked credential while the leaked value is still valid — and it hides whether the provider actually rotated.
+
+**Order is not negotiable, and `APP_KEY` is the one step that can destroy data.** A value encrypted with the old key cannot be decrypted with a new one. The retired key must stay in `APP_PREVIOUS_KEYS` until every encrypted row has been re-written; dropping it early makes those rows permanently unreadable.
 
 | Secret | Where it is rotated | Notes |
 |---|---|---|
-| `APP_KEY` | `php artisan key:generate --force` | Appends the retired key to `APP_PREVIOUS_KEYS` so existing ciphertext still decrypts (`config/app.php` `previous_keys`). Do not hand-edit the two lines — `EnvironmentKeyWriter` owns the anchor pair, and `KeyGenerateCommandTest` covers the rotation. |
-| `ENCRYPTION_BLIND_INDEX_PEPPER` | Manual | A changed pepper breaks every blind-index lookup; existing rows must be re-indexed, not just re-hashed. Treat as a migration, not a config edit. |
+| `APP_KEY` | `php artisan key:generate --force` | **The only step that can destroy data.** Appends the retired key to `APP_PREVIOUS_KEYS` so existing ciphertext still decrypts (`config/app.php` `previous_keys`). Do not drop it until every encrypted row has been re-written. Do not hand-edit the two lines — `EnvironmentKeyWriter` owns the anchor pair, and `KeyGenerateCommandTest` covers the rotation. |
+| `ENCRYPTION_BLIND_INDEX_PEPPER` | Manual | A changed pepper breaks every blind-index lookup; existing rows must be re-indexed, not just re-hashed. Treat as a migration, not a config edit — it needs the same re-encryption pass as an `APP_KEY` rotation. |
 | `PUSHER_APP_ID` / `_KEY` / `_SECRET` | Pusher dashboard | The SPA's `VITE_PUSHER_APP_KEY` must move in the same change or realtime goes silent. |
 | `HCAPTCHA_SECRET` / `HCAPTCHA_SITEKEY` | hCaptcha dashboard | The sitekey is public and lives in the SPA bundle; the secret is backend-only. |
 | `OCI_KMS_*` | OCI IAM | Rotate the credential, then `php artisan oci:kms-verify` (exit `3` = IAM, `1` = config, `2` = auth, `4` = network, `5` = other). |
 | Webhook credentials | Payment provider dashboards | `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` point at a host; the signing keys live in the provider dashboard. |
 
-After a rotation: `php artisan config:rebuild`, then `php artisan encryption:flush-decrypted-cache` when a key or secret that feeds decryption moved.
+After a rotation: `php artisan config:rebuild`, then `php artisan encryption:flush-decrypted-cache` when a key or secret that feeds decryption moved. Restart `queue:work`, `schedule:work`, and Octane — long-lived workers hold the old values and will keep using them until they recycle. Then confirm with `php artisan about` and one realtime round-trip, and treat the leaked values as inert.
+
+**Never** rotate by editing the tracked backup file, and never re-add a `.env*` variant to the index: the blanket pattern above is the only thing standing between a future suffix and another leak. A file that slips through is a finding, not a template.
 
 ### Why a tracked-file leak is closed by rotation, not by history rewriting
 
