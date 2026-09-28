@@ -3,117 +3,226 @@
 declare(strict_types=1);
 
 return [
-    'accept'          => 'Menerima',
-    'action'          => 'Tindakan',
-    'actions'         => 'Tindakan',
-    'add'             => 'Menambahkan',
-    'admin'           => 'Admin',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'accept'          => 'Terima',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'action'          => 'Aksi',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'actions'         => 'Aksi',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'add'             => 'Tambah',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'admin'           => 'Administrator',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'agree'           => 'Setuju',
-    'archive'         => 'Arsip',
-    'assign'          => 'Menetapkan',
-    'associate'       => 'Rekan',
-    'attach'          => 'Menempel',
-    'browse'          => 'Jelajahi',
-    'cancel'          => 'Membatalkan',
-    'choose'          => 'Memilih',
-    'choose_file'     => 'Pilih File',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'archive'         => 'Arsipkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'assign'          => 'Tetapkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'associate'       => 'Hubungkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'attach'          => 'Lampirkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'browse'          => 'Telusuri',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'cancel'          => 'Batal',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'choose'          => 'Pilih',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'choose_file'     => 'Pilih Berkas',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'choose_image'    => 'Pilih Gambar',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'click_to_copy'   => 'Klik untuk menyalin',
-    'close'           => 'Menutup',
-    'collapse'        => 'Runtuh',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'close'           => 'Tutup',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'collapse'        => 'Ciutkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'collapse_all'    => 'Ciutkan Semua',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'comment'         => 'Komentar',
-    'confirm'         => 'Mengonfirmasi',
-    'connect'         => 'Menghubung',
-    'create'          => 'Membuat',
-    'delete'          => 'Menghapus',
-    'detach'          => 'Melepaskan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'confirm'         => 'Konfirmasi',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'connect'         => 'Hubungkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'create'          => 'Buat',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'delete'          => 'Hapus',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'detach'          => 'Lepaskan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'details'         => 'Detail',
-    'disable'         => 'Cacat',
-    'discard'         => 'Membuang',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'disable'         => 'Nonaktifkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'discard'         => 'Buang',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'done'            => 'Selesai',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'down'            => 'Turun',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'duplicate'       => 'Duplikat',
-    'edit'            => 'Sunting',
-    'enable'          => 'Memungkinkan',
-    'expand'          => 'Memperluas',
-    'expand_all'      => 'Melebarkan semua',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'edit'            => 'Ubah',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'enable'          => 'Aktifkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'expand'          => 'Perluas',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'expand_all'      => 'Perluas Semua',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'explanation'     => 'Penjelasan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'export'          => 'Ekspor',
-    'file'            => 'Mengajukan',
-    'files'           => 'File',
-    'go_home'         => 'Pulang ke rumah',
-    'hide'            => 'Bersembunyi',
-    'home'            => 'Rumah',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'file'            => 'Berkas',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'files'           => 'Berkas',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'go_home'         => 'Ke Beranda',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'hide'            => 'Sembunyikan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'home'            => 'Beranda',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'image'           => 'Gambar',
-    'impersonate'     => 'Menirukan',
-    'impersonation'   => 'Peniruan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'impersonate'     => 'Menyamar sebagai',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'impersonation'   => 'Penyamaran',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'import'          => 'Impor',
-    'introduction'    => 'Perkenalan',
-    'like'            => 'Menyukai',
-    'load'            => 'Memuat',
-    'localize'        => 'Melokalisir',
-    'log_in'          => 'Gabung',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'introduction'    => 'Pendahuluan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'like'            => 'Suka',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'load'            => 'Muat',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'localize'        => 'Lokalkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'log_in'          => 'Masuk',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'log_out'         => 'Keluar',
     'named'           => [
-        'add'       => 'Tambahkan :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+        'add'       => 'Tambah :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'choose'    => 'Pilih :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'create'    => 'Buat :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'delete'    => 'Hapus :name',
-        'duplicate' => 'Duplikat: nama',
-        'edit'      => 'Sunting :name',
-        'export'    => 'Export :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+        'duplicate' => 'Duplikat :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+        'edit'      => 'Ubah :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+        'export'    => 'Ekspor :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'hide'      => 'Sembunyikan :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'import'    => 'Impor :name',
-        'new'       => 'Baru :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+        'new'       => ':name Baru',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'restore'   => 'Pulihkan :name',
-        'save'      => 'Hemat :name',
-        'search'    => 'Pencarian :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+        'save'      => 'Simpan :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+        'search'    => 'Cari :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'show'      => 'Tampilkan :name',
-        'update'    => 'Pembaruan :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+        'update'    => 'Perbarui :name',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'view'      => 'Lihat :name',
     ],
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'new'             => 'Baru',
-    'no'              => 'TIDAK',
-    'open'            => 'Membuka',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'no'              => 'Tidak',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'open'            => 'Buka',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'open_website'    => 'Buka di situs web',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'preview'         => 'Pratinjau',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'price'           => 'Harga',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'record'          => 'Catatan',
-    'restore'         => 'Memulihkan',
-    'save'            => 'Menyimpan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'restore'         => 'Pulihkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'save'            => 'Simpan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'save_and_close'  => 'Simpan & Tutup',
-    'save_and_return' => 'Simpan & Kembalikan',
-    'search'          => 'Mencari',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'save_and_return' => 'Simpan & Kembali',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'search'          => 'Cari',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'select'          => 'Pilih',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'select_all'      => 'Pilih Semua',
-    'send'            => 'Mengirim',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'send'            => 'Kirim',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'settings'        => 'Pengaturan',
-    'show'            => 'Menunjukkan',
-    'show_all'        => 'Tunjukkan semua',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'show'            => 'Tampilkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'show_all'        => 'Tampilkan Semua',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'sign_in'         => 'Masuk',
-    'solve'           => 'Menyelesaikan',
-    'start'           => 'Awal',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'solve'           => 'Selesaikan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'start'           => 'Mulai',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'stop'            => 'Berhenti',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'submit'          => 'Kirim',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'subscribe'       => 'Langganan',
-    'switch'          => 'Mengalihkan',
-    'switch_to_role'  => 'Beralih Ke Peran',
-    'tag'             => 'Menandai',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'switch'          => 'Beralih',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'switch_to_role'  => 'Beralih ke Peran',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'tag'             => 'Beri label',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'tags'            => 'Tag',
     'target_link'     => [
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'blank'  => 'Buka di jendela baru',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'parent' => 'Buka di bingkai induk',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'self'   => 'Buka di jendela saat ini',
+        // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
         'top'    => 'Buka di bingkai paling atas',
     ],
-    'translate'       => 'Menerjemahkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'translate'       => 'Terjemahkan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'translate_it'    => 'Terjemahkan',
-    'unpack'          => 'Membongkar',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'unpack'          => 'Bongkar',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'unsubscribe'     => 'Berhenti berlangganan',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'up'              => 'Ke atas',
-    'update'          => 'Memperbarui',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'update'          => 'Perbarui',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'user'            => 'Pengguna',
-    'view'            => 'Melihat',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
+    'view'            => 'Lihat',
+    // curated at 2026-09-24T09:15:15+07:00 — id curation wave: actions pack
     'yes'             => 'Ya',
 ];

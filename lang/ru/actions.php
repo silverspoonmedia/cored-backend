@@ -7,18 +7,24 @@ return [
     'action'          => 'Действие',
     'actions'         => 'Действия',
     'add'             => 'Добавить',
-    'admin'           => 'Панель администратора',
-    'agree'           => 'Согласен(на)',
-    'archive'         => 'Архив',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'admin'           => 'Администратор',
+    // curated at 2026-09-24T09:17:33+07:00 — ru curation wave: actions pack
+    'agree'           => 'Согласен',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'archive'         => 'Архивировать',
     'assign'          => 'Назначить',
-    'associate'       => 'Ассоциировать',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'associate'       => 'Связать',
     'attach'          => 'Прикрепить',
-    'browse'          => 'Просмотр',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'browse'          => 'Обзор',
     'cancel'          => 'Отмена',
     'choose'          => 'Выбрать',
     'choose_file'     => 'Выбрать файл',
     'choose_image'    => 'Выбрать изображение',
-    'click_to_copy'   => 'Скопировать',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'click_to_copy'   => 'Нажмите, чтобы скопировать',
     'close'           => 'Закрыть',
     'collapse'        => 'Свернуть',
     'collapse_all'    => 'Свернуть всё',
@@ -32,23 +38,33 @@ return [
     'disable'         => 'Отключить',
     'discard'         => 'Отказаться',
     'done'            => 'Готово',
-    'down'            => 'Вниз',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'down'            => 'Переместить вниз',
     'duplicate'       => 'Дублировать',
     'edit'            => 'Редактировать',
     'enable'          => 'Включить',
-    'expand'          => 'Раскрыть',
-    'expand_all'      => 'Раскрыть всё',
-    'explanation'     => 'Объяснить',
-    'export'          => 'Экспорт',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'expand'          => 'Развернуть',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'expand_all'      => 'Развернуть всё',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'explanation'     => 'Объяснение',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'export'          => 'Экспортировать',
     'file'            => 'Файл',
     'files'           => 'Файлы',
-    'go_home'         => 'Вернуться на главную',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'go_home'         => 'На главную',
     'hide'            => 'Скрыть',
-    'home'            => 'На главную',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'home'            => 'Главная',
     'image'           => 'Изображение',
-    'impersonate'     => 'Войти под пользователем',
-    'impersonation'   => 'Войти под пользователем',
-    'import'          => 'Импорт',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'impersonate'     => 'Войти от имени пользователя',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'impersonation'   => 'Вход от имени пользователя',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'import'          => 'Импортировать',
     'introduction'    => 'Введение',
     'like'            => 'Нравится',
     'load'            => 'Загрузить',
@@ -64,11 +80,13 @@ return [
         'edit'      => 'Редактировать :name',
         'export'    => 'Экспортировать :name',
         'hide'      => 'Скрыть :name',
-        'import'    => 'Импорт :name',
+        // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+        'import'    => 'Импортировать :name',
         'new'       => 'Новый :name',
         'restore'   => 'Восстановить :name',
         'save'      => 'Сохранить :name',
-        'search'    => 'Искать :name',
+        // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+        'search'    => 'Найти :name',
         'show'      => 'Показать :name',
         'update'    => 'Обновить :name',
         'view'      => 'Просмотреть :name',
@@ -91,7 +109,8 @@ return [
     'settings'        => 'Настройки',
     'show'            => 'Показать',
     'show_all'        => 'Показать всё',
-    'sign_in'         => 'Регистрация',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'sign_in'         => 'Войти',
     'solve'           => 'Решить',
     'start'           => 'Начать',
     'stop'            => 'Остановить',
@@ -105,15 +124,20 @@ return [
         'blank'  => 'Открыть в новом окне',
         'parent' => 'Открыть в родительском фрейме',
         'self'   => 'Открыть в текущем окне',
-        'top'    => 'Открыть в главном фрейме',
+        // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+        'top'    => 'Открыть в верхнем фрейме',
     ],
-    'translate'       => 'Перевод',
-    'translate_it'    => 'Перевести',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'translate'       => 'Перевести',
+    // curated at 2026-09-24T09:17:33+07:00 — ru curation wave: actions pack
+    'translate_it'    => 'Перевести это',
     'unpack'          => 'Распаковать',
     'unsubscribe'     => 'Отписаться',
-    'up'              => 'Вверх',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'up'              => 'Переместить вверх',
     'update'          => 'Обновить',
     'user'            => 'Пользователь',
-    'view'            => 'Просмотр',
+    // curated at 2026-09-23T17:08:04+07:00 — ru curation wave — action verbs, admin role noun, impersonation
+    'view'            => 'Просмотреть',
     'yes'             => 'Да',
 ];
