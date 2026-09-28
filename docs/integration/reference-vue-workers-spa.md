@@ -57,13 +57,13 @@ API `action_route` + `action_params` use symbolic names from `config/spa-routes.
 
 ## Production checklist
 
-Ops (not code): pair `SPA_URL` with the matching Worker origin (production / staging / sandbox — one `SPA_URL` per Monolith instance); bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` / `.env.staging` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; Archivd/Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../monolith-vue-workers/README.md) + [deployment.md](../../../monolith-vue-workers/docs/deployment.md). The staging mode file and the production API origin are still provisional — sibling [deployment.md — Pending environment values](../../../monolith-vue-workers/docs/deployment.md#pending-environment-values).
+Ops (not code): pair `SPA_URL` with the matching Worker origin (production / staging / sandbox — one `SPA_URL` per Monolith instance); bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` / `.env.staging` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; Archivd/Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../monolith-vue-workers/README.md) + [deployment.md](../../../monolith-vue-workers/docs/deployment.md). The mode-file values are guarded by the sibling `npm run check:env` (fails a build on a placeholder, a missing key, a shared origin, or production/staging pointing at a sandbox host) — see sibling [deployment.md — Mode file values](../../../monolith-vue-workers/docs/deployment.md#mode-file-values).
 
 `X-SPA-Origin: 1` is a public anti-noise marker, not auth.
 
 ## CI
 
-Sibling `.github/workflows/ci.yml`: `type-check` → `check:i18n` → `vitest` → `build-only`. No Playwright in this gate.
+Sibling `.github/workflows/ci.yml`: `type-check` → `check:i18n` → `check:docs` → `check:env` → `vitest` → `build-only`. No Playwright in this gate.
 
 ## API contract reference
 

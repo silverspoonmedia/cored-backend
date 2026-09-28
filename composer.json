@@ -25,7 +25,7 @@
         "php-open-source-saver/jwt-auth": "^2.9",
         "pragmarx/google2fa-laravel": "^3.0",
         "pusher/pusher-php-server": "^7.2",
-        "silverspoonmedia/pdf-tools": "dev-main",
+        "silverspoonmedia/pdf-tools": "dev-main#9a199aecf5a28b87af51810246e4b1c4207d8862",
         "spatie/laravel-activitylog": "^5.0",
         "spatie/laravel-pdf": "^2.12",
         "spatie/laravel-permission": "^8.0",

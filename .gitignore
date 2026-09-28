@@ -1,12 +1,14 @@
 *.log
 .DS_Store
+# Every real env file, at any depth. Only the committed `.example` templates
+# stay tracked — `.env.pre-archivd-backup` slipped through the old explicit
+# list and carried live credentials; the blanket pattern closes that class.
 .env
-.env.backup
-.env.profile
-.env.local
-.env.staging
-.env.production
-.env.*.local
+.env.*
+!.env.example
+!.env.local.example
+!.env.production.example
+!.env.staging.example
 # Local seed data (real AI endpoint + API key) — template `.example.php` is tracked.
 /database/seeders/data/*.local.php
 .phpactor.json
