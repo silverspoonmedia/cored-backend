@@ -11,4 +11,4 @@ Auth observability maps to Spatie activitylog (`log_name: auth`), and runtime fa
 | Commands | `composer audit`, `npm audit`, `php artisan route:list` |
 | Tests | `tests/Feature/Http/CorsOriginsTest.php`, `CorsBroadcastAuthTest.php`, `CorsOnAuthErrorProbeTest.php`, `Tests\Concerns\AssertsPayloadHygiene` |
 | Pakem | [security.mdc](../../.cursor/rules/security.mdc) · [api-resources.mdc](../../.cursor/rules/api-resources.mdc) |
-| Deep dive | [reference-security.md](reference-security.md) |
+| Deep dive | [reference-security.md](reference-security.md) — audit procedure, secret hygiene and rotation runbook, CORS, Tunnel perimeter |

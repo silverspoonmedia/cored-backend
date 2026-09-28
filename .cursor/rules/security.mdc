@@ -18,6 +18,7 @@ alwaysApply: false
 
 - Never log passwords, TOTP secrets, recovery codes, tokens, or envelope plaintext. ErrorLog context goes through `ErrorContextRedactor`.
 - Secrets live per tier ([environment.mdc](environment.mdc)): Tier A `.env`, Tier C envelope-encrypted credential tables. Never in a config literal, a doc, or a log line.
+- **A tracked env file is a leak, not a template.** `.gitignore` uses a blanket `.env*` pattern with `!` entries for the `.example` templates only — never an explicit suffix list, which is how `.env.pre-archivd-backup` shipped with a live `APP_KEY` and `PUSHER_APP_SECRET`. A committed secret is closed by **rotating it at the provider**, not by deleting the file: git history keeps the string, and a history rewrite breaks every clone for a value that rotation has already made worthless. Rotation order is provider → `.env` → verify; `APP_KEY` rotates via `key:generate --force` (retires into `APP_PREVIOUS_KEYS`, so existing ciphertext still decrypts — drop it only after every encrypted row is re-written). Runbook: [docs/platform/reference-security.md](../../docs/platform/reference-security.md#rotation-runbook).
 - Never put a Cloudflare Access service token or any secret in `VITE_*` — the SPA bundle is public.
 - `bootstrap/app.php` trusts all proxies. That is only acceptable while direct origin access is proven impossible; `X-Forwarded-*` values are never authentication.
 
