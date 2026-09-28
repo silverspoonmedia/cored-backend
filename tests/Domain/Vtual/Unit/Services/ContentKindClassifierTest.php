@@ -257,6 +257,88 @@ class ContentKindClassifierTest extends TestCase
     }
 
     #[Test]
+    public function a_twitch_music_category_is_music_without_topics_or_tags(): void
+    {
+        // Twitch exposes neither topicCategories nor uploader tags, so the
+        // stream category is the only music signal a live row carries.
+        foreach (['Music', 'Karaoke', 'DJ', 'VTuber Music'] as $category) {
+            $result = $this->classifier->classify([
+                'title' => 'chill stream',
+                'description' => $category,
+                'category_id' => null,
+                'category_name' => $category,
+                'duration_seconds' => null,
+                'topic_categories' => [],
+                'tags' => [],
+            ]);
+
+            $this->assertSame(ContentKind::Music, $result['kind'], $category);
+            $this->assertSame('category_name', $result['signal'], $category);
+        }
+    }
+
+    #[Test]
+    public function a_twitch_non_music_category_stays_unknown(): void
+    {
+        // The category is the only signal here, so a non-music one must not
+        // resolve either way — the AI audit owns that row.
+        foreach (['Just Chatting', 'Art', 'Valorant', 'Music Production & Beats'] as $category) {
+            $result = $this->classifier->classify([
+                'title' => 'stream',
+                'description' => $category,
+                'category_id' => null,
+                'category_name' => $category,
+                'duration_seconds' => null,
+                'topic_categories' => [],
+                'tags' => [],
+            ]);
+
+            $this->assertNull($result['kind'], $category);
+        }
+    }
+
+    #[Test]
+    public function the_twitch_category_match_is_case_folded_and_exact(): void
+    {
+        $this->assertSame(ContentKind::Music, $this->classifier->kind([
+            'title' => 'stream',
+            'category_name' => '  karaoke  ',
+        ]));
+
+        // A substring test would swallow this one, and the stream is not music.
+        $this->assertNull($this->classifier->kind([
+            'title' => 'stream',
+            'category_name' => 'Just Chatting & Music Requests',
+        ]));
+    }
+
+    #[Test]
+    public function the_twitch_music_category_list_is_configurable(): void
+    {
+        config(['vtual.content_classification.twitch_music_categories' => ['Live Performance']]);
+
+        $this->assertSame(ContentKind::Music, $this->classifier->kind([
+            'title' => 'stream',
+            'category_name' => 'Live Performance',
+        ]));
+
+        // The shipped list no longer applies once the config is replaced.
+        $this->assertNull($this->classifier->kind([
+            'title' => 'stream',
+            'category_name' => 'Music',
+        ]));
+    }
+
+    #[Test]
+    public function has_music_category_is_public_for_the_live_mapper(): void
+    {
+        $this->assertTrue($this->classifier->hasMusicCategory('Music'));
+        $this->assertTrue($this->classifier->hasMusicCategory('music'));
+        $this->assertFalse($this->classifier->hasMusicCategory('Just Chatting'));
+        $this->assertFalse($this->classifier->hasMusicCategory(''));
+    }
+
+    #[Test]
     public function the_long_form_threshold_is_configurable(): void
     {
         config(['vtual.content_classification.long_form_min_seconds' => 300]);

@@ -51,6 +51,20 @@ class WorkerQueuesTest extends TestCase
         ], WorkerQueues::names());
     }
 
+    public function test_names_includes_the_marketplace_upload_lane_before_default(): void
+    {
+        // The lane name is registered in `microstock.queues`, which is what
+        // `ORDER` reads — a key listed in `ORDER` but absent from config is a
+        // silently dropped lane, and the dispatched upload job is never consumed.
+        config(['microstock.queues.upload' => 'q-upload']);
+
+        $names = WorkerQueues::names();
+
+        $this->assertContains('q-upload', $names);
+        $this->assertSame('default', end($names));
+        $this->assertSame('q-upload', $names[count($names) - 2]);
+    }
+
     public function test_csv_joins_names_with_commas(): void
     {
         config([

@@ -41,6 +41,36 @@ return [
     'collection_processing' => 'コレクションの分析を開始しました。',
     'collection_status' => 'コレクションの状態を読み込みました。',
     'collection_exported' => 'コレクションをエクスポートしました。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_disabled' => 'このプラットフォームではマーケットプレイスへのアップロードが無効になっています。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_marketplace_unsupported' => ':marketplace へのアップロードはまだ対応していません。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_not_ready' => '先にコレクションを整えてください。アップロードできるのはレビュー済みまたはエクスポート済みのコレクションのみです。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_nothing_finalized' => 'このコレクションにはアップロードできる確定済みメタデータがありません。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_invalid' => 'ファイル名 :name はアップロードできません。英数字・ピリオド・ハイフン・アンダースコアに変更してください。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_duplicate' => 'このコレクション内でファイル名 :name が重複しています。どちらかの名前を変更してください。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_credential_incomplete' => 'マーケットプレイスの認証情報にホストまたはユーザー名がありません。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_auth_failed' => 'マーケットプレイスがこの認証情報を拒否しました。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_host_key_mismatch' => 'マーケットプレイスのホスト鍵が設定されたフィンガープリントと一致しません。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_remote_path_failed' => '保存先フォルダ :path を作成できませんでした。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_manifest' => 'メタデータファイル :name をアップロードできませんでした。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_file' => 'ファイル :name をアップロードできませんでした。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed' => 'マーケットプレイスへのアップロードに失敗しました。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_queued' => 'マーケットプレイスへのアップロードを受け付けました。',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_status_loaded' => 'アップロード状況を読み込みました。',
     // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
     'insufficient_ai_credits' => 'AI クレジットが不足しています。分析を実行する前に、サービスから AI クレジットパックを購入してください。',
     // curated at 2026-09-21T17:32:30+07:00 — ja curation wave

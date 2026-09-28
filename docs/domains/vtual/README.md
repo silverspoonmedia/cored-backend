@@ -16,8 +16,8 @@ vTual keeps a public catalogue of vTubers, their channels and their content, and
 | Seeders | `RoleSeeder` → `ArchivdRoleSeeder` → `VtualRoleSeeder` → `MenuSeeder` (this order is mandatory) |
 | Tests | `tests/Domain/Vtual/` |
 | Pakem | [.cursor/rules/vtual.mdc](../../../.cursor/rules/vtual.mdc) · [.cursor/rules/vtual-content.mdc](../../../.cursor/rules/vtual-content.mdc) |
-| Deep dive | [reference.md](reference.md) — identity, claims, credentials · [reference-api.md](reference-api.md) — API + SPA surfaces · [reference-ingestion.md](reference-ingestion.md) — platform clients, pools, ops · [reference-classification.md](reference-classification.md) — music layer, cover detection, merge |
-| Progress | [implementation-status.md](implementation-status.md) — done / deferred / product-blocked |
+| Deep dive | [reference.md](reference.md) — identity, claims, credentials · [reference-api.md](reference-api.md) — API + SPA surfaces · [reference-ingestion.md](reference-ingestion.md) — platform clients, pools, ops · [reference-classification.md](reference-classification.md) — music layer, cover detection, merge · [reference-metrics.md](reference-metrics.md) — metric/session history · [reference-capability-grants.md](reference-capability-grants.md) — delegated per-creator grants · [reference-embed-policy.md](reference-embed-policy.md) — third-party embed decision |
+| Progress | [implementation-status.md](implementation-status.md) — every row Implemented or Decided (no open work) |
 | Naming | [naming-conventions.md](naming-conventions.md) — core role `Management` vs `vtual_managements` |
 | History | [ui-archive.md](ui-archive.md) (removed Blade UI) · [archive/](../../archive/) (assessments, legacy audit) |
 

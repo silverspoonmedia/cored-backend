@@ -14,6 +14,11 @@ return [
     // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
     'verify_claim' => '申請を検証',
     'accept_anyway' => '確認なしで承認',
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+    'acknowledge_incident' => '確認済みにする',
+    'resolve_incident' => '解決済みにする',
+    'open_credential' => '認証情報を開く',
+    'open_profile' => 'プロフィールを開く',
     'confirm' => [
         'archive_management' => 'このマネジメントをアーカイブしますか？',
         // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
@@ -38,5 +43,8 @@ return [
         'delete_ai_connection' => 'この AI 接続を完全に削除しますか？このスラッグに紐づいているコンシューマーは、別の接続を紐づけるまでエンドポイントを利用できなくなります。',
         'remove_blocklist_title' => 'エントリを削除',
         'remove_blocklist' => 'このハッシュをブロックリストから削除しますか？同じチェックサムのファイルは再び公開共有できるようになります。',
+        // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+        'resolve_incident_title' => 'インシデントを解決',
+        'resolve_incident' => 'このインシデントを解決済みにしますか？同じ障害が再発すると自動的に未対応に戻ります。',
     ],
 ];

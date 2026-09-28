@@ -37,6 +37,6 @@ The kind comes from the file name, so a new kind is a deliberate edit to that fu
 
 - Behavior change in the same task/PR: update the owning brief, and the rule file when an invariant moved.
 - Keyword **`wrap up the docs`** = session-wide consolidation of code ↔ docs ↔ rules across both repos, then run the gates.
-- Gates: `php scripts/docs-guard.php`, `php artisan test --filter=Documentation`, `php artisan test --filter=Locale`; SPA `npm run check:docs` and `npm run check:i18n`. When both checkouts are present, `php scripts/docs-cross-repo-links.php` is the fail-closed check on the links that leave this repo.
+- Gates: `php scripts/docs-guard.php`, `php artisan test --filter=Documentation`, `php artisan test --filter=Locale`; SPA `npm run check:docs`, `npm run check:i18n`, and `npm run check:env` (mode-file values — run it when a `.env.<mode>` file or an environment moved). When both checkouts are present, `php scripts/docs-cross-repo-links.php` is the fail-closed check on the links that leave this repo.
 - The guard resolves link **paths and `#anchors`**: reword a heading and every deep link into it fails, so update the referrers in the same change. A link into a sibling checkout is reported as *unverified* when that checkout is absent — never as broken, and never as checked.
 - Full behavioral guides are the domain/platform docs; this file owns the *shape*, not the content. A doc that outgrows its kind budget is a signal, not a violation to silence: split the invariants into the owning rule file and move narrative to `docs/archive/`.

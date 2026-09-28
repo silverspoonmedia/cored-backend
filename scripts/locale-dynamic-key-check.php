@@ -121,6 +121,30 @@ function dynamicKeySets(string $root): array
         'keys' => array_values(array_unique($paymentKeys)),
     ];
 
+    // vTual integration incidents: `VtualIncidentResource` assembles
+    // `api/vtual.incident.kinds|severities|statuses.'.$enum->value` for the three
+    // incident enums, so every case needs a label in every locale.
+    $incidentKeys = [];
+
+    foreach ([
+        'App\\Domain\\Vtual\\Enums\\IncidentKind' => 'kinds',
+        'App\\Domain\\Vtual\\Enums\\IncidentSeverity' => 'severities',
+        'App\\Domain\\Vtual\\Enums\\IncidentStatus' => 'statuses',
+    ] as $enum => $group) {
+        if (! enum_exists($enum)) {
+            continue;
+        }
+
+        foreach ($enum::cases() as $case) {
+            $incidentKeys[] = 'api/vtual.incident.'.$group.'.'.$case->value;
+        }
+    }
+
+    $sets['api/vtual.incident.* (runtime assembled)'] = [
+        'source' => 'VtualIncidentResource enum labels',
+        'keys' => array_values(array_unique($incidentKeys)),
+    ];
+
     // English-sentence keys: the reset-password notification resolves whole English
     // sentences from the flat pack, so each sentence is a key that must be translated.
     $sets['English-sentence keys (flat pack)'] = [
@@ -171,6 +195,7 @@ $knownSites = [
     'app/Domain/PaymentGateway/Http/Controllers/API/V1/Payments/Midtrans/MidtransPaymentController.php',
     'app/Domain/PaymentGateway/Http/Controllers/API/V1/Payments/Ipaymu/IpaymuPaymentController.php',
     'app/Domain/PaymentGateway/Http/Controllers/API/V1/InvoiceChannelCheckoutController.php',
+    'app/Domain/Vtual/Http/Resources/VtualIncidentResource.php',
 ];
 
 $unknownSites = [];

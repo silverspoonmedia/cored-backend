@@ -12,10 +12,12 @@ use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\EntityStatus;
 use App\Domain\Vtual\Enums\ManagementInviteStatus;
 use App\Domain\Vtual\Enums\ManagementMemberRole;
+use App\Domain\Vtual\Enums\VtualGrantCapability;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Models\Management;
 use App\Domain\Vtual\Models\ManagementCreator;
+use App\Domain\Vtual\Models\ManagementCreatorGrant;
 use App\Domain\Vtual\Models\ManagementInvite;
 use App\Domain\Vtual\Models\ManagementMember;
 use App\Domain\Vtual\Notifications\ManagementMemberInvited;
@@ -230,6 +232,8 @@ class ManagementService
 
         return $management->load([
             'members.user',
+            'creatorGrants.creator',
+            'creatorGrants.member.user',
             'creatorAssignments' => fn ($q) => $q->whereNull('left_at')->with('creator'),
         ]);
     }
@@ -385,6 +389,13 @@ class ManagementService
 
         $assignment->left_at = now();
         $assignment->save();
+
+        // Delegated grants only exist inside an active assignment: drop them so
+        // a later re-assignment does not silently resurrect old delegations.
+        ManagementCreatorGrant::query()
+            ->where('management_id', $management->id)
+            ->where('creator_id', $creatorId)
+            ->delete();
 
         $this->realtime->changed($management->id, 'creator', (string) $creatorId, 'unassigned');
 
@@ -563,6 +574,84 @@ class ManagementService
         }
 
         throw new VtualException(__('api/vtual.management.invite_not_actionable'), 422);
+    }
+
+    /**
+     * Delegate a per-creator capability to one org member — the additive
+     * exception to the org-wide role (docs/domains/vtual/reference-capability-grants.md).
+     *
+     * Gates mirror member management (permission + org Owner/Admin), because
+     * this *is* member management. The grantee must be a member of this org and
+     * the creator must be actively assigned to it, so the row can never create
+     * a link the org does not already hold.
+     */
+    public function grantCreatorCapability(
+        User $actor,
+        string $managementId,
+        string $memberId,
+        string $creatorId,
+        string $capability,
+    ): ManagementCreatorGrant {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanManageMembers($management, $actor);
+
+        $grantCapability = VtualGrantCapability::tryFrom($capability);
+        if ($grantCapability === null) {
+            throw new VtualException(__('api/vtual.management.grant_capability_invalid'), 422);
+        }
+
+        $member = $this->findMemberOrFail($management, $memberId);
+
+        if ((string) $member->user_id === (string) $actor->id) {
+            throw new VtualException(__('api/vtual.management.cannot_edit_self'), 422);
+        }
+
+        $assigned = ManagementCreator::query()
+            ->where('management_id', $management->id)
+            ->where('creator_id', $creatorId)
+            ->whereNull('left_at')
+            ->exists();
+
+        if (! $assigned) {
+            throw new VtualException(__('api/vtual.management.grant_creator_not_assigned'), 422);
+        }
+
+        /** @var ManagementCreatorGrant $grant */
+        $grant = ManagementCreatorGrant::query()->updateOrCreate(
+            [
+                'member_id' => $member->id,
+                'creator_id' => $creatorId,
+            ],
+            [
+                'management_id' => $management->id,
+                'capability' => $grantCapability,
+                'granted_by' => $actor->id,
+            ],
+        );
+
+        $this->realtime->changed($management->id, 'creator_grant', (string) $grant->id, 'granted');
+
+        return $grant->load(['creator', 'member.user']);
+    }
+
+    public function revokeCreatorGrant(User $actor, string $managementId, string $grantId): void
+    {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanManageMembers($management, $actor);
+
+        /** @var ManagementCreatorGrant|null $grant */
+        $grant = ManagementCreatorGrant::query()
+            ->where('management_id', $management->id)
+            ->whereKey($grantId)
+            ->first();
+
+        if ($grant === null) {
+            throw new VtualException(__('api/vtual.management.grant_not_found'), 404);
+        }
+
+        $grant->delete();
+
+        $this->realtime->changed($management->id, 'creator_grant', (string) $grantId, 'revoked');
     }
 
     public function acceptInvite(User $actor, string $token): ManagementInvite

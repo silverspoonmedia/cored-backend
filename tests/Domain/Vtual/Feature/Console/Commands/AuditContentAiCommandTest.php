@@ -130,6 +130,61 @@ class AuditContentAiCommandTest extends TestCase
     }
 
     #[Test]
+    public function a_program_music_verdict_binds_even_when_the_ai_disagrees(): void
+    {
+        $this->bindAiConnection();
+        $this->enableAudit();
+
+        // The program pass already resolved both layers from strong evidence;
+        // the pool row exists because the sub-category was cleared by a refresh.
+        $content = $this->content(
+            'vid-bound',
+            kind: ContentKind::Music,
+            category: ContentCategory::Cover,
+            detail: 'Kanaria - KING',
+        );
+        $item = $this->queue($content);
+
+        $this->fakeVerdict(['is_music' => false, 'category' => null, 'detail' => null, 'confidence' => 0.95]);
+
+        $this->artisan('vtual:audit-content-ai')->assertSuccessful();
+
+        $content->refresh();
+
+        $this->assertSame('music', $content->content_type?->value);
+        $this->assertSame('cover', $content->content_category?->value);
+        $this->assertSame('Kanaria - KING', $content->content_category_detail);
+
+        // The row is still closed out — a bound verdict is a final answer, not a
+        // reason to retry the same question forever.
+        $this->assertSame(ContentAiAuditStatus::Done, $item->refresh()->status);
+    }
+
+    #[Test]
+    public function the_drainer_sends_stored_tags_channel_and_program_verdict_as_evidence(): void
+    {
+        $this->bindAiConnection();
+        $this->enableAudit();
+
+        $content = $this->content('vid-evidence', kind: null, title: '星を編む');
+        $content->forceFill(['tags' => ['VOCALOID', 'オリジナル曲']])->save();
+        $this->queue($content);
+
+        $this->fakeVerdict(['is_music' => true, 'category' => 'original', 'confidence' => 0.9]);
+
+        $this->artisan('vtual:audit-content-ai')->assertSuccessful();
+
+        Http::assertSent(function ($request): bool {
+            $user = $request->data()['messages'][1]['content'] ?? '';
+
+            // Tags persisted by hydrate (H3) are the signal --refresh could not
+            // reach before; the channel name drives the catalogue comparison.
+            return str_contains($user, 'Uploader tags: VOCALOID, オリジナル曲')
+                && str_contains($user, 'Uploader channel: Creator vid-evidence');
+        });
+    }
+
+    #[Test]
     public function a_failed_call_marks_the_row_failed_and_leaves_the_classification_alone(): void
     {
         $this->bindAiConnection();

@@ -58,6 +58,36 @@ return [
     // curated at 2026-09-21T17:08:42+07:00 — id curation wave
     'collection_status' => 'Status koleksi berhasil dimuat.',
     // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_disabled' => 'Unggah ke marketplace dimatikan di platform ini.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_marketplace_unsupported' => 'Unggahan ke :marketplace belum didukung.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_not_ready' => 'Kurasi koleksi terlebih dahulu — hanya koleksi yang sudah ditinjau atau diekspor yang dapat diunggah.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_nothing_finalized' => 'Tidak ada metadata yang sudah difinalkan di koleksi ini untuk diunggah.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_invalid' => 'Nama berkas :name tidak dapat diunggah. Ganti menjadi huruf, angka, titik, tanda hubung, atau garis bawah.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_duplicate' => 'Dua berkas di koleksi ini memakai nama :name. Ganti nama salah satunya.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_credential_incomplete' => 'Kredensial marketplace belum memiliki host atau nama pengguna.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_auth_failed' => 'Marketplace menolak kredensial ini.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_host_key_mismatch' => 'Host key marketplace tidak cocok dengan fingerprint yang dikonfigurasi.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_remote_path_failed' => 'Folder tujuan :path tidak dapat dibuat.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_manifest' => 'Berkas metadata :name tidak dapat diunggah.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_file' => 'Berkas :name tidak dapat diunggah.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed' => 'Unggahan ke marketplace gagal.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_queued' => 'Unggahan ke marketplace masuk antrean.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_status_loaded' => 'Status unggahan berhasil dimuat.',
     'collection_exported' => 'Koleksi berhasil diekspor.',
     // curated at 2026-09-21T17:08:42+07:00 — id curation wave
     'insufficient_ai_credits' => 'Kredit AI tidak cukup. Beli paket kredit AI dari halaman Layanan sebelum menjalankan analisis.',

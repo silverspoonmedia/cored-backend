@@ -7,6 +7,7 @@ use App\Domain\Vtual\Enums\ManagementMemberRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -56,5 +57,15 @@ class ManagementMember extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Delegated per-creator capability grants held by this member.
+     *
+     * @return HasMany<ManagementCreatorGrant, $this>
+     */
+    public function creatorGrants(): HasMany
+    {
+        return $this->hasMany(ManagementCreatorGrant::class, 'member_id');
     }
 }

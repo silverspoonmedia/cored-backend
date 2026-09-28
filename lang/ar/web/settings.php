@@ -196,6 +196,15 @@ return [
         // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
         'vtual.content_classification.ai.cache_ttl_hours' => 'مدة تخزين نتائج التدقيق مؤقتًا (بالساعات)',
         'vtual.content_classification.ai.connection' => 'اتصال تدقيق الذكاء الاصطناعي (فارغ = الافتراضي)',
+        'vtual.incidents.enabled' => 'تفعيل تسجيل الحوادث (فرز أعطال تكامل vTual)',
+        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave
+        'vtual.metrics.enabled' => 'تفعيل سجل المقاييس (لقطات vTual)',
+        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave
+        'vtual.metrics.channel_interval_minutes' => 'الفاصل الزمني لمقاييس القناة (بالدقائق)',
+        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave
+        'vtual.metrics.content_interval_minutes' => 'الفاصل الزمني لمقاييس CCV المباشر (بالدقائق)',
+        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave
+        'vtual.metrics.retention_days' => 'مدة الاحتفاظ بسجل المقاييس (بالأيام)',
     ],
     'hints' => [
         'platform.mail.from_address' => 'عنوان المرسل العام للبريد الصادر (تبقى بيانات اعتماد النقل في .env).',
@@ -224,6 +233,9 @@ return [
         'vtual.claim.accept_anyway_enabled' => 'السماح للمستخدمين بقبول المطالبة حتى عندما لا تكون نتيجة التحقق حاسمة.',
         'vtual.claim.discord_verify_enabled' => 'السماح للمستخدمين بالتحقق من المطالبات اليتيمة عبر مطابقة حسابات YouTube أو Twitch المرتبطة بـ Discord.',
         'vtual.channel_claim.discord_verify_enabled' => 'السماح لمالكي الملفات الشخصية بالتحقق من مطالبات إرفاق القنوات عبر مطابقة حسابات YouTube أو Twitch المرتبطة بـ Discord.',
+        'vtual.incidents.enabled' => 'تسجيل أعطال تكامل vTual (WebSub وEventSub وبيانات الاعتماد والاستيراد) كحوادث مجمّعة قابلة للفرز. أوقفه أثناء انقطاع شامل في المنصة لإبقاء قائمة الفرز مقروءة.',
+        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave
+        'vtual.metrics.enabled' => 'إضافة عيّنة من عدد المشتركين وعدد المشاهدين المتزامنين إلى جداول السجل عند كل تحديث. أوقفه للاحتفاظ بأعمدة القيمة الحالية فقط.',
         'identity.discord.connections_snapshot_max_age_minutes' => 'المدة التي يُعتمد خلالها على لقطات اتصالات Discord المحفوظة قبل أن يؤدي فشل التحقق إلى تحديث مباشر من Discord API.',
     ],
     'options' => [

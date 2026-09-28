@@ -30,11 +30,13 @@ class CreatorResource extends JsonResource
         $actor = $request->user();
         $myRole = null;
         $myManagementRole = null;
+        $myGrantCapability = null;
 
         if ($actor !== null) {
             $access = app(CreatorAccessService::class);
             $myRole = $access->roleForRequest($this->resource, $actor, $request)?->value;
             $myManagementRole = $access->managementRoleForCreatorRequest($this->resource, $actor, $request)?->value;
+            $myGrantCapability = $access->grantForCreatorRequest($this->resource, $actor, $request)?->value;
         }
 
         return [
@@ -47,6 +49,7 @@ class CreatorResource extends JsonResource
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
             'my_role' => $myRole,
             'my_management_role' => $myManagementRole,
+            'my_grant_capability' => $myGrantCapability,
             'channels_count' => $this->when(
                 isset($this->channels_count),
                 fn () => (int) $this->channels_count,

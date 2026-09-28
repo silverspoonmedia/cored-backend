@@ -22,6 +22,8 @@ return [
         'collection_vision_free' => env('MICROSTOCK_AI_COLLECTION_VISION_QUEUE_FREE', 'microstock-collection-vision-free'),
         'collection_thinking_free' => env('MICROSTOCK_AI_COLLECTION_THINKING_QUEUE_FREE', 'microstock-collection-thinking-free'),
         'solo_free' => env('MICROSTOCK_AI_SOLO_QUEUE_FREE', 'microstock-solo-free'),
+        // Marketplace upload lane (see config `upload` section + WorkerQueues::ORDER).
+        'upload' => env('MICROSTOCK_UPLOAD_QUEUE', 'microstock-upload'),
     ],
 
     // Per-user daily free analyses (lazy calendar reset; no prepaid balance credit).
@@ -145,6 +147,59 @@ return [
 
     // Filesystem disk that stores generated per-collection CSV exports.
     'csv_disk' => 'local',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Marketplace upload (decision: docs/domains/microstock/reference-marketplace-upload.md)
+    |--------------------------------------------------------------------------
+    |
+    | CSV stays the primary export path; upload is an additive, opt-in action on
+    | a review/exported collection. Everything per-marketplace lives in
+    | `marketplaces`, so a new marketplace is a config entry, not a new branch.
+    |
+    | `columns` maps a marketplace's metadata file to our finalized fields. The
+    | remote filename is always the local filename — marketplaces match rows to
+    | files by name, so a rename would detach the metadata.
+    */
+    'upload' => [
+        // Kill switch. When false the endpoint answers 422 and the SPA hides the
+        // action, so a misconfigured marketplace cannot be reached by a client
+        // that still has a stale build.
+        'enabled' => env('MICROSTOCK_UPLOAD_ENABLED', true),
+
+        // SFTP socket timeout (seconds) and per-batch retry budget for the job.
+        'timeout' => 30,
+        'tries' => 2,
+        'backoff' => 60,
+
+        // The lane name lives in `queues.upload` — the single registry
+        // `WorkerQueues::ORDER` reads, so a worker actually consumes it.
+
+        'marketplaces' => [
+            'adobe_stock' => [
+                'label' => 'Adobe Stock',
+                'host' => env('MICROSTOCK_ADOBE_STOCK_HOST', 'sftp.contributor.adobestock.com'),
+                'port' => (int) env('MICROSTOCK_ADOBE_STOCK_PORT', 22),
+                'remote_path' => env('MICROSTOCK_ADOBE_STOCK_PATH', '/'),
+                // Host key fingerprint, colon-separated MD5. Empty = the
+                // connection is rejected, never trusted on first use.
+                'host_key_fingerprint' => env('MICROSTOCK_ADOBE_STOCK_HOST_KEY', ''),
+                // Manifest is a CSV whose columns the marketplace expects.
+                'manifest_name' => 'metadata.csv',
+                'columns' => [
+                    'Filename' => 'filename',
+                    'Title' => 'title',
+                    'Keywords' => 'keywords',
+                    'Category' => 'category',
+                ],
+                // Marketplace category ids by our category slug. An unmapped
+                // slug falls back to `default_category`.
+                'categories' => [
+                    'default_category' => 1,
+                ],
+            ],
+        ],
+    ],
 
     // Prepaid AI analysis billing: token costs, markup, and analyze gate estimate.
     'ai_billing' => [

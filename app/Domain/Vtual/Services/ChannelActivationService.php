@@ -10,6 +10,7 @@ use App\Domain\Vtual\Jobs\RunChannelInitialContentBackfillJob;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Support\VtualChannelRealtime;
+use App\Domain\Vtual\Support\VtualMetricRecorder;
 
 /**
  * Single entry for pending → active promotion and platform post-activation hooks
@@ -52,6 +53,9 @@ class ChannelActivationService
 
         $channel = $channel->refresh()->load('platform');
         $this->applyYoutubeActivationHooks($channel);
+
+        // Timeline: activation is the first snapshot a channel ever has.
+        app(VtualMetricRecorder::class)->recordChannel($channel);
 
         // Live update: the deferred registration just resolved — owner's views
         // must see the channel transition pending → active.

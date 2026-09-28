@@ -3,8 +3,10 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Vtual\Enums\ChannelStatus;
-use App\Domain\Vtual\Enums\PlatformCredentialType;
+use App\Domain\Vtual\Enums\IncidentKind;
+use App\Domain\Vtual\Enums\IncidentSeverity;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
+use App\Domain\Vtual\Enums\PlatformCredentialType;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Enums\TwitchEventSubStatus;
 use App\Domain\Vtual\Enums\TwitchEventSubType;
@@ -12,8 +14,8 @@ use App\Domain\Vtual\Integrations\Support\PlatformHttp;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\EventsubSubscription;
 use App\Domain\Vtual\Models\PlatformCredential;
+use App\Domain\Vtual\Support\VtualIncidentRecorder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -119,6 +121,8 @@ class TwitchEventSubSubscriptionService
             'subscribed_at' => now(),
             'last_error' => null,
         ])->save();
+
+        $this->resolveIncidentForSubscription($subscription);
 
         return true;
     }
@@ -238,31 +242,45 @@ class TwitchEventSubSubscriptionService
         try {
             $response = $this->helixPost($credential, '/eventsub/subscriptions', $body);
         } catch (\Throwable $e) {
+            $detail = 'EventSub subscribe exception: '.substr($e->getMessage(), 0, 200);
+
             $subscription->forceFill([
                 'status' => TwitchEventSubStatus::Failed,
-                'last_error' => 'EventSub subscribe exception: '.substr($e->getMessage(), 0, 200),
+                'last_error' => $detail,
             ])->save();
+
+            $this->recordIncident($channel, $credential, $type, $detail);
 
             return;
         }
 
         if (! $response->successful()) {
             $detail = $response->json('message') ?? '';
+            $detail = 'EventSub subscribe HTTP '.$response->status()
+                .(is_string($detail) && $detail !== '' ? ': '.substr($detail, 0, 200) : '');
+
             $subscription->forceFill([
                 'status' => TwitchEventSubStatus::Failed,
-                'last_error' => 'EventSub subscribe HTTP '.$response->status()
-                    .(is_string($detail) && $detail !== '' ? ': '.substr($detail, 0, 200) : ''),
+                'last_error' => $detail,
             ])->save();
+
+            $this->recordIncident($channel, $credential, $type, $detail, [
+                'http_status' => $response->status(),
+            ]);
 
             return;
         }
 
         $data = $response->json('data.0');
         if (! is_array($data) || ! is_string($data['id'] ?? null)) {
+            $detail = 'EventSub subscribe response missing subscription id';
+
             $subscription->forceFill([
                 'status' => TwitchEventSubStatus::Failed,
-                'last_error' => 'EventSub subscribe response missing subscription id',
+                'last_error' => $detail,
             ])->save();
+
+            $this->recordIncident($channel, $credential, $type, $detail);
 
             return;
         }
@@ -312,7 +330,7 @@ class TwitchEventSubSubscriptionService
 
         $token = $this->credentials->getAppAccessToken($credential);
 
-        return PlatformHttp::client()->withHeaders([            'Client-Id' => $clientId,
+        return PlatformHttp::client()->withHeaders(['Client-Id' => $clientId,
             'Authorization' => 'Bearer '.$token,
         ]);
     }
@@ -374,5 +392,63 @@ class TwitchEventSubSubscriptionService
         $externalId = trim((string) $channel->external_id);
 
         return $externalId !== '' && ctype_digit($externalId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function recordIncident(
+        Channel $channel,
+        PlatformCredential $credential,
+        TwitchEventSubType $type,
+        string $detail,
+        array $context = [],
+    ): void {
+        app(VtualIncidentRecorder::class)->record(
+            kind: IncidentKind::Eventsub,
+            severity: IncidentSeverity::Critical,
+            // The event type is part of the title on purpose: one channel holds
+            // a subscription per type, and a broken `stream.online` is not the
+            // same incident as a broken `stream.offline` — they are renewed
+            // separately, so they are triaged separately.
+            title: $this->incidentTitle($type),
+            detail: $detail,
+            context: $context + [
+                'event_type' => $type->value,
+                'channel_external_id' => $channel->external_id,
+                'credential_label' => $credential->label,
+            ],
+            platformId: (string) $channel->platform_id,
+            channelId: (string) $channel->id,
+            credentialId: (string) $credential->id,
+        );
+    }
+
+    private function resolveIncidentForSubscription(EventsubSubscription $subscription): void
+    {
+        $channel = $subscription->channel
+            ?? Channel::query()->find($subscription->channel_id);
+
+        if ($channel === null) {
+            return;
+        }
+
+        $type = $subscription->event_type;
+
+        if (! $type instanceof TwitchEventSubType) {
+            return;
+        }
+
+        app(VtualIncidentRecorder::class)->resolve(
+            kind: IncidentKind::Eventsub,
+            title: $this->incidentTitle($type),
+            platformId: $channel->platform_id !== null ? (string) $channel->platform_id : null,
+            channelId: (string) $channel->id,
+        );
+    }
+
+    private function incidentTitle(TwitchEventSubType $type): string
+    {
+        return 'Twitch EventSub subscribe failed ('.$type->value.')';
     }
 }

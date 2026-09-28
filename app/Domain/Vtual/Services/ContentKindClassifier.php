@@ -17,10 +17,16 @@ use App\Domain\Vtual\Enums\ContentKind;
  *
  *   1. topicCategories contains the Music topic      → music
  *   2. categoryId === the Music category             → music
- *   3. music keyword in the title or the uploader's tags → music
- *   4. description credits an original + links a video   → music
- *   5. nothing matched and the video is long-form    → non_music
- *   6. nothing matched, short or unknown duration    → null (unknown)
+ *   3. category_name is a configured music category  → music
+ *   4. music keyword in the title or the uploader's tags → music
+ *   5. description credits an original + links a video   → music
+ *   6. nothing matched and the video is long-form    → non_music
+ *   7. nothing matched, short or unknown duration    → null (unknown)
+ *
+ * Signal 3 exists for Twitch, which exposes neither `topicCategories` nor
+ * uploader tags: `game_name` (the stream category) is the only music signal a
+ * live row carries, and it is matched against the configurable
+ * `content_classification.twitch_music_categories` list.
  *
  * The null bucket is deliberate: a short video we cannot read is exactly what
  * the asynchronous AI audit exists for, and guessing "non_music" there is the
@@ -43,6 +49,7 @@ class ContentKindClassifier
      *     title?: string|null,
      *     description?: string|null,
      *     category_id?: string|null,
+     *     category_name?: string|null,
      *     duration_seconds?: int|null,
      *     topic_categories?: list<string>|null,
      *     tags?: list<string>|null,
@@ -54,6 +61,7 @@ class ContentKindClassifier
         $title = mb_strtolower(trim((string) ($video['title'] ?? '')));
         $description = mb_strtolower(trim((string) ($video['description'] ?? '')));
         $categoryId = trim((string) ($video['category_id'] ?? ''));
+        $categoryName = trim((string) ($video['category_name'] ?? ''));
         $topics = $this->stringList($video['topic_categories'] ?? null);
         $tags = $this->stringList($video['tags'] ?? null);
         $duration = $video['duration_seconds'] ?? null;
@@ -64,6 +72,10 @@ class ContentKindClassifier
 
         if ($categoryId !== '' && $categoryId === $this->musicCategoryId()) {
             return ['kind' => ContentKind::Music, 'signal' => 'category_id'];
+        }
+
+        if ($categoryName !== '' && $this->hasMusicCategory($categoryName)) {
+            return ['kind' => ContentKind::Music, 'signal' => 'category_name'];
         }
 
         if ($this->hasMusicKeyword($title, $tags)) {
@@ -88,6 +100,7 @@ class ContentKindClassifier
      *     title?: string|null,
      *     description?: string|null,
      *     category_id?: string|null,
+     *     category_name?: string|null,
      *     duration_seconds?: int|null,
      *     topic_categories?: list<string>|null,
      *     tags?: list<string>|null,
@@ -96,6 +109,43 @@ class ContentKindClassifier
     public function kind(array $video): ?ContentKind
     {
         return $this->classify($video)['kind'];
+    }
+
+    /**
+     * Platform-declared category name (Twitch `game_name`) against the
+     * configurable music list. Exact match after case folding: a category named
+     * "Music" is the platform telling us this is a music stream, while
+     * "Music Production" only counts because it is listed explicitly — a
+     * substring test would swallow "Just Chatting & Music Requests" too.
+     *
+     * Public so `PlatformVideoDtoMapper` can decide whether a live stream's
+     * category is worth deriving a tag from, using one list instead of two.
+     */
+    public function hasMusicCategory(string $categoryName): bool
+    {
+        $needle = mb_strtolower(trim($categoryName));
+
+        foreach ($this->musicCategories() as $category) {
+            if ($category === $needle) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function musicCategories(): array
+    {
+        /** @var list<string> $categories */
+        $categories = (array) config('vtual.content_classification.twitch_music_categories', []);
+
+        return array_values(array_filter(
+            array_map(fn (mixed $value): string => mb_strtolower(trim((string) $value)), $categories),
+            fn (string $value): bool => $value !== '',
+        ));
     }
 
     /**

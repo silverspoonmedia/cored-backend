@@ -3,10 +3,12 @@
 namespace App\Domain\Microstock\Models;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Microstock\Enums\MarketplaceCredentialStatus;
 use App\Support\Encryption\Casts\EnvelopeEncryptedArray;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MarketplaceCredential extends Model
 {
@@ -29,6 +31,10 @@ class MarketplaceCredential extends Model
         'user_id',
         'marketplace',
         'label',
+        'status',
+        'last_error',
+        'last_verified_at',
+        'last_used_at',
     ];
 
     /**
@@ -48,6 +54,9 @@ class MarketplaceCredential extends Model
                 .self::ENCRYPTION_RESOURCE_TYPE.','
                 .self::ENCRYPTION_FIELD_SECRET.','
                 .self::ENCRYPTION_PURPOSE,
+            'status' => MarketplaceCredentialStatus::class,
+            'last_verified_at' => 'datetime',
+            'last_used_at' => 'datetime',
         ];
     }
 
@@ -57,5 +66,13 @@ class MarketplaceCredential extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * @return HasMany<MarketplaceUpload, $this>
+     */
+    public function uploads(): HasMany
+    {
+        return $this->hasMany(MarketplaceUpload::class, 'credential_id');
     }
 }

@@ -15,6 +15,11 @@ return [
     // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
     'verify_claim' => '验证认领',
     'accept_anyway' => '无需验证直接接受',
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+    'acknowledge_incident' => '标记为已确认',
+    'resolve_incident' => '标记为已解决',
+    'open_credential' => '打开凭证',
+    'open_profile' => '打开个人资料',
     'confirm' => [
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'archive_management' => '确定要归档该管理机构吗？',
@@ -49,5 +54,8 @@ return [
         'remove_blocklist_title' => '移除条目',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'remove_blocklist' => '确定要从阻止列表中移除此哈希吗？具有该校验和的文件将可以再次公开分享。',
+        // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+        'resolve_incident_title' => '解决事件',
+        'resolve_incident' => '确定要将该事件标记为已解决吗？如果故障再次发生，该事件会自动重新打开。',
     ],
 ];

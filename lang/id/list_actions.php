@@ -15,6 +15,11 @@ return [
     // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
     'verify_claim' => 'Verifikasi klaim',
     'accept_anyway' => 'Terima tanpa verifikasi',
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+    'acknowledge_incident' => 'Tandai diketahui',
+    'resolve_incident' => 'Tandai selesai',
+    'open_credential' => 'Buka kredensial',
+    'open_profile' => 'Buka profil',
     'confirm' => [
         'archive_management' => 'Arsipkan manajemen ini?',
         // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
@@ -41,5 +46,8 @@ return [
         'delete_ai_connection' => 'Hapus koneksi AI ini secara permanen? Konsumen yang terikat pada slug-nya kehilangan endpoint sampai Anda mengikat koneksi lain.',
         'remove_blocklist_title' => 'Hapus entri',
         'remove_blocklist' => 'Hapus hash ini dari daftar blokir? File dengan checksum ini bisa dibagikan secara publik lagi.',
+        // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+        'resolve_incident_title' => 'Selesaikan insiden',
+        'resolve_incident' => 'Tandai insiden ini selesai? Insiden terbuka lagi otomatis jika kegagalan terulang.',
     ],
 ];

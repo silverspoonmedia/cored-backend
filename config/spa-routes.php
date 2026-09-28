@@ -113,6 +113,7 @@ return [
         'vtual.platform-credentials.platform',
         'vtual.platform-credentials.create',
         'vtual.platform-credentials.edit',
+        'vtual.incidents.index',
         'product-activations.index',
         'product-activations.show',
         'payments.income.index',

@@ -14,6 +14,11 @@ return [
     // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
     'verify_claim' => 'تحقق من المطالبة',
     'accept_anyway' => 'القبول دون تحقق',
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+    'acknowledge_incident' => 'تحديد كمطّلع عليه',
+    'resolve_incident' => 'تحديد كمحلول',
+    'open_credential' => 'فتح بيانات الاعتماد',
+    'open_profile' => 'فتح الملف الشخصي',
     'confirm' => [
         'archive_management' => 'هل تريد أرشفة هذه الإدارة؟',
         // curated at 2026-09-25T21:30:00+07:00 — vTual claims hub row actions
@@ -39,5 +44,8 @@ return [
         'remove_blocklist_title' => 'إزالة الإدخال',
         // curated at 2026-09-22T21:21:18+07:00 — ar curation wave 2
         'remove_blocklist' => 'هل تريد إزالة قيمة التجزئة هذه من القائمة المحظورة؟ سيُسمح مرة أخرى بمشاركة الملفات التي تحمل هذا المجموع الاختباري علنًا.',
+        // curated at 2026-09-27T19:20:00+07:00 — vTual incident triage queue row actions
+        'resolve_incident_title' => 'حل الحادث',
+        'resolve_incident' => 'هل تريد تحديد هذا الحادث كمحلول؟ سيُعاد فتحه تلقائيًا إذا تكرر العطل.',
     ],
 ];

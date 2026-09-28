@@ -5,10 +5,13 @@ namespace App\Domain\Vtual\Services;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ContentFetchPoolSource;
 use App\Domain\Vtual\Enums\ContentFetchPoolStatus;
+use App\Domain\Vtual\Enums\IncidentKind;
+use App\Domain\Vtual\Enums\IncidentSeverity;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\ContentFetchPoolItem;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Support\VtualIncidentRecorder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -190,6 +193,15 @@ class ContentFetchPoolService
                                 'error' => null,
                             ])->save();
                         }
+
+                        // A flush that succeeded is the recovery signal for this
+                        // channel's ingestion incident.
+                        app(VtualIncidentRecorder::class)->resolve(
+                            kind: IncidentKind::Ingestion,
+                            title: 'Content fetch failed',
+                            platformId: $platform->id !== null ? (string) $platform->id : null,
+                            channelId: (string) $channel->id,
+                        );
                     } catch (Throwable $e) {
                         $this->markFailed($chunkItems, $e->getMessage());
                         $failed += $chunkItems->count();
@@ -274,5 +286,26 @@ class ContentFetchPoolService
                 'error' => $message,
             ])->save();
         }
+
+        $first = $items->first();
+
+        if ($first === null) {
+            return;
+        }
+
+        // Subject is the channel: one broken channel feed is one incident to
+        // fix, and the pool row keeps the per-item error for the retry detail.
+        app(VtualIncidentRecorder::class)->record(
+            kind: IncidentKind::Ingestion,
+            severity: IncidentSeverity::Warning,
+            title: 'Content fetch failed',
+            detail: $message,
+            context: [
+                'items' => $items->count(),
+                'video_external_ids' => $items->pluck('video_external_id')->take(20)->values()->all(),
+            ],
+            platformId: $first->platform_id !== null ? (string) $first->platform_id : null,
+            channelId: $first->channel_id !== null ? (string) $first->channel_id : null,
+        );
     }
 }

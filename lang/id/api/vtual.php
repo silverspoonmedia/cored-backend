@@ -184,6 +184,13 @@ return [
         // curated at 2026-09-24T09:30:44+07:00 — id curation wave: glossary — management is manajemen, creator is kreator
         'event_not_found' => 'Acara tidak ditemukan untuk manajemen ini.',
         'event_not_actionable' => 'Acara ini tidak dapat diubah lagi.',
+        // curated at 2026-09-27T19:30:00+07:00 — id curation wave: pemberian akses per kreator
+        'grants_list_success' => 'Pemberian akses kreator dimuat.',
+        'grant_created' => 'Akses kreator diberikan.',
+        'grant_revoked' => 'Pemberian akses kreator dibatalkan.',
+        'grant_not_found' => 'Pemberian akses kreator tidak ditemukan.',
+        'grant_capability_invalid' => 'Tingkat akses untuk pemberian ini tidak valid.',
+        'grant_creator_not_assigned' => 'Profil kreator harus ditautkan ke manajemen ini sebelum akses dapat diberikan.',
     ],
     'mail' => [
         'invite_subject' => 'Undangan bergabung ke :management',
@@ -366,6 +373,30 @@ return [
         'app_token_oauth_only' => 'App access token hanya berlaku untuk kredensial oauth_app.',
         // curated at 2026-09-21T17:10:13+07:00 — id curation wave
         'app_token_twitch_only' => 'Pembuatan app access token hanya tersedia untuk Twitch.',
+    ],
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incidents wave
+    'incident' => [
+        'list_success' => 'Insiden integrasi berhasil dimuat.',
+        'show_success' => 'Insiden integrasi berhasil dimuat.',
+        'status_updated' => 'Status insiden berhasil diperbarui.',
+        'kinds' => [
+            'websub' => 'WebSub YouTube',
+            'eventsub' => 'EventSub Twitch',
+            'eventsub_notification' => 'Pengiriman EventSub Twitch',
+            'credential' => 'Kredensial platform',
+            'platform_http' => 'API platform',
+            'ingestion' => 'Ingest konten',
+        ],
+        'severities' => [
+            'info' => 'Info',
+            'warning' => 'Peringatan',
+            'critical' => 'Kritis',
+        ],
+        'statuses' => [
+            'open' => 'Terbuka',
+            'acknowledged' => 'Diketahui',
+            'resolved' => 'Terselesaikan',
+        ],
     ],
     'policy' => [
         'denied' => 'Anda tidak diizinkan melakukan tindakan ini.',

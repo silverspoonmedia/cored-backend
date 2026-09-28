@@ -18,12 +18,11 @@ class CreatorResourceCollection extends ResourceCollection
     {
         $actor = $request->user();
         if ($actor !== null) {
-            app(CreatorAccessService::class)->primeRequestLookup(
-                $request,
-                $this->collection->map(fn (mixed $item): mixed => $item instanceof CreatorResource ? $item->resource : $item)
-                    ->filter(fn (mixed $item): bool => $item instanceof Creator),
-                $actor,
-            );
+            $creators = $this->collection->map(fn (mixed $item): mixed => $item instanceof CreatorResource ? $item->resource : $item)
+                ->filter(fn (mixed $item): bool => $item instanceof Creator);
+
+            app(CreatorAccessService::class)->primeRequestLookup($request, $creators, $actor);
+            app(CreatorAccessService::class)->primeGrantLookup($request, $creators, $actor);
         }
 
         return parent::toArray($request);

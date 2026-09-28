@@ -48,6 +48,7 @@ class Content extends Model
         'first_unavailable_at',
         'region_allowed',
         'region_blocked',
+        'tags',
     ];
 
     /**
@@ -56,10 +57,10 @@ class Content extends Model
     protected function casts(): array
     {
         return [
-        'type' => ContentType::class,
-        'content_category' => ContentCategory::class,
-        'content_type' => ContentKind::class,
-        'status' => ContentStatus::class,
+            'type' => ContentType::class,
+            'content_category' => ContentCategory::class,
+            'content_type' => ContentKind::class,
+            'status' => ContentStatus::class,
             'concurrent_viewers' => 'integer',
             'scheduled_at' => 'datetime',
             'started_at' => 'datetime',
@@ -69,6 +70,7 @@ class Content extends Model
             'first_unavailable_at' => 'datetime',
             'region_allowed' => 'array',
             'region_blocked' => 'array',
+            'tags' => 'array',
         ];
     }
 

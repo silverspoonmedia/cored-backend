@@ -144,6 +144,13 @@ return [
         'event_cancelled' => 'イベントを中止しました。',
         'event_not_found' => 'このマネジメントのイベントが見つかりません。',
         'event_not_actionable' => 'このイベントはこれ以上変更できません。',
+        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave: クリエイター単位のアクセス権限付与
+        'grants_list_success' => 'クリエイターへのアクセス権限を読み込みました。',
+        'grant_created' => 'クリエイターへのアクセス権限を付与しました。',
+        'grant_revoked' => 'クリエイターへのアクセス権限を取り消しました。',
+        'grant_not_found' => 'クリエイターへのアクセス権限が見つかりません。',
+        'grant_capability_invalid' => '付与するアクセス権限のレベルが正しくありません。',
+        'grant_creator_not_assigned' => 'アクセス権限を付与するには、先にこのマネジメントにクリエイターを紐付けてください。',
     ],
     'mail' => [
         'invite_subject' => ':management への招待',
@@ -290,6 +297,30 @@ return [
         'not_active' => '認証情報が有効になっていません。',
         'app_token_oauth_only' => 'アプリアクセストークンは oauth_app 認証情報のみ対象です。',
         'app_token_twitch_only' => 'アプリアクセストークンの発行は Twitch のみ実装されています。',
+    ],
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incidents wave
+    'incident' => [
+        'list_success' => '連携インシデントを読み込みました。',
+        'show_success' => '連携インシデントの詳細を読み込みました。',
+        'status_updated' => 'インシデントのステータスを更新しました。',
+        'kinds' => [
+            'websub' => 'YouTube WebSub',
+            'eventsub' => 'Twitch EventSub',
+            'eventsub_notification' => 'Twitch EventSub 配信',
+            'credential' => 'プラットフォーム認証情報',
+            'platform_http' => 'プラットフォーム API',
+            'ingestion' => 'コンテンツ取り込み',
+        ],
+        'severities' => [
+            'info' => '情報',
+            'warning' => '警告',
+            'critical' => '重大',
+        ],
+        'statuses' => [
+            'open' => '未対応',
+            'acknowledged' => '確認済み',
+            'resolved' => '解決済み',
+        ],
     ],
     'policy' => [
         'denied' => 'この操作を行う権限がありません。',

@@ -106,6 +106,22 @@ return [
         // curated at 2026-09-23T10:56:49+07:00 — ko curation wave
         'export_csv' => 'CSV 내보내기',
         'download_csv' => 'CSV 다운로드',
+        // curated at 2026-09-27T20:30:00+07:00 - ko curation wave
+        'upload_marketplace' => '마켓플레이스로 업로드',
+        // curated at 2026-09-27T20:30:00+07:00 - ko curation wave
+        'upload_no_credentials' => '마켓플레이스 자격 증명이 아직 없습니다. 먼저 추가하세요.',
+        // curated at 2026-09-27T20:30:00+07:00 - ko curation wave
+        'upload_manage_credentials' => '자격 증명 관리',
+        // curated at 2026-09-27T20:30:00+07:00 - ko curation wave
+        'credential_status_failed' => '실패',
+        // curated at 2026-09-27T20:30:00+07:00 - ko curation wave
+        'upload_status_queued' => '마켓플레이스 업로드가 대기열에 등록되었습니다.',
+        // curated at 2026-09-27T20:30:00+07:00 - ko curation wave
+        'upload_status_uploading' => '마켓플레이스로 업로드하는 중…',
+        // curated at 2026-09-27T20:30:00+07:00 - ko curation wave
+        'upload_status_uploaded' => '마켓플레이스에 업로드했습니다.',
+        // curated at 2026-09-27T20:30:00+07:00 - ko curation wave
+        'upload_status_failed' => '마켓플레이스 업로드에 실패했습니다.',
         'status_locked' => '컬렉션이 잠겼습니다. 분석할 준비가 되었습니다.',
         'status_processing' => 'AI가 이 컬렉션을 분석하는 중…',
         'status_processing_degraded' => '(평소보다 오래 걸리고 있습니다)',

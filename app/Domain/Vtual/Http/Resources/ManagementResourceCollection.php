@@ -40,6 +40,7 @@ class ManagementResourceCollection extends ResourceCollection
             });
 
             app(CreatorAccessService::class)->primeRequestLookup($request, $creators, $actor);
+            app(CreatorAccessService::class)->primeGrantLookup($request, $creators, $actor);
         }
 
         return parent::toArray($request);

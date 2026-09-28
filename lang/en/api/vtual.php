@@ -109,6 +109,13 @@ return [
         'event_cancelled' => 'Event cancelled.',
         'event_not_found' => 'Event not found for this management.',
         'event_not_actionable' => 'This event can no longer be changed.',
+        // curated at 2026-09-27T19:30:00+07:00 — en source: delegated per-creator capability grants
+        'grants_list_success' => 'Creator access grants loaded.',
+        'grant_created' => 'Creator access granted.',
+        'grant_revoked' => 'Creator access grant revoked.',
+        'grant_not_found' => 'Creator access grant not found.',
+        'grant_capability_invalid' => 'Invalid access level for this grant.',
+        'grant_creator_not_assigned' => 'The vTuber profile must be linked to this management before access can be granted.',
     ],
     'mail' => [
         'invite_subject' => 'Invitation to join :management',
@@ -223,6 +230,30 @@ return [
         'not_active' => 'Credential is not active.',
         'app_token_oauth_only' => 'App access tokens apply only to oauth_app credentials.',
         'app_token_twitch_only' => 'App access token minting is only implemented for Twitch.',
+    ],
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incidents wave
+    'incident' => [
+        'list_success' => 'Integration incidents loaded.',
+        'show_success' => 'Integration incident loaded.',
+        'status_updated' => 'Incident status updated.',
+        'kinds' => [
+            'websub' => 'YouTube WebSub',
+            'eventsub' => 'Twitch EventSub',
+            'eventsub_notification' => 'Twitch EventSub delivery',
+            'credential' => 'Platform credential',
+            'platform_http' => 'Platform API',
+            'ingestion' => 'Content ingestion',
+        ],
+        'severities' => [
+            'info' => 'Info',
+            'warning' => 'Warning',
+            'critical' => 'Critical',
+        ],
+        'statuses' => [
+            'open' => 'Open',
+            'acknowledged' => 'Acknowledged',
+            'resolved' => 'Resolved',
+        ],
     ],
     'policy' => [
         'denied' => 'You are not allowed to perform this action.',

@@ -58,7 +58,9 @@ php scripts/locale-glossary-scan.php       # settled terms and banned variants
 php scripts/locale-pack-parity.php         # framework packs, both repos
 php scripts/locale-flat-pack-parity.php    # flat pack vs its PHP owners
 php artisan test --filter=Locale
-cd ../monolith-vue-workers; npm run check:i18n   # `;` not `&&` — PowerShell rejects `&&`
+cd ../monolith-vue-workers; npm run check:i18n; npm run check:env   # `;` not `&&` — PowerShell rejects `&&`
 ```
+
+`check:env` is the sibling's mode-file guard (`scripts/check-mode-env.mjs`): it fails a build when a required `VITE_*` key is missing or empty, a value is a placeholder, production/staging points at a sandbox host, two environments share an API origin, or an unresolved `TODO` remains. Run it whenever a task touches a `.env.<mode>` file or adds an environment.
 
 Details: [localization.md](../../docs/platform/localization.md) + [naming-conventions.md](../../docs/platform/naming-conventions.md) (backend), [i18n.md](../../../monolith-vue-workers/docs/i18n.md) (SPA).

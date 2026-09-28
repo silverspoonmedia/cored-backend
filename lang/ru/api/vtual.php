@@ -174,6 +174,13 @@ return [
         // curated at 2026-09-23T19:58:16+07:00 — ru curation wave: management entity settled on организация
         'event_not_found' => 'Событие для этой организации не найдено.',
         'event_not_actionable' => 'Это событие больше нельзя изменить.',
+        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave: делегирование доступа к автору
+        'grants_list_success' => 'Права доступа к авторам загружены.',
+        'grant_created' => 'Право доступа к автору выдано.',
+        'grant_revoked' => 'Право доступа к автору отозвано.',
+        'grant_not_found' => 'Право доступа к автору не найдено.',
+        'grant_capability_invalid' => 'Указан недопустимый уровень доступа.',
+        'grant_creator_not_assigned' => 'Чтобы выдать право доступа, сначала привяжите автора к этой организации.',
     ],
     'mail' => [
         'invite_subject' => 'Приглашение в :management',
@@ -351,6 +358,30 @@ return [
         'app_token_oauth_only' => 'Токены доступа приложения применимы только к учётным данным oauth_app.',
         // curated at 2026-09-23T19:26:42+07:00 — ru curation wave: settled terms
         'app_token_twitch_only' => 'Выпуск токена доступа приложения реализован только для Twitch.',
+    ],
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incidents wave
+    'incident' => [
+        'list_success' => 'Инциденты интеграции загружены.',
+        'show_success' => 'Инцидент интеграции загружен.',
+        'status_updated' => 'Статус инцидента обновлён.',
+        'kinds' => [
+            'websub' => 'YouTube WebSub',
+            'eventsub' => 'Twitch EventSub',
+            'eventsub_notification' => 'Доставка Twitch EventSub',
+            'credential' => 'Учётные данные платформы',
+            'platform_http' => 'API платформы',
+            'ingestion' => 'Загрузка контента',
+        ],
+        'severities' => [
+            'info' => 'Информация',
+            'warning' => 'Предупреждение',
+            'critical' => 'Критический',
+        ],
+        'statuses' => [
+            'open' => 'Открыт',
+            'acknowledged' => 'Принят в работу',
+            'resolved' => 'Решён',
+        ],
     ],
     'policy' => [
         // curated at 2026-09-23T19:26:42+07:00 — ru curation wave: settled terms

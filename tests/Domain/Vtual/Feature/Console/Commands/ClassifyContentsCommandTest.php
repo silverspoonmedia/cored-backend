@@ -90,6 +90,12 @@ class ClassifyContentsCommandTest extends TestCase
         ]);
 
         Http::fake([
+            // The program pass must abstain here, or the row is resolved before
+            // the AI is asked — and a program verdict binds (see
+            // ContentAiVerdictApplier), so the AI verdict under test would be
+            // refused. Unfaked, this iTunes lookup answers from the live
+            // catalogue and resolves "星を編む" as a cover of a real track.
+            'itunes.apple.com/search*' => Http::response(['results' => []], 200),
             'ai.test/*' => Http::response([
                 'choices' => [
                     ['message' => ['content' => json_encode([

@@ -53,6 +53,12 @@ Schedule::command('vtual:prune-fetch-pools')
     ->daily()
     ->withoutOverlapping();
 
+// vTual: historical metric snapshots. Both tables grow with every refresh, so
+// the retention window is enforced on a schedule rather than left to grow.
+Schedule::command('vtual:prune-metrics')
+    ->daily()
+    ->withoutOverlapping();
+
 // vTual: AI classification audit pool. Rows the program classifier could not
 // decide (music/non-music unknown, or music without a sub-category) are queued
 // on hydrate; this drains them. One call measured 7-40 s, so the batch is small

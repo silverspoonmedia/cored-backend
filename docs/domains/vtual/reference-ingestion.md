@@ -138,6 +138,19 @@ Live probe rubric and results: [archive/vtual-youtube-stability-assessment-2026-
 | Auto-rotate on log | **No** hard rotate | Soft failover is separate (config flag); ErrorLog is audit only |
 
 Do **not** reclassify all BRE as reportable. Do **not** put secrets in message/context.
+
+### Three failure stores, three jobs
+
+The same failure can appear in more than one place, and that is deliberate — each store answers a different question, so collapsing them would lose one of the three answers:
+
+| Store | Answers | Lifetime |
+|-------|---------|----------|
+| Per-row `last_error*` columns (credentials, subscriptions, pool rows) | "is **this row** healthy?" | Overwritten on the next attempt |
+| `error_logs` (ErrorLog domain) | "what threw, with context?" | Log retention, one row per event |
+| `vtual_incidents` (`VtualIncidentRecorder`) | "what is **broken right now**, how often, and who owns it?" | One row per distinct failure (`VtualIncidentFingerprint` = sha1 of kind + subject + normalized title/detail), `occurrences` + `first_seen_at`/`last_seen_at`, reopened by a recurrence |
+
+The recorder is called from the failure points that already existed (WebSub + EventSub subscribe/notify, `PlatformCredentialService::recordAuthFailure` / `markFailed`, `PlatformHttp` when the retry budget is exhausted, `ContentFetchPoolService`) and never replaces the other two. Triage is staff-facing: `GET/PATCH /vtual/admin/incidents*` with the core perms `view`/`manage vtual incident`, menu node Administration → vTual → Incidents, SPA queue `/apps/vtual/incidents`, realtime `private-vtual.incidents` carrying **ids + enums only**.
+
 ### Soft credential failover
 
 Default **OFF** (`vtual.credential.failover.enabled` in **Settings → vTual**; thresholds via `vtual.credential.failover.*` registry keys). See [configuration-policy.md](../../platform/configuration-policy.md).
@@ -177,7 +190,7 @@ Product flags `supports_live` / `supports_vod` gate **ingestion policy**, not ra
 | Method | Platform | Notes |
 |--------|----------|-------|
 | `fetchStreamsByUserIds` | Twitch only | `GET /helix/streams?user_id=` (max 100). Throws `UnsupportedPlatformOperation` on YouTube. |
-| Channel catalog / uploads playlist | YouTube `playlistItems.list` on uploads playlist (`UC`→`UU`) via `PlatformApiGateway::listChannelVideos` | Twitch catalog fetch deferred (platform scope TBD). |
+| Channel catalog / uploads playlist | YouTube `playlistItems.list` on uploads playlist (`UC`→`UU`) via `PlatformApiGateway::listChannelVideos` | Twitch catalog fetch **closed — not planned** (platform scope: Twitch has no uploads/archive catalog on the public Helix API; VOD listing is broadcaster-scoped and expires). |
 | Live discovery via `search.list` | YouTube `search.list` (`channelId`, `type=video`, `eventType=live|upcoming|completed`) via `PlatformApiGateway::searchChannelVideos` | Manual only (`--discover-live` on `vtual:fetch-channel-content`); separate quota bucket (100 units/call) — not primary path. |
 
 ### Normalized DTOs
@@ -282,7 +295,7 @@ Web UI: link from credentials index → **API probe**. SPA-side form conventions
 
 **Blade-era web tests are gone.** `VtuberProfileWebTest`, `PlatformCredentialWebTest`, `CreatorProfileManageWebTest`, `VtualBladeWebTest`, and `AccessibilityBladeTest` were deleted with the in-repo frontend; `tests/_archive/` no longer exists. The screens they covered live in the SPA, and their behavior is covered by the API feature tests above plus the SPA Vitest suite. Do not cite them as evidence.
 
-## Known limitations (deferred)
+## Known limitations (each closed, decided, or implemented)
 
 | Item | Status |
 |------|--------|
@@ -307,9 +320,11 @@ Web UI: link from credentials index → **API probe**. SPA-side form conventions
 | Data migration from broadercastv2 | Not planned in foundation |
 | Feed poll vs content pool deadlock | **Mitigated** — hot-path transactions run with 3 attempts (MySQL 1213 retry); feed poll wraps stub/enqueue + watermark in one tx so channel-row lock order matches `ContentService` upserts |
 | Pool `done` row retention | **Implemented** — `vtual:prune-fetch-pools` (`pool_retention.days` default 7) deletes old done/failed rows from both pool tables; scheduled daily |
+| Metric / session history | **Implemented** — `vtual_channel_metrics` + `vtual_content_metrics` (append-only samples, bucketed per subject) and `vtual_content_status_events` (append-only **transitions**), written by `VtualMetricRecorder` / `VtualContentStatusRecorder` from the writers that already hold a fresh value, pruned by `vtual:prune-metrics` (default 90 days, scheduled daily). Decision: [reference-metrics.md](reference-metrics.md). |
 | WebSub push E2E validation | Tooling shipped — `vtual:websub-status` reports `active_never_notified`; publish on staging + re-run to close the loop |
 | Private discovered channels | Excluded from feed/WebSub until `POST channels/{id}/promote` |
 | `verified_channel_id` API exposure | **Implemented** — `CreatorClaimResource` exposes `verified_channel_id` + nested `verified_channel` (platform eager-loaded) on list/show and `.claim.progress` realtime; the claim wizard renders the contract channel next to the proof channel. |
-| Content classification — catalog artist test | The iTunes artist test can match a vTuber who publishes their **own** cover to streaming services under their own channel name (`artistName` == `channelTitle`) and report `original`. Explicit title / tag / provenance rules run first, so this only affects rows with no explicit signal. |
-| Content classification — uploader tag signal | `snippet.tags` is captured on the **hydrate path only**; `vtual:classify-contents` has no tags for already-stored rows, so tag-based verdicts appear only after a re-hydrate (`--refresh` recomputes from stored columns and cannot invent tags). |
+| Content classification — catalog artist test | **Bounded, kept.** The iTunes artist test can match a vTuber who publishes their **own** cover to streaming services under their own channel name (`artistName` == `channelTitle`) and report `original`. Explicit title / tag / provenance rules run first, and the AI audit now receives the catalogue verdict as evidence, so this only affects rows with no explicit signal — a documented limit, not open work. |
+| Content classification — uploader tag signal | **Implemented** — `vtual_contents.tags` persists the uploader's `snippet.tags` on hydrate (`ContentService::resolveTags`), so `vtual:classify-contents --refresh` and the AI drainer both read the same signal hydrate had in hand. Tags are internal: never serialized by `ContentResource` / `PublicContentResource`. |
+| Twitch live music signal | **Closed — source unavailable beyond the category.** Twitch exposes no `topicCategories` and no uploader tags; `game_name` is the only music signal a live row carries, and it is now forwarded as `category_name` (+ a derived tag when it matches `content_classification.twitch_music_categories`) so `ContentKindClassifier` can resolve a music stream without the AI audit. A **song list / now-playing** source does not exist on the public Twitch API — EventSub carries no track metadata and Helix `/streams` has no field for it — so per-song attribution inside a live stream is **not implementable** without a third-party service. Reopen only with such a service chosen. |
 

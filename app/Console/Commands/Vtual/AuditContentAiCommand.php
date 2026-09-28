@@ -7,6 +7,7 @@ use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Integrations\Ai\ContentAiClassifier;
 use App\Domain\Vtual\Models\Content;
 use App\Domain\Vtual\Models\ContentAiAuditItem;
+use App\Domain\Vtual\Services\ContentAiVerdictApplier;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +37,11 @@ class AuditContentAiCommand extends Command
                             {--stale-minutes=15 : Return rows stuck in processing for longer than this to pending}';
 
     protected $description = 'Drain the vTual AI classification audit pool (music/non-music + sub-category)';
+
+    public function __construct(private readonly ContentAiVerdictApplier $verdicts)
+    {
+        parent::__construct();
+    }
 
     public function handle(ContentAiClassifier $ai): int
     {
@@ -144,6 +150,9 @@ class AuditContentAiCommand extends Command
                 'title' => $content->title,
                 'description' => $content->description,
                 'duration_seconds' => $content->durationSeconds(),
+                'channel_title' => $this->channelTitle($content),
+                'tags' => $this->storedTags($content),
+                'program_verdict' => $this->programVerdict($content),
             ]);
         } catch (Throwable $e) {
             $this->mark($item, ContentAiAuditStatus::Failed, $e->getMessage());
@@ -161,23 +170,72 @@ class AuditContentAiCommand extends Command
             return;
         }
 
-        if ($result['is_music']) {
-            $content->content_type = ContentKind::Music;
-            $content->content_category = $result['category'];
-            $content->content_category_detail = $result['detail'];
-            $counts['music']++;
-        } else {
-            $content->content_type = ContentKind::NonMusic;
-            // The AI corrected the whole row: a stale sub-category must not
-            // survive a non-music verdict.
-            $content->content_category = null;
-            $content->content_category_detail = null;
-            $counts['non_music']++;
+        $applied = $this->verdicts->apply($content, $result);
+
+        if ($applied['changed']) {
+            $content->save();
         }
 
-        $content->save();
+        // Count by the layer the row carries after the write, not by the model's
+        // raw answer: a "music" answer that the program pass already owned is a
+        // music row, and a "not music" answer over a bound music verdict is too.
+        if ($content->content_type === ContentKind::Music) {
+            $counts['music']++;
+        } elseif ($content->content_type === ContentKind::NonMusic) {
+            $counts['non_music']++;
+        } else {
+            $counts['unresolved']++;
+        }
 
         $this->mark($item, ContentAiAuditStatus::Done, null);
+    }
+
+    /**
+     * The channel title is the strongest free-text signal for a cover — the
+     * artist name usually lives there — so it is worth the extra column read.
+     */
+    private function channelTitle(Content $content): ?string
+    {
+        $title = trim((string) ($content->channel?->display_name ?? ''));
+
+        return $title !== '' ? $title : null;
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    private function storedTags(Content $content): ?array
+    {
+        $tags = $content->tags;
+
+        if (! is_array($tags) || $tags === []) {
+            return null;
+        }
+
+        return array_values(array_filter(
+            array_map(static fn ($tag): string => trim((string) $tag), $tags),
+            static fn (string $tag): bool => $tag !== '',
+        ));
+    }
+
+    /**
+     * The verdict the program pass already reached, handed to the model as
+     * evidence rather than as a question. A layer it left null is one the model
+     * is being asked to decide.
+     *
+     * @return array<string, string|null>|null
+     */
+    private function programVerdict(Content $content): ?array
+    {
+        $verdict = [
+            'content_type' => $content->content_type?->value,
+            'content_category' => $content->content_category?->value,
+            'content_category_detail' => $content->content_category_detail,
+        ];
+
+        return array_filter($verdict, static fn ($value): bool => $value !== null && $value !== '') !== []
+            ? $verdict
+            : null;
     }
 
     private function mark(ContentAiAuditItem $item, ContentAiAuditStatus $status, ?string $error): void

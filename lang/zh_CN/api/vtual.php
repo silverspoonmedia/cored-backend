@@ -136,6 +136,13 @@ return [
         'event_cancelled' => '活动已取消。',
         'event_not_found' => '未找到该管理机构的活动。',
         'event_not_actionable' => '此活动已无法更改。',
+        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave: 按创作者授予访问权限
+        'grants_list_success' => '创作者访问权限已加载。',
+        'grant_created' => '已授予创作者访问权限。',
+        'grant_revoked' => '已撤销创作者访问权限。',
+        'grant_not_found' => '未找到创作者访问权限。',
+        'grant_capability_invalid' => '要授予的访问权限级别无效。',
+        'grant_creator_not_assigned' => '授予访问权限前，请先将该创作者关联到该管理机构。',
     ],
     'mail' => [
         'invite_subject' => '邀请加入 :management',
@@ -284,6 +291,30 @@ return [
         'app_token_oauth_only' => '应用访问令牌仅适用于 oauth_app 凭证。',
         // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
         'app_token_twitch_only' => '应用访问令牌生成功能仅针对 Twitch 实现。',
+    ],
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incidents wave
+    'incident' => [
+        'list_success' => '已成功获取集成事件。',
+        'show_success' => '已成功获取集成事件详情。',
+        'status_updated' => '已成功更新事件状态。',
+        'kinds' => [
+            'websub' => 'YouTube WebSub',
+            'eventsub' => 'Twitch EventSub',
+            'eventsub_notification' => 'Twitch EventSub 投递',
+            'credential' => '平台凭证',
+            'platform_http' => '平台 API',
+            'ingestion' => '内容采集',
+        ],
+        'severities' => [
+            'info' => '提示',
+            'warning' => '警告',
+            'critical' => '严重',
+        ],
+        'statuses' => [
+            'open' => '未处理',
+            'acknowledged' => '已确认',
+            'resolved' => '已解决',
+        ],
     ],
     'policy' => [
         // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave

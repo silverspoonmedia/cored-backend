@@ -108,6 +108,22 @@ return [
         'analyze' => '开始分析',
         'export_csv' => '导出 CSV',
         'download_csv' => '下载 CSV',
+        // curated at 2026-09-27T20:30:00+07:00 - zh_CN curation wave
+        'upload_marketplace' => '上传到市场',
+        // curated at 2026-09-27T20:30:00+07:00 - zh_CN curation wave
+        'upload_no_credentials' => '还没有市场凭证。请先添加。',
+        // curated at 2026-09-27T20:30:00+07:00 - zh_CN curation wave
+        'upload_manage_credentials' => '管理凭证',
+        // curated at 2026-09-27T20:30:00+07:00 - zh_CN curation wave
+        'credential_status_failed' => '失败',
+        // curated at 2026-09-27T20:30:00+07:00 - zh_CN curation wave
+        'upload_status_queued' => '已加入上传到市场的队列。',
+        // curated at 2026-09-27T20:30:00+07:00 - zh_CN curation wave
+        'upload_status_uploading' => '正在上传到市场…',
+        // curated at 2026-09-27T20:30:00+07:00 - zh_CN curation wave
+        'upload_status_uploaded' => '已上传到市场。',
+        // curated at 2026-09-27T20:30:00+07:00 - zh_CN curation wave
+        'upload_status_failed' => '上传到市场失败。',
         'status_locked' => '集合已锁定，可以开始分析。',
         'status_processing' => 'AI 正在分析此集合…',
         // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave

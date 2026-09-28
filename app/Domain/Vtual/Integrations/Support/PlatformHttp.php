@@ -2,7 +2,10 @@
 
 namespace App\Domain\Vtual\Integrations\Support;
 
+use App\Domain\Vtual\Enums\IncidentKind;
+use App\Domain\Vtual\Enums\IncidentSeverity;
 use App\Domain\Vtual\Exceptions\PlatformApiException;
+use App\Domain\Vtual\Support\VtualIncidentRecorder;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -11,6 +14,12 @@ use Illuminate\Support\Facades\Http;
 /**
  * Shared HTTP helpers for platform clients. Never put secrets in exception messages.
  * Failed responses are recorded to ErrorLog for ops (credential / quota decisions).
+ *
+ * Terminal failures (a call that spent its retry budget, or a connection error)
+ * also raise a `platform_http` incident. The subject here is the **platform
+ * key**, not a channel or credential: this layer has no row context, and the
+ * callers that do (WebSub/EventSub/credential paths) raise their own, more
+ * specific incident alongside it.
  */
 final class PlatformHttp
 {
@@ -203,6 +212,25 @@ final class PlatformHttp
             'url_host' => is_array($parts) && isset($parts['host']) ? (string) $parts['host'] : null,
             'url_path' => is_array($parts) && isset($parts['path']) ? (string) $parts['path'] : null,
         ], $extra, $logContext));
+
+        // A scheduled retry is a transient note, not an incident — only the
+        // terminal failures reach the triage queue.
+        if (($extra['event'] ?? null) === 'platform_http_retry_scheduled') {
+            return;
+        }
+
+        app(VtualIncidentRecorder::class)->record(
+            kind: IncidentKind::PlatformHttp,
+            severity: IncidentSeverity::Warning,
+            title: 'Platform API call failed ('.($platformKey ?? 'unknown').')',
+            detail: $message,
+            context: array_merge([
+                'platform' => $platformKey,
+                'upstream_status' => $upstreamStatus,
+                'url_host' => is_array($parts) && isset($parts['host']) ? (string) $parts['host'] : null,
+                'url_path' => is_array($parts) && isset($parts['path']) ? (string) $parts['path'] : null,
+            ], $extra, $logContext),
+        );
     }
 
     private static function safeErrorMessage(Response $response, ?string $platformKey, int $status): string

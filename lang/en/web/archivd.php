@@ -99,6 +99,22 @@ return [
         'analyze' => 'Start analysis',
         'export_csv' => 'Export CSV',
         'download_csv' => 'Download CSV',
+        // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+        'upload_marketplace' => 'Upload to marketplace',
+        // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+        'upload_no_credentials' => 'No marketplace credential yet. Add one first.',
+        // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+        'upload_manage_credentials' => 'Manage credentials',
+        // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+        'credential_status_failed' => 'Failed',
+        // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+        'upload_status_queued' => 'Marketplace upload queued.',
+        // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+        'upload_status_uploading' => 'Uploading to marketplace…',
+        // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+        'upload_status_uploaded' => 'Uploaded to marketplace.',
+        // curated at 2026-09-27T20:30:00+07:00 - en curation wave
+        'upload_status_failed' => 'Marketplace upload failed.',
         'status_locked' => 'Collection locked. Ready to analyze.',
         'status_processing' => 'AI is analyzing this collection…',
         'status_processing_degraded' => '(taking longer than usual)',

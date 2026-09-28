@@ -34,6 +34,36 @@ return [
     'collection_processing' => 'بدأ تحليل المجموعة.',
     'collection_status' => 'تم تحميل حالة المجموعة.',
     'collection_exported' => 'تم تصدير المجموعة.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_disabled' => 'الرفع إلى المتجر معطّل على هذه المنصة.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_marketplace_unsupported' => 'الرفع إلى :marketplace غير مدعوم بعد.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_not_ready' => 'نظّم المجموعة أولًا — لا يمكن رفع إلا المجموعات التي تمت مراجعتها أو تصديرها.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_nothing_finalized' => 'لا توجد بيانات وصفية نهائية في هذه المجموعة لرفعها.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_invalid' => 'لا يمكن رفع الملف :name. غيّر الاسم إلى أحرف وأرقام ونقاط وشرطات أو شرطات سفلية.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_filename_duplicate' => 'يوجد ملفان في هذه المجموعة بالاسم :name. أعد تسمية أحدهما.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_credential_incomplete' => 'بيانات اعتماد المتجر تفتقد المضيف أو اسم المستخدم.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_auth_failed' => 'رفض المتجر بيانات الاعتماد هذه.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_host_key_mismatch' => 'مفتاح مضيف المتجر لا يطابق البصمة المُهيّأة.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_remote_path_failed' => 'تعذّر إنشاء المجلد البعيد :path.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_manifest' => 'تعذّر رفع ملف البيانات الوصفية :name.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed_file' => 'تعذّر رفع الملف :name.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_failed' => 'فشل الرفع إلى المتجر.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_queued' => 'تمت إضافة الرفع إلى المتجر إلى قائمة الانتظار.',
+    // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
+    'upload_status_loaded' => 'تم تحميل حالة الرفع.',
     'insufficient_ai_credits' => 'رصيد الذكاء الاصطناعي غير كافٍ. اشترِ حزمة أرصدة الذكاء الاصطناعي من الخدمات قبل تشغيل التحليل.',
     'billing_loaded' => 'تم تحميل حالة فوترة الذكاء الاصطناعي.',
     'ledger_loaded' => 'تم تحميل دفتر الفوترة.',

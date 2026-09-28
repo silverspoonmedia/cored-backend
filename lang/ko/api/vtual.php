@@ -124,6 +124,13 @@ return [
         'event_cancelled' => '이벤트가 취소되었습니다.',
         'event_not_found' => '이 매니지먼트에서 이벤트를 찾을 수 없습니다.',
         'event_not_actionable' => '이 이벤트는 더 이상 변경할 수 없습니다.',
+        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave: 크리에이터별 접근 권한 부여
+        'grants_list_success' => '크리에이터 접근 권한을 불러왔습니다.',
+        'grant_created' => '크리에이터 접근 권한을 부여했습니다.',
+        'grant_revoked' => '크리에이터 접근 권한을 취소했습니다.',
+        'grant_not_found' => '크리에이터 접근 권한을 찾을 수 없습니다.',
+        'grant_capability_invalid' => '부여할 접근 권한 수준이 올바르지 않습니다.',
+        'grant_creator_not_assigned' => '접근 권한을 부여하려면 먼저 이 매니지먼트에 크리에이터를 연결해야 합니다.',
     ],
     'mail' => [
         'invite_subject' => ':management 참여 초대',
@@ -256,6 +263,30 @@ return [
         'not_active' => '자격 증명이 활성 상태가 아닙니다.',
         'app_token_oauth_only' => '앱 액세스 토큰은 oauth_app 자격 증명에만 적용됩니다.',
         'app_token_twitch_only' => '앱 액세스 토큰 발급은 Twitch에만 구현되어 있습니다.',
+    ],
+    // curated at 2026-09-27T19:20:00+07:00 — vTual incidents wave
+    'incident' => [
+        'list_success' => '연동 인시던트를 불러왔습니다.',
+        'show_success' => '연동 인시던트 상세를 불러왔습니다.',
+        'status_updated' => '인시던트 상태를 수정했습니다.',
+        'kinds' => [
+            'websub' => 'YouTube WebSub',
+            'eventsub' => 'Twitch EventSub',
+            'eventsub_notification' => 'Twitch EventSub 전송',
+            'credential' => '플랫폼 자격 증명',
+            'platform_http' => '플랫폼 API',
+            'ingestion' => '콘텐츠 수집',
+        ],
+        'severities' => [
+            'info' => '정보',
+            'warning' => '경고',
+            'critical' => '심각',
+        ],
+        'statuses' => [
+            'open' => '열림',
+            'acknowledged' => '확인함',
+            'resolved' => '해결됨',
+        ],
     ],
     'policy' => [
         'denied' => '이 작업을 수행할 권한이 없습니다.',

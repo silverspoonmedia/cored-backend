@@ -2,15 +2,18 @@
 
 namespace App\Domain\Vtual\Services;
 
+use App\Domain\Vtual\Enums\IncidentKind;
+use App\Domain\Vtual\Enums\IncidentSeverity;
+use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Enums\TwitchEventSubSkipReason;
 use App\Domain\Vtual\Enums\TwitchEventSubStatus;
 use App\Domain\Vtual\Enums\TwitchEventSubType;
-use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\PlatformApiGateway;
 use App\Domain\Vtual\Models\EventsubSubscription;
-use App\Domain\Vtual\Support\VtualChannelRealtime;
 use App\Domain\Vtual\Services\Dto\TwitchEventSubHandleResult;
+use App\Domain\Vtual\Support\VtualChannelRealtime;
+use App\Domain\Vtual\Support\VtualIncidentRecorder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -101,15 +104,35 @@ class TwitchEventSubNotificationService
         }
 
         if ($messageType === 'revocation') {
+            $revocationStatus = (string) ($payload['subscription']['status'] ?? '');
+
             $subscription->forceFill([
                 'status' => TwitchEventSubStatus::Unsubscribed,
                 'lease_expires_at' => null,
-                'last_error' => mb_substr('revoked by twitch: '.(string) ($payload['subscription']['status'] ?? ''), 0, 500),
+                'last_error' => mb_substr('revoked by twitch: '.$revocationStatus, 0, 500),
             ])->save();
             Log::info('vtual.eventsub_revoked', [
                 'twitch_subscription_id' => $twitchSubscriptionId,
                 'channel_id' => (string) $subscription->channel_id,
             ]);
+
+            // A revocation is Twitch telling us the webhook is dead — the
+            // loudest signal in this service, and the one an operator must act
+            // on before the next stream goes unrecorded.
+            app(VtualIncidentRecorder::class)->record(
+                kind: IncidentKind::Eventsub,
+                severity: IncidentSeverity::Critical,
+                title: 'Twitch EventSub revoked ('.$this->eventTypeValue($subscription).')',
+                detail: 'Revoked by Twitch'.($revocationStatus !== '' ? ': '.$revocationStatus : ''),
+                context: [
+                    'twitch_subscription_id' => $twitchSubscriptionId,
+                    'revocation_status' => $revocationStatus,
+                ],
+                platformId: $subscription->channel->platform_id !== null
+                    ? (string) $subscription->channel->platform_id
+                    : null,
+                channelId: (string) $subscription->channel_id,
+            );
 
             return new TwitchEventSubHandleResult;
         }
@@ -128,6 +151,27 @@ class TwitchEventSubNotificationService
                 'last_error' => mb_substr('EventSub signature verification failed', 0, 2000),
             ])->save();
             $this->logSkip(TwitchEventSubSkipReason::BadSignature, $messageType, $bodyBytes, $twitchSubscriptionId);
+
+            // Bad signature means the delivery was not from Twitch, or the row
+            // secret drifted from the one Twitch holds. Either way deliveries
+            // are being dropped, which is a warning rather than a hard failure:
+            // the renewal job re-subscribes and re-issues the secret.
+            app(VtualIncidentRecorder::class)->record(
+                kind: IncidentKind::EventsubNotification,
+                severity: IncidentSeverity::Warning,
+                title: 'Twitch EventSub signature verification failed ('.$this->eventTypeValue($subscription).')',
+                detail: 'Inbound notification rejected: HMAC did not match the stored subscription secret.',
+                context: [
+                    'twitch_subscription_id' => $twitchSubscriptionId,
+                    'message_id' => $messageId,
+                    'message_type' => $messageType,
+                    'body_bytes' => $bodyBytes,
+                ],
+                platformId: $subscription->channel->platform_id !== null
+                    ? (string) $subscription->channel->platform_id
+                    : null,
+                channelId: (string) $subscription->channel_id,
+            );
 
             return new TwitchEventSubHandleResult(skipReason: TwitchEventSubSkipReason::BadSignature);
         }
@@ -261,5 +305,16 @@ class TwitchEventSubNotificationService
             'body_bytes' => $bodyBytes,
             'twitch_subscription_id' => $twitchSubscriptionId,
         ], fn (mixed $value): bool => $value !== null && $value !== ''));
+    }
+
+    /**
+     * Stable string for the subscription's event type, used to keep one
+     * incident per (channel, event type) instead of merging them.
+     */
+    private function eventTypeValue(EventsubSubscription $subscription): string
+    {
+        $type = $subscription->event_type;
+
+        return $type instanceof TwitchEventSubType ? $type->value : (string) $type;
     }
 }

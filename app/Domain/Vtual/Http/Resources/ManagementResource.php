@@ -62,6 +62,27 @@ class ManagementResource extends JsonResource
                     ->values()
                     ->all();
             }),
+            // Delegated per-creator grants (additive on top of the role). Only
+            // meaningful with the linked-creators table, so it ships alongside.
+            'creator_grants' => $this->whenLoaded('creatorGrants', function () {
+                return $this->creatorGrants
+                    ->map(fn ($grant) => [
+                        'id' => $grant->id,
+                        'member_id' => $grant->member_id,
+                        'creator_id' => $grant->creator_id,
+                        'capability' => $grant->capability instanceof \BackedEnum
+                            ? $grant->capability->value
+                            : $grant->capability,
+                        'creator_display_name' => $grant->relationLoaded('creator')
+                            ? $grant->creator?->display_name
+                            : null,
+                        'member_user_name' => $grant->relationLoaded('member')
+                            ? $grant->member?->user?->name
+                            : null,
+                    ])
+                    ->values()
+                    ->all();
+            }),
             ...$this->dateFields('created_at', $this->created_at),
             ...$this->dateFields('updated_at', $this->updated_at),
         ];

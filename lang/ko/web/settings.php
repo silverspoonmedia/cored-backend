@@ -201,6 +201,15 @@ return [
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
         'vtual.content_classification.ai.cache_ttl_hours' => 'AI 감사 결과 캐시(시간)',
         'vtual.content_classification.ai.connection' => 'AI 감사 연결(비워두면 기본값)',
+        'vtual.incidents.enabled' => '인시던트 기록 활성화(vTual 연동 트리아지)',
+        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
+        'vtual.metrics.enabled' => '지표 기록 활성화(vTual 스냅샷)',
+        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
+        'vtual.metrics.channel_interval_minutes' => '채널 지표 간격(분)',
+        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
+        'vtual.metrics.content_interval_minutes' => '라이브 CCV 지표 간격(분)',
+        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
+        'vtual.metrics.retention_days' => '지표 기록 보존(일)',
     ],
     'hints' => [
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
@@ -240,6 +249,9 @@ return [
         'vtual.claim.discord_verify_enabled' => '사용자가 Discord에 연결된 YouTube/Twitch 계정을 매칭하여 고아 클레임을 검증할 수 있도록 허용합니다.',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
         'vtual.channel_claim.discord_verify_enabled' => '프로필 소유자가 Discord에 연결된 YouTube/Twitch 계정을 매칭하여 채널 연결 클레임을 검증할 수 있도록 허용합니다.',
+        'vtual.incidents.enabled' => 'vTual 연동 실패(WebSub, EventSub, 자격 증명, 수집)를 그룹화된 트리아지 가능 인시던트로 기록합니다. 플랫폼 전체 장애 중에는 대기열을 읽기 쉽게 유지하도록 끕니다.',
+        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
+        'vtual.metrics.enabled' => '새로 고칠 때마다 구독자 수·동시 시청자 수 표본을 기록 테이블에 추가합니다. 끄면 현재 값 열만 유지합니다.',
         'identity.discord.connections_snapshot_max_age_minutes' => '저장된 Discord 연결 스냅샷이 신뢰되는 기간입니다. 확인 실패 시 이 기간이 지나면 실시간 Discord API 새로고침이 트리거됩니다.',
     ],
     'options' => [
