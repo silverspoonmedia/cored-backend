@@ -1,6 +1,6 @@
 # vTual — historical metric snapshots
 
-Append-only history for the point-in-time metric columns (`vtual_channels.subscriber_count`, `vtual_contents.concurrent_viewers`). Code: `app/Domain/Vtual/Services/VtualMetricRecorder.php` + `app/Domain/Vtual/Models/ChannelMetric.php`, `ContentMetric.php`.
+Append-only history for the point-in-time metric columns (`vtual_channels.subscriber_count`, `vtual_contents.concurrent_viewers`). Code: `app/Domain/Vtual/Support/VtualMetricRecorder.php` + `app/Domain/Vtual/Models/ChannelMetric.php`, `ContentMetric.php`.
 
 The two metric columns are overwritten on every refresh, so before this decision the domain could answer *what is it now* and never *what was it* — the gap `bootstrap-task-2026-08.md:358-361` named. Two product calls blocked the schema: the **sampling interval** and the **retention window**. Both are now decided and shipped.
 

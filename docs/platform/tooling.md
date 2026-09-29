@@ -47,7 +47,7 @@ The last four are the **docs** gates. Their normative statement, and the SPA hal
 Reproduce the `backend` job locally before pushing — same command, same in-memory database:
 
 ```bash
-php artisan test                 # whole suite; ~9 min on the dev machine, longer on a runner
+php artisan test                 # whole suite; ~13 min on the dev machine, longer on a runner
 php artisan test --filter=Vtual  # the subset to iterate on while working
 ```
 

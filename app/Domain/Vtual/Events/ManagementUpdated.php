@@ -20,7 +20,7 @@ class ManagementUpdated implements ShouldBroadcastNow
     use SerializesModels;
 
     /**
-     * @param  string  $kind  management|member|invite|creator|creator_grant|event|creator_invite
+     * @param  string  $kind  management|member|invite|creator|creator_invite|creator_grant|event
      * @param  string  $action  created|updated|deleted|accepted|declined|cancelled|revoked|assigned|unassigned|granted
      */
     public function __construct(
