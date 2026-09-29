@@ -24,14 +24,14 @@
 | `i18n-guardrail.mdc` *(always-on)* | Adding or editing user-facing copy |
 | `architecture.mdc` | `app/Domain/**`, `config/domains.php` — domain kind/lifecycle, namespaces, dependency direction |
 | `api-routing.mdc` | `routes/api/**`, `bootstrap/app.php` — global vs versioned layer, `v{N}` loader, route names |
-| `api-resources.mdc` | `app/**/Http/**`, `routes/api/**` — envelope + response minimization |
+| `api-resources.mdc` | `app/**/Http/**`, `routes/api/**` — envelope, list `display_mode`/`actions[]`, standalone-first `/batch`, response minimization |
 | `crud.mdc` | `app/Repositories/**`, `**/Http/Controllers/**`, `**/Http/Requests/**` — shared repository, FormRequest DRY |
 | `envelope-encryption.mdc` | `app/Support/Encryption/**`, `app/Support/Oci/**`, `config/encryption.php` — Tier C crypto |
 | `i18n-lang.mdc` | Touching `lang/**`, a translated string, or the locale guards |
 | `environment.mdc` | `.env`, `config/*.php`, settings tiers, `curate the env` |
 | `settings.mdc` | `app/Support/Settings/**`, `config/settings*.php`, `*SettingsSeeder.php` — snapshot chain, permissions, labels |
 | `security.mdc` | `config/cors.php`, `bootstrap/app.php`, `app/Http/Middleware/**`, `app/Support/Security/**` — perimeter + audit procedure |
-| `database-safety.mdc` | `database/**`, `tests/**`, `phpunit.xml`, destructive commands |
+| `database-safety.mdc` | `database/**`, `app/Domain/**/Models/**`, `tests/**`, `phpunit.xml` — UUID v7 PKs, destructive commands |
 | `octane.mdc` | Any file under `app/**` (long-lived worker safety) |
 | `cache-policy.mdc` | `app/Domain/**`, `app/Support/**` — cache lifetime and invalidation |
 | `navigation-menus.mdc` | Menu seeder, tree, visibility gates, navigation cache |
