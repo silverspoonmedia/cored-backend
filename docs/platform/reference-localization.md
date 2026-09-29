@@ -269,7 +269,7 @@ If the string still reads like a translation of the English, it is not finished,
 
 ## Settings labels ↔ SettingRegistry
 
-`lang/{locale}/web/settings.php` is not free-form copy: its `fields.*` and `hints.*` sub-trees must cover every definition in `App\…\SettingRegistry::definitions()` (148 definitions as of the Sep 2026 wave). A definition without a matching `fields.<dotted-key>` renders as a raw key in the SPA settings form. When adding or renaming a registry definition, patch `web/settings.php` for **all seven** locales in the same change, and remember that dotted definition keys are **literal** keys in the PHP file (quoted, not nested arrays) — the SPA's `fieldLabel()` does a dotted lookup against the flat-ish structure.
+`lang/{locale}/web/settings.php` is not free-form copy: its `fields.*` and `hints.*` sub-trees must cover every definition in `App\…\SettingRegistry::definitions()` (153 definitions, counted 2026-09-29). A definition without a matching `fields.<dotted-key>` renders as a raw key in the SPA settings form. When adding or renaming a registry definition, patch `web/settings.php` for **all seven** locales in the same change, and remember that dotted definition keys are **literal** keys in the PHP file (quoted, not nested arrays) — the SPA's `fieldLabel()` does a dotted lookup against the flat-ish structure.
 
 ## Number & date display (not lang files)
 

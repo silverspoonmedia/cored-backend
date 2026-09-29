@@ -16,7 +16,7 @@ class VtualManagementRealtime
     }
 
     /**
-     * @param  string  $kind  management|member|invite|creator|creator_grant|event
+     * @param  string  $kind  management|member|invite|creator|creator_invite|creator_grant|event
      * @param  string  $action  created|updated|deleted|accepted|declined|cancelled|revoked|assigned|unassigned|granted
      */
     public function changed(string $managementId, string $kind, ?string $refId, string $action): void

@@ -39,7 +39,7 @@ The job is the slow half of the workflow (the `locale` job is seconds). That is 
 
 ## A green run is `failed: 0`
 
-**A green run is `failed: 0`, not `passed == tests`.** The suite ends at `2461 tests, 2460 passed, 1 skipped, 1 risky` (measured 2026-09-27) and both non-passed counts are by design:
+**A green run is `failed: 0`, not `passed == tests`.** The suite ends at `2461 tests, 2460 passed, 1 skipped, 1 risky` (re-measured 2026-09-29; ~13 min) and both non-passed counts are by design:
 
 | Count | Source | Why it is expected |
 |---|---|---|
