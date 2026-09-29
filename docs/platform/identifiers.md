@@ -56,6 +56,7 @@ php artisan migrate:fresh --seed
 
 ## Related
 
+- Pakem: [database-safety.mdc](../../.cursor/rules/database-safety.mdc) — UUID v7 PKs and migration portability (glob-scoped to `database/**` and `app/Domain/**/Models/**`)
 - [domains/identity/README.md](../domains/identity/README.md)
 - [database-safety.md](database-safety.md)
 - [Laravel Eloquent UUIDs](https://laravel.com/docs/eloquent#uuid-and-ulid-keys)

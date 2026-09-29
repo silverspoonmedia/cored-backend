@@ -57,6 +57,7 @@ Consumer: the SPA `FormSelect2` component wraps jQuery Select2 and unwraps this 
 
 ## Related
 
+- Pakem: [api-resources.mdc](../../.cursor/rules/api-resources.mdc) — the envelope, the query-mode list contract and `actions[]` rules an agent must follow
 - [crud.md](crud.md) — controller/response conventions and API Resource presentation
 - [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — SPA mapper (`mapQueryRowActions`); views must not invent keys
 - [domains/identity/README.md](../domains/identity/README.md) — lookup permissions; users query-mode `actions[]`

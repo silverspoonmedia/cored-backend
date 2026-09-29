@@ -47,3 +47,8 @@ The outer response stays `200` even when some (or all) entries fail, because eac
 ```
 
 `meta.failed` counts entries with `status >= 400`; `meta.total` counts all entries. A terminal entry (`401`/`403`/`429`) must **not** be retried standalone by the SPA — see the SPA contract (`bodyOfOrThrow` / `TerminalBatchError`).
+
+## Related
+
+- Pakem: [api-resources.mdc](../../.cursor/rules/api-resources.mdc) — the standalone-first rule and the `/batch` envelope an agent must follow
+- [api-envelope.md](api-envelope.md) · [list-display-modes.md](list-display-modes.md)

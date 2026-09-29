@@ -1,5 +1,5 @@
 ---
-description: API envelope and per-viewer response data minimization
+description: API envelope, list contract, aggregation policy, per-viewer data minimization
 globs: app/**/Http/**,routes/api/**,app/Support/ApiResponder.php
 alwaysApply: false
 ---
@@ -17,6 +17,23 @@ One envelope for every `/api/*` response, produced centrally by `App\Support\Api
 - CSRF mismatch returns `ApiResponder::error(..., 419)` as a response, not an `abort()`, so `HandleCors` can stamp `Access-Control-*`.
 - `/batch` is read-only fan-in: outer 200 always, `meta: {failed, total}`, per-entry `{status, body}`. Callers inspect per-entry status.
 - Error mapping table: [docs/platform/api-envelope.md](../../docs/platform/api-envelope.md).
+
+## List contract (query mode only)
+
+Index lists speak **one** mode. `display_mode` is optional and, when present, must be `query`; `display_mode=datatable` is **422** — validate through `App\Http\Requests\Concerns\InteractsWithListDisplayMode` (`listDisplayModeRules()`), never by hand.
+
+- No paging params → `data` is a flat `T[]`. With `page` / `per_page` / `search` → `data: {items, pagination}` (`{current_page, last_page, per_page, total, has_more}`, default `per_page` 10, max 100).
+- Query-mode rows carry **`actions[]`** built by a `QueryRowAction` builder under `App\Support\ListActions\Builders\`, attached with `QueryRowActionAttacher`. The SPA maps and executes them; **views must not invent keys**, and a key is a suggestion to the client, never a grant — every mutate path re-checks authorization server-side.
+- Contract + lookups: [docs/platform/list-display-modes.md](../../docs/platform/list-display-modes.md).
+
+## Aggregation (standalone-first)
+
+`/batch` is a transport-level fan-in **for the SPA only** — never a replacement for a standalone endpoint.
+
+- Every resource keeps its own directly-callable endpoint; the standalone route stays the source of truth. No endpoint may exist *only* inside an aggregated result.
+- Aggregate a read **only when every sub-request would pass its own gates unchanged** (middleware, throttle, RBAC). Never bend a gate to make a read fit the batch — guest reads stay unbatched, mutations stay one-request-per-action.
+- `/batch` re-dispatches through the full HTTP kernel, so a sub-request that would be rejected standalone is rejected inside the batch too (per-entry status; the caller falls back to its standalone loader).
+- Policy: [docs/platform/api-aggregation.md](../../docs/platform/api-aggregation.md).
 
 ## Response data minimization (mandatory)
 
