@@ -1,6 +1,6 @@
 # Docs & rules ownership (mandatory)
 
-Two documentation surfaces, **one owner per topic**. Never state the same rule twice — a duplicated rule drifts. The two repos' always-on rules are **twins, not copies**: each states its own repo's scope, so a difference is expected and a *contradiction* is the defect.
+Three documentation surfaces, **one owner per topic**. Never state the same rule twice — a duplicated rule drifts. SPA twin: `monolith-vue-workers/.cursor/rules/docs-pakem.mdc`; third twin: the user-facing `docs` site repo. The three repos' always-on rules are **twins, not copies**: each states its own repo's scope, so a difference is expected and a *contradiction* is the defect.
 
 | Surface | Owns | Shape |
 |---------|------|-------|
@@ -8,15 +8,14 @@ Two documentation surfaces, **one owner per topic**. Never state the same rule t
 | `docs/**/*.md` (non-archive) | Human brief: what it is, where it lives, why | One paragraph + pointer table |
 | `docs/archive/**` | Narrative, audits, one-shot assessments | Free-form, dated, exempt from budgets |
 | `AGENTS.md` (repo root) | Pakem map: scope tag + one line per rule file | ~50 lines, zero rule detail |
+| sibling `docs` repo | **User-facing** Docusaurus pages (published, English only) — the customer's manual | Own pakem: `docs/AGENTS.md` + `docs/.cursor/rules/`; coverage claim in `docs/docs-coverage.json` |
 
 ## Human brief template (all four parts, nothing else)
 
 1. `# Title` + one sentence naming the scope.
 2. One paragraph: what it is, where the code lives, why it exists.
 3. Pointer table: Code · Config · API · SPA · Tests · Pakem · Deep dive.
-4. Nothing else — no history, no gap analysis, no status dump, no restated rules.
-
-Worked example of the shape: [docs/domains/vtual/README.md](../../docs/domains/vtual/README.md).
+4. Nothing else — no history, no gap analysis, no status dump, no restated rules. Worked example of the shape: [docs/domains/vtual/README.md](../../docs/domains/vtual/README.md).
 
 ## Doc kinds and size budgets (registry: `docs_budget_doc_kind()` in `scripts/lib/docs-budget-support.php`)
 
@@ -31,12 +30,13 @@ The kind comes from the file name, so a new kind is a deliberate edit to that fu
 
 - Domain behavior → `docs/domains/{kebab}/README.md` with its invariants in `.cursor/rules/{domain}.mdc` and its schema/API/pipeline detail in `docs/domains/{kebab}/reference.md`; kernel convention → `docs/platform/` with its pakem as a glob-scoped rule.
 - **Never** add a subject file at `docs/*.md` root, and **never** create `docs/agents/` — agent rules live in `.cursor/rules/`.
+- A customer-visible capability is not shipped until its page in the sibling `docs` repo says so; that page ships in the same task. This tree is agent-facing and never substitutes for it.
 - English only, in both surfaces.
 
 ## Keeping it true
 
 - Behavior change in the same task/PR: update the owning brief, and the rule file when an invariant moved.
-- Keyword **`wrap up the docs`** = session-wide consolidation of code ↔ docs ↔ rules across both repos, then run the gates.
+- Keyword **`wrap up the docs`** = session-wide consolidation of code ↔ docs ↔ rules across all three repos, then run the gates.
 - Gates: `php scripts/docs-guard.php`, `php artisan test --filter=Documentation`, `php artisan test --filter=Locale`; SPA `npm run check:docs`, `npm run check:i18n`, and `npm run check:env` (mode-file values — run it when a `.env.<mode>` file or an environment moved). When both checkouts are present, `php scripts/docs-cross-repo-links.php` is the fail-closed check on the links that leave this repo.
 - The guard resolves link **paths and `#anchors`**: reword a heading and every deep link into it fails, so update the referrers in the same change. A link into a sibling checkout is reported as *unverified* when that checkout is absent — never as broken, and never as checked.
 - Full behavioral guides are the domain/platform docs; this file owns the *shape*, not the content. A doc that outgrows its kind budget is a signal, not a violation to silence: split the invariants into the owning rule file and move narrative to `docs/archive/`.

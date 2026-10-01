@@ -7,6 +7,10 @@
     {
       "name": "monolith-vue-workers",
       "path": "../monolith-vue-workers"
+    },
+    {
+      "name": "docs",
+      "path": "../docs"
     }
   ],
   "settings": {}
