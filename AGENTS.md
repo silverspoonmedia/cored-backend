@@ -4,8 +4,9 @@
 
 ## Workspace split
 
-- This repo is the only backend; `monolith-vue-workers` is the only frontend; `gateway` is shared CF Workers infra (own `AGENTS.md`).
-- Open **one side by default**: [Monolith-Backend.code-workspace](Monolith-Backend.code-workspace) or the sibling SPA workspace. [Monolith-Fullstack.code-workspace](Monolith-Fullstack.code-workspace) only when the API↔SPA contract moves.
+- This repo is the only backend; `monolith-vue-workers` is the only frontend; `gateway` is shared CF Workers infra (own `AGENTS.md`); the sibling `docs` repo is the user-facing Docusaurus site (own `AGENTS.md`).
+- Open **one side by default**: [Monolith-Backend.code-workspace](Monolith-Backend.code-workspace) or the sibling SPA workspace. [Monolith-Fullstack.code-workspace](Monolith-Fullstack.code-workspace) only when the API↔SPA contract moves. All three workspaces load the `docs` repo as a peer root, so its rules inject on every turn.
+- A **customer-visible** capability is not shipped until its page in `docs` says so; that page ships in the same task (see the `docs-sync` rule in that repo).
 - Never create Blade views here. Integration summary: [docs/integration/project-overview.md](docs/integration/project-overview.md); contract: [docs/integration/vue-workers-spa.md](docs/integration/vue-workers-spa.md) (open only when endpoints, headers, cookies/CSRF, envelopes, or route names change).
 
 ## Protocol

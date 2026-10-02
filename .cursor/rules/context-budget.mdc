@@ -1,6 +1,6 @@
 # Agent context budget
 
-Open the workspace that matches the task tag — a dual-root workspace injects both repos' `AGENTS.md` on every turn.
+Open the workspace that matches the task tag — every workspace is multi-root and injects each loaded repo's `AGENTS.md` on every turn; all three also carry the sibling `docs` site repo as a peer root.
 
 | Workspace | Use for |
 |-----------|---------|
