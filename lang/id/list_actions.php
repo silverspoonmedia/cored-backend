@@ -34,7 +34,6 @@ return [
         'delete_named_title' => 'Hapus ":name"',
         'delete_menu' => 'Yakin ingin menghapus ":name"?',
         // curated at 2026-09-21T17:00:35+07:00 — id curation wave
-        'delete_post' => 'Tulisan ini akan dipindahkan ke tempat sampah. Anda dapat memulihkannya nanti.',
         'delete_microstock_credential' => 'Hapus kredensial ini?',
         'delete_credential_title' => 'Hapus kredensial',
         'delete_platform_credential' => 'Hapus kredensial ini secara permanen?',

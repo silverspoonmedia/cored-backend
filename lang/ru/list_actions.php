@@ -32,7 +32,6 @@ return [
         'delete_inference' => 'Удалить эту запись? Это действие нельзя отменить.',
         'delete_named_title' => 'Удалить «:name»',
         'delete_menu' => 'Вы уверены, что хотите удалить «:name»?',
-        'delete_post' => 'Эта запись будет перемещена в корзину. Её можно будет восстановить позже.',
         'delete_microstock_credential' => 'Удалить эти учётные данные?',
         'delete_credential_title' => 'Удаление учётных данных',
         'delete_platform_credential' => 'Удалить эти учётные данные безвозвратно?',

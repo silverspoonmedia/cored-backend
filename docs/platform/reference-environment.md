@@ -16,7 +16,7 @@ All four committed templates share the **same section layout** (Application → 
 
 **Assignment key parity (mandatory):** master, all three profile templates, and `EnvironmentVariableCatalog::types()` must expose the **same set of live `KEY=` assignments**. A commented `# KEY=…` line does **not** count — `env:curate` only sees real assignments in the active profile template, so a key that exists only as a comment (or only in master) becomes an orphan in `.env`. Lock: `EnvProfileSyncTest` + `EnvironmentTemplateQuotingTest`. Values may still differ per profile (`APP_DEBUG`, drivers, proxy URLs, etc.).
 
-**Storage env:** cloud uploads use `ARCHIVD_S3_*` (disk `s3ArchivdCe`). The Laravel default `s3` disk remains in `config/filesystems.php` but `AWS_*` keys are **not** listed in env templates — set them manually only if `FILESYSTEM_DISK=s3`. Blog post images use `BLOG_MEDIA_DISK` (`public` local disk or `s3ArchivdCe`).
+**Storage env:** cloud uploads use `ARCHIVD_S3_*` (disk `s3ArchivdCe`). The Laravel default `s3` disk remains in `config/filesystems.php` but `AWS_*` keys are **not** listed in env templates — set them manually only if `FILESYSTEM_DISK=s3`.
 
 ## Quick start
 

@@ -10,8 +10,6 @@ require __DIR__.'/v1/inference.php';
 require __DIR__.'/v1/ai.php';
 require __DIR__.'/v1/payment-gateway.php';
 require __DIR__.'/v1/service.php';
-require __DIR__.'/v1/blog.php';
-
 // Kernel product registry (App\Support\Product) — cross-domain access layer.
 require __DIR__.'/v1/product-activations.php';
 

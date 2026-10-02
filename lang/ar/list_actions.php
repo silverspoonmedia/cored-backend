@@ -32,7 +32,6 @@ return [
         'delete_named_title' => 'حذف ":name"',
         'delete_menu' => 'هل أنت متأكد من رغبتك في حذف ":name"؟',
         // curated at 2026-09-22T21:21:18+07:00 — ar curation wave 2
-        'delete_post' => 'سيتم نقل هذه المقالة إلى سلة المهملات. يمكنك استعادتها لاحقًا.',
         'delete_microstock_credential' => 'هل تريد حذف بيانات الاعتماد هذه؟',
         'delete_credential_title' => 'حذف بيانات الاعتماد',
         'delete_platform_credential' => 'هل تريد حذف بيانات الاعتماد هذه نهائيًا؟',
