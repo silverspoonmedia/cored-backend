@@ -5,10 +5,7 @@
 | HTMLPurifier configuration
 |--------------------------------------------------------------------------
 |
-| The `blog` profile whitelists exactly the markup produced by the SPA
-| Tiptap editor (headings, lists, links, images, blockquotes, code).
-| Anything outside this set is stripped server-side before storage, since
-| post content is later rendered with `v-html` in the admin UI.
+| HTMLPurifier configuration for remaining application use.
 |
 */
 
@@ -26,24 +23,6 @@ return [
             'CSS.AllowedProperties' => 'font,font-size,font-weight,font-style,font-family,text-decoration,padding-left,color,background-color,text-align',
             'AutoFormat.AutoParagraph' => true,
             'AutoFormat.RemoveEmpty' => true,
-        ],
-
-        'blog' => [
-            'HTML.Doctype' => 'XHTML 1.0 Transitional',
-            'HTML.Allowed' => implode(',', [
-                'h1,h2,h3,h4,h5,h6',
-                'p[style],br,hr',
-                'b,strong,i,em,u,sub,sup,span[style]',
-                'a[href|title|target|rel]',
-                'img[src|alt|width|height]',
-                'ul,ol,li',
-                'blockquote',
-                'pre,code',
-            ]),
-            'CSS.AllowedProperties' => 'text-align',
-            'AutoFormat.AutoParagraph' => false,
-            'AutoFormat.RemoveEmpty' => true,
-            'Attr.AllowedFrameTargets' => ['_blank', '_self'],
         ],
     ],
 ];

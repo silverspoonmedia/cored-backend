@@ -37,7 +37,6 @@ return [
         'delete_named_title' => '删除“:name”',
         'delete_menu' => '确定要删除“:name”吗？',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
-        'delete_post' => '该文章将被移入回收站，您稍后可以恢复。',
         // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
         'delete_microstock_credential' => '确定要删除该凭证吗？',
         // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave

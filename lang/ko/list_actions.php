@@ -32,7 +32,6 @@ return [
         'delete_named_title' => '":name" 삭제',
         // curated at 2026-09-23T11:01:14+07:00 — ko curation wave
         'delete_menu' => '":name" 메뉴를 삭제하시겠습니까?',
-        'delete_post' => '이 게시물은 휴지통으로 이동됩니다. 나중에 복원할 수 있습니다.',
         'delete_microstock_credential' => '이 자격 증명을 삭제하시겠습니까?',
         'delete_credential_title' => '자격 증명 삭제',
         'delete_platform_credential' => '이 자격 증명을 영구적으로 삭제하시겠습니까?',

@@ -59,7 +59,6 @@ Every living brief is listed in this index; narrative, audits and progress track
 | ErrorLog | [domains/error-log/README.md](domains/error-log/README.md) — grouped persistent app errors; deep dive [reference.md](domains/error-log/reference.md) |
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) — Midtrans/iPaymu, invoices, channels; deep dive [reference.md](domains/payment-gateway/reference.md) · credentials [platform/envelope-encryption.md](platform/envelope-encryption.md) |
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, FX→IDR, Archivd grace/purge; deep dive [reference.md](domains/service/reference.md) |
-| Blog | [domains/blog/README.md](domains/blog/README.md) — posts, categories, tags, media |
 | Inference | [domains/inference/README.md](domains/inference/README.md) — model catalog, provider rates, rate snapshots; deep dive [reference.md](domains/inference/reference.md) |
 | Ai | [domains/ai/README.md](domains/ai/README.md) — central AI transport, connections, slug binding; deep dive [reference.md](domains/ai/reference.md) |
 | Archivd | [domains/archivd/README.md](domains/archivd/README.md) — nested folders, multi-disk S3, Gateway upload, paid share, workspaces; deep dive [reference.md](domains/archivd/reference.md) · [reference-upload.md](domains/archivd/reference-upload.md) · [reference-realtime.md](domains/archivd/reference-realtime.md) |

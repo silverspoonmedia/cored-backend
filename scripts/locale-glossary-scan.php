@@ -222,13 +222,17 @@ const MIN_OCCURRENCES = [
         // The loanwords that replaced the English words left in prose.
         'manajemen' => ['backend' => 21, 'spa' => 31],
         'kreator' => ['backend' => 10, 'spa' => 23],
-        'Slug' => ['backend' => 11, 'spa' => 23],
+        // Lowered 23 → 18 on 2026-10-02 (Blog domain removed): the five
+        // `web.blog.*.slug` SPA keys were the only `Slug` hits that went away.
+        'Slug' => ['backend' => 11, 'spa' => 18],
         'yatim' => ['backend' => 13, 'spa' => 21],
         'penagihan' => ['backend' => 13, 'spa' => 20],
     ],
     'ja' => [
         'プローブ' => ['backend' => 9, 'spa' => 14],
-        'スラッグ' => ['backend' => 13, 'spa' => 25],
+        // Lowered 25 → 20 on 2026-10-02 (Blog domain removed): the five
+        // `web.blog.*.slug` SPA keys were the only `スラッグ` hits that went away.
+        'スラッグ' => ['backend' => 13, 'spa' => 20],
         // 403 `Forbidden` is `アクセス禁止`, not the validation sentence
         // `…の入力は禁止されています。`, which is why the phrase cannot be banned —
         // the floor is the tripwire instead. Same for 302 `一時的な移動`: `発見` is
@@ -244,7 +248,9 @@ const MIN_OCCURRENCES = [
         'オーファン' => ['backend' => 6, 'spa' => 9],
     ],
     'zh_CN' => [
-        '标识' => ['backend' => 13, 'spa' => 27],
+        // Lowered 27 → 22 on 2026-10-02 (Blog domain removed): the five
+        // `web.blog.*.slug` SPA keys were the only `标识` hits that went away.
+        '标识' => ['backend' => 13, 'spa' => 22],
         '结账' => ['backend' => 21, 'spa' => 31],
         '计费' => ['backend' => 14, 'spa' => 27],
         '归档' => ['backend' => 26, 'spa' => 31],
@@ -259,12 +265,15 @@ const MIN_OCCURRENCES = [
         '退出登录' => ['backend' => 6, 'spa' => 7],
     ],
     'ar' => [
-        'المعرّف' => ['backend' => 8, 'spa' => 25],
+        // Lowered 25 → 20 and 28 → 27 on 2026-10-02 (Blog domain removed): the
+        // five `web.blog.*` SPA keys carried the only `المعرّف` hits, and the
+        // deleted `lang/ar/api/blog.php` carried one `استعادة`.
+        'المعرّف' => ['backend' => 8, 'spa' => 20],
         'فحص' => ['backend' => 4, 'spa' => 8],
         'إتمام الشراء' => ['backend' => 16, 'spa' => 23],
         'الفوترة' => ['backend' => 5, 'spa' => 15],
         'أرشفة' => ['backend' => 14, 'spa' => 21],
-        'استعادة' => ['backend' => 17, 'spa' => 28],
+        'استعادة' => ['backend' => 16, 'spa' => 27],
         'بيانات الاعتماد' => ['backend' => 29, 'spa' => 43],
         'قائمة الانتظار' => ['backend' => 15, 'spa' => 10],
         'التخزين' => ['backend' => 13, 'spa' => 21],

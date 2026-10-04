@@ -31,7 +31,6 @@ return [
         'delete_inference' => 'Delete this record? This cannot be undone.',
         'delete_named_title' => 'Delete ":name"',
         'delete_menu' => 'Are you sure you want to delete ":name"?',
-        'delete_post' => 'This post will be moved to trash. You can restore it later.',
         'delete_microstock_credential' => 'Delete this credential?',
         'delete_credential_title' => 'Delete credential',
         'delete_platform_credential' => 'Delete this credential permanently?',

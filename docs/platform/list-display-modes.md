@@ -13,7 +13,7 @@ List indexes speak query mode only. Validation lives in `App\Http\Requests\Conce
 
 The former Yajra DataTables presentation (`display_mode=datatable`) was removed with the Blade admin. The SPA Vue `DataTable` component is unrelated — it always sends `display_mode=query`.
 
-Query-paging lists: users, invoices, payment-gateways, subscriptions, services, inference providers, inference model-cards, vtual orphans, blog posts (including the separate `blog/posts/trashed` list), activity logs, error logs. The navigation **tree** and menus list are excluded — they stay a full dump and are sliced client-side. Helper: `RespondsWithListDisplayMode::respondToQueryList`.
+Query-paging lists: users, invoices, payment-gateways, subscriptions, services, inference providers, inference model-cards, vtual orphans, activity logs, error logs. The navigation **tree** and menus list are excluded — they stay a full dump and are sliced client-side. Helper: `RespondsWithListDisplayMode::respondToQueryList`.
 
 **vTual claims (`claims/mine` + `claims/pending`) are the one list that takes the envelope shape without joining this contract.** `CreatorClaimController::mine` / `pending` read `page` / `per_page` straight off the request — no `display_mode` validation, no `InteractsWithListDisplayMode` — and always answer `{ items, pagination }`, because the SPA claims hub has no flat-list mode. `pagination` is `{ current_page, per_page, total, has_more }` with **no `last_page`** (page forward with `has_more`), and `per_page` clamps to 1–50 (default 15) rather than the 100 above. A consumer that reads `last_page` gets `undefined`.
 

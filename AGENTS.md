@@ -36,7 +36,6 @@
 | `octane.mdc` | Any file under `app/**` (long-lived worker safety) |
 | `cache-policy.mdc` | `app/Domain/**`, `app/Support/**` — cache lifetime and invalidation |
 | `navigation-menus.mdc` | Menu seeder, tree, visibility gates, navigation cache |
-| `blog.mdc` | `app/Domain/Blog/**`, blog routes/config — HTMLPurifier whitelist, slug, media disk |
 | `identity.mdc` | `app/Domain/Identity/**`, auth/JWT/RBAC config |
 | `notification.mdc` | `app/Domain/Notification/**`, bell config/seeder |
 | `domain-access.mdc` | `app/Support/DomainAccess/**`, Domain Access routes/config |
