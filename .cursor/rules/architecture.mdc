@@ -1,6 +1,6 @@
 ---
 description: Domain module registry — kind core|product, locked lifecycle, namespaces
-globs: app/Domain/**,config/domains.php
+globs: app/Domain/**,app/Support/Domain/**,app/Console/Commands/Domain/**,config/domains.php
 alwaysApply: false
 ---
 

@@ -15,6 +15,7 @@ Every living brief is listed in this index; narrative, audits and progress track
 | User-facing docs site | [help.silverspoon.me](https://help.silverspoon.me) — sibling `docs` repo (Docusaurus, customer manual); agent pakem in that repo's `AGENTS.md` + `.cursor/rules/` |
 | IDE workspace | [Monolith-Backend.code-workspace](../Monolith-Backend.code-workspace) · sibling `Monolith-SPA.code-workspace` · [Monolith-Fullstack.code-workspace](../Monolith-Fullstack.code-workspace) for contract work; all three load the `docs` repo as a peer root |
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
+| Removing a product domain (ordered procedure) | [.cursor/skills/domain-remove/SKILL.md](../.cursor/skills/domain-remove/SKILL.md) |
 | Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [platform/configuration-policy.md](platform/configuration-policy.md) |
 | Project overview (Monolith + Vue-Workers) | [integration/project-overview.md](integration/project-overview.md) |
 | SPA frontend contract | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) (contract changes only) |

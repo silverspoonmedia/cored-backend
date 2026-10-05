@@ -5,6 +5,7 @@ Three documentation surfaces, **one owner per topic**. Never state the same rule
 | Surface | Owns | Shape |
 |---------|------|-------|
 | `.cursor/rules/*.mdc` | Normative pakem for agents: imperative must/never, exact paths, commands, gates | Self-sufficient — readable without opening any doc |
+| `.cursor/skills/*/SKILL.md` | Ordered procedure for a multi-step, cross-repo operation (e.g. `domain-remove`) | Frontmatter `name` + `description`, then numbered steps; states the sequence and its abort conditions, never restates a rule |
 | `docs/**/*.md` (non-archive) | Human brief: what it is, where it lives, why | One paragraph + pointer table |
 | `docs/archive/**` | Narrative, audits, one-shot assessments | Free-form, dated, exempt from budgets |
 | `AGENTS.md` (repo root) | Pakem map: scope tag + one line per rule file | ~50 lines, zero rule detail |
