@@ -1,0 +1,1365 @@
+{
+    "schema": "domain-uninstall/v1",
+    "domain": "Vtual",
+    "repos": {
+        "backend": {
+            "delete": [
+                "app/Domain/Vtual",
+                "app/Providers/Domain/VtualServiceProvider.php",
+                "routes/api/v1/vtual.php",
+                "tests/Domain/Vtual",
+                "database/seeders/VtualRoleSeeder.php",
+                "config/vtual.php",
+                "lang/*/api/vtual.php",
+                "docs/domains/vtual"
+            ],
+            "edits": [
+                {
+                    "file": "config/products.php",
+                    "op": "remove_block",
+                    "begin": "'Vtual' =>"
+                },
+                {
+                    "file": "config/settings-local.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('vtual'|'vtual\\.|// .*vtual)"
+                },
+                {
+                    "file": "config/spa-routes.php",
+                    "op": "remove_quoted_strings",
+                    "match": [
+                        "vtual.invites.respond",
+                        "vtual.public",
+                        "settings.vtual",
+                        "vtual.public.vtuber",
+                        "vtual.public.management",
+                        "vtual.profiles.index",
+                        "vtual.profiles.show",
+                        "vtual.vtuber.index",
+                        "vtual.vtuber.show",
+                        "vtual.vtuber.claim",
+                        "vtual.orphans.index",
+                        "vtual.orphans.create",
+                        "vtual.orphans.edit",
+                        "vtual.claims.index",
+                        "vtual.managements.index",
+                        "vtual.managements.create",
+                        "vtual.managements.edit",
+                        "vtual.events.index",
+                        "vtual.events.create",
+                        "vtual.events.edit",
+                        "vtual.platform-credentials.index",
+                        "vtual.platform-credentials.probe",
+                        "vtual.platform-credentials.platform",
+                        "vtual.platform-credentials.create",
+                        "vtual.platform-credentials.edit",
+                        "vtual.incidents.index"
+                    ]
+                },
+                {
+                    "file": "database/seeders/RoleSeeder.php",
+                    "op": "remove_quoted_strings",
+                    "match": [
+                        "view vtual platform credentials",
+                        "manage vtual platform credentials",
+                        "view vtual incident",
+                        "manage vtual incident",
+                        "manage settings"
+                    ]
+                },
+                {
+                    "file": "lang/ar/api/notifications.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "types.vtual_management_invite_received",
+                        "types.vtual_management_creator_invite_received"
+                    ]
+                },
+                {
+                    "file": "lang/ar/web/vtual-vtuber.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "claim_step_2"
+                    ]
+                },
+                {
+                    "file": "lang/en/api/notifications.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "types.vtual_management_invite_received",
+                        "types.vtual_management_creator_invite_received"
+                    ]
+                },
+                {
+                    "file": "lang/en/web/vtual-vtuber.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "claim_step_2"
+                    ]
+                },
+                {
+                    "file": "lang/id/api/notifications.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "types.vtual_management_invite_received",
+                        "types.vtual_management_creator_invite_received"
+                    ]
+                },
+                {
+                    "file": "lang/id/web/vtual-vtuber.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "claim_step_2"
+                    ]
+                },
+                {
+                    "file": "lang/ja/api/notifications.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "types.vtual_management_invite_received",
+                        "types.vtual_management_creator_invite_received"
+                    ]
+                },
+                {
+                    "file": "lang/ja/web/vtual-vtuber.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "claim_step_2"
+                    ]
+                },
+                {
+                    "file": "lang/ko/api/notifications.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "types.vtual_management_invite_received",
+                        "types.vtual_management_creator_invite_received"
+                    ]
+                },
+                {
+                    "file": "lang/ko/web/vtual-vtuber.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "claim_step_2"
+                    ]
+                },
+                {
+                    "file": "lang/ru/api/notifications.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "types.vtual_management_invite_received",
+                        "types.vtual_management_creator_invite_received"
+                    ]
+                },
+                {
+                    "file": "lang/ru/web/vtual-vtuber.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "claim_step_2"
+                    ]
+                },
+                {
+                    "file": "lang/zh_CN/api/notifications.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "types.vtual_management_invite_received",
+                        "types.vtual_management_creator_invite_received"
+                    ]
+                },
+                {
+                    "file": "lang/zh_CN/web/vtual-vtuber.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "claim_step_2"
+                    ]
+                },
+                {
+                    "file": "lang/ar/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('vtual'|'vtual\\.|// .*vtual)"
+                },
+                {
+                    "file": "lang/en/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('vtual'|'vtual\\.|// .*vtual)"
+                },
+                {
+                    "file": "lang/id/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('vtual'|'vtual\\.|// .*vtual)"
+                },
+                {
+                    "file": "lang/ja/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('vtual'|'vtual\\.|// .*vtual)"
+                },
+                {
+                    "file": "lang/ko/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('vtual'|'vtual\\.|// .*vtual)"
+                },
+                {
+                    "file": "lang/ru/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('vtual'|'vtual\\.|// .*vtual)"
+                },
+                {
+                    "file": "lang/zh_CN/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('vtual'|'vtual\\.|// .*vtual)"
+                },
+                {
+                    "file": "database/seeders/DomainAccessSeeder.php",
+                    "op": "remove_quoted_strings",
+                    "match": [
+                        "Vtual"
+                    ]
+                }
+            ],
+            "unresolved": [],
+            "ignore": [
+                {
+                    "path": ".env.example",
+                    "reason": "docblock: Vtual named in prose, not in code — keep, or reword the example (line 262)"
+                },
+                {
+                    "path": ".env.local.example",
+                    "reason": "docblock: Vtual named in prose, not in code — keep, or reword the example (line 255)"
+                },
+                {
+                    "path": ".env.production.example",
+                    "reason": "docblock: Vtual named in prose, not in code — keep, or reword the example (line 252)"
+                },
+                {
+                    "path": ".env.staging.example",
+                    "reason": "docblock: Vtual named in prose, not in code — keep, or reword the example (line 252)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/AuditContentAiCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 7, 8, 9)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/BackfillInitialContentCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 11, 14, 15)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/ClassifyContentsCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 7, 8, 9)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/EventSubStatusCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 10, 13, 43)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/FetchChannelContentCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 11, 14, 15)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/FlushChannelFetchPoolCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 7, 12, 15)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/FlushClaimVerifyPoolCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 9, 12)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/FlushContentFetchPoolCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 11, 14)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/PollChannelFeedsCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 10, 13, 14)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/PollLiveContentsCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 10, 15)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/PruneFetchPoolsCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 7, 8, 12)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/PruneMetricsCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 7, 13, 16)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/RenewEventSubSubscriptionsCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 9, 12)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/RenewWebsubSubscriptionsCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 9, 12)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/RepairArchivedWebsubCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 9, 12)"
+                },
+                {
+                    "path": "app/Console/Commands/Vtual/WebsubStatusCommand.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 5, 6, 10, 13)"
+                },
+                {
+                    "path": "app/Domain/ActivityLog/Http/Requests/IndexActivityLogRequest.php",
+                    "reason": "owned by the ActivityLog domain: this file leaves with ActivityLog's own uninstall, nothing to do here (line 26)"
+                },
+                {
+                    "path": "app/Domain/Ai/Console/Commands/ImportLegacyEnvCommand.php",
+                    "reason": "owned by the Ai domain: this file leaves with Ai's own uninstall, nothing to do here (line 185, 186, 189, 190)"
+                },
+                {
+                    "path": "app/Domain/Identity/Http/Controllers/Web/Auth/DiscordOAuthController.php",
+                    "reason": "owned by the Identity domain: this file leaves with Identity's own uninstall, nothing to do here (line 11, 12, 13, 14, 145, 146)"
+                },
+                {
+                    "path": "app/Domain/Navigation/Http/Requests/Concerns/ValidatesMenuStructure.php",
+                    "reason": "owned by the Navigation domain: this file leaves with Navigation's own uninstall, nothing to do here (line 14, 22)"
+                },
+                {
+                    "path": "app/Domain/Navigation/Repositories/Eloquent/MenuRepository.php",
+                    "reason": "owned by the Navigation domain: this file leaves with Navigation's own uninstall, nothing to do here (line 18, 55, 56, 57)"
+                },
+                {
+                    "path": "app/Domain/Navigation/Support/MenuLayout.php",
+                    "reason": "owned by the Navigation domain: this file leaves with Navigation's own uninstall, nothing to do here (line 14)"
+                },
+                {
+                    "path": "app/Domain/Notification/Notifications/NotificationType.php",
+                    "reason": "owned by the Notification domain: this file leaves with Notification's own uninstall, nothing to do here (line 42, 46, 61, 62, 81, 82)"
+                },
+                {
+                    "path": "app/Http/Middleware/RequireSpaRequestHeader.php",
+                    "reason": "hand edit: review the Vtual reference and drop it (line 28, 29)"
+                },
+                {
+                    "path": "app/Support/ListActions/Builders/ManagementQueryRowActions.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 6, 7, 38, 52)"
+                },
+                {
+                    "path": "app/Support/ListActions/Builders/OrphanCreatorQueryRowActions.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 6, 17, 27, 36, 39)"
+                },
+                {
+                    "path": "app/Support/ListActions/Builders/OwnedCreatorQueryRowActions.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 6, 28)"
+                },
+                {
+                    "path": "app/Support/ListActions/Builders/PlatformCredentialQueryRowActions.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 6, 17, 30, 38, 49, 58)"
+                },
+                {
+                    "path": "app/Support/ListActions/Builders/PlatformQueryRowActions.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 6, 27)"
+                },
+                {
+                    "path": "app/Support/ListActions/Builders/VtualClaimQueryRowActions.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 6, 7, 8, 12, 37, 46)"
+                },
+                {
+                    "path": "app/Support/ListActions/Builders/VtualEventQueryRowActions.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 6, 10, 17, 34, 43)"
+                },
+                {
+                    "path": "app/Support/ListActions/Builders/VtualIncidentQueryRowActions.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 6, 7, 11, 18, 22, 26)"
+                },
+                {
+                    "path": "app/Support/Settings/Repositories/Eloquent/SystemSettingRepository.php",
+                    "reason": "hand edit: drop the `vtual.*` keys (line 63, 84, 85, 91, 92)"
+                },
+                {
+                    "path": "app/Support/Settings/SettingRegistry.php",
+                    "reason": "hand edit: drop the `vtual.*` keys (line 149, 150, 151, 152, 153, 154)"
+                },
+                {
+                    "path": "app/Support/SpaPublicUrl.php",
+                    "reason": "hand edit: review the Vtual reference and drop it (line 83, 88)"
+                },
+                {
+                    "path": "config/ai.php",
+                    "reason": "hand edit: drop the `vtual.*` keys (line 22, 41)"
+                },
+                {
+                    "path": "config/encryption.php",
+                    "reason": "hand edit: review the Vtual reference and drop it (line 44)"
+                },
+                {
+                    "path": "config/navigation.php",
+                    "reason": "hand edit: review the Vtual reference and drop it (line 19)"
+                },
+                {
+                    "path": "database/migrations/2026_08_05_100000_migrate_disabled_platform_credentials_to_pending.php",
+                    "reason": "shipped migration: the Vtual value it writes is purged by data.rows; migrations are never edited (line 10)"
+                },
+                {
+                    "path": "database/migrations/2026_09_27_000006_add_marketplace_upload_to_microstock.php",
+                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 13)"
+                },
+                {
+                    "path": "database/seeders/MenuSeeder.php",
+                    "reason": "hand edit: drop the `vtual.*` config reads (line 40, 94, 111, 172, 174, 179)"
+                },
+                {
+                    "path": "database/seeders/data/ai-connections.local.example.php",
+                    "reason": "hand edit: drop the `vtual.*` keys (line 79, 81, 82)"
+                },
+                {
+                    "path": "database/seeders/data/ai-connections.local.php",
+                    "reason": "hand edit: drop the `vtual.*` keys (line 44, 46, 47)"
+                },
+                {
+                    "path": "routes/api/v1/vtual-public.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 4, 7, 8, 9)"
+                },
+                {
+                    "path": "routes/api/v1/vtual-webhooks.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 4, 7, 8, 10, 13)"
+                },
+                {
+                    "path": "routes/channels.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 8, 9, 10, 11, 12, 52)"
+                },
+                {
+                    "path": "routes/console.php",
+                    "reason": "hand edit: review the Vtual reference and drop it (line 23, 26, 29, 34, 37, 40)"
+                },
+                {
+                    "path": "scripts/lib/docs-budget-support.php",
+                    "reason": "hand edit (tooling): review the Vtual reference and drop it (line 41, 74)"
+                },
+                {
+                    "path": "scripts/lib/locale-latin-allowlist.php",
+                    "reason": "hand edit (tooling): review the Vtual reference and drop it (line 55)"
+                },
+                {
+                    "path": "scripts/locale-dynamic-key-check.php",
+                    "reason": "hand edit (tooling): review the Vtual reference and drop it (line 124, 125, 130, 131, 132, 139)"
+                },
+                {
+                    "path": "scripts/locale-glossary-scan.php",
+                    "reason": "docblock: Vtual named in prose, not in code — keep, or reword the example (line 30)"
+                },
+                {
+                    "path": "tests/Domain/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
+                    "reason": "test: drop the `vtual.*` keys (line 31, 85, 100, 104)"
+                },
+                {
+                    "path": "tests/Domain/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
+                    "reason": "test: drop the `vtual.*` keys (line 43, 122, 123, 129, 158, 161)"
+                },
+                {
+                    "path": "tests/Domain/DomainAccess/Unit/DomainAccessSeederTest.php",
+                    "reason": "test: drop the `Vtual` entry (line 34)"
+                },
+                {
+                    "path": "tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederConformanceTest.php",
+                    "reason": "test: review the Vtual reference and drop it (line 14, 33, 65)"
+                },
+                {
+                    "path": "tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php",
+                    "reason": "test: drop the `vtual.*` keys (line 14, 28, 62, 65, 66, 67)"
+                },
+                {
+                    "path": "tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuLayoutTest.php",
+                    "reason": "test: drop the `vtual.*` keys (line 42, 45, 60, 61, 67, 70)"
+                },
+                {
+                    "path": "tests/Domain/Navigation/Feature/ManagementMemberMenuVisibilityTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 8, 9, 10, 11, 14, 23)"
+                },
+                {
+                    "path": "tests/Domain/Product/Feature/MenuVisibilityTest.php",
+                    "reason": "test: review the Vtual reference and drop it (line 10, 34)"
+                },
+                {
+                    "path": "tests/Feature/Broadcasting/CreatorClaimProgressChannelTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 6, 7, 8, 9, 10, 11)"
+                },
+                {
+                    "path": "tests/Feature/Broadcasting/VtualClaimsChannelTest.php",
+                    "reason": "test: review the Vtual reference and drop it (line 6, 15, 16, 19, 28, 39)"
+                },
+                {
+                    "path": "tests/Feature/Broadcasting/VtualIncidentsChannelTest.php",
+                    "reason": "test: review the Vtual reference and drop it (line 6, 15, 16, 20, 29, 40)"
+                },
+                {
+                    "path": "tests/Feature/Broadcasting/VtualPlatformCredentialsChannelTest.php",
+                    "reason": "test: review the Vtual reference and drop it (line 13, 53, 65, 74, 81, 82)"
+                },
+                {
+                    "path": "tests/Feature/Http/WebSurfaceRouteListTest.php",
+                    "reason": "test: drop the `vtual.*` keys (line 38)"
+                },
+                {
+                    "path": "tests/Unit/Documentation/DocsAnchorGuardTest.php",
+                    "reason": "test: review the Vtual reference and drop it (line 62)"
+                },
+                {
+                    "path": "tests/Unit/Support/Encryption/DecryptedValueCacheTest.php",
+                    "reason": "test: review the Vtual reference and drop it (line 108, 113, 129, 132, 185)"
+                },
+                {
+                    "path": "tests/Unit/Support/Settings/SettingRegistryEnvPolicyTest.php",
+                    "reason": "test: drop the `vtual.*` setting reads (line 112)"
+                }
+            ]
+        },
+        "spa": {
+            "delete": [
+                "src/views/vtual",
+                "src/composables/vtual",
+                "src/components/vtual",
+                "src/router/routes/vtual.ts",
+                "tests/vtual*"
+            ],
+            "edits": [
+                {
+                    "file": "src/i18n/locales/ar.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.vtual.vtual",
+                        "web.menus.form.layouts.vtual",
+                        "web.settings.groups.vtual",
+                        "web.settings.fields.vtual.credential_test.http_timeout",
+                        "web.settings.fields.vtual.credential_test.twitch_token_skew_seconds",
+                        "web.settings.fields.vtual.credential_test.youtube_probe_channel_id",
+                        "web.settings.fields.vtual.credential.failover.enabled",
+                        "web.settings.fields.vtual.credential.failover.auth_fail_threshold",
+                        "web.settings.fields.vtual.credential.failover.skip_minutes",
+                        "web.settings.fields.vtual.credential.failover.max_retries_per_call",
+                        "web.settings.fields.vtual.http.timeout",
+                        "web.settings.fields.vtual.claim.ttl_hours",
+                        "web.settings.fields.vtual.claim.verify_cooldown_seconds",
+                        "web.settings.fields.vtual.claim.max_attempts",
+                        "web.settings.fields.vtual.claim.block_hours_after_max_attempts",
+                        "web.settings.fields.vtual.claim.max_pending_per_user",
+                        "web.settings.fields.vtual.claim.accept_anyway_enabled",
+                        "web.settings.fields.vtual.claim.discord_verify_enabled",
+                        "web.settings.fields.vtual.claim.token_prefix",
+                        "web.settings.fields.vtual.claim.token_bytes",
+                        "web.settings.fields.vtual.channel_claim.ttl_hours",
+                        "web.settings.fields.vtual.channel_claim.verify_cooldown_seconds",
+                        "web.settings.fields.vtual.channel_claim.max_attempts",
+                        "web.settings.fields.vtual.channel_claim.accept_anyway_enabled",
+                        "web.settings.fields.vtual.channel_claim.discord_verify_enabled",
+                        "web.settings.fields.vtual.channel_claim.token_prefix",
+                        "web.settings.fields.vtual.channel_claim.token_bytes",
+                        "web.settings.fields.vtual.channel_pool.threshold",
+                        "web.settings.fields.vtual.channel_pool.max_wait_minutes",
+                        "web.settings.fields.vtual.channel_pool.schedule_every_minutes",
+                        "web.settings.fields.vtual.channel_pool.resync_stale_hours",
+                        "web.settings.fields.vtual.channel_pool.resync_enqueue_limit",
+                        "web.settings.fields.vtual.channel_pool.flush_lock_seconds",
+                        "web.settings.fields.vtual.claim_verify_pool.threshold",
+                        "web.settings.fields.vtual.claim_verify_pool.max_wait_minutes",
+                        "web.settings.fields.vtual.claim_verify_pool.flush_lock_seconds",
+                        "web.settings.fields.vtual.content_pool.threshold",
+                        "web.settings.fields.vtual.content_pool.max_wait_minutes",
+                        "web.settings.fields.vtual.content_pool.flush_lock_seconds",
+                        "web.settings.fields.vtual.feed_poll.interval_minutes",
+                        "web.settings.fields.vtual.live_poll.interval_minutes",
+                        "web.settings.fields.vtual.websub.lease_seconds",
+                        "web.settings.fields.vtual.websub.renew_before_hours",
+                        "web.settings.fields.vtual.content_classification.ai.enabled",
+                        "web.settings.fields.vtual.content_classification.ai.model",
+                        "web.settings.fields.vtual.content_classification.ai.max_tokens",
+                        "web.settings.fields.vtual.content_classification.ai.timeout",
+                        "web.settings.fields.vtual.content_classification.ai.min_confidence",
+                        "web.settings.fields.vtual.content_classification.ai.cache_ttl_hours",
+                        "web.settings.fields.vtual.content_classification.ai.connection",
+                        "web.settings.fields.vtual.landing.event.title",
+                        "web.settings.fields.vtual.landing.event.starts_at",
+                        "web.settings.fields.vtual.landing.event.body",
+                        "web.settings.fields.vtual.websub.max_body_bytes",
+                        "web.settings.hints.vtual.credential_test.youtube_probe_channel_id",
+                        "web.settings.hints.vtual.credential.failover.enabled",
+                        "web.settings.hints.vtual.claim.accept_anyway_enabled",
+                        "web.settings.hints.vtual.claim.discord_verify_enabled",
+                        "web.settings.hints.vtual.channel_claim.discord_verify_enabled",
+                        "web.vtual.vtual",
+                        "vtual-orphans.vtual-orphans",
+                        "vtual-events.vtual-events",
+                        "vtual-managements.vtual-managements",
+                        "vtual-invites.vtual-invites",
+                        "vtual-platform-credentials.vtual-platform-credentials",
+                        "vtual-profiles.vtual-profiles",
+                        "vtual-vtuber.vtual-vtuber"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/en.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.vtual.vtual",
+                        "web.menus.form.layouts.vtual",
+                        "settings.groups.vtual",
+                        "settings.fields.vtual.credential_test.http_timeout",
+                        "settings.fields.vtual.credential_test.twitch_token_skew_seconds",
+                        "settings.fields.vtual.credential_test.youtube_probe_channel_id",
+                        "settings.fields.vtual.credential.failover.enabled",
+                        "settings.fields.vtual.credential.failover.auth_fail_threshold",
+                        "settings.fields.vtual.credential.failover.skip_minutes",
+                        "settings.fields.vtual.credential.failover.max_retries_per_call",
+                        "settings.fields.vtual.http.timeout",
+                        "settings.fields.vtual.claim.ttl_hours",
+                        "settings.fields.vtual.claim.verify_cooldown_seconds",
+                        "settings.fields.vtual.claim.max_attempts",
+                        "settings.fields.vtual.claim.block_hours_after_max_attempts",
+                        "settings.fields.vtual.claim.max_pending_per_user",
+                        "settings.fields.vtual.claim.accept_anyway_enabled",
+                        "settings.fields.vtual.claim.discord_verify_enabled",
+                        "settings.fields.vtual.claim.token_prefix",
+                        "settings.fields.vtual.claim.token_bytes",
+                        "settings.fields.vtual.channel_claim.ttl_hours",
+                        "settings.fields.vtual.channel_claim.verify_cooldown_seconds",
+                        "settings.fields.vtual.channel_claim.max_attempts",
+                        "settings.fields.vtual.channel_claim.accept_anyway_enabled",
+                        "settings.fields.vtual.channel_claim.discord_verify_enabled",
+                        "settings.fields.vtual.channel_claim.token_prefix",
+                        "settings.fields.vtual.channel_claim.token_bytes",
+                        "settings.fields.vtual.channel_pool.threshold",
+                        "settings.fields.vtual.channel_pool.max_wait_minutes",
+                        "settings.fields.vtual.channel_pool.schedule_every_minutes",
+                        "settings.fields.vtual.channel_pool.resync_stale_hours",
+                        "settings.fields.vtual.channel_pool.resync_enqueue_limit",
+                        "settings.fields.vtual.channel_pool.flush_lock_seconds",
+                        "settings.fields.vtual.claim_verify_pool.threshold",
+                        "settings.fields.vtual.claim_verify_pool.max_wait_minutes",
+                        "settings.fields.vtual.claim_verify_pool.flush_lock_seconds",
+                        "settings.fields.vtual.content_pool.threshold",
+                        "settings.fields.vtual.content_pool.max_wait_minutes",
+                        "settings.fields.vtual.content_pool.flush_lock_seconds",
+                        "settings.fields.vtual.feed_poll.interval_minutes",
+                        "settings.fields.vtual.live_poll.interval_minutes",
+                        "settings.fields.vtual.websub.lease_seconds",
+                        "settings.fields.vtual.websub.renew_before_hours",
+                        "settings.fields.vtual.content_classification.ai.enabled",
+                        "settings.fields.vtual.content_classification.ai.model",
+                        "settings.fields.vtual.content_classification.ai.max_tokens",
+                        "settings.fields.vtual.content_classification.ai.timeout",
+                        "settings.fields.vtual.content_classification.ai.min_confidence",
+                        "settings.fields.vtual.content_classification.ai.cache_ttl_hours",
+                        "settings.fields.vtual.content_classification.ai.connection",
+                        "settings.fields.vtual.landing.event.title",
+                        "settings.fields.vtual.landing.event.starts_at",
+                        "settings.fields.vtual.landing.event.body",
+                        "settings.fields.vtual.websub.max_body_bytes",
+                        "settings.hints.vtual.credential_test.youtube_probe_channel_id",
+                        "settings.hints.vtual.credential.failover.enabled",
+                        "settings.hints.vtual.claim.accept_anyway_enabled",
+                        "settings.hints.vtual.claim.discord_verify_enabled",
+                        "settings.hints.vtual.channel_claim.discord_verify_enabled",
+                        "vtual-orphans.vtual-orphans",
+                        "vtual-events.vtual-events",
+                        "vtual-managements.vtual-managements",
+                        "vtual-invites.vtual-invites",
+                        "vtual-platform-credentials.vtual-platform-credentials",
+                        "vtual-profiles.vtual-profiles",
+                        "vtual-vtuber.vtual-vtuber",
+                        "vtual-vtuber.hub_subtitle",
+                        "vtual.vtual"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/id.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.vtual.vtual",
+                        "web.menus.form.layouts.vtual",
+                        "settings.groups.vtual",
+                        "settings.fields.vtual.credential_test.http_timeout",
+                        "settings.fields.vtual.credential_test.twitch_token_skew_seconds",
+                        "settings.fields.vtual.credential_test.youtube_probe_channel_id",
+                        "settings.fields.vtual.credential.failover.enabled",
+                        "settings.fields.vtual.credential.failover.auth_fail_threshold",
+                        "settings.fields.vtual.credential.failover.skip_minutes",
+                        "settings.fields.vtual.credential.failover.max_retries_per_call",
+                        "settings.fields.vtual.http.timeout",
+                        "settings.fields.vtual.claim.ttl_hours",
+                        "settings.fields.vtual.claim.verify_cooldown_seconds",
+                        "settings.fields.vtual.claim.max_attempts",
+                        "settings.fields.vtual.claim.block_hours_after_max_attempts",
+                        "settings.fields.vtual.claim.max_pending_per_user",
+                        "settings.fields.vtual.claim.accept_anyway_enabled",
+                        "settings.fields.vtual.claim.discord_verify_enabled",
+                        "settings.fields.vtual.claim.token_prefix",
+                        "settings.fields.vtual.claim.token_bytes",
+                        "settings.fields.vtual.channel_claim.ttl_hours",
+                        "settings.fields.vtual.channel_claim.verify_cooldown_seconds",
+                        "settings.fields.vtual.channel_claim.max_attempts",
+                        "settings.fields.vtual.channel_claim.accept_anyway_enabled",
+                        "settings.fields.vtual.channel_claim.discord_verify_enabled",
+                        "settings.fields.vtual.channel_claim.token_prefix",
+                        "settings.fields.vtual.channel_claim.token_bytes",
+                        "settings.fields.vtual.channel_pool.threshold",
+                        "settings.fields.vtual.channel_pool.max_wait_minutes",
+                        "settings.fields.vtual.channel_pool.schedule_every_minutes",
+                        "settings.fields.vtual.channel_pool.resync_stale_hours",
+                        "settings.fields.vtual.channel_pool.resync_enqueue_limit",
+                        "settings.fields.vtual.channel_pool.flush_lock_seconds",
+                        "settings.fields.vtual.claim_verify_pool.threshold",
+                        "settings.fields.vtual.claim_verify_pool.max_wait_minutes",
+                        "settings.fields.vtual.claim_verify_pool.flush_lock_seconds",
+                        "settings.fields.vtual.content_pool.threshold",
+                        "settings.fields.vtual.content_pool.max_wait_minutes",
+                        "settings.fields.vtual.content_pool.flush_lock_seconds",
+                        "settings.fields.vtual.feed_poll.interval_minutes",
+                        "settings.fields.vtual.live_poll.interval_minutes",
+                        "settings.fields.vtual.websub.lease_seconds",
+                        "settings.fields.vtual.websub.renew_before_hours",
+                        "settings.fields.vtual.content_classification.ai.enabled",
+                        "settings.fields.vtual.content_classification.ai.model",
+                        "settings.fields.vtual.content_classification.ai.max_tokens",
+                        "settings.fields.vtual.content_classification.ai.timeout",
+                        "settings.fields.vtual.content_classification.ai.min_confidence",
+                        "settings.fields.vtual.content_classification.ai.cache_ttl_hours",
+                        "settings.fields.vtual.content_classification.ai.connection",
+                        "settings.fields.vtual.landing.event.title",
+                        "settings.fields.vtual.landing.event.starts_at",
+                        "settings.fields.vtual.landing.event.body",
+                        "settings.fields.vtual.websub.max_body_bytes",
+                        "settings.hints.vtual.credential_test.youtube_probe_channel_id",
+                        "settings.hints.vtual.credential.failover.enabled",
+                        "settings.hints.vtual.claim.accept_anyway_enabled",
+                        "settings.hints.vtual.claim.discord_verify_enabled",
+                        "settings.hints.vtual.channel_claim.discord_verify_enabled",
+                        "vtual-orphans.vtual-orphans",
+                        "vtual-events.vtual-events",
+                        "vtual-managements.vtual-managements",
+                        "vtual-invites.vtual-invites",
+                        "vtual-platform-credentials.vtual-platform-credentials",
+                        "vtual-profiles.vtual-profiles",
+                        "vtual-vtuber.vtual-vtuber",
+                        "vtual.vtual"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/ja.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.vtual.vtual",
+                        "web.menus.form.layouts.vtual",
+                        "settings.groups.vtual",
+                        "settings.fields.vtual.credential_test.http_timeout",
+                        "settings.fields.vtual.credential_test.twitch_token_skew_seconds",
+                        "settings.fields.vtual.credential_test.youtube_probe_channel_id",
+                        "settings.fields.vtual.credential.failover.enabled",
+                        "settings.fields.vtual.credential.failover.auth_fail_threshold",
+                        "settings.fields.vtual.credential.failover.skip_minutes",
+                        "settings.fields.vtual.credential.failover.max_retries_per_call",
+                        "settings.fields.vtual.http.timeout",
+                        "settings.fields.vtual.claim.ttl_hours",
+                        "settings.fields.vtual.claim.verify_cooldown_seconds",
+                        "settings.fields.vtual.claim.max_attempts",
+                        "settings.fields.vtual.claim.block_hours_after_max_attempts",
+                        "settings.fields.vtual.claim.max_pending_per_user",
+                        "settings.fields.vtual.claim.accept_anyway_enabled",
+                        "settings.fields.vtual.claim.discord_verify_enabled",
+                        "settings.fields.vtual.claim.token_prefix",
+                        "settings.fields.vtual.claim.token_bytes",
+                        "settings.fields.vtual.channel_claim.ttl_hours",
+                        "settings.fields.vtual.channel_claim.verify_cooldown_seconds",
+                        "settings.fields.vtual.channel_claim.max_attempts",
+                        "settings.fields.vtual.channel_claim.accept_anyway_enabled",
+                        "settings.fields.vtual.channel_claim.discord_verify_enabled",
+                        "settings.fields.vtual.channel_claim.token_prefix",
+                        "settings.fields.vtual.channel_claim.token_bytes",
+                        "settings.fields.vtual.channel_pool.threshold",
+                        "settings.fields.vtual.channel_pool.max_wait_minutes",
+                        "settings.fields.vtual.channel_pool.schedule_every_minutes",
+                        "settings.fields.vtual.channel_pool.resync_stale_hours",
+                        "settings.fields.vtual.channel_pool.resync_enqueue_limit",
+                        "settings.fields.vtual.channel_pool.flush_lock_seconds",
+                        "settings.fields.vtual.claim_verify_pool.threshold",
+                        "settings.fields.vtual.claim_verify_pool.max_wait_minutes",
+                        "settings.fields.vtual.claim_verify_pool.flush_lock_seconds",
+                        "settings.fields.vtual.content_pool.threshold",
+                        "settings.fields.vtual.content_pool.max_wait_minutes",
+                        "settings.fields.vtual.content_pool.flush_lock_seconds",
+                        "settings.fields.vtual.feed_poll.interval_minutes",
+                        "settings.fields.vtual.live_poll.interval_minutes",
+                        "settings.fields.vtual.websub.lease_seconds",
+                        "settings.fields.vtual.websub.renew_before_hours",
+                        "settings.fields.vtual.content_classification.ai.enabled",
+                        "settings.fields.vtual.content_classification.ai.model",
+                        "settings.fields.vtual.content_classification.ai.max_tokens",
+                        "settings.fields.vtual.content_classification.ai.timeout",
+                        "settings.fields.vtual.content_classification.ai.min_confidence",
+                        "settings.fields.vtual.content_classification.ai.cache_ttl_hours",
+                        "settings.fields.vtual.content_classification.ai.connection",
+                        "settings.fields.vtual.landing.event.title",
+                        "settings.fields.vtual.landing.event.starts_at",
+                        "settings.fields.vtual.landing.event.body",
+                        "settings.fields.vtual.websub.max_body_bytes",
+                        "settings.hints.vtual.credential_test.youtube_probe_channel_id",
+                        "settings.hints.vtual.credential.failover.enabled",
+                        "settings.hints.vtual.claim.accept_anyway_enabled",
+                        "settings.hints.vtual.claim.discord_verify_enabled",
+                        "settings.hints.vtual.channel_claim.discord_verify_enabled",
+                        "vtual-orphans.vtual-orphans",
+                        "vtual-events.vtual-events",
+                        "vtual-managements.vtual-managements",
+                        "vtual-invites.vtual-invites",
+                        "vtual-platform-credentials.vtual-platform-credentials",
+                        "vtual-profiles.vtual-profiles",
+                        "vtual-vtuber.vtual-vtuber",
+                        "vtual.vtual"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/ko.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.vtual.vtual",
+                        "web.menus.form.layouts.vtual",
+                        "web.settings.groups.vtual",
+                        "web.settings.fields.vtual.credential_test.http_timeout",
+                        "web.settings.fields.vtual.credential_test.twitch_token_skew_seconds",
+                        "web.settings.fields.vtual.credential_test.youtube_probe_channel_id",
+                        "web.settings.fields.vtual.credential.failover.enabled",
+                        "web.settings.fields.vtual.credential.failover.auth_fail_threshold",
+                        "web.settings.fields.vtual.credential.failover.skip_minutes",
+                        "web.settings.fields.vtual.credential.failover.max_retries_per_call",
+                        "web.settings.fields.vtual.http.timeout",
+                        "web.settings.fields.vtual.claim.ttl_hours",
+                        "web.settings.fields.vtual.claim.verify_cooldown_seconds",
+                        "web.settings.fields.vtual.claim.max_attempts",
+                        "web.settings.fields.vtual.claim.block_hours_after_max_attempts",
+                        "web.settings.fields.vtual.claim.max_pending_per_user",
+                        "web.settings.fields.vtual.claim.accept_anyway_enabled",
+                        "web.settings.fields.vtual.claim.discord_verify_enabled",
+                        "web.settings.fields.vtual.claim.token_prefix",
+                        "web.settings.fields.vtual.claim.token_bytes",
+                        "web.settings.fields.vtual.channel_claim.ttl_hours",
+                        "web.settings.fields.vtual.channel_claim.verify_cooldown_seconds",
+                        "web.settings.fields.vtual.channel_claim.max_attempts",
+                        "web.settings.fields.vtual.channel_claim.accept_anyway_enabled",
+                        "web.settings.fields.vtual.channel_claim.discord_verify_enabled",
+                        "web.settings.fields.vtual.channel_claim.token_prefix",
+                        "web.settings.fields.vtual.channel_claim.token_bytes",
+                        "web.settings.fields.vtual.channel_pool.threshold",
+                        "web.settings.fields.vtual.channel_pool.max_wait_minutes",
+                        "web.settings.fields.vtual.channel_pool.schedule_every_minutes",
+                        "web.settings.fields.vtual.channel_pool.resync_stale_hours",
+                        "web.settings.fields.vtual.channel_pool.resync_enqueue_limit",
+                        "web.settings.fields.vtual.channel_pool.flush_lock_seconds",
+                        "web.settings.fields.vtual.claim_verify_pool.threshold",
+                        "web.settings.fields.vtual.claim_verify_pool.max_wait_minutes",
+                        "web.settings.fields.vtual.claim_verify_pool.flush_lock_seconds",
+                        "web.settings.fields.vtual.content_pool.threshold",
+                        "web.settings.fields.vtual.content_pool.max_wait_minutes",
+                        "web.settings.fields.vtual.content_pool.flush_lock_seconds",
+                        "web.settings.fields.vtual.feed_poll.interval_minutes",
+                        "web.settings.fields.vtual.live_poll.interval_minutes",
+                        "web.settings.fields.vtual.websub.lease_seconds",
+                        "web.settings.fields.vtual.websub.renew_before_hours",
+                        "web.settings.fields.vtual.content_classification.ai.enabled",
+                        "web.settings.fields.vtual.content_classification.ai.model",
+                        "web.settings.fields.vtual.content_classification.ai.max_tokens",
+                        "web.settings.fields.vtual.content_classification.ai.timeout",
+                        "web.settings.fields.vtual.content_classification.ai.min_confidence",
+                        "web.settings.fields.vtual.content_classification.ai.cache_ttl_hours",
+                        "web.settings.fields.vtual.content_classification.ai.connection",
+                        "web.settings.fields.vtual.landing.event.title",
+                        "web.settings.fields.vtual.landing.event.starts_at",
+                        "web.settings.fields.vtual.landing.event.body",
+                        "web.settings.fields.vtual.websub.max_body_bytes",
+                        "web.settings.hints.vtual.credential_test.youtube_probe_channel_id",
+                        "web.settings.hints.vtual.credential.failover.enabled",
+                        "web.settings.hints.vtual.claim.accept_anyway_enabled",
+                        "web.settings.hints.vtual.claim.discord_verify_enabled",
+                        "web.settings.hints.vtual.channel_claim.discord_verify_enabled",
+                        "web.vtual.vtual",
+                        "vtual-orphans.vtual-orphans",
+                        "vtual-events.vtual-events",
+                        "vtual-managements.vtual-managements",
+                        "vtual-invites.vtual-invites",
+                        "vtual-platform-credentials.vtual-platform-credentials",
+                        "vtual-profiles.vtual-profiles",
+                        "vtual-vtuber.vtual-vtuber"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/ru.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.vtual.vtual",
+                        "web.settings.groups.vtual",
+                        "web.settings.fields.vtual.credential_test.http_timeout",
+                        "web.settings.fields.vtual.credential_test.twitch_token_skew_seconds",
+                        "web.settings.fields.vtual.credential_test.youtube_probe_channel_id",
+                        "web.settings.fields.vtual.credential.failover.enabled",
+                        "web.settings.fields.vtual.credential.failover.auth_fail_threshold",
+                        "web.settings.fields.vtual.credential.failover.skip_minutes",
+                        "web.settings.fields.vtual.credential.failover.max_retries_per_call",
+                        "web.settings.fields.vtual.http.timeout",
+                        "web.settings.fields.vtual.claim.ttl_hours",
+                        "web.settings.fields.vtual.claim.verify_cooldown_seconds",
+                        "web.settings.fields.vtual.claim.max_attempts",
+                        "web.settings.fields.vtual.claim.block_hours_after_max_attempts",
+                        "web.settings.fields.vtual.claim.max_pending_per_user",
+                        "web.settings.fields.vtual.claim.accept_anyway_enabled",
+                        "web.settings.fields.vtual.claim.discord_verify_enabled",
+                        "web.settings.fields.vtual.claim.token_prefix",
+                        "web.settings.fields.vtual.claim.token_bytes",
+                        "web.settings.fields.vtual.channel_claim.ttl_hours",
+                        "web.settings.fields.vtual.channel_claim.verify_cooldown_seconds",
+                        "web.settings.fields.vtual.channel_claim.max_attempts",
+                        "web.settings.fields.vtual.channel_claim.accept_anyway_enabled",
+                        "web.settings.fields.vtual.channel_claim.discord_verify_enabled",
+                        "web.settings.fields.vtual.channel_claim.token_prefix",
+                        "web.settings.fields.vtual.channel_claim.token_bytes",
+                        "web.settings.fields.vtual.channel_pool.threshold",
+                        "web.settings.fields.vtual.channel_pool.max_wait_minutes",
+                        "web.settings.fields.vtual.channel_pool.schedule_every_minutes",
+                        "web.settings.fields.vtual.channel_pool.resync_stale_hours",
+                        "web.settings.fields.vtual.channel_pool.resync_enqueue_limit",
+                        "web.settings.fields.vtual.channel_pool.flush_lock_seconds",
+                        "web.settings.fields.vtual.claim_verify_pool.threshold",
+                        "web.settings.fields.vtual.claim_verify_pool.max_wait_minutes",
+                        "web.settings.fields.vtual.claim_verify_pool.flush_lock_seconds",
+                        "web.settings.fields.vtual.content_pool.threshold",
+                        "web.settings.fields.vtual.content_pool.max_wait_minutes",
+                        "web.settings.fields.vtual.content_pool.flush_lock_seconds",
+                        "web.settings.fields.vtual.feed_poll.interval_minutes",
+                        "web.settings.fields.vtual.live_poll.interval_minutes",
+                        "web.settings.fields.vtual.websub.lease_seconds",
+                        "web.settings.fields.vtual.websub.renew_before_hours",
+                        "web.settings.fields.vtual.content_classification.ai.enabled",
+                        "web.settings.fields.vtual.content_classification.ai.model",
+                        "web.settings.fields.vtual.content_classification.ai.max_tokens",
+                        "web.settings.fields.vtual.content_classification.ai.timeout",
+                        "web.settings.fields.vtual.content_classification.ai.min_confidence",
+                        "web.settings.fields.vtual.content_classification.ai.cache_ttl_hours",
+                        "web.settings.fields.vtual.content_classification.ai.connection",
+                        "web.settings.fields.vtual.landing.event.title",
+                        "web.settings.fields.vtual.landing.event.starts_at",
+                        "web.settings.fields.vtual.landing.event.body",
+                        "web.settings.fields.vtual.websub.max_body_bytes",
+                        "web.settings.hints.vtual.credential_test.youtube_probe_channel_id",
+                        "web.settings.hints.vtual.credential.failover.enabled",
+                        "web.settings.hints.vtual.claim.accept_anyway_enabled",
+                        "web.settings.hints.vtual.claim.discord_verify_enabled",
+                        "web.settings.hints.vtual.channel_claim.discord_verify_enabled",
+                        "web.menus.form.layouts.vtual",
+                        "web.vtual.vtual",
+                        "vtual-orphans.vtual-orphans",
+                        "vtual-events.vtual-events",
+                        "vtual-managements.vtual-managements",
+                        "vtual-invites.vtual-invites",
+                        "vtual-platform-credentials.vtual-platform-credentials",
+                        "vtual-profiles.vtual-profiles",
+                        "vtual-vtuber.vtual-vtuber"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/zh-CN.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.vtual.vtual",
+                        "web.menus.form.layouts.vtual",
+                        "settings.groups.vtual",
+                        "settings.fields.vtual.credential_test.http_timeout",
+                        "settings.fields.vtual.credential_test.twitch_token_skew_seconds",
+                        "settings.fields.vtual.credential_test.youtube_probe_channel_id",
+                        "settings.fields.vtual.credential.failover.enabled",
+                        "settings.fields.vtual.credential.failover.auth_fail_threshold",
+                        "settings.fields.vtual.credential.failover.skip_minutes",
+                        "settings.fields.vtual.credential.failover.max_retries_per_call",
+                        "settings.fields.vtual.http.timeout",
+                        "settings.fields.vtual.claim.ttl_hours",
+                        "settings.fields.vtual.claim.verify_cooldown_seconds",
+                        "settings.fields.vtual.claim.max_attempts",
+                        "settings.fields.vtual.claim.block_hours_after_max_attempts",
+                        "settings.fields.vtual.claim.max_pending_per_user",
+                        "settings.fields.vtual.claim.accept_anyway_enabled",
+                        "settings.fields.vtual.claim.discord_verify_enabled",
+                        "settings.fields.vtual.claim.token_prefix",
+                        "settings.fields.vtual.claim.token_bytes",
+                        "settings.fields.vtual.channel_claim.ttl_hours",
+                        "settings.fields.vtual.channel_claim.verify_cooldown_seconds",
+                        "settings.fields.vtual.channel_claim.max_attempts",
+                        "settings.fields.vtual.channel_claim.accept_anyway_enabled",
+                        "settings.fields.vtual.channel_claim.discord_verify_enabled",
+                        "settings.fields.vtual.channel_claim.token_prefix",
+                        "settings.fields.vtual.channel_claim.token_bytes",
+                        "settings.fields.vtual.channel_pool.threshold",
+                        "settings.fields.vtual.channel_pool.max_wait_minutes",
+                        "settings.fields.vtual.channel_pool.schedule_every_minutes",
+                        "settings.fields.vtual.channel_pool.resync_stale_hours",
+                        "settings.fields.vtual.channel_pool.resync_enqueue_limit",
+                        "settings.fields.vtual.channel_pool.flush_lock_seconds",
+                        "settings.fields.vtual.claim_verify_pool.threshold",
+                        "settings.fields.vtual.claim_verify_pool.max_wait_minutes",
+                        "settings.fields.vtual.claim_verify_pool.flush_lock_seconds",
+                        "settings.fields.vtual.content_pool.threshold",
+                        "settings.fields.vtual.content_pool.max_wait_minutes",
+                        "settings.fields.vtual.content_pool.flush_lock_seconds",
+                        "settings.fields.vtual.feed_poll.interval_minutes",
+                        "settings.fields.vtual.live_poll.interval_minutes",
+                        "settings.fields.vtual.websub.lease_seconds",
+                        "settings.fields.vtual.websub.renew_before_hours",
+                        "settings.fields.vtual.content_classification.ai.enabled",
+                        "settings.fields.vtual.content_classification.ai.model",
+                        "settings.fields.vtual.content_classification.ai.max_tokens",
+                        "settings.fields.vtual.content_classification.ai.timeout",
+                        "settings.fields.vtual.content_classification.ai.min_confidence",
+                        "settings.fields.vtual.content_classification.ai.cache_ttl_hours",
+                        "settings.fields.vtual.content_classification.ai.connection",
+                        "settings.fields.vtual.landing.event.title",
+                        "settings.fields.vtual.landing.event.starts_at",
+                        "settings.fields.vtual.landing.event.body",
+                        "settings.fields.vtual.websub.max_body_bytes",
+                        "settings.hints.vtual.credential_test.youtube_probe_channel_id",
+                        "settings.hints.vtual.credential.failover.enabled",
+                        "settings.hints.vtual.claim.accept_anyway_enabled",
+                        "settings.hints.vtual.claim.discord_verify_enabled",
+                        "settings.hints.vtual.channel_claim.discord_verify_enabled",
+                        "vtual-orphans.vtual-orphans",
+                        "vtual-events.vtual-events",
+                        "vtual-managements.vtual-managements",
+                        "vtual-invites.vtual-invites",
+                        "vtual-platform-credentials.vtual-platform-credentials",
+                        "vtual-profiles.vtual-profiles",
+                        "vtual-vtuber.vtual-vtuber",
+                        "vtual.vtual"
+                    ]
+                },
+                {
+                    "file": "src/router/index.ts",
+                    "op": "remove_lines_matching",
+                    "match": "vtual"
+                },
+                {
+                    "file": "src/utils/settingsGroup.ts",
+                    "op": "remove_quoted_strings",
+                    "match": [
+                        "vtual"
+                    ]
+                },
+                {
+                    "file": "src/views/settings/SettingsView.vue",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^\\s*'?vtual'?: '"
+                }
+            ],
+            "unresolved": [],
+            "ignore": [
+                {
+                    "path": "i18n-duplicate-report.json",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 813, 840, 844, 851, 858, 865)"
+                },
+                {
+                    "path": "scripts/check-docs.mjs",
+                    "reason": "docblock: Vtual named in prose, not in code — keep, or reword the example (line 67)"
+                },
+                {
+                    "path": "scripts/lib/duplicate-english-allowlist.mjs",
+                    "reason": "hand edit (tooling): review the Vtual reference and drop it (line 8, 51, 52, 53, 54, 55)"
+                },
+                {
+                    "path": "src/api/types.ts",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 1035, 1036, 1044, 1058, 1068, 1079)"
+                },
+                {
+                    "path": "src/composables/echo/realtimeChannel.ts",
+                    "reason": "docblock: Vtual named in prose, not in code — keep, or reword the example (line 106)"
+                },
+                {
+                    "path": "src/composables/useBreadcrumbs.ts",
+                    "reason": "docblock: Vtual named in prose, not in code — keep, or reword the example (line 52, 90)"
+                },
+                {
+                    "path": "src/router/legacy.ts",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 20)"
+                },
+                {
+                    "path": "src/utils/statusBadge.ts",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 83, 94)"
+                },
+                {
+                    "path": "src/utils/vtualJsonLd.ts",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 13, 59, 93, 94, 151, 154)"
+                },
+                {
+                    "path": "src/utils/vtualPresentation.ts",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 6, 20, 24, 29, 45)"
+                },
+                {
+                    "path": "src/valkivid3/.baseline/home-baseline.json",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 3)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1ChannelBanner.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 17, 22, 25, 29, 32, 35)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1ChannelCard.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 4, 8, 11, 43)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1ContentFeed.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 4, 5, 10, 12, 13, 60)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1DetailsList.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 4, 8, 20, 25, 30, 35)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1Footer.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 30, 46)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1Header.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 95, 114, 116, 127)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1HeroSlider.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 75, 78, 82, 86, 89, 92)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1Logo.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 7)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1MobileMenu.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 82, 86)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1PlatformStats.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 4, 8, 99, 110, 121, 132)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1ProfileSidebar.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 4, 11, 17, 49, 65, 89)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1SectionCountdown.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 61, 63, 66, 76, 80, 84)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1SectionEvents.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 4, 10, 11, 43, 121, 154)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1VideoCard.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 4, 7, 11, 29, 32, 34)"
+                },
+                {
+                    "path": "src/valkivid3/components/str1/VkStr1VtuberLiveDirectory.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 4, 6, 7, 8, 16, 24)"
+                },
+                {
+                    "path": "src/valkivid3/composables/useVkNavigation.ts",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 9, 30, 50, 71)"
+                },
+                {
+                    "path": "src/valkivid3/composables/useVtualProfileQuery.ts",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 2, 3, 24, 27, 31, 75)"
+                },
+                {
+                    "path": "src/valkivid3/composables/useVtualPublic.ts",
+                    "reason": "hand edit (SPA): review the Vtual reference and drop it (line 4, 5, 6, 7, 8, 9)"
+                },
+                {
+                    "path": "src/valkivid3/layouts/VkStr1Layout.vue",
+                    "reason": "docblock: Vtual named in prose, not in code — keep, or reword the example (line 21)"
+                },
+                {
+                    "path": "src/valkivid3/views/VkStr1ManagementShowView.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 6, 9, 13, 17, 20, 71)"
+                },
+                {
+                    "path": "src/valkivid3/views/VkStr1VtualHomeView.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 5, 6, 18, 20, 35, 36)"
+                },
+                {
+                    "path": "src/valkivid3/views/VkStr1VtuberShowView.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 6, 9, 15, 20, 25, 27)"
+                },
+                {
+                    "path": "src/views/ai/AiConnectionEditView.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 220)"
+                },
+                {
+                    "path": "src/views/navigation/MenuEditView.vue",
+                    "reason": "hand edit (component): review the Vtual reference and drop it (line 85)"
+                },
+                {
+                    "path": "tests/baseUrl.test.ts",
+                    "reason": "test: review the Vtual reference and drop it (line 20, 29, 30)"
+                },
+                {
+                    "path": "tests/breadcrumb.test.ts",
+                    "reason": "test: drop the `vtual.*` keys (line 116, 117, 118, 124, 125, 132)"
+                },
+                {
+                    "path": "tests/headMetaJsonLd.test.ts",
+                    "reason": "test: review the Vtual reference and drop it (line 32, 44, 77)"
+                },
+                {
+                    "path": "tests/safeRedirect.test.ts",
+                    "reason": "test: review the Vtual reference and drop it (line 6, 7, 9, 17)"
+                }
+            ]
+        },
+        "docs": {
+            "delete": [
+                "docs/vtual"
+            ],
+            "edits": [
+                {
+                    "file": "docs-coverage.json",
+                    "op": "remove_lines_matching",
+                    "match": "^\\s*\"(?:product\\.vtual|vtual\\.homepage|vtual\\.authentication|vtual\\.creator|vtual\\.profile|vtual\\.content|vtual\\.app\\.account\\-manager\\.avatar|vtual\\.app\\.account\\-manager\\.biodata|vtual\\.app\\.account\\-manager\\.content|vtual\\.app\\.account\\-manager\\.gender|vtual\\.app\\.account\\-manager\\.handler|vtual\\.app\\.account\\-manager\\.language|vtual\\.app\\.account\\-manager\\.link|vtual\\.app\\.account\\-manager\\.persona|vtual\\.app\\.simp\\.oshi|vtual\\.app\\.simp\\.content|vtual\\.legal\\.tos|vtual\\.legal\\.privacy|vtual\\.legal\\.faq|vtual\\.legal\\.disparity|vtual\\.legal\\.help\\-us)\"\\s*:"
+                }
+            ],
+            "unresolved": [],
+            "ignore": [
+                {
+                    "path": "docusaurus.config.ts",
+                    "reason": "hand edit (docs site): review the Vtual reference and drop it (line 98, 123)"
+                },
+                {
+                    "path": "sidebars.ts",
+                    "reason": "hand edit (docs site): review the Vtual reference and drop it (line 16, 17, 34)"
+                }
+            ]
+        }
+    },
+    "data": {
+        "tables": [
+            "vtual_channel_claims",
+            "vtual_channel_fetch_pool",
+            "vtual_channel_metrics",
+            "vtual_channels",
+            "vtual_content_ai_audit",
+            "vtual_content_appearances",
+            "vtual_content_fetch_pool",
+            "vtual_content_metrics",
+            "vtual_content_status_events",
+            "vtual_contents",
+            "vtual_creator_claim_blocks",
+            "vtual_creator_claim_verify_pool",
+            "vtual_creator_claims",
+            "vtual_creator_management_invites",
+            "vtual_creator_members",
+            "vtual_creators",
+            "vtual_events",
+            "vtual_eventsub_subscriptions",
+            "vtual_external_links",
+            "vtual_incidents",
+            "vtual_management_creator_grants",
+            "vtual_management_creators",
+            "vtual_management_invites",
+            "vtual_management_members",
+            "vtual_managements",
+            "vtual_platform_credentials",
+            "vtual_platforms",
+            "vtual_websub_subscriptions"
+        ],
+        "migrations": [
+            "database/migrations/2026_07_22_100001_create_vtual_tables.php",
+            "database/migrations/2026_07_22_120001_create_vtual_platform_credentials_table.php",
+            "database/migrations/2026_07_22_140001_add_runtime_payload_to_vtual_platform_credentials.php",
+            "database/migrations/2026_07_22_150001_add_failover_columns_to_vtual_platform_credentials.php",
+            "database/migrations/2026_07_22_160001_create_vtual_content_appearances_table.php",
+            "database/migrations/2026_07_22_170001_create_vtual_creator_claims_table.php",
+            "database/migrations/2026_07_22_180001_add_closed_reason_to_vtual_creator_claims.php",
+            "database/migrations/2026_07_22_190001_add_profile_columns_to_vtual_channels.php",
+            "database/migrations/2026_07_22_200001_create_vtual_channel_claims_table.php",
+            "database/migrations/2026_07_22_210001_create_vtual_channel_fetch_pool_table.php",
+            "database/migrations/2026_08_05_200001_add_pending_registration_columns_to_vtual_channels.php",
+            "database/migrations/2026_08_05_210001_add_profile_fingerprint_to_vtual_channels.php",
+            "database/migrations/2026_08_06_100001_add_vtual_content_ingestion_tables.php",
+            "database/migrations/2026_08_06_100002_add_content_initial_backfill_at_to_vtual_channels.php",
+            "database/migrations/2026_08_07_100001_add_subscriber_count_to_vtual_channels.php",
+            "database/migrations/2026_08_07_100001_create_vtual_creator_claim_verify_pool_table.php",
+            "database/migrations/2026_08_07_100002_create_vtual_creator_claim_blocks_table.php",
+            "database/migrations/2026_08_07_200001_add_discord_discovery_columns_to_vtual.php",
+            "database/migrations/2026_08_09_100001_add_hydrated_at_to_vtual_contents.php",
+            "database/migrations/2026_09_03_100001_add_first_unavailable_at_to_vtual_contents.php",
+            "database/migrations/2026_09_04_015851_create_vtual_management_invites_table.php",
+            "database/migrations/2026_09_05_100001_create_vtual_creator_management_invites_table.php",
+            "database/migrations/2026_09_06_100001_create_vtual_eventsub_subscriptions_table.php",
+            "database/migrations/2026_09_07_100001_create_vtual_events_table.php",
+            "database/migrations/2026_09_17_000001_add_content_category_to_vtual_contents.php",
+            "database/migrations/2026_09_17_000002_add_content_type_to_vtual_contents.php",
+            "database/migrations/2026_09_17_000003_create_vtual_content_ai_audit_table.php",
+            "database/migrations/2026_09_25_000001_add_region_restriction_to_vtual_contents.php",
+            "database/migrations/2026_09_27_000001_add_tags_to_vtual_contents.php",
+            "database/migrations/2026_09_27_000002_create_vtual_incidents_table.php",
+            "database/migrations/2026_09_27_000003_create_vtual_metric_snapshots_tables.php",
+            "database/migrations/2026_09_27_000004_create_vtual_content_status_events_table.php",
+            "database/migrations/2026_09_27_000005_create_vtual_management_creator_grants_table.php"
+        ],
+        "rbac": {
+            "permissions": [
+                "view vtual creator",
+                "create vtual creator",
+                "edit vtual creator",
+                "delete vtual creator",
+                "view vtual management",
+                "create vtual management",
+                "edit vtual management",
+                "manage vtual management members",
+                "view vtual channel",
+                "create vtual channel",
+                "claim vtual creator",
+                "view any vtual resource",
+                "manage any vtual resource",
+                "access vtual product"
+            ],
+            "roles": [
+                "Vtual Admin",
+                "Vtual Editor",
+                "Vtual vTuber",
+                "Vtual Viewer",
+                "Beta tester Vtual"
+            ]
+        },
+        "rows": [
+            {
+                "table": "product_domain_visibilities",
+                "key": {
+                    "product_key": "Vtual"
+                }
+            },
+            {
+                "table": "product_activations",
+                "key": {
+                    "product_key": "Vtual"
+                }
+            },
+            {
+                "table": "product_analytics",
+                "key": {
+                    "product_key": "Vtual"
+                }
+            },
+            {
+                "table": "menus",
+                "match": {
+                    "column": "route",
+                    "operator": "like",
+                    "value": "vtual.%"
+                }
+            },
+            {
+                "table": "menus",
+                "match": {
+                    "column": "route",
+                    "operator": "=",
+                    "value": "settings.vtual"
+                }
+            }
+        ]
+    },
+    "needles": [],
+    "notes": [
+        "Without --purge-data the 33 migrations stay; drop them by hand once the `vtual_*` tables are gone.",
+        "The `ignore` section is the reviewed hand-edit list: each entry names the exact edit and line.",
+        "WebSub / EventSub subscriptions must be revoked before the tables go: cancel outstanding subscriptions, then drop `vtual_websub_subscriptions` / `vtual_eventsub_subscriptions`.",
+        "`DomainAccessSeeder::PRODUCT_DOMAINS` loses this domain in the same change (recorded as an edit); the docblock naming the domains is prose and needs a reword.",
+        "`src/valkivid3/**` is the frozen landing page: its Vtual files leave with this domain, and the vTual presentation utilities in `src/utils/vtual*.ts` go with them."
+    ]
+}

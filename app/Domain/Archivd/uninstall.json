@@ -1,0 +1,1180 @@
+{
+    "schema": "domain-uninstall/v1",
+    "domain": "Archivd",
+    "repos": {
+        "backend": {
+            "delete": [
+                "app/Domain/Archivd",
+                "app/Providers/Domain/ArchivdServiceProvider.php",
+                "routes/api/v1/archivd.php",
+                "routes/web/archivd-public.php",
+                "tests/Domain/Archivd",
+                "database/seeders/ArchivdRoleSeeder.php",
+                "config/archivd.php",
+                "lang/*/api/archivd.php",
+                "docs/domains/archivd"
+            ],
+            "edits": [
+                {
+                    "file": ".env.example",
+                    "op": "remove_lines_matching",
+                    "match": "^(?:ARCHIVD_S3_CE_REGION|ARCHIVD_S3_CE_BUCKET|ARCHIVD_S3_CE_KEY|ARCHIVD_S3_CE_SECRET|ARCHIVD_S3_CE_ENDPOINT|ARCHIVD_S3_CE_DOMAIN|ARCHIVD_S3_CE_USE_PATH_STYLE|ARCHIVD_DISK|ARCHIVD_DIRECTORY|ARCHIVD_REGION_CE_DISK|ARCHIVD_REGION_US_DISK|ARCHIVD_UPLOAD_PROXY_URL|ARCHIVD_UPLOAD_PROXY_TOKEN|ARCHIVD_UPLOAD_PROXY_TARGET_CE|ARCHIVD_UPLOAD_PROXY_TARGET_US)="
+                },
+                {
+                    "file": ".env.local.example",
+                    "op": "remove_lines_matching",
+                    "match": "^(?:ARCHIVD_S3_CE_REGION|ARCHIVD_S3_CE_BUCKET|ARCHIVD_S3_CE_KEY|ARCHIVD_S3_CE_SECRET|ARCHIVD_S3_CE_ENDPOINT|ARCHIVD_S3_CE_DOMAIN|ARCHIVD_S3_CE_USE_PATH_STYLE|ARCHIVD_DISK|ARCHIVD_DIRECTORY|ARCHIVD_REGION_CE_DISK|ARCHIVD_REGION_US_DISK|ARCHIVD_UPLOAD_PROXY_URL|ARCHIVD_UPLOAD_PROXY_TOKEN|ARCHIVD_UPLOAD_PROXY_TARGET_CE|ARCHIVD_UPLOAD_PROXY_TARGET_US)="
+                },
+                {
+                    "file": ".env.production.example",
+                    "op": "remove_lines_matching",
+                    "match": "^(?:ARCHIVD_S3_CE_REGION|ARCHIVD_S3_CE_BUCKET|ARCHIVD_S3_CE_KEY|ARCHIVD_S3_CE_SECRET|ARCHIVD_S3_CE_ENDPOINT|ARCHIVD_S3_CE_DOMAIN|ARCHIVD_S3_CE_USE_PATH_STYLE|ARCHIVD_DISK|ARCHIVD_DIRECTORY|ARCHIVD_REGION_CE_DISK|ARCHIVD_REGION_US_DISK|ARCHIVD_UPLOAD_PROXY_URL|ARCHIVD_UPLOAD_PROXY_TOKEN|ARCHIVD_UPLOAD_PROXY_TARGET_CE|ARCHIVD_UPLOAD_PROXY_TARGET_US)="
+                },
+                {
+                    "file": ".env.staging.example",
+                    "op": "remove_lines_matching",
+                    "match": "^(?:ARCHIVD_S3_CE_REGION|ARCHIVD_S3_CE_BUCKET|ARCHIVD_S3_CE_KEY|ARCHIVD_S3_CE_SECRET|ARCHIVD_S3_CE_ENDPOINT|ARCHIVD_S3_CE_DOMAIN|ARCHIVD_S3_CE_USE_PATH_STYLE|ARCHIVD_DISK|ARCHIVD_DIRECTORY|ARCHIVD_REGION_CE_DISK|ARCHIVD_REGION_US_DISK|ARCHIVD_UPLOAD_PROXY_URL|ARCHIVD_UPLOAD_PROXY_TOKEN|ARCHIVD_UPLOAD_PROXY_TARGET_CE|ARCHIVD_UPLOAD_PROXY_TARGET_US)="
+                },
+                {
+                    "file": "config/products.php",
+                    "op": "remove_block",
+                    "begin": "'Archivd' =>"
+                },
+                {
+                    "file": "config/settings-local.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('archivd'|'archivd\\.|// .*archivd)"
+                },
+                {
+                    "file": "config/spa-routes.php",
+                    "op": "remove_quoted_strings",
+                    "match": [
+                        "settings.archivd",
+                        "archivd.index",
+                        "archivd.index.folder",
+                        "archivd.show",
+                        "archivd.trash",
+                        "archivd.blocklist.index",
+                        "archivd.workspaces",
+                        "archivd.microstock-credentials",
+                        "archivd.microstock-usage"
+                    ]
+                },
+                {
+                    "file": "lang/ar/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "title",
+                        "vue_mount_failed"
+                    ]
+                },
+                {
+                    "file": "lang/en/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "title",
+                        "vue_mount_failed"
+                    ]
+                },
+                {
+                    "file": "lang/id/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "title",
+                        "vue_mount_failed"
+                    ]
+                },
+                {
+                    "file": "lang/ja/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "title",
+                        "vue_mount_failed"
+                    ]
+                },
+                {
+                    "file": "lang/ko/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "title",
+                        "vue_mount_failed"
+                    ]
+                },
+                {
+                    "file": "lang/ru/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "title",
+                        "vue_mount_failed"
+                    ]
+                },
+                {
+                    "file": "lang/zh_CN/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "title",
+                        "vue_mount_failed"
+                    ]
+                },
+                {
+                    "file": "bootstrap/app.php",
+                    "op": "remove_lines_matching",
+                    "match": "Archivd/Console/Commands"
+                },
+                {
+                    "file": "lang/ar/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('archivd'|'archivd\\.|// .*archivd)"
+                },
+                {
+                    "file": "lang/en/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('archivd'|'archivd\\.|// .*archivd)"
+                },
+                {
+                    "file": "lang/id/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('archivd'|'archivd\\.|// .*archivd)"
+                },
+                {
+                    "file": "lang/ja/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('archivd'|'archivd\\.|// .*archivd)"
+                },
+                {
+                    "file": "lang/ko/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('archivd'|'archivd\\.|// .*archivd)"
+                },
+                {
+                    "file": "lang/ru/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('archivd'|'archivd\\.|// .*archivd)"
+                },
+                {
+                    "file": "lang/zh_CN/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('archivd'|'archivd\\.|// .*archivd)"
+                },
+                {
+                    "file": "database/seeders/DomainAccessSeeder.php",
+                    "op": "remove_quoted_strings",
+                    "match": [
+                        "Archivd"
+                    ]
+                }
+            ],
+            "unresolved": [],
+            "ignore": [
+                {
+                    "path": "app/Domain/Microstock/Events/AssetMetadataProgress.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 37, 40)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Events/CollectionAnalysisProgress.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 36, 39)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Events/MicrostockBillingChanged.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 13, 31)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Events/MicrostockCredentialsChanged.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 32)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Http/Controllers/API/V1/CollectionController.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Jobs/AnalysisWatchdog.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Jobs/ProcessCollection.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6, 7)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Models/AiUsageEvent.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Models/AssetMetadata.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Models/MarketplaceUpload.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Services/AnalysisStageService.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6, 7)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Services/AssetResizeService.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6, 7, 8)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Services/CollectionService.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6, 7, 8, 9, 22)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Services/CsvExportService.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Services/MarketplaceUploadService.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Services/MicrostockService.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6, 7, 8, 9, 22)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Services/VisionImageResolver.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6, 7, 8, 9)"
+                },
+                {
+                    "path": "app/Domain/Microstock/Support/MicrostockRealtime.php",
+                    "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6, 19)"
+                },
+                {
+                    "path": "app/Domain/Service/Models/Service.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 8, 111, 113, 121, 123, 125)"
+                },
+                {
+                    "path": "app/Domain/Service/Models/ServiceEntitlement.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 87)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/MainPlanChangeCalculator.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 12, 13, 22, 26, 81, 83)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/ServiceAddonRenewalService.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 12, 41)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/ServiceCheckoutService.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 15, 49)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/ServiceEntitlementLifecycleService.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 5, 6, 11, 18, 72, 73)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/ServiceEntitlementService.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 5, 13, 14, 65, 67, 69)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/ServiceFulfillmentService.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 5, 11, 22, 38, 64, 178)"
+                },
+                {
+                    "path": "app/Domain/Service/Support/ArchivdBillingPeriod.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 8, 11)"
+                },
+                {
+                    "path": "app/Domain/Service/Support/ArchivdCatalog.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 6, 8, 10, 12, 14, 16)"
+                },
+                {
+                    "path": "app/Domain/Service/Support/MicrostockCatalog.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 9, 10)"
+                },
+                {
+                    "path": "app/Support/Broadcasting/BroadcastConnection.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 65)"
+                },
+                {
+                    "path": "app/Support/DomainAccess/Http/Middleware/DomainAccessGate.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 16)"
+                },
+                {
+                    "path": "app/Support/DomainAccess/ProductNames.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 10, 11, 12, 13)"
+                },
+                {
+                    "path": "app/Support/ListActions/Builders/HashBlocklistQueryRowActions.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 17, 28)"
+                },
+                {
+                    "path": "app/Support/Product/Http/Middleware/ProductActive.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 17)"
+                },
+                {
+                    "path": "app/Support/Product/Models/ProductAnalytic.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 11)"
+                },
+                {
+                    "path": "app/Support/Product/Services/ProductAnalyticsService.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 20)"
+                },
+                {
+                    "path": "app/Support/Product/Services/ProductInsightService.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 73)"
+                },
+                {
+                    "path": "app/Support/Settings/SettingRegistry.php",
+                    "reason": "hand edit: drop the `archivd.*` keys (line 86, 87, 88, 89, 90, 91)"
+                },
+                {
+                    "path": "app/Support/SpaPublicUrl.php",
+                    "reason": "hand edit: drop the `archivd.*` keys (line 66, 75)"
+                },
+                {
+                    "path": "app/Support/Storage/S3DirectUploadEngine.php",
+                    "reason": "hand edit: drop the `archivd.*` config reads (line 16, 255, 272, 359, 385, 386)"
+                },
+                {
+                    "path": "config/filesystems.php",
+                    "reason": "hand edit: review the Archivd reference and drop it (line 55, 56, 128, 130, 133, 135)"
+                },
+                {
+                    "path": "config/microstock.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 132)"
+                },
+                {
+                    "path": "config/service.php",
+                    "reason": "hand edit: review the Archivd reference and drop it (line 8)"
+                },
+                {
+                    "path": "config/services.php",
+                    "reason": "hand edit: review the Archivd reference and drop it (line 62)"
+                },
+                {
+                    "path": "database/factories/ServiceFactory.php",
+                    "reason": "hand edit: review the Archivd reference and drop it (line 9, 39, 42, 46, 49, 54)"
+                },
+                {
+                    "path": "database/migrations/2026_07_19_140000_allow_multiple_owned_workspaces.php",
+                    "reason": "shipped migration: the Archivd value it writes is purged by data.rows; migrations are never edited (line 19, 32, 36, 40, 49, 57)"
+                },
+                {
+                    "path": "database/migrations/2026_07_25_200002_create_microstock_asset_metadata_table.php",
+                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 14)"
+                },
+                {
+                    "path": "database/migrations/2026_07_26_000001_remove_microstock_menu.php",
+                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 9)"
+                },
+                {
+                    "path": "database/migrations/2026_07_28_100001_create_microstock_ai_billing_tables.php",
+                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 38, 39)"
+                },
+                {
+                    "path": "database/migrations/2026_09_27_000006_add_marketplace_upload_to_microstock.php",
+                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 38)"
+                },
+                {
+                    "path": "database/seeders/MenuSeeder.php",
+                    "reason": "hand edit: drop the `archivd.*` keys (line 94, 143, 145, 151, 157, 163)"
+                },
+                {
+                    "path": "database/seeders/RoleSeeder.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 13)"
+                },
+                {
+                    "path": "database/seeders/ServiceCatalogSeeder.php",
+                    "reason": "hand edit: review the Archivd reference and drop it (line 10, 15, 26, 28, 30, 35)"
+                },
+                {
+                    "path": "database/seeders/VtualRoleSeeder.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 21)"
+                },
+                {
+                    "path": "lang/ja/actions.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 131)"
+                },
+                {
+                    "path": "probe2_tmp.php",
+                    "reason": "hand edit: review the Archivd reference and drop it (line 8, 15, 19, 22)"
+                },
+                {
+                    "path": "routes/channels.php",
+                    "reason": "hand edit: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 3, 19, 23)"
+                },
+                {
+                    "path": "routes/console.php",
+                    "reason": "hand edit: review the Archivd reference and drop it (line 16, 18)"
+                },
+                {
+                    "path": "scripts/apply-locale-translations.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 10)"
+                },
+                {
+                    "path": "scripts/lib/docs-anchor-support.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 128)"
+                },
+                {
+                    "path": "scripts/lib/locale-latin-allowlist.php",
+                    "reason": "hand edit (tooling): review the Archivd reference and drop it (line 55)"
+                },
+                {
+                    "path": "scripts/locale-flat-pack-parity.php",
+                    "reason": "hand edit (tooling): review the Archivd reference and drop it (line 67)"
+                },
+                {
+                    "path": "scripts/locale-pair-dump.php",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 12, 13)"
+                },
+                {
+                    "path": "tests/Domain/DomainAccess/Feature/AdminDomainAccessControllerTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 28, 42, 47, 55, 69)"
+                },
+                {
+                    "path": "tests/Domain/DomainAccess/Feature/DomainAccessGateTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 30, 33, 39, 48, 57, 68)"
+                },
+                {
+                    "path": "tests/Domain/DomainAccess/Unit/DomainAccessSeederTest.php",
+                    "reason": "test: drop the `Archivd` entry (line 33)"
+                },
+                {
+                    "path": "tests/Domain/DomainAccess/Unit/DomainAccessServiceTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 36, 44, 48, 51, 65, 67)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/AnalysisWatchdogTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 19, 41, 45)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/AnalyzeAssetThinkingTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/BillingAdminApiTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 11, 30)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/BillingLedgerApiTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 16, 39)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/CollectionApiTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 16, 39, 43)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/CollectionLifecycleTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 27)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/CollectionPipelineTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 24)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/CollectionUploadApiTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 19, 45, 49)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/MicrostockTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 10)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Feature/UploadCollectionToMarketplaceTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 25, 53, 57)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Unit/Services/AiBillingServiceTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Unit/Services/AiDailyFreeServiceTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Unit/Services/AnalysisStageServiceTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Unit/Services/BillingLedgerServiceTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 19, 42)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Unit/Services/MarketplaceUploadServiceTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 21, 50, 54)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Unit/Services/MicrostockBillingHardeningTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Unit/Services/VisionImageResolverTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 10)"
+                },
+                {
+                    "path": "tests/Domain/Microstock/Unit/Support/MicrostockRealtimeTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 76)"
+                },
+                {
+                    "path": "tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederConformanceTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 11, 32)"
+                },
+                {
+                    "path": "tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php",
+                    "reason": "test: drop the `archivd.*` keys (line 11, 27, 51, 52, 55, 56)"
+                },
+                {
+                    "path": "tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php",
+                    "reason": "test: drop the `archivd.*` keys (line 22, 29, 31)"
+                },
+                {
+                    "path": "tests/Domain/PaymentGateway/Feature/Http/Controllers/API/V1/ServicePurchaseChannelCheckoutQuantityTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 53)"
+                },
+                {
+                    "path": "tests/Domain/Product/Feature/ArchivdProductGateTest.php",
+                    "reason": "test: drop the `archivd.*` keys (line 8, 14, 26, 29, 30, 31)"
+                },
+                {
+                    "path": "tests/Domain/Product/Feature/HostedFileAnalyticsHookTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 9, 31, 34, 35, 36)"
+                },
+                {
+                    "path": "tests/Domain/Product/Feature/Http/Controllers/API/V1/AdminProductActivationControllerTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 33, 47, 50, 55, 62, 78)"
+                },
+                {
+                    "path": "tests/Domain/Product/Feature/Http/Controllers/API/V1/ProductActivationControllerTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 31, 39, 46, 49, 51, 59)"
+                },
+                {
+                    "path": "tests/Domain/Product/Feature/MenuVisibilityTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 8, 33, 41, 45, 49, 52)"
+                },
+                {
+                    "path": "tests/Domain/Product/Feature/ProductActiveMiddlewareTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 9, 27, 34, 37, 47, 51)"
+                },
+                {
+                    "path": "tests/Domain/Product/Feature/RegisterProductActivationTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 8, 26, 42, 62, 74)"
+                },
+                {
+                    "path": "tests/Domain/Product/Feature/TierTransitionAnalyticsTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 14, 34, 37, 38, 39)"
+                },
+                {
+                    "path": "tests/Domain/Product/Unit/ProductActivationServiceTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 38, 46, 55, 56, 66, 69)"
+                },
+                {
+                    "path": "tests/Domain/Product/Unit/ProductAnalyticsServiceTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 10, 30, 33, 34, 35)"
+                },
+                {
+                    "path": "tests/Domain/Product/Unit/ProductInsightServiceTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 13, 33, 36, 37)"
+                },
+                {
+                    "path": "tests/Domain/Product/Unit/ProductRegistryTest.php",
+                    "reason": "test: drop the `Archivd` entry (line 16, 18, 19, 30, 37, 43)"
+                },
+                {
+                    "path": "tests/Domain/Service/Feature/Http/Controllers/API/V1/ServiceCheckoutAndFulfillmentTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 13, 37, 38, 39, 51)"
+                },
+                {
+                    "path": "tests/Domain/Service/Feature/Http/Controllers/API/V1/ServiceCrudTest.php",
+                    "reason": "test: drop the `archivd.*` keys (line 34, 38, 48, 77)"
+                },
+                {
+                    "path": "tests/Domain/Service/Feature/Http/Controllers/API/V1/ServicePurchaseQuantityApiTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 41, 92, 120, 141)"
+                },
+                {
+                    "path": "tests/Domain/Service/Support/ArchivdBillingScenarioHarness.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 20, 24, 26, 48)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/AddonAnniversaryTest.php",
+                    "reason": "test: drop the `archivd.*` keys (line 16, 32, 40, 83, 84, 109)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ArchivdAdminJourneyScenarioTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 20, 42, 72, 83, 84)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ArchivdBillingAnomalyUseCasesTest.php",
+                    "reason": "test: drop the `archivd.*` keys (line 16, 21, 28, 30, 202, 205)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ArchivdBillingNormalUseCasesTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 9, 14, 20, 22, 293, 294)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ArchivdBillingTameUseCasesTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 9, 14, 20, 22, 230)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ArchivdPlanQuotaMatrixTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 12, 19, 28, 29, 35)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/MainPlanChangeCalculatorTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 32, 46, 61, 62, 83, 84)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/MainPlanFairnessFulfillmentTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 14, 26, 34, 35, 81)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ServiceCheckoutServiceTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 36, 74, 92, 117)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ServiceCheckoutZeroChargeTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 36, 37)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ServiceEntitlementLifecycleTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 16, 32, 33)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ServiceEntitlementQuantityFromPurchaseTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 21)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ServiceEntitlementServiceTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 33, 55, 80, 112)"
+                },
+                {
+                    "path": "tests/Domain/Vtual/Feature/RegisterVtualActivationTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 7, 23)"
+                },
+                {
+                    "path": "tests/Fakes/FakeArchivdDirectUploadService.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 10)"
+                },
+                {
+                    "path": "tests/Fakes/FakeSignedDownloadService.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 19)"
+                },
+                {
+                    "path": "tests/Feature/Console/DomainCommandsTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 93, 96, 102, 291, 293, 296)"
+                },
+                {
+                    "path": "tests/Feature/Http/WebSurfaceRouteListTest.php",
+                    "reason": "test: drop the `archivd.*` keys (line 36)"
+                },
+                {
+                    "path": "tests/Support/DomainAccess/Unit/Support/DomainAccessRealtimeTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 47, 57, 60)"
+                },
+                {
+                    "path": "tests/Support/Product/Unit/Support/ProductActivationRealtimeTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 47, 57, 60)"
+                },
+                {
+                    "path": "tests/Unit/Documentation/DocsAnchorGuardTest.php",
+                    "reason": "test: review the Archivd reference and drop it (line 41, 42, 51, 53)"
+                },
+                {
+                    "path": "tests/Unit/Domain/Archivd/AllocateUniqueDisplayNameTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 3, 5, 6, 7)"
+                },
+                {
+                    "path": "tests/Unit/Domain/Archivd/ObjectKeyResolverTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 3, 5, 15, 34, 49, 57)"
+                },
+                {
+                    "path": "tests/Unit/Http/Resources/PresentationResourceTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 127)"
+                },
+                {
+                    "path": "tests/Unit/Support/Settings/SettingRegistryEnvPolicyTest.php",
+                    "reason": "test: drop the `archivd.*` setting reads (line 45, 46, 47, 48, 49, 110)"
+                },
+                {
+                    "path": "tests/Unit/Support/SpaPublicUrlTest.php",
+                    "reason": "test: drop the `archivd.*` keys (line 78, 82)"
+                },
+                {
+                    "path": "tests/Unit/Support/Storage/S3DirectUploadEngineTest.php",
+                    "reason": "test: drop the `archivd.*` config reads (line 125, 126, 133, 134, 135, 136)"
+                }
+            ]
+        },
+        "spa": {
+            "delete": [
+                "src/views/archivd",
+                "src/composables/archivd",
+                "src/components/archivd",
+                "src/router/routes/archivd.ts",
+                "tests/archivd*"
+            ],
+            "edits": [
+                {
+                    "file": "src/i18n/locales/ar.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.archivd.archivd",
+                        "api.archivd.public_share_requires_paid",
+                        "api.archivd.workspace.requires_paid",
+                        "web.settings.groups.archivd",
+                        "web.settings.fields.archivd.max_file_size_bytes",
+                        "web.settings.fields.archivd.max_files_per_batch",
+                        "web.settings.fields.archivd.max_concurrent_uploads",
+                        "web.settings.fields.archivd.max_concurrent_parts",
+                        "web.settings.fields.archivd.chunk_size_bytes",
+                        "web.settings.fields.archivd.multipart_threshold_bytes",
+                        "web.settings.fields.archivd.max_presigned_parts_per_response",
+                        "web.settings.fields.archivd.presign_ttl_minutes",
+                        "web.settings.fields.archivd.session_ttl_hours",
+                        "web.settings.fields.archivd.stale_upload_grace_hours",
+                        "web.settings.fields.archivd.orphan_inactivity_minutes",
+                        "web.settings.fields.archivd.default_quota_bytes",
+                        "web.settings.fields.archivd.base_owned_workspace_slots",
+                        "web.settings.fields.archivd.disabled_regions",
+                        "web.settings.fields.archivd.signed_download_ttl_minutes",
+                        "web.settings.fields.archivd.signed_download_cache_margin_seconds",
+                        "web.settings.fields.archivd.public_download_signature_ttl_minutes",
+                        "web.settings.fields.archivd.allowed_mime_prefixes",
+                        "web.settings.fields.archivd.download_vault.enabled",
+                        "web.archivd.archivd",
+                        "web.archivd.title",
+                        "web.archivd.vue_mount_failed",
+                        "services.microstock.slot_desc"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/en.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.archivd.archivd",
+                        "api.archivd.public_share_requires_paid",
+                        "api.archivd.workspace.requires_paid",
+                        "web.archivd.archivd",
+                        "web.archivd.title",
+                        "web.archivd.vue_mount_failed",
+                        "services.microstock.slot_desc",
+                        "settings.groups.archivd",
+                        "settings.fields.archivd.max_file_size_bytes",
+                        "settings.fields.archivd.max_files_per_batch",
+                        "settings.fields.archivd.max_concurrent_uploads",
+                        "settings.fields.archivd.max_concurrent_parts",
+                        "settings.fields.archivd.chunk_size_bytes",
+                        "settings.fields.archivd.multipart_threshold_bytes",
+                        "settings.fields.archivd.max_presigned_parts_per_response",
+                        "settings.fields.archivd.presign_ttl_minutes",
+                        "settings.fields.archivd.session_ttl_hours",
+                        "settings.fields.archivd.stale_upload_grace_hours",
+                        "settings.fields.archivd.orphan_inactivity_minutes",
+                        "settings.fields.archivd.default_quota_bytes",
+                        "settings.fields.archivd.base_owned_workspace_slots",
+                        "settings.fields.archivd.disabled_regions",
+                        "settings.fields.archivd.signed_download_ttl_minutes",
+                        "settings.fields.archivd.signed_download_cache_margin_seconds",
+                        "settings.fields.archivd.public_download_signature_ttl_minutes",
+                        "settings.fields.archivd.allowed_mime_prefixes",
+                        "settings.fields.archivd.download_vault.enabled"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/id.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.archivd.archivd",
+                        "api.archivd.public_share_requires_paid",
+                        "api.archivd.workspace.requires_paid",
+                        "web.archivd.archivd",
+                        "web.archivd.title",
+                        "web.archivd.vue_mount_failed",
+                        "services.microstock.slot_desc",
+                        "settings.groups.archivd",
+                        "settings.fields.archivd.max_file_size_bytes",
+                        "settings.fields.archivd.max_files_per_batch",
+                        "settings.fields.archivd.max_concurrent_uploads",
+                        "settings.fields.archivd.max_concurrent_parts",
+                        "settings.fields.archivd.chunk_size_bytes",
+                        "settings.fields.archivd.multipart_threshold_bytes",
+                        "settings.fields.archivd.max_presigned_parts_per_response",
+                        "settings.fields.archivd.presign_ttl_minutes",
+                        "settings.fields.archivd.session_ttl_hours",
+                        "settings.fields.archivd.stale_upload_grace_hours",
+                        "settings.fields.archivd.orphan_inactivity_minutes",
+                        "settings.fields.archivd.default_quota_bytes",
+                        "settings.fields.archivd.base_owned_workspace_slots",
+                        "settings.fields.archivd.disabled_regions",
+                        "settings.fields.archivd.signed_download_ttl_minutes",
+                        "settings.fields.archivd.signed_download_cache_margin_seconds",
+                        "settings.fields.archivd.public_download_signature_ttl_minutes",
+                        "settings.fields.archivd.allowed_mime_prefixes",
+                        "settings.fields.archivd.download_vault.enabled"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/ja.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.archivd.archivd",
+                        "api.archivd.public_share_requires_paid",
+                        "api.archivd.workspace.requires_paid",
+                        "web.archivd.archivd",
+                        "web.archivd.title",
+                        "web.archivd.vue_mount_failed",
+                        "services.microstock.slot_desc",
+                        "settings.groups.archivd",
+                        "settings.fields.archivd.max_file_size_bytes",
+                        "settings.fields.archivd.max_files_per_batch",
+                        "settings.fields.archivd.max_concurrent_uploads",
+                        "settings.fields.archivd.max_concurrent_parts",
+                        "settings.fields.archivd.chunk_size_bytes",
+                        "settings.fields.archivd.multipart_threshold_bytes",
+                        "settings.fields.archivd.max_presigned_parts_per_response",
+                        "settings.fields.archivd.presign_ttl_minutes",
+                        "settings.fields.archivd.session_ttl_hours",
+                        "settings.fields.archivd.stale_upload_grace_hours",
+                        "settings.fields.archivd.orphan_inactivity_minutes",
+                        "settings.fields.archivd.default_quota_bytes",
+                        "settings.fields.archivd.base_owned_workspace_slots",
+                        "settings.fields.archivd.disabled_regions",
+                        "settings.fields.archivd.signed_download_ttl_minutes",
+                        "settings.fields.archivd.signed_download_cache_margin_seconds",
+                        "settings.fields.archivd.public_download_signature_ttl_minutes",
+                        "settings.fields.archivd.allowed_mime_prefixes",
+                        "settings.fields.archivd.download_vault.enabled"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/ko.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.archivd.archivd",
+                        "api.archivd.public_share_requires_paid",
+                        "api.archivd.workspace.requires_paid",
+                        "web.settings.groups.archivd",
+                        "web.settings.fields.archivd.max_file_size_bytes",
+                        "web.settings.fields.archivd.max_files_per_batch",
+                        "web.settings.fields.archivd.max_concurrent_uploads",
+                        "web.settings.fields.archivd.max_concurrent_parts",
+                        "web.settings.fields.archivd.chunk_size_bytes",
+                        "web.settings.fields.archivd.multipart_threshold_bytes",
+                        "web.settings.fields.archivd.max_presigned_parts_per_response",
+                        "web.settings.fields.archivd.presign_ttl_minutes",
+                        "web.settings.fields.archivd.session_ttl_hours",
+                        "web.settings.fields.archivd.stale_upload_grace_hours",
+                        "web.settings.fields.archivd.orphan_inactivity_minutes",
+                        "web.settings.fields.archivd.default_quota_bytes",
+                        "web.settings.fields.archivd.base_owned_workspace_slots",
+                        "web.settings.fields.archivd.disabled_regions",
+                        "web.settings.fields.archivd.signed_download_ttl_minutes",
+                        "web.settings.fields.archivd.signed_download_cache_margin_seconds",
+                        "web.settings.fields.archivd.public_download_signature_ttl_minutes",
+                        "web.settings.fields.archivd.allowed_mime_prefixes",
+                        "web.settings.fields.archivd.download_vault.enabled",
+                        "web.archivd.archivd",
+                        "web.archivd.title",
+                        "web.archivd.vue_mount_failed",
+                        "services.microstock.slot_desc"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/ru.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.archivd.archivd",
+                        "api.archivd.public_share_requires_paid",
+                        "api.archivd.workspace.requires_paid",
+                        "web.settings.groups.archivd",
+                        "web.settings.fields.archivd.max_file_size_bytes",
+                        "web.settings.fields.archivd.max_files_per_batch",
+                        "web.settings.fields.archivd.max_concurrent_uploads",
+                        "web.settings.fields.archivd.max_concurrent_parts",
+                        "web.settings.fields.archivd.chunk_size_bytes",
+                        "web.settings.fields.archivd.multipart_threshold_bytes",
+                        "web.settings.fields.archivd.max_presigned_parts_per_response",
+                        "web.settings.fields.archivd.presign_ttl_minutes",
+                        "web.settings.fields.archivd.session_ttl_hours",
+                        "web.settings.fields.archivd.stale_upload_grace_hours",
+                        "web.settings.fields.archivd.orphan_inactivity_minutes",
+                        "web.settings.fields.archivd.default_quota_bytes",
+                        "web.settings.fields.archivd.base_owned_workspace_slots",
+                        "web.settings.fields.archivd.disabled_regions",
+                        "web.settings.fields.archivd.signed_download_ttl_minutes",
+                        "web.settings.fields.archivd.signed_download_cache_margin_seconds",
+                        "web.settings.fields.archivd.public_download_signature_ttl_minutes",
+                        "web.settings.fields.archivd.allowed_mime_prefixes",
+                        "web.settings.fields.archivd.download_vault.enabled",
+                        "web.archivd.archivd",
+                        "web.archivd.title",
+                        "web.archivd.vue_mount_failed",
+                        "services.microstock.slot_desc"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/zh-CN.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.archivd.archivd",
+                        "api.archivd.public_share_requires_paid",
+                        "api.archivd.workspace.requires_paid",
+                        "web.archivd.archivd",
+                        "web.archivd.title",
+                        "web.archivd.vue_mount_failed",
+                        "services.microstock.slot_desc",
+                        "settings.groups.archivd",
+                        "settings.fields.archivd.max_file_size_bytes",
+                        "settings.fields.archivd.max_files_per_batch",
+                        "settings.fields.archivd.max_concurrent_uploads",
+                        "settings.fields.archivd.max_concurrent_parts",
+                        "settings.fields.archivd.chunk_size_bytes",
+                        "settings.fields.archivd.multipart_threshold_bytes",
+                        "settings.fields.archivd.max_presigned_parts_per_response",
+                        "settings.fields.archivd.presign_ttl_minutes",
+                        "settings.fields.archivd.session_ttl_hours",
+                        "settings.fields.archivd.stale_upload_grace_hours",
+                        "settings.fields.archivd.orphan_inactivity_minutes",
+                        "settings.fields.archivd.default_quota_bytes",
+                        "settings.fields.archivd.base_owned_workspace_slots",
+                        "settings.fields.archivd.disabled_regions",
+                        "settings.fields.archivd.signed_download_ttl_minutes",
+                        "settings.fields.archivd.signed_download_cache_margin_seconds",
+                        "settings.fields.archivd.public_download_signature_ttl_minutes",
+                        "settings.fields.archivd.allowed_mime_prefixes",
+                        "settings.fields.archivd.download_vault.enabled"
+                    ]
+                },
+                {
+                    "file": "src/router/index.ts",
+                    "op": "remove_lines_matching",
+                    "match": "archivd"
+                },
+                {
+                    "file": "src/utils/settingsGroup.ts",
+                    "op": "remove_quoted_strings",
+                    "match": [
+                        "archivd"
+                    ]
+                },
+                {
+                    "file": "src/views/settings/SettingsView.vue",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^\\s*'?archivd'?: '"
+                }
+            ],
+            "unresolved": [],
+            "ignore": [
+                {
+                    "path": "i18n-duplicate-report.json",
+                    "reason": "hand edit (SPA): review the Archivd reference and drop it (line 158, 162, 169, 178, 185, 192)"
+                },
+                {
+                    "path": "scripts/check-docs.mjs",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 142)"
+                },
+                {
+                    "path": "scripts/lib/duplicate-english-allowlist.mjs",
+                    "reason": "hand edit (tooling): review the Archivd reference and drop it (line 25, 26, 27, 28, 29, 30)"
+                },
+                {
+                    "path": "src/api/types.ts",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 1267)"
+                },
+                {
+                    "path": "src/composables/echo/channelRegistry.ts",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 13)"
+                },
+                {
+                    "path": "src/composables/echo/realtimeChannel.ts",
+                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 27)"
+                },
+                {
+                    "path": "src/composables/microstock/useMicrostock.ts",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here (line 31, 49, 78, 87, 148)"
+                },
+                {
+                    "path": "src/composables/microstock/useMicrostockHydrate.ts",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here (line 69)"
+                },
+                {
+                    "path": "src/composables/microstock/useMicrostockUsageTabs.ts",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here (line 2, 11, 29)"
+                },
+                {
+                    "path": "src/router/legacy.ts",
+                    "reason": "hand edit (SPA): review the Archivd reference and drop it (line 23)"
+                },
+                {
+                    "path": "src/router/routes/microstock.ts",
+                    "reason": "hand edit (SPA): drop the `archivd.*` keys (line 6, 7, 16)"
+                },
+                {
+                    "path": "src/views/dashboard/DashboardView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 10, 22, 37, 38, 45, 51)"
+                },
+                {
+                    "path": "src/views/identity/ConnectionsView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 107)"
+                },
+                {
+                    "path": "src/views/identity/UsersView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 81)"
+                },
+                {
+                    "path": "src/views/inference/InferenceModelCardsView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 67)"
+                },
+                {
+                    "path": "src/views/inference/InferenceProvidersView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 68)"
+                },
+                {
+                    "path": "src/views/microstock/MicrostockCredentialsView.vue",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here (line 11, 130, 138, 142)"
+                },
+                {
+                    "path": "src/views/payment-gateway/InvoicesView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 54)"
+                },
+                {
+                    "path": "src/views/payment-gateway/PaymentGatewaysView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 32, 59)"
+                },
+                {
+                    "path": "src/views/payment-gateway/PaymentsIncomeView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 145)"
+                },
+                {
+                    "path": "src/views/public/PublicFileView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 7, 13, 31, 67, 74, 80)"
+                },
+                {
+                    "path": "src/views/public/PublicFolderView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 7, 8, 14, 27, 77, 103)"
+                },
+                {
+                    "path": "src/views/service/ServicesView.vue",
+                    "reason": "hand edit (component): review the Archivd reference and drop it (line 39, 66)"
+                },
+                {
+                    "path": "tests/channelRegistry.test.ts",
+                    "reason": "test: review the Archivd reference and drop it (line 166, 168, 172)"
+                }
+            ]
+        },
+        "docs": {
+            "delete": [
+                "docs/archivd"
+            ],
+            "edits": [
+                {
+                    "file": "docs-coverage.json",
+                    "op": "remove_lines_matching",
+                    "match": "^\\s*\"(?:product\\.archivd|archivd\\.files\\-and\\-folders|archivd\\.sharing|archivd\\.storage\\-and\\-plans|archivd\\.workspaces)\"\\s*:"
+                }
+            ],
+            "unresolved": [],
+            "ignore": [
+                {
+                    "path": "docusaurus.config.ts",
+                    "reason": "hand edit (docs site): review the Archivd reference and drop it (line 103, 104, 126, 127)"
+                },
+                {
+                    "path": "sidebars.ts",
+                    "reason": "hand edit (docs site): review the Archivd reference and drop it (line 38, 42, 44)"
+                },
+                {
+                    "path": "src/components/HomepageFeatures/index.tsx",
+                    "reason": "hand edit (docs site): review the Archivd reference and drop it (line 19)"
+                }
+            ]
+        }
+    },
+    "data": {
+        "tables": [
+            "archivd_file_variants",
+            "archivd_files",
+            "archivd_folders",
+            "archivd_hash_blocklist",
+            "archivd_uploads",
+            "archivd_user_quotas",
+            "archivd_workspace_invites",
+            "archivd_workspace_members",
+            "archivd_workspaces"
+        ],
+        "migrations": [
+            "database/migrations/2026_07_15_100001_create_archivd_tables.php",
+            "database/migrations/2026_07_15_200001_add_stats_and_signed_url_to_archivd_files.php",
+            "database/migrations/2026_07_15_210001_add_visibility_to_archivd_tables.php",
+            "database/migrations/2026_07_16_000004_create_archivd_user_quotas_table.php",
+            "database/migrations/2026_07_19_100001_create_archivd_workspaces_tables.php",
+            "database/migrations/2026_07_25_100001_add_resume_columns_to_archivd_uploads.php",
+            "database/migrations/2026_07_25_100002_add_prune_indexes_to_archivd_uploads.php",
+            "database/migrations/2026_07_25_100003_drop_resume_columns_from_archivd_uploads.php",
+            "database/migrations/2026_07_25_100004_add_checksum_index_to_archivd_files.php",
+            "database/migrations/2026_07_25_100005_create_archivd_hash_blocklist_table.php",
+            "database/migrations/2026_07_25_200001_add_kind_to_archivd_workspaces.php",
+            "database/migrations/2026_07_26_100001_add_collection_fields_to_archivd_folders.php",
+            "database/migrations/2026_07_28_200001_create_archivd_file_variants_table.php",
+            "database/migrations/2026_07_31_070319_add_collection_billing_mode_to_archivd_folders.php",
+            "database/migrations/2026_08_22_000001_update_archivd_chunk_size_to_8mb.php"
+        ],
+        "rbac": {
+            "permissions": [
+                "view archivd folder",
+                "create archivd folder",
+                "edit archivd folder",
+                "delete archivd folder",
+                "view archivd file",
+                "create archivd file",
+                "edit archivd file",
+                "delete archivd file",
+                "view any archivd resource",
+                "manage any archivd resource",
+                "access archivd product"
+            ],
+            "roles": [
+                "Archivd Admin",
+                "Archivd Editor",
+                "Archivd Viewer",
+                "Beta tester Archivd"
+            ]
+        },
+        "rows": [
+            {
+                "table": "product_domain_visibilities",
+                "key": {
+                    "product_key": "Archivd"
+                }
+            },
+            {
+                "table": "product_activations",
+                "key": {
+                    "product_key": "Archivd"
+                }
+            },
+            {
+                "table": "product_analytics",
+                "key": {
+                    "product_key": "Archivd"
+                }
+            },
+            {
+                "table": "menus",
+                "match": {
+                    "column": "route",
+                    "operator": "like",
+                    "value": "archivd.%"
+                }
+            },
+            {
+                "table": "menus",
+                "match": {
+                    "column": "route",
+                    "operator": "=",
+                    "value": "settings.archivd"
+                }
+            }
+        ]
+    },
+    "needles": [],
+    "notes": [
+        "Without --purge-data the 15 migrations stay; drop them by hand once the `archivd_*` tables are gone.",
+        "The `ignore` section is the reviewed hand-edit list: each entry names the exact edit and line.",
+        "Archivd <-> Microstock coupling (WorkspaceKind::Microstock, microstockMetadata, MicrostockCatalog) is removed by the Microstock manifest — run that removal before or together with this one.",
+        "`DomainAccessSeeder::PRODUCT_DOMAINS` loses this domain in the same change (recorded as an edit); the docblock naming the domains is prose and needs a reword.",
+        "Files owned by another product domain (app/Domain/Microstock/**, src/valkivid3/**) are listed as owned elsewhere — they leave with their own domain."
+    ]
+}

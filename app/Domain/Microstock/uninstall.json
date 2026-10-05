@@ -1,0 +1,1323 @@
+{
+    "schema": "domain-uninstall/v1",
+    "domain": "Microstock",
+    "repos": {
+        "backend": {
+            "delete": [
+                "app/Domain/Microstock",
+                "app/Providers/Domain/MicrostockServiceProvider.php",
+                "routes/api/v1/microstock.php",
+                "routes/api/v1/admin-microstock.php",
+                "tests/Domain/Microstock",
+                "database/seeders/MicrostockRoleSeeder.php",
+                "config/microstock.php",
+                "lang/*/api/microstock.php",
+                "scripts/microstock",
+                "docs/domains/microstock",
+                "app/Domain/Service/Support/MicrostockCatalog.php",
+                "app/Support/ListActions/Builders/MicrostockCredentialQueryRowActions.php",
+                "tests/Concerns/GrantsMicrostockAiCredits.php",
+                "tests/Domain/Archivd/Feature/Http/Controllers/API/V1/FileShowMicrostockGatingTest.php"
+            ],
+            "edits": [
+                {
+                    "file": ".env.example",
+                    "op": "remove_lines_matching",
+                    "match": "^(?:MICROSTOCK_AI_COLLECTION_VISION_QUEUE|MICROSTOCK_AI_COLLECTION_THINKING_QUEUE|MICROSTOCK_AI_SOLO_QUEUE|MICROSTOCK_AI_COLLECTION_VISION_QUEUE_FREE|MICROSTOCK_AI_COLLECTION_THINKING_QUEUE_FREE|MICROSTOCK_AI_SOLO_QUEUE_FREE)="
+                },
+                {
+                    "file": ".env.local.example",
+                    "op": "remove_lines_matching",
+                    "match": "^(?:MICROSTOCK_AI_COLLECTION_VISION_QUEUE|MICROSTOCK_AI_COLLECTION_THINKING_QUEUE|MICROSTOCK_AI_SOLO_QUEUE|MICROSTOCK_AI_COLLECTION_VISION_QUEUE_FREE|MICROSTOCK_AI_COLLECTION_THINKING_QUEUE_FREE|MICROSTOCK_AI_SOLO_QUEUE_FREE)="
+                },
+                {
+                    "file": ".env.production.example",
+                    "op": "remove_lines_matching",
+                    "match": "^(?:MICROSTOCK_AI_COLLECTION_VISION_QUEUE|MICROSTOCK_AI_COLLECTION_THINKING_QUEUE|MICROSTOCK_AI_SOLO_QUEUE|MICROSTOCK_AI_COLLECTION_VISION_QUEUE_FREE|MICROSTOCK_AI_COLLECTION_THINKING_QUEUE_FREE|MICROSTOCK_AI_SOLO_QUEUE_FREE)="
+                },
+                {
+                    "file": ".env.staging.example",
+                    "op": "remove_lines_matching",
+                    "match": "^(?:MICROSTOCK_AI_COLLECTION_VISION_QUEUE|MICROSTOCK_AI_COLLECTION_THINKING_QUEUE|MICROSTOCK_AI_SOLO_QUEUE|MICROSTOCK_AI_COLLECTION_VISION_QUEUE_FREE|MICROSTOCK_AI_COLLECTION_THINKING_QUEUE_FREE|MICROSTOCK_AI_SOLO_QUEUE_FREE)="
+                },
+                {
+                    "file": "config/products.php",
+                    "op": "remove_block",
+                    "begin": "'Microstock' =>"
+                },
+                {
+                    "file": "config/settings-local.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
+                },
+                {
+                    "file": "config/spa-routes.php",
+                    "op": "remove_quoted_strings",
+                    "match": [
+                        "settings.microstock",
+                        "archivd.microstock-credentials",
+                        "archivd.microstock-usage"
+                    ]
+                },
+                {
+                    "file": "lang/ar/list_actions.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "confirm.delete_microstock_credential"
+                    ]
+                },
+                {
+                    "file": "lang/ar/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "microstock.microstock",
+                        "microstock.activate_cta",
+                        "microstock.create_workspace",
+                        "microstock.slots_full",
+                        "microstock.create_title",
+                        "microstock.create_hint",
+                        "microstock.name_placeholder",
+                        "microstock.error_image_only"
+                    ]
+                },
+                {
+                    "file": "lang/en/list_actions.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "confirm.delete_microstock_credential"
+                    ]
+                },
+                {
+                    "file": "lang/en/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "microstock.microstock",
+                        "microstock.activate_cta",
+                        "microstock.create_workspace",
+                        "microstock.slots_full",
+                        "microstock.create_title",
+                        "microstock.create_hint",
+                        "microstock.name_placeholder",
+                        "microstock.error_image_only"
+                    ]
+                },
+                {
+                    "file": "lang/id/list_actions.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "confirm.delete_microstock_credential"
+                    ]
+                },
+                {
+                    "file": "lang/id/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "microstock.microstock",
+                        "microstock.activate_cta",
+                        "microstock.create_workspace",
+                        "microstock.slots_full",
+                        "microstock.create_title",
+                        "microstock.create_hint",
+                        "microstock.name_placeholder",
+                        "microstock.error_image_only"
+                    ]
+                },
+                {
+                    "file": "lang/ja/list_actions.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "confirm.delete_microstock_credential"
+                    ]
+                },
+                {
+                    "file": "lang/ja/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "microstock.microstock",
+                        "microstock.activate_cta",
+                        "microstock.create_workspace",
+                        "microstock.slots_full",
+                        "microstock.create_title",
+                        "microstock.create_hint",
+                        "microstock.name_placeholder",
+                        "microstock.error_image_only"
+                    ]
+                },
+                {
+                    "file": "lang/ko/list_actions.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "confirm.delete_microstock_credential"
+                    ]
+                },
+                {
+                    "file": "lang/ko/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "microstock.microstock",
+                        "microstock.activate_cta",
+                        "microstock.create_workspace",
+                        "microstock.slots_full",
+                        "microstock.create_title",
+                        "microstock.create_hint",
+                        "microstock.name_placeholder",
+                        "microstock.error_image_only"
+                    ]
+                },
+                {
+                    "file": "lang/ru/list_actions.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "confirm.delete_microstock_credential"
+                    ]
+                },
+                {
+                    "file": "lang/ru/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "microstock.microstock",
+                        "microstock.activate_cta",
+                        "microstock.create_workspace",
+                        "microstock.slots_full",
+                        "microstock.create_title",
+                        "microstock.create_hint",
+                        "microstock.name_placeholder",
+                        "microstock.error_image_only"
+                    ]
+                },
+                {
+                    "file": "lang/zh_CN/list_actions.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "confirm.delete_microstock_credential"
+                    ]
+                },
+                {
+                    "file": "lang/zh_CN/web/archivd.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "microstock.microstock",
+                        "microstock.activate_cta",
+                        "microstock.create_workspace",
+                        "microstock.slots_full",
+                        "microstock.create_title",
+                        "microstock.create_hint",
+                        "microstock.name_placeholder",
+                        "microstock.error_image_only"
+                    ]
+                },
+                {
+                    "file": "config/ai.php",
+                    "op": "remove_lines_matching",
+                    "match": "(microstock\\.|Settings → Microstock)"
+                },
+                {
+                    "file": "app/Support/Settings/SettingRegistry.php",
+                    "op": "remove_lines_matching",
+                    "match": "(microstock\\.|^// Microstock$)"
+                },
+                {
+                    "file": "app/Support/Settings/Http/Requests/UpdateSettingsGroupRequest.php",
+                    "op": "remove_lines_matching",
+                    "match": "microstock\\."
+                },
+                {
+                    "file": "database/seeders/MenuSeeder.php",
+                    "op": "remove_block",
+                    "begin": "'route' => 'settings.microstock'"
+                },
+                {
+                    "file": "database/seeders/MenuSeeder.php",
+                    "op": "remove_block",
+                    "begin": "'Microstock' => ["
+                },
+                {
+                    "file": "database/seeders/data/ai-connections.local.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "microstock-vision",
+                        "microstock-thinking"
+                    ]
+                },
+                {
+                    "file": "database/seeders/data/ai-connections.local.example.php",
+                    "op": "remove_array_keys",
+                    "match": [
+                        "microstock-vision",
+                        "microstock-thinking"
+                    ]
+                },
+                {
+                    "file": "bootstrap/app.php",
+                    "op": "remove_lines_matching",
+                    "match": "Microstock/Console/Commands"
+                },
+                {
+                    "file": "lang/ar/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
+                },
+                {
+                    "file": "lang/en/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
+                },
+                {
+                    "file": "lang/id/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
+                },
+                {
+                    "file": "lang/ja/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
+                },
+                {
+                    "file": "lang/ko/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
+                },
+                {
+                    "file": "lang/ru/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
+                },
+                {
+                    "file": "lang/zh_CN/web/settings.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
+                },
+                {
+                    "file": "config/settings-local.php",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
+                }
+            ],
+            "unresolved": [],
+            "ignore": [
+                {
+                    "path": "app/Domain/Ai/Console/Commands/ImportLegacyEnvCommand.php",
+                    "reason": "owned by the Ai domain: this file leaves with Ai's own uninstall, nothing to do here (line 169, 170, 173, 174, 177, 178)"
+                },
+                {
+                    "path": "app/Domain/Ai/Enums/AiConnectionDriver.php",
+                    "reason": "owned by the Ai domain: this file leaves with Ai's own uninstall, nothing to do here (line 7)"
+                },
+                {
+                    "path": "app/Domain/Ai/Services/AiConnectionResolver.php",
+                    "reason": "owned by the Ai domain: this file leaves with Ai's own uninstall, nothing to do here (line 15)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Enums/CollectionStatus.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 6, 7)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Enums/WorkspaceKind.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 7, 13)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Http/Resources/HostedFileResource.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 11, 12, 13, 62, 63, 64)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Models/HostedFile.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 6, 153)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Services/DirectUploadService.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 72, 74, 76, 80, 82, 356)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Services/FileService.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 73, 74)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Services/FileVariantGenerator.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 28, 29)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Services/FileVariantService.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 89, 139)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Services/FolderService.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 54, 55)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Services/SignedDownloadService.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 62)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Services/VisibilityService.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 29, 49, 97)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Services/WorkspaceAccessService.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 17, 46, 55, 57, 61, 67)"
+                },
+                {
+                    "path": "app/Domain/Archivd/Services/WorkspaceService.php",
+                    "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 100, 114, 146, 147, 169)"
+                },
+                {
+                    "path": "app/Domain/Inference/Http/Controllers/API/V1/InferenceUsageController.php",
+                    "reason": "owned by the Inference domain: this file leaves with Inference's own uninstall, nothing to do here (line 8)"
+                },
+                {
+                    "path": "app/Domain/Inference/Services/InferenceCatalogService.php",
+                    "reason": "owned by the Inference domain: this file leaves with Inference's own uninstall, nothing to do here (line 10)"
+                },
+                {
+                    "path": "app/Domain/Inference/Services/InferenceUsageAnalyticsService.php",
+                    "reason": "owned by the Inference domain: this file leaves with Inference's own uninstall, nothing to do here (line 7, 8)"
+                },
+                {
+                    "path": "app/Domain/Service/Models/Service.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 9, 139, 141, 143, 158, 163)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/MainPlanChangeCalculator.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 14, 101, 105, 127)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/ServiceCheckoutService.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 16, 53, 54, 55)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/ServiceEntitlementService.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 15, 227, 231, 362, 363, 365)"
+                },
+                {
+                    "path": "app/Domain/Service/Services/ServiceFulfillmentService.php",
+                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 7, 12, 52)"
+                },
+                {
+                    "path": "app/Http/Controllers/Concerns/RespondsWithListDisplayMode.php",
+                    "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 14)"
+                },
+                {
+                    "path": "app/Support/Settings/SettingsReader.php",
+                    "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 40)"
+                },
+                {
+                    "path": "database/factories/ServiceFactory.php",
+                    "reason": "hand edit: review the Microstock reference and drop it (line 10, 114, 117, 118, 119, 121)"
+                },
+                {
+                    "path": "database/migrations/2026_07_25_200001_add_kind_to_archivd_workspaces.php",
+                    "reason": "owned by the Archivd domain: this migration leaves with Archivd's own uninstall, nothing to do here (line 9)"
+                },
+                {
+                    "path": "database/migrations/2026_07_26_100001_add_collection_fields_to_archivd_folders.php",
+                    "reason": "owned by the Archivd domain: this migration leaves with Archivd's own uninstall, nothing to do here (line 8, 9)"
+                },
+                {
+                    "path": "database/migrations/2026_08_01_120001_create_inference_pricing_tables.php",
+                    "reason": "shipped migration: the Microstock value it writes is purged by data.rows; migrations are never edited (line 62, 78)"
+                },
+                {
+                    "path": "database/migrations/2026_08_01_150001_unknown_model_billing_schema.php",
+                    "reason": "shipped migration: the Microstock value it writes is purged by data.rows; migrations are never edited (line 19, 37, 48, 53, 60)"
+                },
+                {
+                    "path": "database/seeders/AiConnectionSeeder.php",
+                    "reason": "hand edit: drop the `microstock.*` keys (line 20, 39, 126)"
+                },
+                {
+                    "path": "database/seeders/InferenceCatalogSeeder.php",
+                    "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 13)"
+                },
+                {
+                    "path": "database/seeders/ServiceCatalogSeeder.php",
+                    "reason": "hand edit: review the Microstock reference and drop it (line 11, 72, 73, 74, 78, 79)"
+                },
+                {
+                    "path": "scripts/ai/list_models.php",
+                    "reason": "hand edit (tooling): review the Microstock reference and drop it (line 21)"
+                },
+                {
+                    "path": "scripts/ai/probe_models.php",
+                    "reason": "hand edit (tooling): drop the `microstock.*` setting reads (line 22, 52, 53, 54, 55)"
+                },
+                {
+                    "path": "scripts/lib/docs-budget-support.php",
+                    "reason": "hand edit (tooling): review the Microstock reference and drop it (line 76)"
+                },
+                {
+                    "path": "scripts/lib/locale-latin-allowlist.php",
+                    "reason": "hand edit (tooling): review the Microstock reference and drop it (line 55)"
+                },
+                {
+                    "path": "scripts/locale-glossary-scan.php",
+                    "reason": "hand edit (tooling): review the Microstock reference and drop it (line 63)"
+                },
+                {
+                    "path": "scripts/locale-pair-dump.php",
+                    "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 12, 13)"
+                },
+                {
+                    "path": "tests/Domain/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
+                    "reason": "test: drop the `microstock.*` keys (line 29, 30, 48, 69, 73, 75)"
+                },
+                {
+                    "path": "tests/Domain/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
+                    "reason": "test: drop the `microstock.*` keys (line 41, 42, 109, 117, 127, 128)"
+                },
+                {
+                    "path": "tests/Domain/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
+                    "reason": "test: review the Microstock reference and drop it (line 37, 38, 47)"
+                },
+                {
+                    "path": "tests/Domain/Archivd/Feature/Http/Controllers/API/V1/ArchivdTest.php",
+                    "reason": "test: drop the `WorkspaceKind::Microstock` branch and its callers (line 1166, 1167, 1177)"
+                },
+                {
+                    "path": "tests/Domain/Archivd/Unit/Services/DirectUploadServiceVariantDispatchTest.php",
+                    "reason": "test: drop the `WorkspaceKind::Microstock` branch and its callers (line 44, 51, 52)"
+                },
+                {
+                    "path": "tests/Domain/Inference/Feature/Http/Controllers/API/V1/InferenceUsageApiTest.php",
+                    "reason": "test: drop the `use App\\Domain\\Microstock\\…` import and the code that consumes it (line 7)"
+                },
+                {
+                    "path": "tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php",
+                    "reason": "test: drop the `microstock.*` keys (line 144, 220, 244, 335)"
+                },
+                {
+                    "path": "tests/Domain/Service/Unit/Services/ServiceCheckoutZeroChargeTest.php",
+                    "reason": "test: review the Microstock reference and drop it (line 69, 72, 91, 94, 99, 102)"
+                },
+                {
+                    "path": "tests/Fakes/FakeArchivdDirectUploadService.php",
+                    "reason": "test: drop the `WorkspaceKind::Microstock` branch and its callers (line 52, 54, 56, 61)"
+                },
+                {
+                    "path": "tests/Unit/Database/Seeders/LocalSettingsSeederTest.php",
+                    "reason": "test: drop the `microstock.*` setting reads (line 19, 23, 24, 35, 36)"
+                },
+                {
+                    "path": "tests/Unit/Support/Settings/SettingRegistryEnvPolicyTest.php",
+                    "reason": "test: drop the `microstock.*` setting reads (line 111)"
+                },
+                {
+                    "path": "tests/Unit/Support/Settings/SettingsReaderTest.php",
+                    "reason": "test: drop the `microstock.*` setting reads (line 59, 60, 65, 66, 73)"
+                }
+            ]
+        },
+        "spa": {
+            "delete": [
+                "src/views/microstock",
+                "src/composables/microstock",
+                "src/router/routes/microstock.ts",
+                "tests/microstock*",
+                "src/utils/archivd/arMicrostockBadge.ts",
+                "src/views/archivd/ArchivdMicrostockUsageView.vue",
+                "src/components/archivd/ArMicrostockReviewModal.vue",
+                "src/components/archivd/ArMicrostockPlatformTab.vue"
+            ],
+            "edits": [
+                {
+                    "file": "src/i18n/locales/ar.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.microstock.microstock",
+                        "api.microstock.workspace_loaded",
+                        "api.microstock.workspace_not_activated",
+                        "api.microstock.slot_limit",
+                        "api.microstock.workspace_created",
+                        "api.microstock.slots_loaded",
+                        "web.ai-connections.subtitle",
+                        "web.ai-connections.fields.slug_hint",
+                        "web.settings.groups.microstock",
+                        "web.settings.fields.microstock.daily_free.enabled",
+                        "web.settings.fields.microstock.daily_free.limit_per_user",
+                        "web.settings.fields.microstock.daily_free.timezone",
+                        "web.settings.fields.microstock.ai_billing.markup_multiplier",
+                        "web.settings.fields.microstock.ai_billing.estimated_billable_micro_usd_per_asset",
+                        "web.settings.fields.microstock.ai_billing.estimate_thinking_attempt_factor",
+                        "web.settings.fields.microstock.ai.image_max_px",
+                        "web.settings.fields.microstock.ai.image_jpeg_quality",
+                        "web.settings.fields.microstock.ai.max_request_image_bytes",
+                        "web.settings.fields.microstock.ai.http_retries",
+                        "web.settings.fields.microstock.ai.thinking_visual_attempts",
+                        "web.settings.fields.microstock.ai.batch_chunk",
+                        "web.settings.fields.microstock.ai.batch_min_files",
+                        "web.settings.fields.microstock.ai.phase.normal_after",
+                        "web.settings.fields.microstock.ai.phase.grace_after",
+                        "web.settings.fields.microstock.ai.stage.vision_grace_after",
+                        "web.settings.fields.microstock.ai.stage.thinking_grace_after",
+                        "web.settings.fields.microstock.ai.stage.thinking_backlog_after",
+                        "web.settings.fields.microstock.ai.vision_image.delivery",
+                        "web.settings.fields.microstock.ai.vision_image.variant_kind",
+                        "web.settings.fields.microstock.ai.vision_image.signed_url_ttl_minutes",
+                        "web.settings.fields.microstock.ai.inference_provider_slug",
+                        "web.settings.fields.microstock.ai.vision.connection",
+                        "web.settings.fields.microstock.ai.thinking.connection",
+                        "web.settings.fields.microstock.ai.vision.model",
+                        "web.settings.fields.microstock.ai.vision.free_model",
+                        "web.settings.fields.microstock.ai.vision.timeout",
+                        "web.settings.fields.microstock.ai.thinking.model",
+                        "web.settings.fields.microstock.ai.thinking.free_model",
+                        "web.settings.fields.microstock.ai.thinking.timeout",
+                        "web.settings.fields.microstock.ai.upstream.window_seconds",
+                        "web.settings.fields.microstock.ai.upstream.token_budget",
+                        "web.settings.fields.microstock.ai.upstream.max_concurrent_vision",
+                        "web.settings.fields.microstock.ai.upstream.max_concurrent_thinking",
+                        "web.settings.fields.microstock.ai.upstream.collection_vision_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.collection_thinking_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.solo_vision_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.solo_thinking_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.release_after_seconds",
+                        "web.settings.fields.microstock.csv_disk",
+                        "web.settings.hints.microstock.ai.vision.free_model",
+                        "web.settings.hints.microstock.ai.thinking.free_model",
+                        "web.settings.hints.microstock.ai.upstream.window_seconds",
+                        "web.settings.hints.microstock.ai.phase.normal_after",
+                        "web.settings.hints.microstock.ai.phase.grace_after",
+                        "web.settings.hints.microstock.ai.stage.vision_grace_after",
+                        "web.settings.hints.microstock.ai.stage.thinking_grace_after",
+                        "web.settings.hints.microstock.ai.stage.thinking_backlog_after",
+                        "web.settings.hints.microstock.ai.vision.connection",
+                        "web.settings.hints.microstock.ai.thinking.connection",
+                        "web.archivd.microstock.microstock",
+                        "web.archivd.microstock.activate_cta",
+                        "web.archivd.microstock.create_workspace",
+                        "web.archivd.microstock.slots_full",
+                        "web.archivd.microstock.slots_counter",
+                        "web.archivd.microstock.buy_slot_cta",
+                        "web.archivd.microstock.create_title",
+                        "web.archivd.microstock.create_hint",
+                        "web.archivd.microstock.name_placeholder",
+                        "web.archivd.microstock.error_image_only",
+                        "web.archivd.microstock_title",
+                        "web.microstock.microstock",
+                        "web.microstock.menu",
+                        "web.microstock.title",
+                        "web.microstock.usage.title",
+                        "web.microstock-credentials.microstock-credentials",
+                        "web.microstock-credentials.add_help",
+                        "services.microstock.microstock",
+                        "services.microstock.title",
+                        "services.microstock.slot_desc"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/en.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.microstock.microstock",
+                        "api.microstock.workspace_loaded",
+                        "api.microstock.workspace_not_activated",
+                        "api.microstock.slot_limit",
+                        "api.microstock.workspace_created",
+                        "api.microstock.slots_loaded",
+                        "web.ai-connections.subtitle",
+                        "web.ai-connections.fields.slug_hint",
+                        "web.archivd.microstock.microstock",
+                        "web.archivd.microstock.activate_cta",
+                        "web.archivd.microstock.create_workspace",
+                        "web.archivd.microstock.slots_full",
+                        "web.archivd.microstock.slots_counter",
+                        "web.archivd.microstock.buy_slot_cta",
+                        "web.archivd.microstock.create_title",
+                        "web.archivd.microstock.create_hint",
+                        "web.archivd.microstock.name_placeholder",
+                        "web.archivd.microstock.error_image_only",
+                        "web.archivd.microstock_title",
+                        "web.microstock.microstock",
+                        "web.microstock.menu",
+                        "web.microstock.title",
+                        "web.microstock.usage.title",
+                        "web.microstock-credentials.microstock-credentials",
+                        "web.microstock-credentials.add_help",
+                        "services.microstock.microstock",
+                        "services.microstock.title",
+                        "services.microstock.slot_desc",
+                        "settings.groups.microstock",
+                        "settings.fields.microstock.daily_free.enabled",
+                        "settings.fields.microstock.daily_free.limit_per_user",
+                        "settings.fields.microstock.daily_free.timezone",
+                        "settings.fields.microstock.ai_billing.markup_multiplier",
+                        "settings.fields.microstock.ai_billing.estimated_billable_micro_usd_per_asset",
+                        "settings.fields.microstock.ai_billing.estimate_thinking_attempt_factor",
+                        "settings.fields.microstock.ai.image_max_px",
+                        "settings.fields.microstock.ai.image_jpeg_quality",
+                        "settings.fields.microstock.ai.max_request_image_bytes",
+                        "settings.fields.microstock.ai.http_retries",
+                        "settings.fields.microstock.ai.thinking_visual_attempts",
+                        "settings.fields.microstock.ai.batch_chunk",
+                        "settings.fields.microstock.ai.batch_min_files",
+                        "settings.fields.microstock.ai.phase.normal_after",
+                        "settings.fields.microstock.ai.phase.grace_after",
+                        "settings.fields.microstock.ai.stage.vision_grace_after",
+                        "settings.fields.microstock.ai.stage.thinking_grace_after",
+                        "settings.fields.microstock.ai.stage.thinking_backlog_after",
+                        "settings.fields.microstock.ai.vision_image.delivery",
+                        "settings.fields.microstock.ai.vision_image.variant_kind",
+                        "settings.fields.microstock.ai.vision_image.signed_url_ttl_minutes",
+                        "settings.fields.microstock.ai.inference_provider_slug",
+                        "settings.fields.microstock.ai.vision.connection",
+                        "settings.fields.microstock.ai.thinking.connection",
+                        "settings.fields.microstock.ai.vision.model",
+                        "settings.fields.microstock.ai.vision.free_model",
+                        "settings.fields.microstock.ai.vision.timeout",
+                        "settings.fields.microstock.ai.thinking.model",
+                        "settings.fields.microstock.ai.thinking.free_model",
+                        "settings.fields.microstock.ai.thinking.timeout",
+                        "settings.fields.microstock.ai.upstream.window_seconds",
+                        "settings.fields.microstock.ai.upstream.token_budget",
+                        "settings.fields.microstock.ai.upstream.max_concurrent_vision",
+                        "settings.fields.microstock.ai.upstream.max_concurrent_thinking",
+                        "settings.fields.microstock.ai.upstream.collection_vision_concurrency",
+                        "settings.fields.microstock.ai.upstream.collection_thinking_concurrency",
+                        "settings.fields.microstock.ai.upstream.solo_vision_concurrency",
+                        "settings.fields.microstock.ai.upstream.solo_thinking_concurrency",
+                        "settings.fields.microstock.ai.upstream.release_after_seconds",
+                        "settings.fields.microstock.csv_disk",
+                        "settings.hints.microstock.ai.vision.free_model",
+                        "settings.hints.microstock.ai.thinking.free_model",
+                        "settings.hints.microstock.ai.upstream.window_seconds",
+                        "settings.hints.microstock.ai.phase.normal_after",
+                        "settings.hints.microstock.ai.phase.grace_after",
+                        "settings.hints.microstock.ai.stage.vision_grace_after",
+                        "settings.hints.microstock.ai.stage.thinking_grace_after",
+                        "settings.hints.microstock.ai.stage.thinking_backlog_after",
+                        "settings.hints.microstock.ai.vision.connection",
+                        "settings.hints.microstock.ai.thinking.connection"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/id.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.microstock.microstock",
+                        "api.microstock.workspace_loaded",
+                        "api.microstock.workspace_not_activated",
+                        "api.microstock.slot_limit",
+                        "api.microstock.workspace_created",
+                        "api.microstock.slots_loaded",
+                        "web.ai-connections.subtitle",
+                        "web.ai-connections.fields.slug_hint",
+                        "web.archivd.microstock.microstock",
+                        "web.archivd.microstock.activate_cta",
+                        "web.archivd.microstock.create_workspace",
+                        "web.archivd.microstock.slots_full",
+                        "web.archivd.microstock.slots_counter",
+                        "web.archivd.microstock.buy_slot_cta",
+                        "web.archivd.microstock.create_title",
+                        "web.archivd.microstock.create_hint",
+                        "web.archivd.microstock.name_placeholder",
+                        "web.archivd.microstock.error_image_only",
+                        "web.archivd.microstock_title",
+                        "web.microstock.microstock",
+                        "web.microstock.menu",
+                        "web.microstock.title",
+                        "web.microstock.usage.title",
+                        "web.microstock-credentials.microstock-credentials",
+                        "web.microstock-credentials.add_help",
+                        "services.microstock.microstock",
+                        "services.microstock.title",
+                        "services.microstock.slot_desc",
+                        "settings.groups.microstock",
+                        "settings.fields.microstock.daily_free.enabled",
+                        "settings.fields.microstock.daily_free.limit_per_user",
+                        "settings.fields.microstock.daily_free.timezone",
+                        "settings.fields.microstock.ai_billing.markup_multiplier",
+                        "settings.fields.microstock.ai_billing.estimated_billable_micro_usd_per_asset",
+                        "settings.fields.microstock.ai_billing.estimate_thinking_attempt_factor",
+                        "settings.fields.microstock.ai.image_max_px",
+                        "settings.fields.microstock.ai.image_jpeg_quality",
+                        "settings.fields.microstock.ai.max_request_image_bytes",
+                        "settings.fields.microstock.ai.http_retries",
+                        "settings.fields.microstock.ai.thinking_visual_attempts",
+                        "settings.fields.microstock.ai.batch_chunk",
+                        "settings.fields.microstock.ai.batch_min_files",
+                        "settings.fields.microstock.ai.phase.normal_after",
+                        "settings.fields.microstock.ai.phase.grace_after",
+                        "settings.fields.microstock.ai.stage.vision_grace_after",
+                        "settings.fields.microstock.ai.stage.thinking_grace_after",
+                        "settings.fields.microstock.ai.stage.thinking_backlog_after",
+                        "settings.fields.microstock.ai.vision_image.delivery",
+                        "settings.fields.microstock.ai.vision_image.variant_kind",
+                        "settings.fields.microstock.ai.vision_image.signed_url_ttl_minutes",
+                        "settings.fields.microstock.ai.inference_provider_slug",
+                        "settings.fields.microstock.ai.vision.connection",
+                        "settings.fields.microstock.ai.thinking.connection",
+                        "settings.fields.microstock.ai.vision.model",
+                        "settings.fields.microstock.ai.vision.free_model",
+                        "settings.fields.microstock.ai.vision.timeout",
+                        "settings.fields.microstock.ai.thinking.model",
+                        "settings.fields.microstock.ai.thinking.free_model",
+                        "settings.fields.microstock.ai.thinking.timeout",
+                        "settings.fields.microstock.ai.upstream.window_seconds",
+                        "settings.fields.microstock.ai.upstream.token_budget",
+                        "settings.fields.microstock.ai.upstream.max_concurrent_vision",
+                        "settings.fields.microstock.ai.upstream.max_concurrent_thinking",
+                        "settings.fields.microstock.ai.upstream.collection_vision_concurrency",
+                        "settings.fields.microstock.ai.upstream.collection_thinking_concurrency",
+                        "settings.fields.microstock.ai.upstream.solo_vision_concurrency",
+                        "settings.fields.microstock.ai.upstream.solo_thinking_concurrency",
+                        "settings.fields.microstock.ai.upstream.release_after_seconds",
+                        "settings.fields.microstock.csv_disk",
+                        "settings.hints.microstock.ai.vision.free_model",
+                        "settings.hints.microstock.ai.thinking.free_model",
+                        "settings.hints.microstock.ai.upstream.window_seconds",
+                        "settings.hints.microstock.ai.phase.normal_after",
+                        "settings.hints.microstock.ai.phase.grace_after",
+                        "settings.hints.microstock.ai.stage.vision_grace_after",
+                        "settings.hints.microstock.ai.stage.thinking_grace_after",
+                        "settings.hints.microstock.ai.stage.thinking_backlog_after",
+                        "settings.hints.microstock.ai.vision.connection",
+                        "settings.hints.microstock.ai.thinking.connection"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/ja.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.microstock.microstock",
+                        "api.microstock.workspace_loaded",
+                        "api.microstock.workspace_not_activated",
+                        "api.microstock.slot_limit",
+                        "api.microstock.workspace_created",
+                        "api.microstock.slots_loaded",
+                        "web.ai-connections.subtitle",
+                        "web.ai-connections.fields.slug_hint",
+                        "web.archivd.microstock.microstock",
+                        "web.archivd.microstock.activate_cta",
+                        "web.archivd.microstock.create_workspace",
+                        "web.archivd.microstock.slots_full",
+                        "web.archivd.microstock.slots_counter",
+                        "web.archivd.microstock.buy_slot_cta",
+                        "web.archivd.microstock.create_title",
+                        "web.archivd.microstock.create_hint",
+                        "web.archivd.microstock.name_placeholder",
+                        "web.archivd.microstock.error_image_only",
+                        "web.archivd.microstock_title",
+                        "web.microstock.microstock",
+                        "web.microstock.menu",
+                        "web.microstock.title",
+                        "web.microstock.usage.title",
+                        "web.microstock-credentials.microstock-credentials",
+                        "web.microstock-credentials.add_help",
+                        "services.microstock.microstock",
+                        "services.microstock.title",
+                        "services.microstock.slot_desc",
+                        "settings.groups.microstock",
+                        "settings.fields.microstock.daily_free.enabled",
+                        "settings.fields.microstock.daily_free.limit_per_user",
+                        "settings.fields.microstock.daily_free.timezone",
+                        "settings.fields.microstock.ai_billing.markup_multiplier",
+                        "settings.fields.microstock.ai_billing.estimated_billable_micro_usd_per_asset",
+                        "settings.fields.microstock.ai_billing.estimate_thinking_attempt_factor",
+                        "settings.fields.microstock.ai.image_max_px",
+                        "settings.fields.microstock.ai.image_jpeg_quality",
+                        "settings.fields.microstock.ai.max_request_image_bytes",
+                        "settings.fields.microstock.ai.http_retries",
+                        "settings.fields.microstock.ai.thinking_visual_attempts",
+                        "settings.fields.microstock.ai.batch_chunk",
+                        "settings.fields.microstock.ai.batch_min_files",
+                        "settings.fields.microstock.ai.phase.normal_after",
+                        "settings.fields.microstock.ai.phase.grace_after",
+                        "settings.fields.microstock.ai.stage.vision_grace_after",
+                        "settings.fields.microstock.ai.stage.thinking_grace_after",
+                        "settings.fields.microstock.ai.stage.thinking_backlog_after",
+                        "settings.fields.microstock.ai.vision_image.delivery",
+                        "settings.fields.microstock.ai.vision_image.variant_kind",
+                        "settings.fields.microstock.ai.vision_image.signed_url_ttl_minutes",
+                        "settings.fields.microstock.ai.inference_provider_slug",
+                        "settings.fields.microstock.ai.vision.connection",
+                        "settings.fields.microstock.ai.thinking.connection",
+                        "settings.fields.microstock.ai.vision.model",
+                        "settings.fields.microstock.ai.vision.free_model",
+                        "settings.fields.microstock.ai.vision.timeout",
+                        "settings.fields.microstock.ai.thinking.model",
+                        "settings.fields.microstock.ai.thinking.free_model",
+                        "settings.fields.microstock.ai.thinking.timeout",
+                        "settings.fields.microstock.ai.upstream.window_seconds",
+                        "settings.fields.microstock.ai.upstream.token_budget",
+                        "settings.fields.microstock.ai.upstream.max_concurrent_vision",
+                        "settings.fields.microstock.ai.upstream.max_concurrent_thinking",
+                        "settings.fields.microstock.ai.upstream.collection_vision_concurrency",
+                        "settings.fields.microstock.ai.upstream.collection_thinking_concurrency",
+                        "settings.fields.microstock.ai.upstream.solo_vision_concurrency",
+                        "settings.fields.microstock.ai.upstream.solo_thinking_concurrency",
+                        "settings.fields.microstock.ai.upstream.release_after_seconds",
+                        "settings.fields.microstock.csv_disk",
+                        "settings.hints.microstock.ai.vision.free_model",
+                        "settings.hints.microstock.ai.thinking.free_model",
+                        "settings.hints.microstock.ai.upstream.window_seconds",
+                        "settings.hints.microstock.ai.phase.normal_after",
+                        "settings.hints.microstock.ai.phase.grace_after",
+                        "settings.hints.microstock.ai.stage.vision_grace_after",
+                        "settings.hints.microstock.ai.stage.thinking_grace_after",
+                        "settings.hints.microstock.ai.stage.thinking_backlog_after",
+                        "settings.hints.microstock.ai.vision.connection",
+                        "settings.hints.microstock.ai.thinking.connection"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/ko.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.microstock.microstock",
+                        "api.microstock.workspace_loaded",
+                        "api.microstock.workspace_not_activated",
+                        "api.microstock.slot_limit",
+                        "api.microstock.workspace_created",
+                        "api.microstock.slots_loaded",
+                        "web.ai-connections.subtitle",
+                        "web.ai-connections.fields.slug_hint",
+                        "web.settings.groups.microstock",
+                        "web.settings.fields.microstock.daily_free.enabled",
+                        "web.settings.fields.microstock.daily_free.limit_per_user",
+                        "web.settings.fields.microstock.daily_free.timezone",
+                        "web.settings.fields.microstock.ai_billing.markup_multiplier",
+                        "web.settings.fields.microstock.ai_billing.estimated_billable_micro_usd_per_asset",
+                        "web.settings.fields.microstock.ai_billing.estimate_thinking_attempt_factor",
+                        "web.settings.fields.microstock.ai.image_max_px",
+                        "web.settings.fields.microstock.ai.image_jpeg_quality",
+                        "web.settings.fields.microstock.ai.max_request_image_bytes",
+                        "web.settings.fields.microstock.ai.http_retries",
+                        "web.settings.fields.microstock.ai.thinking_visual_attempts",
+                        "web.settings.fields.microstock.ai.batch_chunk",
+                        "web.settings.fields.microstock.ai.batch_min_files",
+                        "web.settings.fields.microstock.ai.phase.normal_after",
+                        "web.settings.fields.microstock.ai.phase.grace_after",
+                        "web.settings.fields.microstock.ai.stage.vision_grace_after",
+                        "web.settings.fields.microstock.ai.stage.thinking_grace_after",
+                        "web.settings.fields.microstock.ai.stage.thinking_backlog_after",
+                        "web.settings.fields.microstock.ai.vision_image.delivery",
+                        "web.settings.fields.microstock.ai.vision_image.variant_kind",
+                        "web.settings.fields.microstock.ai.vision_image.signed_url_ttl_minutes",
+                        "web.settings.fields.microstock.ai.inference_provider_slug",
+                        "web.settings.fields.microstock.ai.vision.connection",
+                        "web.settings.fields.microstock.ai.thinking.connection",
+                        "web.settings.fields.microstock.ai.vision.model",
+                        "web.settings.fields.microstock.ai.vision.free_model",
+                        "web.settings.fields.microstock.ai.vision.timeout",
+                        "web.settings.fields.microstock.ai.thinking.model",
+                        "web.settings.fields.microstock.ai.thinking.free_model",
+                        "web.settings.fields.microstock.ai.thinking.timeout",
+                        "web.settings.fields.microstock.ai.upstream.window_seconds",
+                        "web.settings.fields.microstock.ai.upstream.token_budget",
+                        "web.settings.fields.microstock.ai.upstream.max_concurrent_vision",
+                        "web.settings.fields.microstock.ai.upstream.max_concurrent_thinking",
+                        "web.settings.fields.microstock.ai.upstream.collection_vision_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.collection_thinking_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.solo_vision_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.solo_thinking_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.release_after_seconds",
+                        "web.settings.fields.microstock.csv_disk",
+                        "web.settings.hints.microstock.ai.vision.free_model",
+                        "web.settings.hints.microstock.ai.thinking.free_model",
+                        "web.settings.hints.microstock.ai.upstream.window_seconds",
+                        "web.settings.hints.microstock.ai.phase.normal_after",
+                        "web.settings.hints.microstock.ai.phase.grace_after",
+                        "web.settings.hints.microstock.ai.stage.vision_grace_after",
+                        "web.settings.hints.microstock.ai.stage.thinking_grace_after",
+                        "web.settings.hints.microstock.ai.stage.thinking_backlog_after",
+                        "web.settings.hints.microstock.ai.vision.connection",
+                        "web.settings.hints.microstock.ai.thinking.connection",
+                        "web.archivd.microstock.microstock",
+                        "web.archivd.microstock.activate_cta",
+                        "web.archivd.microstock.create_workspace",
+                        "web.archivd.microstock.slots_full",
+                        "web.archivd.microstock.slots_counter",
+                        "web.archivd.microstock.buy_slot_cta",
+                        "web.archivd.microstock.create_title",
+                        "web.archivd.microstock.create_hint",
+                        "web.archivd.microstock.name_placeholder",
+                        "web.archivd.microstock.error_image_only",
+                        "web.archivd.microstock_title",
+                        "web.microstock.microstock",
+                        "web.microstock.menu",
+                        "web.microstock.title",
+                        "web.microstock.usage.title",
+                        "web.microstock-credentials.microstock-credentials",
+                        "web.microstock-credentials.add_help",
+                        "services.microstock.microstock",
+                        "services.microstock.title",
+                        "services.microstock.slot_desc"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/ru.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.microstock.microstock",
+                        "api.microstock.workspace_loaded",
+                        "api.microstock.workspace_not_activated",
+                        "api.microstock.slot_limit",
+                        "api.microstock.workspace_created",
+                        "api.microstock.slots_loaded",
+                        "web.ai-connections.subtitle",
+                        "web.ai-connections.fields.slug_hint",
+                        "web.settings.groups.microstock",
+                        "web.settings.fields.microstock.daily_free.enabled",
+                        "web.settings.fields.microstock.daily_free.limit_per_user",
+                        "web.settings.fields.microstock.daily_free.timezone",
+                        "web.settings.fields.microstock.ai_billing.markup_multiplier",
+                        "web.settings.fields.microstock.ai_billing.estimated_billable_micro_usd_per_asset",
+                        "web.settings.fields.microstock.ai_billing.estimate_thinking_attempt_factor",
+                        "web.settings.fields.microstock.ai.image_max_px",
+                        "web.settings.fields.microstock.ai.image_jpeg_quality",
+                        "web.settings.fields.microstock.ai.max_request_image_bytes",
+                        "web.settings.fields.microstock.ai.http_retries",
+                        "web.settings.fields.microstock.ai.thinking_visual_attempts",
+                        "web.settings.fields.microstock.ai.batch_chunk",
+                        "web.settings.fields.microstock.ai.batch_min_files",
+                        "web.settings.fields.microstock.ai.phase.normal_after",
+                        "web.settings.fields.microstock.ai.phase.grace_after",
+                        "web.settings.fields.microstock.ai.stage.vision_grace_after",
+                        "web.settings.fields.microstock.ai.stage.thinking_grace_after",
+                        "web.settings.fields.microstock.ai.stage.thinking_backlog_after",
+                        "web.settings.fields.microstock.ai.vision_image.delivery",
+                        "web.settings.fields.microstock.ai.vision_image.variant_kind",
+                        "web.settings.fields.microstock.ai.vision_image.signed_url_ttl_minutes",
+                        "web.settings.fields.microstock.ai.inference_provider_slug",
+                        "web.settings.fields.microstock.ai.vision.connection",
+                        "web.settings.fields.microstock.ai.thinking.connection",
+                        "web.settings.fields.microstock.ai.vision.model",
+                        "web.settings.fields.microstock.ai.vision.free_model",
+                        "web.settings.fields.microstock.ai.vision.timeout",
+                        "web.settings.fields.microstock.ai.thinking.model",
+                        "web.settings.fields.microstock.ai.thinking.free_model",
+                        "web.settings.fields.microstock.ai.thinking.timeout",
+                        "web.settings.fields.microstock.ai.upstream.window_seconds",
+                        "web.settings.fields.microstock.ai.upstream.token_budget",
+                        "web.settings.fields.microstock.ai.upstream.max_concurrent_vision",
+                        "web.settings.fields.microstock.ai.upstream.max_concurrent_thinking",
+                        "web.settings.fields.microstock.ai.upstream.collection_vision_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.collection_thinking_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.solo_vision_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.solo_thinking_concurrency",
+                        "web.settings.fields.microstock.ai.upstream.release_after_seconds",
+                        "web.settings.fields.microstock.csv_disk",
+                        "web.settings.hints.microstock.ai.vision.free_model",
+                        "web.settings.hints.microstock.ai.thinking.free_model",
+                        "web.settings.hints.microstock.ai.upstream.window_seconds",
+                        "web.settings.hints.microstock.ai.phase.normal_after",
+                        "web.settings.hints.microstock.ai.phase.grace_after",
+                        "web.settings.hints.microstock.ai.stage.vision_grace_after",
+                        "web.settings.hints.microstock.ai.stage.thinking_grace_after",
+                        "web.settings.hints.microstock.ai.stage.thinking_backlog_after",
+                        "web.settings.hints.microstock.ai.vision.connection",
+                        "web.settings.hints.microstock.ai.thinking.connection",
+                        "web.archivd.microstock.microstock",
+                        "web.archivd.microstock.activate_cta",
+                        "web.archivd.microstock.create_workspace",
+                        "web.archivd.microstock.slots_full",
+                        "web.archivd.microstock.slots_counter",
+                        "web.archivd.microstock.buy_slot_cta",
+                        "web.archivd.microstock.create_title",
+                        "web.archivd.microstock.create_hint",
+                        "web.archivd.microstock.name_placeholder",
+                        "web.archivd.microstock.error_image_only",
+                        "web.archivd.microstock_title",
+                        "web.microstock.microstock",
+                        "web.microstock.menu",
+                        "web.microstock.title",
+                        "web.microstock.usage.title",
+                        "web.microstock-credentials.microstock-credentials",
+                        "services.microstock.microstock",
+                        "services.microstock.title",
+                        "services.microstock.slot_desc"
+                    ]
+                },
+                {
+                    "file": "src/i18n/locales/zh-CN.json",
+                    "op": "remove_json_keys",
+                    "match": [
+                        "api.microstock.microstock",
+                        "api.microstock.workspace_loaded",
+                        "api.microstock.workspace_not_activated",
+                        "api.microstock.slot_limit",
+                        "api.microstock.workspace_created",
+                        "api.microstock.slots_loaded",
+                        "web.ai-connections.subtitle",
+                        "web.ai-connections.fields.slug_hint",
+                        "web.archivd.microstock.microstock",
+                        "web.archivd.microstock.activate_cta",
+                        "web.archivd.microstock.create_workspace",
+                        "web.archivd.microstock.slots_full",
+                        "web.archivd.microstock.slots_counter",
+                        "web.archivd.microstock.buy_slot_cta",
+                        "web.archivd.microstock.create_title",
+                        "web.archivd.microstock.create_hint",
+                        "web.archivd.microstock.name_placeholder",
+                        "web.archivd.microstock.error_image_only",
+                        "web.archivd.microstock_title",
+                        "web.microstock.microstock",
+                        "web.microstock.menu",
+                        "web.microstock.title",
+                        "web.microstock.usage.title",
+                        "web.microstock-credentials.microstock-credentials",
+                        "web.microstock-credentials.add_help",
+                        "services.microstock.microstock",
+                        "services.microstock.title",
+                        "services.microstock.slot_desc",
+                        "settings.groups.microstock",
+                        "settings.fields.microstock.daily_free.enabled",
+                        "settings.fields.microstock.daily_free.limit_per_user",
+                        "settings.fields.microstock.daily_free.timezone",
+                        "settings.fields.microstock.ai_billing.markup_multiplier",
+                        "settings.fields.microstock.ai_billing.estimated_billable_micro_usd_per_asset",
+                        "settings.fields.microstock.ai_billing.estimate_thinking_attempt_factor",
+                        "settings.fields.microstock.ai.image_max_px",
+                        "settings.fields.microstock.ai.image_jpeg_quality",
+                        "settings.fields.microstock.ai.max_request_image_bytes",
+                        "settings.fields.microstock.ai.http_retries",
+                        "settings.fields.microstock.ai.thinking_visual_attempts",
+                        "settings.fields.microstock.ai.batch_chunk",
+                        "settings.fields.microstock.ai.batch_min_files",
+                        "settings.fields.microstock.ai.phase.normal_after",
+                        "settings.fields.microstock.ai.phase.grace_after",
+                        "settings.fields.microstock.ai.stage.vision_grace_after",
+                        "settings.fields.microstock.ai.stage.thinking_grace_after",
+                        "settings.fields.microstock.ai.stage.thinking_backlog_after",
+                        "settings.fields.microstock.ai.vision_image.delivery",
+                        "settings.fields.microstock.ai.vision_image.variant_kind",
+                        "settings.fields.microstock.ai.vision_image.signed_url_ttl_minutes",
+                        "settings.fields.microstock.ai.inference_provider_slug",
+                        "settings.fields.microstock.ai.vision.connection",
+                        "settings.fields.microstock.ai.thinking.connection",
+                        "settings.fields.microstock.ai.vision.model",
+                        "settings.fields.microstock.ai.vision.free_model",
+                        "settings.fields.microstock.ai.vision.timeout",
+                        "settings.fields.microstock.ai.thinking.model",
+                        "settings.fields.microstock.ai.thinking.free_model",
+                        "settings.fields.microstock.ai.thinking.timeout",
+                        "settings.fields.microstock.ai.upstream.window_seconds",
+                        "settings.fields.microstock.ai.upstream.token_budget",
+                        "settings.fields.microstock.ai.upstream.max_concurrent_vision",
+                        "settings.fields.microstock.ai.upstream.max_concurrent_thinking",
+                        "settings.fields.microstock.ai.upstream.collection_vision_concurrency",
+                        "settings.fields.microstock.ai.upstream.collection_thinking_concurrency",
+                        "settings.fields.microstock.ai.upstream.solo_vision_concurrency",
+                        "settings.fields.microstock.ai.upstream.solo_thinking_concurrency",
+                        "settings.fields.microstock.ai.upstream.release_after_seconds",
+                        "settings.fields.microstock.csv_disk",
+                        "settings.hints.microstock.ai.vision.free_model",
+                        "settings.hints.microstock.ai.thinking.free_model",
+                        "settings.hints.microstock.ai.upstream.window_seconds",
+                        "settings.hints.microstock.ai.phase.normal_after",
+                        "settings.hints.microstock.ai.phase.grace_after",
+                        "settings.hints.microstock.ai.stage.vision_grace_after",
+                        "settings.hints.microstock.ai.stage.thinking_grace_after",
+                        "settings.hints.microstock.ai.stage.thinking_backlog_after",
+                        "settings.hints.microstock.ai.vision.connection",
+                        "settings.hints.microstock.ai.thinking.connection"
+                    ]
+                },
+                {
+                    "file": "src/router/index.ts",
+                    "op": "remove_lines_matching",
+                    "match": "microstock"
+                },
+                {
+                    "file": "src/router/index.ts",
+                    "op": "remove_lines_matching",
+                    "match": "(microstockRoutes|routes/microstock)"
+                },
+                {
+                    "file": "src/utils/settingsGroup.ts",
+                    "op": "remove_quoted_strings",
+                    "match": [
+                        "microstock"
+                    ]
+                },
+                {
+                    "file": "src/router/routes/archivd.ts",
+                    "op": "remove_block",
+                    "begin": "archivdMicrostockUsageRoutes: RouteRecordRaw[] = ["
+                },
+                {
+                    "file": "scripts/lib/duplicate-english-allowlist.mjs",
+                    "op": "remove_lines_matching",
+                    "match": "^'[^']*microstock[^']*',?$"
+                },
+                {
+                    "file": "src/views/settings/SettingsView.vue",
+                    "op": "remove_lines_matching",
+                    "match": "(?i)^\\s*'?microstock'?: '"
+                }
+            ],
+            "unresolved": [],
+            "ignore": [
+                {
+                    "path": "i18n-duplicate-report.json",
+                    "reason": "hand edit (SPA): review the Microstock reference and drop it (line 178, 179, 416, 420, 421, 427)"
+                },
+                {
+                    "path": "scripts/apply-translations.mjs",
+                    "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 20, 21, 22, 121, 122)"
+                },
+                {
+                    "path": "scripts/check-i18n.mjs",
+                    "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 38, 40)"
+                },
+                {
+                    "path": "scripts/i18n-duplicate-report.mjs",
+                    "reason": "hand edit (tooling): review the Microstock reference and drop it (line 31)"
+                },
+                {
+                    "path": "src/api/types.ts",
+                    "reason": "hand edit (SPA): review the Microstock reference and drop it (line 560, 561, 574, 588, 599, 611)"
+                },
+                {
+                    "path": "src/components/archivd/ArCollectionDescribeModal.vue",
+                    "reason": "owned by the Archivd SPA tree: this file leaves with Archivd's own uninstall, nothing to do here (line 6, 24, 37, 38, 39, 54)"
+                },
+                {
+                    "path": "src/components/archivd/ArContextMenu.vue",
+                    "reason": "owned by the Archivd SPA tree: this file leaves with Archivd's own uninstall, nothing to do here (line 22, 60, 65)"
+                },
+                {
+                    "path": "src/components/archivd/ArDropzone.vue",
+                    "reason": "owned by the Archivd SPA tree: this file leaves with Archivd's own uninstall, nothing to do here (line 70, 74)"
+                },
+                {
+                    "path": "src/components/archivd/ArWorkspaceSwitcher.vue",
+                    "reason": "owned by the Archivd SPA tree: this file leaves with Archivd's own uninstall, nothing to do here (line 7, 20, 49, 72, 78, 80)"
+                },
+                {
+                    "path": "src/composables/archivd/useArchivdBrowse.ts",
+                    "reason": "owned by the Archivd SPA tree: this file leaves with Archivd's own uninstall, nothing to do here (line 18, 19, 20, 26, 27, 28)"
+                },
+                {
+                    "path": "src/composables/archivd/useArchivdHydrate.ts",
+                    "reason": "owned by the Archivd SPA tree: this file leaves with Archivd's own uninstall, nothing to do here (line 9, 23, 45, 56)"
+                },
+                {
+                    "path": "src/composables/archivd/useArchivdRealtime.ts",
+                    "reason": "owned by the Archivd SPA tree: this file leaves with Archivd's own uninstall, nothing to do here (line 12, 13, 24, 72, 74, 78)"
+                },
+                {
+                    "path": "src/views/archivd/ArchivdShowView.vue",
+                    "reason": "owned by the Archivd SPA tree: this file leaves with Archivd's own uninstall, nothing to do here (line 11, 50, 258, 260, 262, 267)"
+                },
+                {
+                    "path": "src/views/archivd/ArchivdView.vue",
+                    "reason": "owned by the Archivd SPA tree: this file leaves with Archivd's own uninstall, nothing to do here (line 13, 19, 20, 26, 28, 36)"
+                },
+                {
+                    "path": "src/views/inference/InferenceProviderShowView.vue",
+                    "reason": "hand edit (component): review the Microstock reference and drop it (line 15)"
+                },
+                {
+                    "path": "tests/archivdRealtime.test.ts",
+                    "reason": "test: review the Microstock reference and drop it (line 5, 115)"
+                }
+            ]
+        },
+        "docs": {
+            "delete": [
+                "docs/microstock"
+            ],
+            "edits": [
+                {
+                    "file": "docs-coverage.json",
+                    "op": "remove_lines_matching",
+                    "match": "^\\s*\"(?:product\\.microstock|microstock\\.collections|microstock\\.credits\\-and\\-usage|microstock\\.export\\-and\\-upload)\"\\s*:"
+                },
+                {
+                    "file": "sidebars.ts",
+                    "op": "remove_block",
+                    "begin": "label: 'Microstock'"
+                }
+            ],
+            "unresolved": [],
+            "ignore": [
+                {
+                    "path": "docusaurus.config.ts",
+                    "reason": "hand edit (docs site): review the Microstock reference and drop it (line 108, 109, 130, 131)"
+                },
+                {
+                    "path": "scripts/check-docs.mjs",
+                    "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 79)"
+                },
+                {
+                    "path": "src/components/HomepageFeatures/index.tsx",
+                    "reason": "hand edit (docs site): review the Microstock reference and drop it (line 19)"
+                }
+            ]
+        }
+    },
+    "data": {
+        "tables": [
+            "microstock_asset_metadata",
+            "microstock_marketplace_credentials",
+            "microstock_marketplace_uploads",
+            "microstock_ai_balances",
+            "microstock_ai_credit_transactions",
+            "microstock_ai_usage_events",
+            "microstock_daily_free_usage"
+        ],
+        "migrations": [
+            "database/migrations/2026_07_25_200002_create_microstock_asset_metadata_table.php",
+            "database/migrations/2026_07_25_200003_create_microstock_marketplace_credentials_table.php",
+            "database/migrations/2026_07_26_000001_remove_microstock_menu.php",
+            "database/migrations/2026_07_26_100002_add_error_to_microstock_asset_metadata.php",
+            "database/migrations/2026_07_27_100001_add_category_description_to_microstock_asset_metadata.php",
+            "database/migrations/2026_07_28_100001_create_microstock_ai_billing_tables.php",
+            "database/migrations/2026_07_28_120001_add_analysis_stages_to_microstock_asset_metadata.php",
+            "database/migrations/2026_07_28_140001_add_billing_run_tracking_to_microstock.php",
+            "database/migrations/2026_07_28_160001_add_microstock_daily_free_trial.php",
+            "database/migrations/2026_09_27_000006_add_marketplace_upload_to_microstock.php"
+        ],
+        "rbac": {
+            "permissions": [
+                "access microstock product"
+            ],
+            "roles": [
+                "Beta tester Microstock"
+            ]
+        },
+        "rows": [
+            {
+                "table": "product_domain_visibilities",
+                "key": {
+                    "product_key": "Microstock"
+                }
+            },
+            {
+                "table": "product_activations",
+                "key": {
+                    "product_key": "Microstock"
+                }
+            },
+            {
+                "table": "product_analytics",
+                "key": {
+                    "product_key": "Microstock"
+                }
+            },
+            {
+                "table": "menus",
+                "match": {
+                    "column": "route",
+                    "operator": "like",
+                    "value": "microstock.%"
+                }
+            },
+            {
+                "table": "menus",
+                "match": {
+                    "column": "route",
+                    "operator": "=",
+                    "value": "settings.microstock"
+                }
+            }
+        ]
+    },
+    "needles": [],
+    "notes": [
+        "Without --purge-data the 10 migrations stay; drop them by hand once the tables are gone.",
+        "Service catalog: the `microstock.plan.free`, `microstock.addon.workspace-slot.monthly` and `microstock.addon.ai-credits.5` rows go with the `services` purge; their service_prices / service_entitlements rows cascade from it.",
+        "AI connections: the `microstock-vision` / `microstock-thinking` rows in ai_connections go with the consumer bindings.",
+        "Queue workers: retire the `microstock-collection-*`, `microstock-solo*` and `microstock-upload` lanes from the worker order and the scheduler.",
+        "The `ignore` section is the reviewed hand-edit list: Archivd views/services, the Inference usage analytics, the Service catalog helpers and the shared Settings registry each name the exact edit and line."
+    ]
+}
