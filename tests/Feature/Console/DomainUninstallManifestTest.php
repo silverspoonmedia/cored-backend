@@ -72,54 +72,112 @@ class DomainUninstallManifestTest extends TestCase
 
     public function test_every_manifest_target_exists_and_every_op_removes_something(): void
     {
+        $this->assertManifestTargetsResolve();
+    }
+
+    /**
+     * The sibling-free half, made deterministic.
+     *
+     * CI checks out this repo alone on purpose — the sibling is private and a
+     * `GITHUB_TOKEN` scoped to this repo cannot fetch it (see the header of
+     * `.github/workflows/ci.yml`). On a developer machine both checkouts exist, so
+     * the sibling-free path would only ever run in CI; that is exactly how the
+     * guard shipped asserting that `spa` and `docs` targets resolve. Binding a
+     * scanner whose siblings are absent runs the real assertion logic under the CI
+     * condition on any machine.
+     */
+    public function test_the_target_guard_degrades_loudly_when_a_sibling_is_absent(): void
+    {
+        $this->app->instance(UninstallReferenceScanner::class, new class extends UninstallReferenceScanner
+        {
+            public function root(string $repo): ?string
+            {
+                return $repo === self::REPO_BACKEND ? parent::root($repo) : null;
+            }
+        });
+
+        $this->assertManifestTargetsResolve();
+    }
+
+    /**
+     * A manifest target that stopped resolving is the failure this guard exists for,
+     * so every finding is collected and asserted at once — an `assertNotSame` in the
+     * loop reported only the first and hid the rest.
+     *
+     * The one thing that is *not* a finding is a section whose checkout is absent:
+     * `plan()` marks it unverifiable and resolves nothing, and the plan's own warning
+     * is asserted instead, so a sibling-free green run can never be mistaken for
+     * cross-repo coverage — the convention `LocaleGuardTest` uses for the same reason.
+     */
+    private function assertManifestTargetsResolve(): void
+    {
         $manifest = app(UninstallManifest::class);
+        $scanner = app(UninstallReferenceScanner::class);
 
         foreach ($this->productDomains() as $name) {
             $plan = $manifest->plan($name);
+            $report = [];
 
             foreach ($plan['deletes'] as $entry) {
-                $this->assertNotSame(
-                    [],
-                    $entry['matches'],
-                    "{$name}: delete path matches nothing — {$entry['repo']}:{$entry['path']}"
-                );
-            }
-
-            foreach ($plan['edits'] as $entry) {
-                $this->assertNotSame(
-                    [],
-                    $entry['matches'],
-                    "{$name}: edit file matches nothing — {$entry['repo']}:{$entry['file']}"
-                );
-
-                $this->assertGreaterThan(
-                    0,
-                    $entry['removed'],
-                    "{$name}: op [{$entry['op']}] on {$entry['repo']}:{$entry['file']} removes nothing."
-                );
-            }
-
-            foreach ($plan['data']['migrations'] ?? [] as $migration) {
-                $this->assertFileExists(base_path($migration), "{$name}: migration missing — {$migration}");
-            }
-
-            $loaded = $plan['manifest'];
-
-            foreach (UninstallReferenceScanner::REPOS as $repo) {
-                $root = app(UninstallReferenceScanner::class)->root($repo);
-
-                if ($root === null) {
+                if (! $scanner->siblingPresent($entry['repo'])) {
                     continue;
                 }
 
-                foreach ($loaded['repos'][$repo]['ignore'] ?? [] as $entry) {
-                    $this->assertNotSame(
-                        [],
-                        $manifest->resolve($root, (string) $entry['path']),
-                        "{$name}: ignore path matches nothing — {$repo}:{$entry['path']}"
-                    );
+                if ($entry['matches'] === []) {
+                    $report[] = "delete path matches nothing — {$entry['repo']}:{$entry['path']}";
                 }
             }
+
+            foreach ($plan['edits'] as $entry) {
+                if (! $scanner->siblingPresent($entry['repo'])) {
+                    continue;
+                }
+
+                if ($entry['matches'] === []) {
+                    $report[] = "edit file matches nothing — {$entry['repo']}:{$entry['file']}";
+
+                    continue;
+                }
+
+                if ($entry['removed'] < 1) {
+                    $report[] = "op [{$entry['op']}] on {$entry['repo']}:{$entry['file']} removes nothing";
+                }
+            }
+
+            foreach ($plan['data']['migrations'] ?? [] as $migration) {
+                if (! File::isFile(base_path($migration))) {
+                    $report[] = "migration missing — {$migration}";
+                }
+            }
+
+            foreach (UninstallReferenceScanner::REPOS as $repo) {
+                $root = $scanner->root($repo);
+
+                if ($root === null) {
+                    // Asserted rather than skipped silently: the absent checkout has
+                    // to be visible in the run, or "0 findings" reads as "checked".
+                    $this->assertContains(
+                        "sibling checkout absent — section [{$repo}] skipped (unverifiable, not clean)",
+                        $plan['warnings'],
+                        "{$name}: the plan must report [{$repo}] as unverifiable while its checkout is absent."
+                    );
+
+                    continue;
+                }
+
+                foreach ($plan['manifest']['repos'][$repo]['ignore'] ?? [] as $entry) {
+                    if ($manifest->resolve($root, (string) $entry['path']) === []) {
+                        $report[] = "ignore path matches nothing — {$repo}:{$entry['path']}";
+                    }
+                }
+            }
+
+            $this->assertSame(
+                [],
+                $report,
+                "Product domain [{$name}] has manifest targets that no longer resolve:\n  - "
+                .implode("\n  - ", $report)
+            );
         }
     }
 
