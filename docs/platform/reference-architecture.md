@@ -63,7 +63,7 @@ Implementation: [`DomainManager`](../../app/Support/Domain/DomainManager.php), `
 
 ## Domain uninstall manifest
 
-A product domain records everything it touched outside `app/Domain/{Name}/` in **one file inside the domain**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. `domain:make` scaffolds it, it dies with the domain, and `domain:remove` executes it — so removing a domain is reading one reviewed map instead of re-auditing the tree. Only product domains have one; core domains are refused before a manifest is ever read.
+A product domain records everything it touched outside `app/Domain/{Name}/` in **one file inside the domain**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. `domain:make` scaffolds it, it dies with the domain, and `domain:remove` executes it — so removing a domain is reading one reviewed map instead of re-auditing the tree. Only product domains have one; core domains are refused before a manifest is ever read. The sample below is illustrative — `Blog` is not a live domain (it was removed 2026-10-02); the three current manifests are Archivd, Vtual and Microstock.
 
 ```json
 {
@@ -138,10 +138,10 @@ Machine-local files are out of scope. A `.gitignore`d override (for example `dat
 ### Day-2 workflow
 
 ```powershell
-php artisan domain:remove Blog --draft-manifest      # only when no uninstall.json exists yet
-php artisan domain:remove Blog --dry-run             # plan + unresolved + unlisted references
-php artisan domain:remove Blog --force               # execute the file half
-php artisan domain:remove Blog --purge-data --force  # …and drop tables/rows/RBAC/migrations
+php artisan domain:remove {Name} --draft-manifest      # only when no uninstall.json exists yet
+php artisan domain:remove {Name} --dry-run             # plan + unresolved + unlisted references
+php artisan domain:remove {Name} --force               # execute the file half
+php artisan domain:remove {Name} --purge-data --force  # …and drop tables/rows/RBAC/migrations
 ```
 
 `--dry-run` is read-only and is allowed while the domain is locked. `--force` skips the confirmation prompt but **not** the `unresolved` check. Without `--purge-data` the migrations stay, matching the historical `domain:remove` behaviour; `--purge-data` is refused unless `DestructiveDatabaseCommandGuard` allows it (`ALLOW_DESTRUCTIVE_DB=true` outside sqlite/local). After a run the command flushes the navigation and permission caches, because menus and RBAC moved.

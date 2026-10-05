@@ -39,16 +39,24 @@ The job is the slow half of the workflow (the `locale` job is seconds). That is 
 
 ## A green run is `failed: 0`
 
-**A green run is `failed: 0`, not `passed == tests`.** The suite ends at `2461 tests, 2460 passed, 1 skipped, 1 risky` (re-measured 2026-09-29; ~13 min) and both non-passed counts are by design:
+**A green run is `failed: 0`, not `passed == tests`.** The suite is `2454` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. Each row is quoted exactly as that environment prints it:
+
+| Source | Result (re-measured 2026-10-05) |
+|---|---|
+| Local `php artisan test`, both siblings present | JSON report: `"tests":2454, "passed":2453, "skipped":1, "risky":1, "assertions":25268` (~13 min) |
+| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 2445 passed (25238 assertions)` |
+
+Both are green: `failed: 0` is the contract, and the total is `2454` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
 
 | Count | Source | Why it is expected |
 |---|---|---|
-| `skipped: 1` | `tests/Feature/Oci/OciKmsConnectionIntegrationTest.php` | Live OCI KMS connectivity check; it skips unless `OCI_KMS_INTEGRATION_TEST=true` is exported. Never enable it in CI — it needs real cloud credentials and the network. |
+| `skipped: 1` (any checkout) | `tests/Feature/Oci/OciKmsConnectionIntegrationTest.php` | Live OCI KMS connectivity check; it skips unless `OCI_KMS_INTEGRATION_TEST=true` is exported. Never enable it in CI — it needs real cloud credentials and the network. |
+| `skipped: +7` (sibling-free only) | `LocaleGuardTest` ×4 — `locale-prose-scan.php`, `locale-rawkey-scan.php`, `locale-pack-parity.php`, `locale-glossary-scan.php` — and `DocsStructureGuardTest`, `DocsCrossRepoLinkTest`, `DocsBudgetGuardTest` | Each cross-repo case first asserts the guard **fails loudly** without the sibling (`exit 1`, `cannot see the SPA repo`) and only then marks itself skipped. A pass would claim coverage the run never had, so the skip is the honest summary — see [reference-localization.md — CI coverage vs manual runs](reference-localization.md#ci-coverage-vs-manual-runs). |
 | `risky: 1` | `tests/Domain/Service/Unit/Services/ArchivdAdminJourneyScenarioTest.php` | The test prints its scenario report (a JSON journey dump) to stdout, which PHPUnit reports as risky output. Pre-existing since 2026-09-08 and unrelated to the vTual work; it pollutes the job log but does not fail the run. |
 
 Do not "fix" either by adding `--fail-on-risky` or by deleting the skip: the first turns a cosmetic warning into a red build, the second removes the only coverage of the live-cloud path. If the Archivd report output ever needs silencing, capture it with `ob_start()` / `ob_get_clean()` inside that test rather than suppressing the whole suite's output.
 
-`DocsStructureGuardTest` adds a third non-passed count on the runner: it **skips**, because the docs guard spans both repos and the sibling is private. The test asserts the guard fails loudly in that case rather than reporting a false green, so the skip is visible in the summary instead of hiding behind a pass.
+One cross-repo guard deliberately does **not** skip. `DomainUninstallManifestTest` proves the sibling-absent path without a sibling by binding a scanner whose `root()` returns `null` for the SPA and docs repos (`test_the_target_guard_degrades_loudly_when_a_sibling_is_absent`), then asserting the plan reports `sibling checkout absent — section [...] skipped (unverifiable, not clean)`. It runs green on the runner, so the degradation is **covered** there rather than only counted as skipped. Copy that shape when a new cross-repo guard needs runner coverage: a skip proves the guard ran and could not see half its input; an injected absent sibling proves the guard is *correct* about it.
 
 ## The docs gates
 
