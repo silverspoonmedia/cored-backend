@@ -22,8 +22,8 @@ Full index of the **project-specific** command surface (beyond Laravel/package d
 | Command | Purpose | Details |
 |---------|---------|---------|
 | `domain:list` | List registered domain modules (kind core\|product + removal status) | [architecture.md](architecture.md) |
-| `domain:make` | Scaffold a new product domain module under `app/Domain/*` (locked by default) | [architecture.md](architecture.md) |
-| `domain:remove` | Remove an unlocked product domain (refuses core and locked product domains) | [architecture.md](architecture.md) |
+| `domain:make` | Scaffold a new product domain module under `app/Domain/*` (locked by default) + a starter `uninstall.json` | [architecture.md](architecture.md) |
+| `domain:remove` | Remove an unlocked product domain by executing its `uninstall.json` — `--dry-run`, `--draft-manifest`, `--force`, `--purge-data` (guarded) | [architecture.md](architecture.md), [reference-architecture.md](reference-architecture.md#domain-uninstall-manifest) |
 
 ## Database
 

@@ -14,6 +14,7 @@
 1. **Assess before changing** — open the owning rule for the area you touch (table below) and the file's nearest test. No blind edits.
 2. **Update docs and rules with every task** — the owning brief in `docs/` and the rule file when an invariant moved. `wrap up the docs` = session-wide consolidation of code ↔ docs ↔ rules across both repos.
 3. **Respect scope and context** — tag the task `[fullstack]`/`[backend]`/`[frontend]`, and follow the context budget. User-facing copy follows the always-on i18n guardrail.
+4. **Record removals as you go** — a product domain's files outside `app/Domain/{Name}/` are listed in its `uninstall.json` in the same task; the `domain-remove` skill owns the removal procedure.
 
 ## Rule map (all `.cursor/rules/*.mdc`)
 

@@ -14,10 +14,13 @@
 .phpactor.json
 .phpunit.result.cache
 /.codex
-# Cursor local state; committed project rules live in .cursor/rules/
+# Cursor local state; committed project rules live in .cursor/rules/ and
+# committed project skills live in .cursor/skills/ (e.g. domain-remove).
 /.cursor/*
 !/.cursor/rules/
 !/.cursor/rules/**
+!/.cursor/skills/
+!/.cursor/skills/**
 /.idea
 /.nova
 /.oci

@@ -33,6 +33,17 @@ class DestructiveDatabaseCommandGuard
             return false;
         }
 
+        return $this->shouldBlockDestructive($driver, $allowDestructive);
+    }
+
+    /**
+     * The destructive decision without the command-name check, for a command
+     * that is destructive only under a flag (`domain:remove --purge-data`).
+     * Putting `domain:remove` on the auto-guard list would block the ordinary,
+     * non-destructive removal too.
+     */
+    public function shouldBlockDestructive(string $driver, bool $allowDestructive): bool
+    {
         if ($driver === 'sqlite') {
             return false;
         }
@@ -42,6 +53,16 @@ class DestructiveDatabaseCommandGuard
         }
 
         return in_array($driver, ['mysql', 'pgsql', 'mariadb', 'sqlsrv'], true);
+    }
+
+    public function assertPurgeAllowed(string $context = 'domain:remove --purge-data'): void
+    {
+        if ($this->shouldBlockDestructive(
+            (string) config('database.default'),
+            $this->destructiveOperationsAllowed(),
+        )) {
+            throw new RuntimeException($this->blockedMessage($context));
+        }
     }
 
     public function destructiveOperationsAllowed(): bool

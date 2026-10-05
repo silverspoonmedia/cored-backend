@@ -311,6 +311,88 @@ class DomainCommandsTest extends TestCase
         );
     }
 
+    public function test_domain_remove_dry_run_prints_the_plan_and_changes_nothing(): void
+    {
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--removable' => true,
+        ])->assertSuccessful();
+
+        $manifestPath = app_path('Domain/'.self::TEST_DOMAIN.'/uninstall.json');
+        $this->assertFileExists($manifestPath);
+
+        $manifest = File::get($manifestPath);
+        $config = File::get($this->domainsConfigPath);
+
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--dry-run' => true,
+        ])
+            ->assertSuccessful()
+            ->expectsOutputToContain('Uninstall plan for')
+            ->expectsOutputToContain('Dry run');
+
+        $this->assertDirectoryExists(app_path('Domain/'.self::TEST_DOMAIN));
+        $this->assertSame($manifest, File::get($manifestPath));
+        $this->assertSame($config, File::get($this->domainsConfigPath));
+    }
+
+    public function test_domain_remove_draft_manifest_writes_a_candidate_and_refuses_to_overwrite(): void
+    {
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--removable' => true,
+        ])->assertSuccessful();
+
+        $manifestPath = app_path('Domain/'.self::TEST_DOMAIN.'/uninstall.json');
+        File::delete($manifestPath);
+
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--draft-manifest' => true,
+        ])
+            ->assertSuccessful()
+            ->expectsOutputToContain('Draft written to');
+
+        $this->assertFileExists($manifestPath);
+        $draft = json_decode(File::get($manifestPath), true);
+        $this->assertSame('domain-uninstall/v1', $draft['schema']);
+        $this->assertSame(self::TEST_DOMAIN, $draft['domain']);
+
+        // Drafting is not removing.
+        $this->assertDirectoryExists(app_path('Domain/'.self::TEST_DOMAIN));
+
+        // A second draft must not clobber a reviewed manifest.
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--draft-manifest' => true,
+        ])->assertFailed();
+    }
+
+    public function test_domain_remove_purge_data_is_refused_without_the_env_flag(): void
+    {
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--removable' => true,
+        ])->assertSuccessful();
+
+        config([
+            'database.default' => 'mysql',
+            'database.allow_destructive_db' => false,
+        ]);
+
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--purge-data' => true,
+            '--force' => true,
+        ])->assertFailed();
+
+        // The guard runs before any deletion, so nothing was touched.
+        $this->assertDirectoryExists(app_path('Domain/'.self::TEST_DOMAIN));
+        $this->assertFileExists(app_path('Domain/'.self::TEST_DOMAIN.'/uninstall.json'));
+        $this->assertStringContainsString("'".self::TEST_DOMAIN."'", File::get($this->domainsConfigPath));
+    }
+
     private function purgeTestDomainArtifacts(): void
     {
         $domainDir = app_path('Domain/'.self::TEST_DOMAIN);

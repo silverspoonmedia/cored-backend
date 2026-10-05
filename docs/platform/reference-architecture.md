@@ -28,6 +28,8 @@ Do **not** collapse taxonomy and lifecycle into one label.
 
 There is **no** `domain:unlock` command — unlock is a deliberate config edit.
 
+Removal then reads that domain's [`uninstall.json`](#domain-uninstall-manifest). A product without one still falls back to the structural behaviour (`app/Domain/{Name}`, provider, route files, tests, seeder) with an explicit warning; the manifest is what adds the shared-file edits, the cross-repo deletes, and the data purge.
+
 ### Config shape
 
 ```php
@@ -46,17 +48,109 @@ Core entries omit `locked` (N/A). Product entries always carry `locked`.
 php artisan domain:list
 php artisan domain:make Billing                 # product, locked by default
 php artisan domain:make Scratch --removable
-php artisan domain:remove Scratch --force
+php artisan domain:remove Scratch --dry-run     # plan + unlisted references, changes nothing
+php artisan domain:remove Scratch --force       # executes the manifest
 # Locked product: edit config/domains.php → locked false, then domain:remove
 ```
 
 | Command | Effect |
 |---------|--------|
 | `domain:list` | Name, **Kind** (`core`\|`product`), **Removal** (`never`\|`locked`\|`removable`), whether `app/Domain/{Name}` exists |
-| `domain:make` | Scaffold folders, provider, route stubs, tests, **`{Name}RoleSeeder`** (Beta tester role + `access {domain} product` permission + Public visibility row); register as **product** (locked by default) and wire the seeder into `DatabaseSeeder` |
-| `domain:remove` | Delete domain PHP/routes/tests/provider; **not** migrations. Refuses core and locked product. |
+| `domain:make` | Scaffold folders, provider, route stubs, tests, **`{Name}RoleSeeder`** (Beta tester role + `access {domain} product` permission + Public visibility row) and a starter **`uninstall.json`**; register as **product** (locked by default) and wire the seeder into `DatabaseSeeder` |
+| `domain:remove` | Execute the domain's `uninstall.json`: delete paths (backend/SPA/docs), apply shared-file edits, optionally purge data. Refuses core and locked product. Migrations stay without `--purge-data`. |
 
 Implementation: [`DomainManager`](../../app/Support/Domain/DomainManager.php), `app/Console/Commands/Domain/*`.
+
+## Domain uninstall manifest
+
+A product domain records everything it touched outside `app/Domain/{Name}/` in **one file inside the domain**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. `domain:make` scaffolds it, it dies with the domain, and `domain:remove` executes it — so removing a domain is reading one reviewed map instead of re-auditing the tree. Only product domains have one; core domains are refused before a manifest is ever read.
+
+```json
+{
+  "schema": "domain-uninstall/v1",
+  "domain": "Blog",
+  "repos": {
+    "backend": {
+      "delete": ["app/Domain/Blog", "config/blog.php", "routes/api/v1/blog.php", "lang/*/api/blog.php"],
+      "edits": [
+        { "file": "database/seeders/RoleSeeder.php", "op": "remove_quoted_strings", "match": ["view posts"] },
+        { "file": "config/spa-routes.php", "op": "remove_quoted_strings", "match": ["blog.index"] },
+        { "file": "lang/*/list_actions.php", "op": "remove_array_keys", "match": ["posts."] },
+        { "file": ".env.example", "op": "remove_lines_matching", "match": "^BLOG_" }
+      ],
+      "unresolved": [],
+      "ignore": []
+    },
+    "spa": { "delete": ["src/views/blog"], "edits": [], "unresolved": [], "ignore": [] },
+    "docs": { "delete": ["docs/blog"], "edits": [], "unresolved": [], "ignore": [] }
+  },
+  "data": {
+    "tables": ["blog_posts"],
+    "migrations": ["database/migrations/2026_09_16_000001_create_blog_tables.php"],
+    "rbac": { "permissions": ["view posts"], "roles": ["Beta tester Blog"] },
+    "rows": [
+      { "table": "product_activations", "key": { "product_key": "Blog" } },
+      { "table": "menus", "match": { "column": "route", "operator": "like", "value": "blog.%" } }
+    ]
+  },
+  "needles": [],
+  "notes": ["External WebSub subscriptions must be revoked by hand."]
+}
+```
+
+| Section | Meaning |
+|---------|---------|
+| `repos.backend` / `repos.spa` / `repos.docs` | One section per checkout. `backend` is this repo; `spa` and `docs` are sibling checkouts. |
+| `delete[]` | Repo-relative file or directory paths; `*` globs allowed (`lang/*/api/blog.php`). A path that matches nothing is a plan warning, not a failure — the domain may never have added it. |
+| `edits[]` | Shared-file surgery: `file` (may glob) + `op` + its spec. |
+| `unresolved[]` | Draft-time worklist — `{file, reason}`. `domain:remove` refuses to run while it is not empty (unless `--force`) and the drift guard fails on it. |
+| `ignore[]` | Reviewed survivor references — `{path, reason}`. The reason is mandatory and may not start with `TODO`; it says why the reference survives **or** spells out the hand edit the closed op vocabulary cannot express. |
+| `data.tables` / `data.migrations` | Dropped / deleted only under `--purge-data`. |
+| `data.rbac` | Role and permission **names** deleted by name under `--purge-data`. |
+| `data.rows` | Row purge under `--purge-data`: `{table, key: {col: value}}` or `{table, match: {column, operator, value}}`. |
+| `needles[]` | Extra literals the drift scan looks for beyond the derived set. |
+| `notes[]` | Work no op can express (external subscriptions, queue lanes, docblock rewordings). Read it before calling the removal done. |
+
+### Op vocabulary (closed)
+
+Text surgery on line/bracket boundaries — no AST round-trip, so exact indentation and comments survive.
+
+| Op | Spec | Effect |
+|----|------|--------|
+| `remove_lines_matching` | `match` (regex) | Drop every line matching the regex. |
+| `remove_quoted_strings` | `match` (list) | Remove each listed literal, including inside inline arrays. |
+| `remove_array_keys` | `match` (list of dotted PHP paths) | Remove a balanced `'key' => […]` block; prunes a container left empty. |
+| `remove_block` | `begin` (anchor) | Remove the balanced `[…]` / `{…}` starting at the anchor. |
+| `remove_json_keys` | `match` (list of dotted JSON paths) | Remove a JSON key; prunes a container left empty. |
+
+Anything the five ops cannot express goes to `notes[]` or an `ignore[]` reason. The vocabulary stays closed so a removal cannot invent a new way to edit files.
+
+### The scan
+
+`UninstallReferenceScanner` finds every reference to the domain across the three checkouts (PHP, JSON, TS, Vue, YAML, env — markdown prose is out of scope, that is the docs-sync contract). Needles: `App\Domain\{Name}\`, `{Name}ServiceProvider`, `{Name}RoleSeeder`, `Beta tester {Name}`, `domain.access:{Name}`, `product.active:{Name}`, `{slug}.` route names, `product.{slug}`, `docs/domains/{slug}`, the bare `{Name}` / `{slug}` tokens, plus the manifest's own `needles[]` and `data.tables`.
+
+A reference is **covered** when its file is inside a `delete` path, is the target of an `edits[]` entry, is listed in `ignore`, is one of the five structural files `domain:remove` already rewrites (`config/domains.php`, `bootstrap/providers.php`, `routes/api/v1.php`, `routes/web.php`, `database/seeders/DatabaseSeeder.php`), or is a `data.migrations` entry. Everything else is an **unlisted reference**.
+
+The scan runs in both directions: `--draft-manifest` turns it into a candidate manifest, and `DomainUninstallManifestTest` uses it to prove nothing a domain touched is missing.
+
+Machine-local files are out of scope. A `.gitignore`d override (for example `database/seeders/data/*.local.php`) exists on one machine and not in a clean checkout, so scanning it would make the manifest — and the guard — depend on who runs them; a backend path has no "unverifiable" escape the way an absent sibling checkout does. The reference is neither scanned nor recorded, and a hand edit such an override still needs goes in `notes[]`.
+
+### Day-2 workflow
+
+```powershell
+php artisan domain:remove Blog --draft-manifest      # only when no uninstall.json exists yet
+php artisan domain:remove Blog --dry-run             # plan + unresolved + unlisted references
+php artisan domain:remove Blog --force               # execute the file half
+php artisan domain:remove Blog --purge-data --force  # …and drop tables/rows/RBAC/migrations
+```
+
+`--dry-run` is read-only and is allowed while the domain is locked. `--force` skips the confirmation prompt but **not** the `unresolved` check. Without `--purge-data` the migrations stay, matching the historical `domain:remove` behaviour; `--purge-data` is refused unless `DestructiveDatabaseCommandGuard` allows it (`ALLOW_DESTRUCTIVE_DB=true` outside sqlite/local). After a run the command flushes the navigation and permission caches, because menus and RBAC moved.
+
+Sibling checkouts resolve as `dirname(base_path()).'/monolith-vue-workers'` and `'/docs'`. An absent sibling is reported **unverifiable** — never clean — and its section is skipped, so a CI that checks out one repo cannot silently pass a cross-repo removal.
+
+The AI-facing procedure is [.cursor/skills/domain-remove/SKILL.md](../../.cursor/skills/domain-remove/SKILL.md); this section owns the schema and the op vocabulary.
+
+Implementation: [`UninstallManifest`](../../app/Support/Domain/UninstallManifest.php), [`UninstallFileEditor`](../../app/Support/Domain/UninstallFileEditor.php), [`UninstallReferenceScanner`](../../app/Support/Domain/UninstallReferenceScanner.php).
 
 ## Directory layout
 
@@ -136,7 +230,7 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 
 ## Adding a new domain
 
-1. `php artisan domain:make {Name}` (or `--removable`) — always scaffolds a **product** domain (also generates `database/seeders/{Name}RoleSeeder.php` and registers it in `DatabaseSeeder`)
+1. `php artisan domain:make {Name}` (or `--removable`) — always scaffolds a **product** domain (also generates `database/seeders/{Name}RoleSeeder.php`, registers it in `DatabaseSeeder`, and writes a starter `uninstall.json`)
 2. Implement under `app/Domain/{Name}/`
 3. Fill `routes/api/v1/{slug}.php` and `routes/web/{slug}.php` — gate the product group with `domain.access:{Name}` **before** `product.active:{Name}` / `permission:` (see [Domain Access](../domains/domain-access/README.md))
 4. Run `php artisan db:seed --class={Name}RoleSeeder` to create the Beta tester role + Public visibility row
