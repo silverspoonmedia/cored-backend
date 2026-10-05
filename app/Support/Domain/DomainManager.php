@@ -292,6 +292,21 @@ class DomainManager
         $this->registerApiV1Require($name);
         $this->registerWebRequire($name);
         $this->registerDomainSeeder($name);
+        $this->writeUninstallDraft($name);
+    }
+
+    /**
+     * Seed app/Domain/{Name}/uninstall.json from the live scan, so the new domain
+     * starts with an accurate removal mapping instead of one written from memory
+     * at removal time. See UninstallManifest.
+     */
+    private function writeUninstallDraft(string $name): void
+    {
+        $manifest = app(UninstallManifest::class);
+
+        if (! $manifest->exists($name)) {
+            $manifest->writeDraft($name);
+        }
     }
 
     /**
@@ -480,7 +495,7 @@ class DomainManager
             return;
         }
 
-        File::put($path, rtrim($contents)."\n{$line}\n");
+        File::put($path, $this->appendLine($contents, $line));
     }
 
     public function registerWebRequire(string $name): void
@@ -498,7 +513,7 @@ class DomainManager
         if (str_contains($contents, $anchor)) {
             $updated = str_replace($anchor, $anchor."\n{$line}", $contents);
         } else {
-            $updated = rtrim($contents)."\n\n{$line}\n";
+            $updated = $this->appendLine($contents, $line);
         }
 
         if ($updated === $contents) {
@@ -667,7 +682,25 @@ class DomainManager
             static fn (string $line): bool => ! str_contains($line, $needle)
         ));
 
-        File::put($path, implode("\n", $filtered).(str_ends_with($contents, "\n") ? "\n" : ''));
+        // Rejoin faithfully: the trailing empty elements preg_split leaves behind
+        // *are* the file's trailing newlines, so make → remove round-trips to the
+        // same bytes. Appending an extra newline here used to add a blank line.
+        File::put($path, implode("\n", $filtered));
+    }
+
+    /**
+     * Append a line without flattening the file's existing trailing newlines.
+     */
+    private function appendLine(string $contents, string $line): string
+    {
+        $trimmed = rtrim($contents, "\r\n");
+        $suffix = substr($contents, strlen($trimmed));
+
+        if ($suffix === '') {
+            $suffix = "\n";
+        }
+
+        return $trimmed."\n".$line.$suffix;
     }
 
     private function providerStub(string $name): string

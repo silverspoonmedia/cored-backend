@@ -56,6 +56,7 @@ class MakeDomainCommand extends Command
         $this->line("  - <info>routes/web/{$slug}.php</info>");
         $this->line("  - <info>database/seeders/{$name}RoleSeeder.php</info> (Beta tester role + Public visibility)");
         $this->line("  - <info>tests/Domain/{$name}/Feature/</info>");
+        $this->line("  - <info>app/Domain/{$name}/uninstall.json</info> (removal mapping for domain:remove)");
         $this->line('Registered in config/domains.php, bootstrap/providers.php, routes/api/v1.php, routes/web.php, database/seeders/DatabaseSeeder.php.');
 
         if ($locked) {
