@@ -59,6 +59,23 @@ class UninstallReferenceScanner
     ];
 
     /**
+     * Files that are not repo content: machine-local overrides `.gitignore`
+     * excludes (`/database/seeders/data/*.local.php`).
+     *
+     * They exist on a developer machine and are absent from a clean checkout, so
+     * scanning them makes the manifest — and the drift guard — depend on who runs
+     * it. There is no "unverifiable" escape for a backend path the way there is
+     * for an absent sibling checkout, so the reference is neither scanned nor
+     * recorded; a removal cannot act on a file that never ships, and the hand edit
+     * the override still needs belongs in the manifest's `notes`.
+     *
+     * @var list<string>
+     */
+    private const SKIP_FILE_PATTERNS = [
+        'database/seeders/data/*.local.php',
+    ];
+
+    /**
      * Extensions the reference scan reads.
      *
      * Markdown is deliberately absent: prose mentions are the docs-sync
@@ -238,6 +255,12 @@ class UninstallReferenceScanner
     {
         foreach (self::SKIP_DIRS as $skip) {
             if ($relative === $skip || str_starts_with($relative, $skip.'/')) {
+                return true;
+            }
+        }
+
+        foreach (self::SKIP_FILE_PATTERNS as $pattern) {
+            if (fnmatch($pattern, $relative)) {
                 return true;
             }
         }

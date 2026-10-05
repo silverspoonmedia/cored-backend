@@ -232,14 +232,6 @@
                     "begin": "'Microstock' => ["
                 },
                 {
-                    "file": "database/seeders/data/ai-connections.local.php",
-                    "op": "remove_array_keys",
-                    "match": [
-                        "microstock-vision",
-                        "microstock-thinking"
-                    ]
-                },
-                {
                     "file": "database/seeders/data/ai-connections.local.example.php",
                     "op": "remove_array_keys",
                     "match": [
@@ -1317,6 +1309,7 @@
         "Without --purge-data the 10 migrations stay; drop them by hand once the tables are gone.",
         "Service catalog: the `microstock.plan.free`, `microstock.addon.workspace-slot.monthly` and `microstock.addon.ai-credits.5` rows go with the `services` purge; their service_prices / service_entitlements rows cascade from it.",
         "AI connections: the `microstock-vision` / `microstock-thinking` rows in ai_connections go with the consumer bindings.",
+        "`database/seeders/data/ai-connections.local.php` is gitignored machine-local config, so it is not scanned and not recorded: drop its `microstock-vision` / `microstock-thinking` keys by hand if your checkout has one.",
         "Queue workers: retire the `microstock-collection-*`, `microstock-solo*` and `microstock-upload` lanes from the worker order and the scheduler.",
         "The `ignore` section is the reviewed hand-edit list: Archivd views/services, the Inference usage analytics, the Service catalog helpers and the shared Settings registry each name the exact edit and line."
     ]

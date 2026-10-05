@@ -133,6 +133,8 @@ A reference is **covered** when its file is inside a `delete` path, is the targe
 
 The scan runs in both directions: `--draft-manifest` turns it into a candidate manifest, and `DomainUninstallManifestTest` uses it to prove nothing a domain touched is missing.
 
+Machine-local files are out of scope. A `.gitignore`d override (for example `database/seeders/data/*.local.php`) exists on one machine and not in a clean checkout, so scanning it would make the manifest — and the guard — depend on who runs them; a backend path has no "unverifiable" escape the way an absent sibling checkout does. The reference is neither scanned nor recorded, and a hand edit such an override still needs goes in `notes[]`.
+
 ### Day-2 workflow
 
 ```powershell

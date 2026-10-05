@@ -402,10 +402,6 @@
                     "reason": "hand edit: drop the `vtual.*` keys (line 79, 81, 82)"
                 },
                 {
-                    "path": "database/seeders/data/ai-connections.local.php",
-                    "reason": "hand edit: drop the `vtual.*` keys (line 44, 46, 47)"
-                },
-                {
                     "path": "routes/api/v1/vtual-public.php",
                     "reason": "hand edit: drop the `use App\\Domain\\Vtual\\…` import and the code that consumes it (line 3, 4, 7, 8, 9)"
                 },
@@ -1358,6 +1354,7 @@
     "notes": [
         "Without --purge-data the 33 migrations stay; drop them by hand once the `vtual_*` tables are gone.",
         "The `ignore` section is the reviewed hand-edit list: each entry names the exact edit and line.",
+        "`database/seeders/data/ai-connections.local.php` is gitignored machine-local config, so it is not scanned and not recorded: drop its `vtual.*` keys by hand if your checkout has one.",
         "WebSub / EventSub subscriptions must be revoked before the tables go: cancel outstanding subscriptions, then drop `vtual_websub_subscriptions` / `vtual_eventsub_subscriptions`.",
         "`DomainAccessSeeder::PRODUCT_DOMAINS` loses this domain in the same change (recorded as an edit); the docblock naming the domains is prose and needs a reword.",
         "`src/valkivid3/**` is the frozen landing page: its Vtual files leave with this domain, and the vTual presentation utilities in `src/utils/vtual*.ts` go with them."
