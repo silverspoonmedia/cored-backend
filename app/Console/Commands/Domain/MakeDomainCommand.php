@@ -13,7 +13,8 @@ class MakeDomainCommand extends Command
     protected $signature = 'domain:make
         {name : Domain name in StudlyCase or kebab-case (e.g. Billing, activity-log)}
         {--locked : Create as locked product against removal (default)}
-        {--removable : Create as removable product (overrides --locked)}';
+        {--removable : Create as removable product (overrides --locked)}
+        {--parent= : Parent product domain name (scaffolds a subproduct)}';
 
     /** @var string */
     protected $description = 'Scaffold a new product domain module under app/Domain/* (locked by default)';
@@ -30,12 +31,20 @@ class MakeDomainCommand extends Command
 
         $locked = $this->resolveLocked();
 
+        try {
+            $parent = $this->resolveParent($domains);
+        } catch (InvalidArgumentException $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+
         $lifecycle = $locked ? 'locked' : 'removable';
         $this->info("Creating domain [{$name}] (product, {$lifecycle})…");
         $this->newLine();
 
         try {
-            $domains->scaffold($name, locked: $locked);
+            $domains->scaffold($name, locked: $locked, parent: $parent);
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
 
@@ -49,6 +58,11 @@ class MakeDomainCommand extends Command
         $slug = $domains->slug($name);
 
         $this->components->info("Domain [{$name}] created (product, {$lifecycle}).");
+
+        if ($parent !== null) {
+            $this->line("Parent: <info>{$parent}</info> (subproduct — remove the parent only after this domain).");
+        }
+
         $this->line('Created:');
         $this->line("  - <info>app/Domain/{$name}/</info>");
         $this->line("  - <info>app/Providers/Domain/{$name}ServiceProvider.php</info>");
@@ -93,5 +107,30 @@ class MakeDomainCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * Composition axis — an optional registered product parent (subproduct).
+     * A subproduct is still a full product; only its removal order changes.
+     *
+     * @throws InvalidArgumentException when the parent is not a registered product domain
+     */
+    private function resolveParent(DomainManager $domains): ?string
+    {
+        $raw = $this->option('parent');
+
+        if (! is_string($raw) || trim($raw) === '') {
+            return null;
+        }
+
+        $parent = $domains->normalizeName($raw);
+
+        if (! $domains->isRegistered($parent) || ! $domains->isProduct($parent)) {
+            throw new InvalidArgumentException(
+                "Parent [{$parent}] is not a registered product domain. Register it first, or drop --parent."
+            );
+        }
+
+        return $parent;
     }
 }

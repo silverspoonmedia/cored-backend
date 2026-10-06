@@ -27,7 +27,7 @@ Every living brief is listed in this index; narrative, audits and progress track
 
 | Document | Topic |
 |----------|-------|
-| [architecture.md](platform/architecture.md) | Logical monorepo, kind core\|product + locked lifecycle, routes, namespaces |
+| [architecture.md](platform/architecture.md) | Logical monorepo, kind core\|product + locked lifecycle + parent composition, routes, namespaces |
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
 | [api-envelope.md](platform/api-envelope.md) | Canonical JSON envelope, error mapping, `/batch` partial-failure contract |
 | [commands.md](platform/commands.md) | Artisan command index |
@@ -62,9 +62,9 @@ Every living brief is listed in this index; narrative, audits and progress track
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, FX→IDR, Archivd grace/purge; deep dive [reference.md](domains/service/reference.md) |
 | Inference | [domains/inference/README.md](domains/inference/README.md) — model catalog, provider rates, rate snapshots; deep dive [reference.md](domains/inference/reference.md) |
 | Ai | [domains/ai/README.md](domains/ai/README.md) — central AI transport, connections, slug binding; deep dive [reference.md](domains/ai/reference.md) |
-| Archivd | [domains/archivd/README.md](domains/archivd/README.md) — nested folders, multi-disk S3, Gateway upload, paid share, workspaces; deep dive [reference.md](domains/archivd/reference.md) · [reference-upload.md](domains/archivd/reference-upload.md) · [reference-realtime.md](domains/archivd/reference-realtime.md) |
+| Archivd | [domains/archivd/README.md](domains/archivd/README.md) — nested folders, multi-disk S3, Gateway upload, paid share, workspaces; base of the Microstock subproduct; deep dive [reference.md](domains/archivd/reference.md) · [reference-upload.md](domains/archivd/reference-upload.md) · [reference-realtime.md](domains/archivd/reference-realtime.md) |
 | vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator; deep dive [reference.md](domains/vtual/reference.md) · [reference-api.md](domains/vtual/reference-api.md) · [reference-ingestion.md](domains/vtual/reference-ingestion.md) · [reference-classification.md](domains/vtual/reference-classification.md) · [reference-metrics.md](domains/vtual/reference-metrics.md) · [reference-capability-grants.md](domains/vtual/reference-capability-grants.md) · [reference-embed-policy.md](domains/vtual/reference-embed-policy.md); naming [naming-conventions.md](domains/vtual/naming-conventions.md); progress [implementation-status.md](domains/vtual/implementation-status.md); removed Blade UI [ui-archive.md](domains/vtual/ui-archive.md) |
-| Microstock | [domains/microstock/README.md](domains/microstock/README.md) — AI metadata on an Archivd system workspace; deep dive [reference.md](domains/microstock/reference.md) · [reference-pipeline.md](domains/microstock/reference-pipeline.md) · [reference-api.md](domains/microstock/reference-api.md) · [reference-marketplace-upload.md](domains/microstock/reference-marketplace-upload.md); [daily-free-trial.md](domains/microstock/daily-free-trial.md) · [billing-edge-cases.md](domains/microstock/billing-edge-cases.md) |
+| Microstock | [domains/microstock/README.md](domains/microstock/README.md) — AI metadata on an Archivd system workspace (subproduct, `parent => Archivd`); deep dive [reference.md](domains/microstock/reference.md) · [reference-pipeline.md](domains/microstock/reference-pipeline.md) · [reference-api.md](domains/microstock/reference-api.md) · [reference-marketplace-upload.md](domains/microstock/reference-marketplace-upload.md); [daily-free-trial.md](domains/microstock/daily-free-trial.md) · [billing-edge-cases.md](domains/microstock/billing-edge-cases.md) |
 | Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — runtime-access registry; deep dive [reference.md](domains/product-activations/reference.md) |
 | Domain Access | [domains/domain-access/README.md](domains/domain-access/README.md) — Public/Private gate + Beta roles |
 

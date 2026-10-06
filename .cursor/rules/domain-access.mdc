@@ -8,7 +8,7 @@ alwaysApply: false
 
 Kernel feature (`App\Support\DomainAccess`), not a `app/Domain/*` module. Gates each **product** domain by a global `public|private` flag.
 
-- It is a **fourth axis**. Do not conflate it with `config/domains.php` taxonomy, the Spatie `domain_kind` RBAC catalog, or per-user `product_activations`.
+- It is a **separate axis**. Do not conflate it with `config/domains.php` taxonomy, the Spatie `domain_kind` RBAC catalog, or per-user `product_activations`.
 - **Default is `public`**, so shipping the feature changes nothing until a domain is flipped. Never default a new domain to `private`.
 - `Root` and `Admin` always bypass. A `private` domain admits holders of `Beta tester {Domain}` or the `access {domain} product` permission.
 - `ProductNames` derives all three names from the StudlyCase product key: label `Archivd`, role `Beta tester Archivd`, permission `access Archivd product`. Never hand-write them.

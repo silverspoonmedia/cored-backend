@@ -15,9 +15,13 @@ Do not restate them here — that file is the owner.
 ## Procedure
 
 1. **Confirm the domain is removable.** `php artisan domain:list` — `kind` must
-   be `product`, and the config entry must not be locked. Unlocking is a manual
+   be `product`, the config entry must not be locked, and **no registered
+   subproduct may point at it** (`Parent` column). Unlocking is a manual
    edit of `config/domains.php` (`'locked' => false`); never work around it.
    Core domains are refused by `PLATFORM_CORE` and are out of scope.
+   A subproduct (`'parent' => '{Name}'`) is a full product with its own
+   manifest — remove the child first; `domain:remove` refuses the parent until
+   the last registered child is gone.
 
 2. **Preview.** `php artisan domain:remove {Name} --dry-run`.
    Read three things: the plan counts, the `unresolved` list, and the

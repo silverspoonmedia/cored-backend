@@ -1,6 +1,6 @@
-# Microstock — product domain
+# Microstock — subproduct domain (parent: Archivd)
 
-AI-assisted microstock asset management (`kind => product`, `locked => true`) built on an Archivd **system workspace**. Invariants an agent must obey: [.cursor/rules/microstock.mdc](../../../.cursor/rules/microstock.mdc).
+AI-assisted microstock asset management (`kind => product`, `locked => true`, `parent => 'Archivd'`) built on an Archivd **system workspace**. Invariants an agent must obey: [.cursor/rules/microstock.mdc](../../../.cursor/rules/microstock.mdc).
 
 Microstock turns a folder of uploaded images into marketplace-ready metadata. A folder inside a Microstock workspace is a **collection**: it is described once, locked, analyzed by a two-stage AI pipeline (vision → thinking), curated by hand, exported as CSV, and — opt-in, additively — pushed to a marketplace over SFTP. Upload/storage reuses Archivd quota; the AI stages are prepaid and metered per HTTP call. Access is opt-in through a slot entitlement, not through the product activation row. Code lives in `app/Domain/Microstock/`; collections live on `ARCHIVD_folders` columns.
 

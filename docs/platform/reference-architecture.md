@@ -1,21 +1,22 @@
 # Domain modules — reference
 
-Detail behind [architecture.md](architecture.md): the two taxonomy axes, the day-2 commands, the directory and route layout, and the cross-domain rules.
+Detail behind [architecture.md](architecture.md): the two taxonomy axes plus the composition axis, the day-2 commands, the directory and route layout, and the cross-domain rules.
 
-## Glossary (two axes)
+## Glossary (three axes)
 
-Do **not** collapse taxonomy and lifecycle into one label.
+Do **not** collapse taxonomy, lifecycle and composition into one label.
 
 | Term | Axis | Meaning |
 |------|------|---------|
 | **Core domain** | Taxonomy (`kind`) | Foundation. Without it the app does not run well (Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service, Inference, Ai). |
 | **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (Archivd, Vtual, Microstock). Extends core (Identity, H-RBAC, payments, …). |
+| **Subproduct domain** | Composition (`parent`) | A product domain that extends another **product** domain: `'parent' => 'Archivd'` (Microstock is the only one). It is **not** a third `kind` value — a subproduct is still a full product with its own key, activation, RBAC, SKU, namespace and `uninstall.json`. Only the removal order changes: `domain:remove` refuses a parent while a registered child points at it. |
 | **`locked`** | Lifecycle (product only) | `domain:remove` refuses until you set `'locked' => false` in [`config/domains.php`](../../config/domains.php). |
 | **Removable** | Derived | Product with `locked => false`. Not a config key. |
 | **`DomainManager::PLATFORM_CORE`** | Hard guard | Never-remove list. Config cannot override. |
 | **RBAC `domain_kind`** | Separate system | Spatie roles/permissions catalog ownership (`core` \| `product`). Same words, **not** this registry. See [Identity — Core vs product RBAC](../domains/identity/reference.md#core-vs-product-rbac). |
-| **Product activation** | Runtime access | Per-user product state (`pending` \| `active` \| `suspended` \| `expired`) in `product_activations`. Tracked by `App\Support\Product\ProductActivationService`, gated by the `product.active` middleware. **Not** module taxonomy and **not** RBAC catalog — a third axis. See [Product Activations](../domains/product-activations/README.md). |
-| **Domain visibility** | Global product gate | Per-domain `public` \| `private` flag in `product_domain_visibilities`. Tracked by `App\Support\DomainAccess\DomainAccessService`, enforced by the `domain.access:{Domain}` middleware on web + API product groups. Private = Root/Admin/`Beta tester {Domain}` only. A fourth axis — **not** per-user activation. See [Domain Access](../domains/domain-access/README.md). |
+| **Product activation** | Runtime access | Per-user product state (`pending` \| `active` \| `suspended` \| `expired`) in `product_activations`. Tracked by `App\Support\Product\ProductActivationService`, gated by the `product.active` middleware. A separate axis — **not** module taxonomy and **not** RBAC catalog. See [Product Activations](../domains/product-activations/README.md). |
+| **Domain visibility** | Global product gate | Per-domain `public` \| `private` flag in `product_domain_visibilities`. Tracked by `App\Support\DomainAccess\DomainAccessService`, enforced by the `domain.access:{Domain}` middleware on web + API product groups. Private = Root/Admin/`Beta tester {Domain}` only. A separate axis — **not** per-user activation. See [Domain Access](../domains/domain-access/README.md). |
 | **Product analytics** | Denormalized per-(product, tier, metric) counters | Aggregate rows in `product_analytics` (`storage_used_bytes`, `file_count`, `workspace_count_owned`, …) — one row per `(product_key, tier, metric_key)` bucket. Incremented/decremented on domain mutations by `ProductAnalyticsService`; tier transitions move a user's contribution between buckets via `moveUserTier`. Per-user drill-down reads source tables directly. See [Product Activations § Stored analytics](../domains/product-activations/reference.md#stored-analytics-v3). |
 
 ### Registry vs removal
@@ -25,6 +26,7 @@ Do **not** collapse taxonomy and lifecycle into one label.
 | **Core** | Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service, Inference, Ai + Kernel | **Always refused** — `PLATFORM_CORE`; flipping `kind` in config does nothing |
 | **Product + locked** | Default for `domain:make`; Archivd, Vtual | Refused until `'locked' => false` in config |
 | **Product + removable** | `domain:make --removable` | Allowed (`--force`) |
+| **Subproduct + locked** | `'parent' => 'Archivd'`; Microstock | Same as product **plus** a composition guard: refused while a registered child points here |
 
 There is **no** `domain:unlock` command — unlock is a deliberate config edit.
 
@@ -37,10 +39,17 @@ Removal then reads that domain's [`uninstall.json`](#domain-uninstall-manifest).
 'Identity' => ['kind' => 'core'],
 'Archivd' => ['kind' => 'product', 'locked' => true],
 'Vtual' => ['kind' => 'product', 'locked' => true],
+'Microstock' => ['kind' => 'product', 'locked' => true, 'parent' => 'Archivd'],
 // removable product: ['kind' => 'product', 'locked' => false]
 ```
 
-Core entries omit `locked` (N/A). Product entries always carry `locked`.
+Core entries omit `locked` (N/A). Product entries always carry `locked`. Only a subproduct carries `parent` — the name of a **registered product** domain it extends.
+
+### Parent / subproduct
+
+`parent` is the composition axis: it records that one product domain builds on another (Microstock stores its assets in Archivd workspaces, and reaches the user through Archivd's quota and workspace switcher). It is orthogonal to `kind` and `locked` — a subproduct is a full product with its own product key, activation row, RBAC, SKU, namespace and `uninstall.json`; only the **removal order** is constrained. `domain:remove` refuses the parent while a registered child still points at it, so a subproduct can never outlive the base it extends. `DomainManager::parentOf()` / `childrenOf()` expose the relation; `domain:list` prints it in the `Parent` column.
+
+The cross-domain coupling itself (Microstock's `WorkspaceKind::Microstock`, collection columns on `ARCHIVD_folders`, the Archivd quota pool) is unchanged by this axis — see the Archivd manifest `notes[]` and the [Microstock brief](../domains/microstock/README.md).
 
 ## Day-2 commands
 
@@ -48,16 +57,18 @@ Core entries omit `locked` (N/A). Product entries always carry `locked`.
 php artisan domain:list
 php artisan domain:make Billing                 # product, locked by default
 php artisan domain:make Scratch --removable
+php artisan domain:make Addon --parent=Scratch  # subproduct of a registered product
 php artisan domain:remove Scratch --dry-run     # plan + unlisted references, changes nothing
 php artisan domain:remove Scratch --force       # executes the manifest
 # Locked product: edit config/domains.php → locked false, then domain:remove
+# Subproduct: remove the child first — the parent is refused while a child is registered
 ```
 
 | Command | Effect |
 |---------|--------|
-| `domain:list` | Name, **Kind** (`core`\|`product`), **Removal** (`never`\|`locked`\|`removable`), whether `app/Domain/{Name}` exists |
-| `domain:make` | Scaffold folders, provider, route stubs, tests, **`{Name}RoleSeeder`** (Beta tester role + `access {domain} product` permission + Public visibility row) and a starter **`uninstall.json`**; register as **product** (locked by default) and wire the seeder into `DatabaseSeeder` |
-| `domain:remove` | Execute the domain's `uninstall.json`: delete paths (backend/SPA/docs), apply shared-file edits, optionally purge data. Refuses core and locked product. Migrations stay without `--purge-data`. |
+| `domain:list` | Name, **Kind** (`core`\|`product`), **Parent** (the product it extends, `—` = none), **Removal** (`never`\|`locked`\|`removable`), whether `app/Domain/{Name}` exists |
+| `domain:make` | Scaffold folders, provider, route stubs, tests, **`{Name}RoleSeeder`** (Beta tester role + `access {domain} product` permission + Public visibility row) and a starter **`uninstall.json`**; register as **product** (locked by default) and wire the seeder into `DatabaseSeeder`. `--parent={Name}` registers a **subproduct** instead — the parent must already be a registered product domain. |
+| `domain:remove` | Execute the domain's `uninstall.json`: delete paths (backend/SPA/docs), apply shared-file edits, optionally purge data. Refuses core and locked product, and refuses a product while a registered **subproduct** still points at it. Migrations stay without `--purge-data`. |
 
 Implementation: [`DomainManager`](../../app/Support/Domain/DomainManager.php), `app/Console/Commands/Domain/*`.
 
@@ -164,7 +175,7 @@ app/
 │   ├── ErrorLog/       # Grouped persistent app errors (core)
 │   ├── Archivd/        # Nested files, chunk S3 upload, Drive-lite share (product, locked)
 │   ├── Vtual/          # Creator aggregator foundation (product, locked)
-│   ├── Microstock/     # Microstock asset mgmt on Archivd system workspace (product, locked)
+│   ├── Microstock/     # Microstock asset mgmt on Archivd system workspace (product, locked; subproduct of Archivd)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   ├── Service/        # Catalog, entitlements, DB FX→IDR, Archivd grace/purge (core)
 │   ├── Inference/      # AI model catalog + provider model rates + snapshots (core)
@@ -203,7 +214,7 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `service.php` | Service catalog, checkout, service purchases | core |
 | `archivd.php` | Archivd (auth + public share) folders/files/uploads | product |
 | `vtual.php` | vTual creators, managements, channels (foundation) | product |
-| `microstock.php` | Microstock (API + thin web entry; Archivd mounts most UI) | product |
+| `microstock.php` | Microstock (API + thin web entry; Archivd mounts most UI) | product — subproduct of Archivd |
 
 Kernel product registry (`app/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
 
@@ -224,13 +235,13 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 ## Cross-domain dependencies
 
 - **Identity** (`User`, `Role`, `Permission`) is the hub — other domains import those models.
-- **RBAC catalog** lives in Identity only. Roles/permissions carry `domain_kind` (`core` | `product`) so platform and product catalogs share Spatie tables without colliding on hierarchy. This is **not** the same as the module registry in [`config/domains.php`](../../config/domains.php) (`kind` + `locked` for `domain:list` / `domain:remove`). Details: [identity README — Core vs product RBAC](../domains/identity/reference.md#core-vs-product-rbac).
+- **RBAC catalog** lives in Identity only. Roles/permissions carry `domain_kind` (`core` | `product`) so platform and product catalogs share Spatie tables without colliding on hierarchy. This is **not** the same as the module registry in [`config/domains.php`](../../config/domains.php) (`kind` + `locked` + `parent` for `domain:list` / `domain:remove`). Details: [identity README — Core vs product RBAC](../domains/identity/reference.md#core-vs-product-rbac).
 - **Product H-RBAC when core is not enough:** Core seeds a fixed platform ladder (Root → User) and platform permissions. If a **product** domain needs a richer hierarchy, more roles, or domain-specific permissions, **add new roles and permissions with `domain_kind = product`** (own seeder, own level ladder). Do **not** overload or rename core roles. Spatie names stay globally unique — use product-prefixed names (e.g. `Billing Admin`, not a second `Admin`). Product levels never drive platform user-management H-RBAC; wire product authorization in that domain's routes/policies/services.
 - Do not import domain services across boundaries unless explicit and documented.
 
 ## Adding a new domain
 
-1. `php artisan domain:make {Name}` (or `--removable`) — always scaffolds a **product** domain (also generates `database/seeders/{Name}RoleSeeder.php`, registers it in `DatabaseSeeder`, and writes a starter `uninstall.json`)
+1. `php artisan domain:make {Name}` (or `--removable`; `--parent={Product}` for a **subproduct**) — always scaffolds a **product** domain (also generates `database/seeders/{Name}RoleSeeder.php`, registers it in `DatabaseSeeder`, and writes a starter `uninstall.json`)
 2. Implement under `app/Domain/{Name}/`
 3. Fill `routes/api/v1/{slug}.php` and `routes/web/{slug}.php` — gate the product group with `domain.access:{Name}` **before** `product.active:{Name}` / `permission:` (see [Domain Access](../domains/domain-access/README.md))
 4. Run `php artisan db:seed --class={Name}RoleSeeder` to create the Beta tester role + Public visibility row
@@ -246,6 +257,7 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 - No dynamic provider auto-discovery — `bootstrap/providers.php` stays explicit
 - No `routes/api/v1/core|product/` subfolders — kind is registry + comment sections, not filesystem trees
 - No `domain` / `domain_kind` column on menus — nav is a UX tree; module taxonomy stays in `config/domains.php` (and RBAC catalog separately)
+- No third `kind` for subproducts — composition stays the orthogonal `parent` axis, and a subproduct is a full product in every other respect
 - No auto menu registration from `domain:make` — seed / admin CRUD is enough at this scale
 
 Historical migration notes: [archive/internal-monorepo-assessment.md](../archive/internal-monorepo-assessment.md), [archive/internal-monorepo-porting.md](../archive/internal-monorepo-porting.md).

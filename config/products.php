@@ -5,7 +5,8 @@
  *
  * Runtime-access catalog for the Product Activation registry
  * (App\Support\Product). This is separate from config/domains.php,
- * which tracks module taxonomy / lifecycle (kind, locked) only.
+ * which tracks module taxonomy / lifecycle / composition
+ * (kind, locked, parent) only.
  *
  * Each entry declares:
  *
@@ -50,6 +51,7 @@ return [
     ],
     'Microstock' => [
         'activation_type' => 'implicit',
+        // Subproduct of Archivd (config/domains.php: 'parent' => 'Archivd').
         // Standalone paid SKUs (free registration + compounding slot addon)
         // activate this product via Service fulfillment_target 'microstock'.
         // Storage still meters into the shared Archivd quota pool, but Microstock

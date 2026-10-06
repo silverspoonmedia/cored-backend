@@ -24,7 +24,7 @@
 | `task-scope.mdc` *(always-on)* | Deciding which layers a task must touch |
 | `context-budget.mdc` *(always-on)* | Choosing a workspace / what to open |
 | `i18n-guardrail.mdc` *(always-on)* | Adding or editing user-facing copy |
-| `architecture.mdc` | `app/Domain/**`, `app/Support/Domain/**`, `app/Console/Commands/Domain/**`, `config/domains.php` — domain kind/lifecycle, uninstall manifest, namespaces, dependency direction |
+| `architecture.mdc` | `app/Domain/**`, `app/Support/Domain/**`, `app/Console/Commands/Domain/**`, `config/domains.php` — domain kind/lifecycle/composition (`parent`), uninstall manifest, namespaces, dependency direction |
 | `api-routing.mdc` | `routes/api/**`, `bootstrap/app.php` — global vs versioned layer, `v{N}` loader, route names |
 | `api-resources.mdc` | `app/**/Http/**`, `routes/api/**` — envelope, list `display_mode`/`actions[]`, standalone-first `/batch`, response minimization |
 | `crud.mdc` | `app/Repositories/**`, `**/Http/Controllers/**`, `**/Http/Requests/**` — shared repository, FormRequest DRY |

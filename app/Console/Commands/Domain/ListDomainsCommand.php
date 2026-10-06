@@ -11,7 +11,7 @@ class ListDomainsCommand extends Command
     protected $signature = 'domain:list';
 
     /** @var string */
-    protected $description = 'List registered domain modules (kind core|product + removal status)';
+    protected $description = 'List registered domain modules (kind core|product, parent subproduct + removal status)';
 
     public function handle(DomainManager $domains): int
     {
@@ -21,6 +21,7 @@ class ListDomainsCommand extends Command
             $rows[] = [
                 $name,
                 $domains->kind($name),
+                $meta['parent'] ?? '—',
                 $domains->removalStatus($name),
                 $domains->directoryExists($name) ? 'yes' : 'missing',
                 $domains->slug($name),
@@ -33,8 +34,9 @@ class ListDomainsCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->table(['Domain', 'Kind', 'Removal', 'app/Domain', 'Slug'], $rows);
+        $this->table(['Domain', 'Kind', 'Parent', 'Removal', 'app/Domain', 'Slug'], $rows);
         $this->line('Kind: <info>core</info> = foundation (never removable); <info>product</info> = SaaS surface.');
+        $this->line('Parent: <info>product domain this one extends</info> (subproduct) — <info>—</info> = none.');
         $this->line('Removal: <info>never</info> = platform core; <info>locked</info> = unlock via config/domains.php; <info>removable</info> = domain:remove allowed.');
 
         return self::SUCCESS;

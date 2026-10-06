@@ -652,7 +652,7 @@
                 },
                 {
                     "path": "tests/Feature/Console/DomainCommandsTest.php",
-                    "reason": "test: review the Archivd reference and drop it (line 93, 96, 102, 291, 293, 296)"
+                    "reason": "test: review the Archivd reference and drop it (line 96, 99, 105, 294, 299, 306, 311, 403, 404, 406, 412, 522)"
                 },
                 {
                     "path": "tests/Feature/Http/WebSurfaceRouteListTest.php",
@@ -1173,7 +1173,7 @@
     "notes": [
         "Without --purge-data the 15 migrations stay; drop them by hand once the `archivd_*` tables are gone.",
         "The `ignore` section is the reviewed hand-edit list: each entry names the exact edit and line.",
-        "Archivd <-> Microstock coupling (WorkspaceKind::Microstock, microstockMetadata, MicrostockCatalog) is removed by the Microstock manifest — run that removal before or together with this one.",
+        "Microstock is registered as a subproduct of this domain (`'parent' => 'Archivd'` in config/domains.php), so `domain:remove Archivd` is refused while Microstock is still registered. The coupling (WorkspaceKind::Microstock, microstockMetadata, MicrostockCatalog) is removed by the Microstock manifest — run that removal first.",
         "`DomainAccessSeeder::PRODUCT_DOMAINS` loses this domain in the same change (recorded as an edit); the docblock naming the domains is prose and needs a reword.",
         "Files owned by another product domain (app/Domain/Microstock/**, src/valkivid3/**) are listed as owned elsewhere — they leave with their own domain."
     ]

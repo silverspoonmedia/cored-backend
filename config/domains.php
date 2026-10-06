@@ -17,6 +17,16 @@
  *
  * Removable is a derived state (product + locked false), not a config key.
  *
+ * parent => 'Name'   — composition axis, product only. Declares this product a
+ *                      SUBPRODUCT of another registered product domain (Microstock
+ *                      extends Archivd). It is orthogonal to kind and locked: a
+ *                      subproduct is still a full product (own key, activation,
+ *                      RBAC, uninstall.json, namespace) — only its removal is
+ *                      ordered. domain:remove refuses a parent while a registered
+ *                      child points at it; domain:make --parent= sets it.
+ *                      Never a third kind value — do not collapse the axes.
+ * (omit parent on core, and on a product with no parent — not applicable)
+ *
  * RBAC domain_kind (roles/permissions) is a separate concept — same words
  * (core|product) for catalog ownership, not this registry. See Identity docs.
  *
@@ -43,5 +53,7 @@ return [
     // Product
     'Archivd' => ['kind' => 'product', 'locked' => true],
     'Vtual' => ['kind' => 'product', 'locked' => true],
-    'Microstock' => ['kind' => 'product', 'locked' => true],
+
+    // Subproduct (product with a parent)
+    'Microstock' => ['kind' => 'product', 'locked' => true, 'parent' => 'Archivd'],
 ];
