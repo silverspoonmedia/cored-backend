@@ -92,6 +92,20 @@ class RemoveDomainCommand extends Command
             );
         }
 
+        $children = $domains->childrenOf($name);
+
+        if ($children !== []) {
+            $this->newLine();
+            $this->error("Domain [{$name}] still has registered subproduct(s): ".implode(', ', $children).'.');
+            $this->line('Remove the subproduct(s) first — a subproduct extends this domain and cannot outlive it.');
+
+            if (! $this->option('dry-run')) {
+                return self::FAILURE;
+            }
+
+            $this->components->warn('Dry run — the real removal would be refused until the subproduct(s) are gone.');
+        }
+
         if ($this->option('dry-run')) {
             $this->newLine();
             $this->components->info('Dry run — nothing was changed.');

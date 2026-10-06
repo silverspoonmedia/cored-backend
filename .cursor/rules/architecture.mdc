@@ -1,5 +1,5 @@
 ---
-description: Domain module registry — kind core|product, locked lifecycle, namespaces
+description: Domain module registry — kind core|product, locked lifecycle, parent subproduct, namespaces
 globs: app/Domain/**,app/Support/Domain/**,app/Console/Commands/Domain/**,config/domains.php
 alwaysApply: false
 ---
@@ -8,7 +8,8 @@ alwaysApply: false
 
 Domain code lives under `app/Domain/{Domain}/`; `config/domains.php` is the registry.
 
-- Two independent axes, never collapsed into one label: `kind` (`core` = foundation, `product` = sold surface) and, products only, `locked` (whether `domain:remove` refuses). Core is additionally pinned by `DomainManager::PLATFORM_CORE` — flipping `kind` in config cannot make a core domain removable.
+- Three axes, never collapsed into one label: `kind` (`core` = foundation, `product` = sold surface), products only `locked` (whether `domain:remove` refuses), and the composition axis `parent` below. Core is additionally pinned by `DomainManager::PLATFORM_CORE` — flipping `kind` in config cannot make a core domain removable.
+- **Composition axis `parent` (product only):** a **subproduct** declares the product domain it extends (`'parent' => 'Archivd'`; Microstock is the only one). It is a full product — own key, activation, RBAC, SKU, namespace, `uninstall.json` — **never** a third `kind` value. `DomainManager::parentOf()` / `childrenOf()` expose it; `domain:list` prints the `Parent` column; `domain:make --parent={Product}` registers one (the parent must already be a registered product); `domain:remove` refuses a parent while a registered child points at it, so a subproduct never outlives its base.
 - **Never** run `domain:remove` on a core domain, or on a product while `locked => true`. Unlock is a deliberate `config/domains.php` edit; there is no `domain:unlock`.
 - `domain:make` always scaffolds a **product** (locked by default) with `Http/{Controllers,Requests,Resources}`, `Services`, `Repositories`, `Models`, tests, `{Name}RoleSeeder`, and a starter `uninstall.json`; it never touches migrations. `domain:remove` deletes PHP/routes/tests/provider only — migrations stay unless `--purge-data` asks for them.
 - **Product domains carry an uninstall manifest**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. It is the reviewed map of everything the domain touches — `delete` paths across backend/SPA/docs, `edits` (shared-file surgery from a closed op vocabulary), `data` (tables, migrations, RBAC, rows), and `ignore` (survivor references, each with a reason). It lives inside the domain because it dies with the domain.

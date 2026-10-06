@@ -1,4 +1,4 @@
-# Microstock — product domain
+# Microstock — subproduct domain (parent: Archivd)
 
 > **UI:** Microstock admin surfaces live in **Monolith-Vue-Workers** (Archivd workspace switcher + settings). Blade references below are historical — see [web/blade-admin.md](../../web/blade-admin.md).
 
@@ -16,7 +16,7 @@ Open the rest of this README only when changing Microstock **behavior**. For a o
 
 Batch hydrate pointer: [vue-workers-spa.md — Invocation budget](../../integration/reference-vue-workers-spa.md#invocation-budget-controls).
 
-Product domain (`kind => product`, `locked => true`) for microstock asset management on top of the Archivd base storage layer. Assets live in built-in **system workspaces** (`ARCHIVD_workspaces.kind = 'microstock'`, standalone slots) and reuse the entire Archivd upload/browse/quota/download pipeline. Microstock adds AI metadata (title/description/category/keywords), CSV metadata export, and envelope-encrypted marketplace credentials.
+Product domain (`kind => product`, `locked => true`, `parent => 'Archivd'` — a **subproduct**) for microstock asset management on top of the Archivd base storage layer. Assets live in built-in **system workspaces** (`ARCHIVD_workspaces.kind = 'microstock'`, standalone slots) and reuse the entire Archivd upload/browse/quota/download pipeline. Microstock adds AI metadata (title/description/category/keywords), CSV metadata export, and envelope-encrypted marketplace credentials.
 
 | | |
 |--|--|

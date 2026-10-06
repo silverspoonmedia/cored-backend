@@ -4,6 +4,7 @@ namespace Tests\Feature\Console;
 
 use App\Support\Domain\DomainManager;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -15,6 +16,8 @@ use Tests\TestCase;
 class DomainCommandsTest extends TestCase
 {
     private const TEST_DOMAIN = 'ZzDemo';
+
+    private const TEST_CHILD_DOMAIN = 'ZzChild';
 
     private string $domainsConfigPath;
 
@@ -393,27 +396,162 @@ class DomainCommandsTest extends TestCase
         $this->assertStringContainsString("'".self::TEST_DOMAIN."'", File::get($this->domainsConfigPath));
     }
 
+    public function test_domain_list_shows_parent_axis_for_subproducts(): void
+    {
+        $domains = app(DomainManager::class);
+
+        $this->assertSame('Archivd', $domains->parentOf('Microstock'));
+        $this->assertNull($domains->parentOf('Archivd'));
+        $this->assertNull($domains->parentOf('Identity'));
+        $this->assertContains('Microstock', $domains->childrenOf('Archivd'));
+        $this->assertSame([], $domains->childrenOf('Vtual'));
+
+        $this->artisan('domain:list')
+            ->assertSuccessful()
+            ->expectsOutputToContain('Microstock')
+            ->expectsOutputToContain('Archivd')
+            ->expectsOutputToContain('subproduct');
+    }
+
+    public function test_domain_make_parent_scaffolds_a_subproduct(): void
+    {
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--removable' => true,
+        ])->assertSuccessful();
+
+        $this->artisan('domain:make', [
+            'name' => self::TEST_CHILD_DOMAIN,
+            '--removable' => true,
+            '--parent' => self::TEST_DOMAIN,
+        ])
+            ->assertSuccessful()
+            ->expectsOutputToContain('subproduct');
+
+        $this->assertStringContainsString(
+            "'".self::TEST_CHILD_DOMAIN."' => ['kind' => 'product', 'locked' => false, 'parent' => '".self::TEST_DOMAIN."']",
+            File::get($this->domainsConfigPath)
+        );
+
+        $domains = app(DomainManager::class);
+        $this->assertSame(self::TEST_DOMAIN, $domains->parentOf(self::TEST_CHILD_DOMAIN));
+        $this->assertContains(self::TEST_CHILD_DOMAIN, $domains->childrenOf(self::TEST_DOMAIN));
+    }
+
+    public function test_domain_make_rejects_a_parent_that_is_not_a_registered_product(): void
+    {
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--no-interaction' => true,
+            '--parent' => 'Identity',
+        ])->assertFailed();
+
+        $this->assertDirectoryDoesNotExist(app_path('Domain/'.self::TEST_DOMAIN));
+
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--no-interaction' => true,
+            '--parent' => 'DoesNotExist',
+        ])->assertFailed();
+
+        $this->assertDirectoryDoesNotExist(app_path('Domain/'.self::TEST_DOMAIN));
+        $this->assertStringNotContainsString("'".self::TEST_DOMAIN."'", File::get($this->domainsConfigPath));
+    }
+
+    public function test_domain_remove_refuses_while_a_subproduct_is_registered(): void
+    {
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--removable' => true,
+        ])->assertSuccessful();
+
+        $this->artisan('domain:make', [
+            'name' => self::TEST_CHILD_DOMAIN,
+            '--removable' => true,
+            '--parent' => self::TEST_DOMAIN,
+        ])->assertSuccessful();
+
+        // A subproduct cannot outlive its parent: the parent removal is refused.
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--force' => true,
+        ])->assertFailed();
+
+        $this->assertDirectoryExists(app_path('Domain/'.self::TEST_DOMAIN));
+
+        // Dry run reports the same, still succeeds, and changes nothing.
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--dry-run' => true,
+        ])
+            ->assertSuccessful()
+            ->expectsOutputToContain(self::TEST_CHILD_DOMAIN);
+
+        $this->assertDirectoryExists(app_path('Domain/'.self::TEST_DOMAIN));
+
+        // Removing the child first unblocks the parent.
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_CHILD_DOMAIN,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        $this->assertDirectoryDoesNotExist(app_path('Domain/'.self::TEST_DOMAIN));
+    }
+
+    public function test_registry_parent_entries_point_at_a_registered_product(): void
+    {
+        $domains = app(DomainManager::class);
+        $all = $domains->all();
+
+        foreach ($all as $name => $meta) {
+            if ($meta['parent'] === null) {
+                continue;
+            }
+
+            $this->assertArrayHasKey($meta['parent'], $all, "[{$name}] declares an unregistered parent.");
+            $this->assertSame('product', $all[$meta['parent']]['kind'], "[{$name}] declares a non-product parent.");
+            $this->assertSame('product', $meta['kind'], "[{$name}] declares a parent but is not a product.");
+        }
+
+        // The live pair this axis was introduced for.
+        $this->assertSame('Archivd', $domains->parentOf('Microstock'));
+    }
+
     private function purgeTestDomainArtifacts(): void
     {
-        $domainDir = app_path('Domain/'.self::TEST_DOMAIN);
+        foreach ([self::TEST_DOMAIN, self::TEST_CHILD_DOMAIN] as $name) {
+            $this->purgeDomainArtifacts($name);
+        }
+    }
+
+    private function purgeDomainArtifacts(string $name): void
+    {
+        $domainDir = app_path('Domain/'.$name);
         if (File::isDirectory($domainDir)) {
             File::deleteDirectory($domainDir);
         }
 
-        $testsDir = base_path('tests/Domain/'.self::TEST_DOMAIN);
+        $testsDir = base_path('tests/Domain/'.$name);
         if (File::isDirectory($testsDir)) {
             File::deleteDirectory($testsDir);
         }
 
-        $provider = app_path('Providers/Domain/'.self::TEST_DOMAIN.'ServiceProvider.php');
+        $provider = app_path('Providers/Domain/'.$name.'ServiceProvider.php');
         if (File::isFile($provider)) {
             File::delete($provider);
         }
 
+        $slug = Str::kebab($name);
+
         foreach ([
-            base_path('routes/api/v1/zz-demo.php'),
-            base_path('routes/web/zz-demo.php'),
-            database_path('seeders/'.self::TEST_DOMAIN.'RoleSeeder.php'),
+            base_path('routes/api/v1/'.$slug.'.php'),
+            base_path('routes/web/'.$slug.'.php'),
+            database_path('seeders/'.$name.'RoleSeeder.php'),
         ] as $artifact) {
             if (File::isFile($artifact)) {
                 File::delete($artifact);
@@ -421,10 +559,10 @@ class DomainCommandsTest extends TestCase
         }
 
         // A previous run that died before tearDown can leave the generated
-        // `$this->call(ZzDemoRoleSeeder::class);` line behind; strip it so the
+        // `$this->call({Name}RoleSeeder::class);` line behind; strip it so the
         // backup/restore cycle never preserves the leak.
         $seederPath = database_path('seeders/DatabaseSeeder.php');
-        $call = '$this->call('.self::TEST_DOMAIN.'RoleSeeder::class);';
+        $call = '$this->call('.$name.'RoleSeeder::class);';
         $contents = File::get($seederPath);
         if (str_contains($contents, $call)) {
             $kept = array_values(array_filter(

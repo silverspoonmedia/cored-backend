@@ -482,6 +482,10 @@
                     "reason": "test: review the Vtual reference and drop it (line 13, 53, 65, 74, 81, 82)"
                 },
                 {
+                    "path": "tests/Feature/Console/DomainCommandsTest.php",
+                    "reason": "test: review the Vtual reference and drop it (line 407)"
+                },
+                {
                     "path": "tests/Feature/Http/WebSurfaceRouteListTest.php",
                     "reason": "test: drop the `vtual.*` keys (line 38)"
                 },

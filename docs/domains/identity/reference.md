@@ -119,7 +119,7 @@ Roles seeded in `RoleSeeder` (Root, Admin, Moderator, Management, User) — all 
 | `domain_kind` | `roles`, `permissions` | `core`, `product` | Catalog ownership (platform vs product modules) |
 | `level` | `roles` only | unsigned int, nullable | Hierarchy **scoped per `domain_kind`** — unique `(domain_kind, level)` |
 
-This is **not** the module registry in [`config/domains.php`](../../../config/domains.php) (`kind` + `locked` for `domain:list` / `domain:remove`). Same words (core/product) for taxonomy; different systems. See [platform/architecture.md](../../platform/architecture.md).
+This is **not** the module registry in [`config/domains.php`](../../../config/domains.php) (`kind` + `locked` + `parent` for `domain:list` / `domain:remove`). Same words (core/product) for taxonomy; different systems. See [platform/architecture.md](../../platform/architecture.md).
 
 - **Spatie names stay globally unique** on `(name, guard_name)`. Product must not reuse core names (`Admin`, `view user`, …). Prefer e.g. `Archivd Admin`.
 - **H-RBAC user management uses core roles only.** Product role levels never change list/view/edit/delete/assignable for platform users.

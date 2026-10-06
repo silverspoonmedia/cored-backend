@@ -16,6 +16,7 @@ use RuntimeException;
  * Registry axes (see config/domains.php):
  * - kind: core | product (taxonomy)
  * - locked: product-only removal guard (lifecycle)
+ * - parent: product-only composition axis — a subproduct points at its product parent
  *
  * Platform core is hardcoded — flipping kind in config cannot unlock remove.
  * Product domains unlock only by editing locked => false by hand.
@@ -162,6 +163,34 @@ class DomainManager
     }
 
     /**
+     * Composition axis: the parent product domain this domain extends, if any.
+     *
+     * A subproduct is still a full product — this only records the hierarchy.
+     */
+    public function parentOf(string $name): ?string
+    {
+        $name = $this->normalizeName($name);
+        $all = $this->all();
+
+        return $all[$name]['parent'] ?? null;
+    }
+
+    /**
+     * Registered subproducts pointing at this domain, in registry order.
+     *
+     * @return list<string>
+     */
+    public function childrenOf(string $parent): array
+    {
+        $parent = $this->normalizeName($parent);
+
+        return array_values(array_keys(array_filter(
+            $this->all(),
+            static fn (array $meta): bool => $meta['parent'] === $parent
+        )));
+    }
+
+    /**
      * Lifecycle label for domain:list — never | locked | removable.
      */
     public function removalStatus(string $name): string
@@ -183,11 +212,11 @@ class DomainManager
     }
 
     /**
-     * @return array<string, array{kind: string, locked: bool}>
+     * @return array<string, array{kind: string, locked: bool, parent: string|null}>
      */
     public function all(): array
     {
-        /** @var array<string, array{kind?: string, core?: bool, locked?: bool}> $raw */
+        /** @var array<string, array{kind?: string, core?: bool, locked?: bool, parent?: string|null}> $raw */
         $raw = (array) config('domains', []);
         $out = [];
 
@@ -206,6 +235,7 @@ class DomainManager
             $out[$name] = [
                 'kind' => $kind,
                 'locked' => $kind === 'product' && (bool) ($meta['locked'] ?? false),
+                'parent' => $this->resolveParentFromMeta($meta, $kind),
             ];
         }
 
@@ -252,7 +282,7 @@ class DomainManager
         return database_path('seeders/'.$this->roleSeederShortClass($name).'.php');
     }
 
-    public function scaffold(string $name, bool $locked = true): void
+    public function scaffold(string $name, bool $locked = true, ?string $parent = null): void
     {
         $name = $this->normalizeName($name);
 
@@ -287,7 +317,7 @@ class DomainManager
         File::ensureDirectoryExists($testsFeature);
         File::put($testsFeature.'/.gitkeep', '');
 
-        $this->registerInConfig($name, kind: 'product', locked: $locked);
+        $this->registerInConfig($name, kind: 'product', locked: $locked, parent: $parent);
         $this->registerProvider($name);
         $this->registerApiV1Require($name);
         $this->registerWebRequire($name);
@@ -310,6 +340,12 @@ class DomainManager
     }
 
     /**
+     * Structural removal of an unlocked product domain.
+     *
+     * The composition guard (refuse while a registered subproduct points here) is
+     * enforced by RemoveDomainCommand — it needs dry-run/--force semantics that do
+     * not belong here. Call childrenOf() first when you need the same check.
+     *
      * @return list<string> Human-readable leftover warnings
      */
     public function remove(string $name): array
@@ -378,8 +414,9 @@ class DomainManager
 
     /**
      * @param  'core'|'product'  $kind
+     * @param  string|null  $parent  Composition axis — product only (see config/domains.php)
      */
-    public function registerInConfig(string $name, string $kind = 'product', bool $locked = true): void
+    public function registerInConfig(string $name, string $kind = 'product', bool $locked = true, ?string $parent = null): void
     {
         $name = $this->normalizeName($name);
         $path = config_path('domains.php');
@@ -394,8 +431,18 @@ class DomainManager
             $runtime = ['kind' => 'core'];
         } else {
             $lockedLiteral = $locked ? 'true' : 'false';
-            $entry = "    '{$name}' => ['kind' => 'product', 'locked' => {$lockedLiteral}],\n];";
+            $parentLiteral = '';
+
+            if ($parent !== null && trim($parent) !== '') {
+                $parentLiteral = ", 'parent' => '".$this->normalizeName($parent)."'";
+            }
+
+            $entry = "    '{$name}' => ['kind' => 'product', 'locked' => {$lockedLiteral}{$parentLiteral}],\n];";
             $runtime = ['kind' => 'product', 'locked' => $locked];
+
+            if ($parentLiteral !== '') {
+                $runtime['parent'] = $this->normalizeName($parent);
+            }
         }
 
         $updated = preg_replace('/\];\s*$/', $entry, $contents, 1);
@@ -671,6 +718,31 @@ class DomainManager
         }
 
         return 'product';
+    }
+
+    /**
+     * Composition axis from raw config. Core entries never carry a parent; a
+     * malformed name degrades to null rather than breaking the registry read.
+     *
+     * @param  array{parent?: string|null}  $meta
+     */
+    private function resolveParentFromMeta(array $meta, string $kind): ?string
+    {
+        if ($kind !== 'product') {
+            return null;
+        }
+
+        $parent = $meta['parent'] ?? null;
+
+        if (! is_string($parent) || trim($parent) === '') {
+            return null;
+        }
+
+        try {
+            return $this->normalizeName($parent);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
     }
 
     private function removeLinesContaining(string $path, string $needle): void

@@ -484,6 +484,10 @@
                     "reason": "test: drop the `WorkspaceKind::Microstock` branch and its callers (line 52, 54, 56, 61)"
                 },
                 {
+                    "path": "tests/Feature/Console/DomainCommandsTest.php",
+                    "reason": "test: review the Microstock reference and drop it (line 403, 406, 411, 522)"
+                },
+                {
                     "path": "tests/Unit/Database/Seeders/LocalSettingsSeederTest.php",
                     "reason": "test: drop the `microstock.*` setting reads (line 19, 23, 24, 35, 36)"
                 },
@@ -1306,6 +1310,7 @@
     },
     "needles": [],
     "notes": [
+        "Microstock is registered as a subproduct of Archivd (`'parent' => 'Archivd'` in config/domains.php): `domain:remove` refuses Archivd while this domain is still registered, so remove Microstock first.",
         "Without --purge-data the 10 migrations stay; drop them by hand once the tables are gone.",
         "Service catalog: the `microstock.plan.free`, `microstock.addon.workspace-slot.monthly` and `microstock.addon.ai-credits.5` rows go with the `services` purge; their service_prices / service_entitlements rows cascade from it.",
         "AI connections: the `microstock-vision` / `microstock-thinking` rows in ai_connections go with the consumer bindings.",

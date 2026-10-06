@@ -2,7 +2,7 @@
 
 Kernel feature that gates each **product** domain by a global `public|private` flag, configurable from the SPA (**Administration → Access control → Product domain access**) by Root/Admin. Invariants: [.cursor/rules/domain-access.mdc](../../../.cursor/rules/domain-access.mdc).
 
-It is a fourth axis, distinct from module taxonomy (`config/domains.php`), the RBAC catalog (`domain_kind`), and per-user product activation (`product_activations`). Default is `public`, so enabling it changes nothing until a domain is flipped; a `private` domain then admits Root, Admin, and holders of `Beta tester {Domain}` (or `access {domain} product`). Route middleware blocks requests only, so a second enforcement point in the navigation menu hides the link for viewers without access. Code lives in `app/Support/DomainAccess/`.
+It is a separate axis, distinct from module taxonomy (`config/domains.php`), the RBAC catalog (`domain_kind`), and per-user product activation (`product_activations`). Default is `public`, so enabling it changes nothing until a domain is flipped; a `private` domain then admits Root, Admin, and holders of `Beta tester {Domain}` (or `access {domain} product`). Route middleware blocks requests only, so a second enforcement point in the navigation menu hides the link for viewers without access. Code lives in `app/Support/DomainAccess/`.
 
 | Need | Path |
 |------|------|
