@@ -145,6 +145,8 @@ The scan runs in both directions: `--draft-manifest` turns it into a candidate m
 
 Machine-local files are out of scope. A `.gitignore`d override (for example `database/seeders/data/*.local.php`) exists on one machine and not in a clean checkout, so scanning it would make the manifest — and the guard — depend on who runs them; a backend path has no "unverifiable" escape the way an absent sibling checkout does. The reference is neither scanned nor recorded, and a hand edit such an override still needs goes in `notes[]`.
 
+**Size is a silent blind spot.** The scanner reads files up to `UninstallReferenceScanner::MAX_FILE_BYTES` (2 MB) and skips anything larger without a warning, so a big sidecar can sit unscanned for months and then surface the moment a removal shrinks it under the cap. That is what happened on 2026-10-07: the SPA `src/i18n/curation-log.json` was 2.06 MB, the vTual key drop took it to 1.44 MB, and the drift guard started reporting Archivd and Microstock references in it for the first time. Both manifests now carry an `ignore` entry for it. Treat a large generated sidecar as **unscanned, not clean** — either add the `ignore` entry up front with the reason, or raise the cap deliberately.
+
 ### Day-2 workflow
 
 ```powershell
