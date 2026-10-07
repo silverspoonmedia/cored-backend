@@ -11,7 +11,6 @@ use App\Support\Product\Services\ProductActivationService;
 use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MenuSeeder;
 use Database\Seeders\RoleSeeder;
-use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -25,7 +24,6 @@ class MenuSeederTest extends TestCase
 
         $this->seed(RoleSeeder::class);
         $this->seed(ArchivdRoleSeeder::class);
-        $this->seed(VtualRoleSeeder::class);
         $this->seed(MenuSeeder::class);
     }
 
@@ -55,17 +53,6 @@ class MenuSeederTest extends TestCase
                             ['name' => 'My Files', 'route' => 'archivd.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Trash', 'route' => 'archivd.trash', 'type' => 'c', 'children' => []],
                             ['name' => 'DMCA Blocklist', 'route' => 'archivd.blocklist.index', 'type' => 'c', 'children' => []],
-                        ],
-                    ],
-                    [
-                        'name' => 'vTual',
-                        'route' => 'vtual.profiles.index',
-                        'type' => 'p',
-                        'children' => [
-                            ['name' => 'My vTuber profiles', 'route' => 'vtual.profiles.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'My claims', 'route' => 'vtual.claims.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Managements', 'route' => 'vtual.managements.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Events', 'route' => 'vtual.events.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
                 ],
@@ -123,18 +110,6 @@ class MenuSeederTest extends TestCase
                         ],
                     ],
                     [
-                        'name' => 'vTual',
-                        'route' => 'vtual.orphans.index',
-                        'type' => 'p',
-                        'children' => [
-                            ['name' => 'Orphan vTubers', 'route' => 'vtual.orphans.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Claims queue', 'route' => 'vtual.claims.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Managements', 'route' => 'vtual.managements.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Platform credentials', 'route' => 'vtual.platform-credentials.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Incidents', 'route' => 'vtual.incidents.index', 'type' => 'c', 'children' => []],
-                        ],
-                    ],
-                    [
                         'name' => 'Settings',
                         'route' => null,
                         'type' => 'p',
@@ -142,7 +117,6 @@ class MenuSeederTest extends TestCase
                             ['name' => 'Platform', 'route' => 'settings.platform', 'type' => 'c', 'children' => []],
                             ['name' => 'Archivd', 'route' => 'settings.archivd', 'type' => 'c', 'children' => []],
                             ['name' => 'Microstock', 'route' => 'settings.microstock', 'type' => 'c', 'children' => []],
-                            ['name' => 'vTual', 'route' => 'settings.vtual', 'type' => 'c', 'children' => []],
                             ['name' => 'Notification audiences', 'route' => 'notification-audiences.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Currencies', 'route' => 'currencies.index', 'type' => 'c', 'children' => []],
                         ],
@@ -179,41 +153,8 @@ class MenuSeederTest extends TestCase
             $this->roleNamesForRoute('archivd.blocklist.index'),
         );
         $this->assertSame(
-            ['Admin', 'Moderator', 'Root'],
-            $this->roleNamesForRoute('vtual.orphans.index'),
-        );
-        $this->assertSame(
-            ['Vtual Admin', 'Vtual Editor', 'Vtual vTuber'],
-            $this->roleNamesForRoute('vtual.profiles.index'),
-        );
-        // Two menus share vtual.managements.index: the Products child is
-        // member-only (empty stored roles; rule 7 grants via membership) and
-        // the Administration child is Root/Admin.
-        $this->assertSame(
-            [
-                ['layout' => MenuLayout::SIDEBAR, 'roles' => []],
-                ['layout' => MenuLayout::SIDEBAR, 'roles' => ['Admin', 'Root']],
-            ],
-            $this->managementsNodeRoles(),
-        );
-        // Both vtual.claims.index nodes are role-gated, not membership-gated:
-        // the Products child is the owner hub (product roles), the
-        // Administration child the staff queue (internal staff roles). Neither
-        // relies on rule 7, so both carry stored roles.
-        $this->assertSame(
-            [
-                ['layout' => MenuLayout::SIDEBAR, 'roles' => ['Admin', 'Moderator', 'Root']],
-                ['layout' => MenuLayout::SIDEBAR, 'roles' => ['Vtual Admin', 'Vtual Editor', 'Vtual vTuber']],
-            ],
-            $this->claimsNodeRoles(),
-        );
-        $this->assertSame(
             ['Admin', 'Root'],
             $this->roleNamesForRoute('settings.archivd'),
-        );
-        $this->assertSame(
-            ['Admin', 'Root'],
-            $this->roleNamesForRoute('settings.vtual'),
         );
         $this->assertSame(
             ['Admin', 'Root'],
@@ -224,23 +165,7 @@ class MenuSeederTest extends TestCase
             ['name' => 'Home', 'route' => 'dashboard', 'type' => 'p', 'children' => []],
         ], $this->databaseTree(MenuLayout::NAVBAR));
 
-        $this->assertSame([
-            ['name' => 'Home', 'route' => 'vtual.public', 'type' => 'p', 'children' => []],
-            ['name' => 'Directory', 'route' => 'vtual.public', 'type' => 'p', 'children' => []],
-            ['name' => 'Contents', 'route' => 'vtual.public', 'type' => 'p', 'children' => []],
-        ], $this->databaseTree(MenuLayout::VTUAL));
-
-        $this->assertSame(
-            '#vtubers',
-            Menu::query()->where('name->en', 'Directory')->value('hash'),
-        );
-        $this->assertSame(
-            '#contents',
-            Menu::query()->where('name->en', 'Contents')->value('hash'),
-        );
-
         $this->assertFalse(Menu::withTrashed()->where('name->en', 'Debug')->exists());
-        $this->assertFalse(Menu::withTrashed()->where('route', 'vtual.admin.platform-api-probe')->exists());
         $this->assertFalse(Menu::withTrashed()->where('route', 'microstock.index')->exists());
     }
 
@@ -249,7 +174,6 @@ class MenuSeederTest extends TestCase
         $initialTree = [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
-            'vtual' => $this->databaseTree(MenuLayout::VTUAL),
         ];
 
         $custom = Menu::query()->create([
@@ -273,20 +197,18 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(53, Menu::query()->count());
+        $this->assertSame(38, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
-            'vtual' => $this->databaseTree(MenuLayout::VTUAL),
         ]);
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(53, Menu::query()->count());
+        $this->assertSame(38, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
-            'vtual' => $this->databaseTree(MenuLayout::VTUAL),
         ]);
     }
 
@@ -297,7 +219,6 @@ class MenuSeederTest extends TestCase
 
         $this->assertContains('My Files', $userNames);
         $this->assertContains('Trash', $userNames);
-        $this->assertNotContains('Orphan vTubers', $userNames);
         $this->assertNotContains('DMCA Blocklist', $userNames);
         $this->assertNotContains('Registry & pending', $userNames);
         $this->assertNotContains('Administration', $userNames);
@@ -308,24 +229,16 @@ class MenuSeederTest extends TestCase
         $this->assertContains('DMCA Blocklist', $managementNames);
         $this->assertNotContains('Registry & pending', $managementNames);
         $this->assertContains('Access control', $managementNames);
-        $this->assertNotContains('Platform credentials', $managementNames);
-        $this->assertNotContains('Incidents', $managementNames);
         $this->assertNotContains('Monitoring', $managementNames);
 
         $moderator = $this->activatedUser('Moderator', 'moderator@example.com');
         $moderatorNames = $this->visibleNames($moderator);
 
-        $this->assertContains('Orphan vTubers', $moderatorNames);
-        $this->assertNotContains('Platform credentials', $moderatorNames);
-        $this->assertNotContains('Incidents', $moderatorNames);
+        $this->assertNotContains('Monitoring', $moderatorNames);
 
         $admin = $this->activatedUser('Admin', 'admin@example.com');
         $adminNames = $this->visibleNames($admin);
 
-        $this->assertContains('Orphan vTubers', $adminNames);
-        $this->assertContains('Managements', $adminNames);
-        $this->assertContains('Platform credentials', $adminNames);
-        $this->assertContains('Incidents', $adminNames);
         $this->assertNotContains('Registry & pending', $adminNames);
         $this->assertContains('Product domain access', $adminNames);
         $this->assertContains('Monitoring', $adminNames);
@@ -333,7 +246,6 @@ class MenuSeederTest extends TestCase
         $this->assertContains('Platform', $adminNames);
         $this->assertContains('Archivd', $adminNames);
         $this->assertContains('Microstock', $adminNames);
-        $this->assertContains('vTual', $adminNames);
     }
 
     private function activatedUser(string $role, string $email): User
@@ -343,7 +255,6 @@ class MenuSeederTest extends TestCase
 
         $activations = app(ProductActivationService::class);
         $activations->activateImplicit($user, 'Archivd');
-        $activations->activateImplicit($user, 'Vtual');
 
         return $user->fresh();
     }
@@ -377,59 +288,6 @@ class MenuSeederTest extends TestCase
             ->pluck('name')
             ->sort()
             ->values()
-            ->all();
-    }
-
-    /**
-     * Both "Managements" nodes share the `vtual.managements.index` route.
-     * Returns each row's layout plus sorted role names so the test can pin
-     * the dual placement: member-only (empty roles) vs staff (Root/Admin).
-     *
-     * @return list<array{layout: string, roles: list<string>}>
-     */
-    private function managementsNodeRoles(): array
-    {
-        return Menu::query()
-            ->where('route', 'vtual.managements.index')
-            ->orderBy('name->en')
-            ->get()
-            ->map(fn (Menu $menu): array => [
-                'layout' => $menu->layout,
-                'roles' => $menu->roles
-                    ->where('guard_name', 'api')
-                    ->pluck('name')
-                    ->sort()
-                    ->values()
-                    ->all(),
-            ])
-            ->sortBy(fn (array $row): int => $row['roles'] === [] ? 0 : 1)
-            ->values()
-            ->all();
-    }
-
-    /**
-     * Both "claims" nodes share the `vtual.claims.index` route: the Products
-     * child ("My claims") is the owner hub, the Administration child ("Claims
-     * queue") the staff queue. Ordered by English name, so the staff node
-     * ("Claims queue") comes first.
-     *
-     * @return list<array{layout: string, roles: list<string>}>
-     */
-    private function claimsNodeRoles(): array
-    {
-        return Menu::query()
-            ->where('route', 'vtual.claims.index')
-            ->orderBy('name->en')
-            ->get()
-            ->map(fn (Menu $menu): array => [
-                'layout' => $menu->layout,
-                'roles' => $menu->roles
-                    ->where('guard_name', 'api')
-                    ->pluck('name')
-                    ->sort()
-                    ->values()
-                    ->all(),
-            ])
             ->all();
     }
 

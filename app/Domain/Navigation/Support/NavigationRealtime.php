@@ -27,8 +27,8 @@ class NavigationRealtime
     }
 
     /**
-     * Targeted tree refresh for one viewer (e.g. vTual management membership
-     * changed). Shared channel; the SPA filters by target_user_id.
+     * Targeted tree refresh for one viewer (e.g. a role assignment changed).
+     * Shared channel; the SPA filters by target_user_id.
      */
     public function userTreeChanged(string $userId, string $action = 'membership'): void
     {

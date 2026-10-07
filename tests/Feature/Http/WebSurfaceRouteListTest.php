@@ -35,7 +35,6 @@ class WebSurfaceRouteListTest extends TestCase
         'users.index',
         'archivd.index',
         'menus.index',
-        'vtual.orphans.index',
     ];
 
     public function test_web_stack_only_exposes_server_endpoints(): void

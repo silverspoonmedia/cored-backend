@@ -379,10 +379,6 @@
                     "reason": "hand edit: review the Archivd reference and drop it (line 10, 15, 26, 28, 30, 35)"
                 },
                 {
-                    "path": "database/seeders/VtualRoleSeeder.php",
-                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 21)"
-                },
-                {
                     "path": "lang/ja/actions.php",
                     "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 131)"
                 },
@@ -637,10 +633,6 @@
                 {
                     "path": "tests/Domain/Service/Unit/Services/ServiceEntitlementServiceTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 33, 55, 80, 112)"
-                },
-                {
-                    "path": "tests/Domain/Vtual/Feature/RegisterVtualActivationTest.php",
-                    "reason": "test: review the Archivd reference and drop it (line 7, 23)"
                 },
                 {
                     "path": "tests/Fakes/FakeArchivdDirectUploadService.php",

@@ -37,7 +37,6 @@ class MenuSeeder extends Seeder
 
             $this->seedTree($this->sidebarTree(), MenuLayout::SIDEBAR);
             $this->seedTree($this->navbarTree(), MenuLayout::NAVBAR);
-            $this->seedTree($this->vtualTree(), MenuLayout::VTUAL);
         });
 
         app(MenuRepositoryInterface::class)->flushNavigationCache();
@@ -91,7 +90,7 @@ class MenuSeeder extends Seeder
         if ($missing !== []) {
             throw new RuntimeException(
                 'MenuSeeder references unseeded role(s): '.implode(', ', array_unique($missing))
-                .'. Seed RoleSeeder, ArchivdRoleSeeder, and VtualRoleSeeder before MenuSeeder.'
+                .'. Seed RoleSeeder and ArchivdRoleSeeder before MenuSeeder.'
             );
         }
 
@@ -108,7 +107,6 @@ class MenuSeeder extends Seeder
     {
         $managementRoles = ['Root', 'Admin', 'Moderator', 'Management'];
         $adminRoles = ['Root', 'Admin'];
-        $internalStaffRoles = config('vtual.internal_web_roles', ['Root', 'Admin', 'Moderator']);
 
         return [
             [
@@ -163,60 +161,6 @@ class MenuSeeder extends Seeder
                                 'route' => 'archivd.blocklist.index',
                                 'type' => 'c',
                                 'roles' => [...$managementRoles, 'Archivd Admin'],
-                            ],
-                        ],
-                    ],
-                    [
-                        'name' => $this->translations('vTual', 'vTual', 'vTual'),
-                        'icon' => 'bi bi-broadcast',
-                        'route' => 'vtual.profiles.index',
-                        'type' => 'p',
-                        'roles' => ['Vtual vTuber', 'Vtual Editor', 'Vtual Admin'],
-                        'children' => [
-                            [
-                                'name' => $this->translations('My vTuber profiles', 'Profil vTuber saya', 'マイ vTuber プロフィール'),
-                                'icon' => 'bi bi-person-badge',
-                                'route' => 'vtual.profiles.index',
-                                'type' => 'c',
-                                'roles' => ['Vtual vTuber', 'Vtual Editor', 'Vtual Admin'],
-                            ],
-                            [
-                                'name' => $this->translations('My claims', 'Klaim saya', 'マイ申請'),
-                                'icon' => 'bi bi-person-check',
-                                'route' => 'vtual.claims.index',
-                                'type' => 'c',
-                                // Owner-side claims hub. The same route also hosts
-                                // the staff queue tab, which the view gates on
-                                // `manage any vtual resource` — a role that
-                                // cannot moderate still sees its own claims.
-                                'roles' => ['Vtual vTuber', 'Vtual Editor', 'Vtual Admin'],
-                            ],
-                            [
-                                'name' => $this->translations('Managements', 'Manajemen', 'マネジメント'),
-                                'icon' => 'bi bi-people',
-                                'route' => 'vtual.managements.index',
-                                'type' => 'c',
-                                // Empty stored roles are intentional and ONLY safe
-                                // because this route is in MenuRepository's
-                                // MANAGEMENT_MEMBER_ROUTES: rule 7 falls through
-                                // hasAnyRole([]) to the org-membership check, so
-                                // only vTual management members see this node.
-                                // Removing the route from that constant would turn
-                                // this into an open node — do not do that.
-                                'roles' => [],
-                            ],
-                            [
-                                'name' => $this->translations('Events', 'Acara', 'イベント'),
-                                'icon' => 'bi bi-calendar-event',
-                                'route' => 'vtual.events.index',
-                                'type' => 'c',
-                                // Duplicate of the Managements node's rule-7
-                                // pattern: empty stored roles + the route in
-                                // MANAGEMENT_MEMBER_ROUTES scope visibility to
-                                // org members (event submission is an org
-                                // Owner/Admin power). Do not remove the route
-                                // from that constant — that would open the node.
-                                'roles' => [],
                             ],
                         ],
                     ],
@@ -357,64 +301,6 @@ class MenuSeeder extends Seeder
                         ],
                     ],
                     [
-                        'name' => $this->translations('vTual', 'vTual', 'vTual'),
-                        'icon' => 'bi bi-broadcast',
-                        'route' => 'vtual.orphans.index',
-                        'type' => 'p',
-                        'roles' => $internalStaffRoles,
-                        'children' => [
-                            [
-                                'name' => $this->translations('Orphan vTubers', 'vTuber yatim', '未クレーム vTuber'),
-                                'icon' => 'bi bi-person-plus',
-                                'route' => 'vtual.orphans.index',
-                                'type' => 'c',
-                                'roles' => $internalStaffRoles,
-                            ],
-                            [
-                                'name' => $this->translations('Claims queue', 'Antrean klaim', '申請キュー'),
-                                'icon' => 'bi bi-person-check',
-                                'route' => 'vtual.claims.index',
-                                'type' => 'c',
-                                // Staff queue tab of the claims hub. Gate matches
-                                // the permission the endpoint and the
-                                // `private-vtual.claims` channel both require.
-                                'roles' => $internalStaffRoles,
-                            ],
-                            [
-                                'name' => $this->translations('Managements', 'Manajemen', 'マネジメント'),
-                                'icon' => 'bi bi-people',
-                                'route' => 'vtual.managements.index',
-                                'type' => 'c',
-                                // Staff-facing management administration (orgs are
-                                // created here, then claimed by companies /
-                                // agencies). Membership members never see this
-                                // branch: the parent route is NOT in
-                                // MANAGEMENT_MEMBER_ROUTES, so rule 7 fails on
-                                // the ancestor chain.
-                                'roles' => $adminRoles,
-                            ],
-                            [
-                                'name' => $this->translations('Platform credentials', 'Kredensial platform', 'プラットフォーム認証情報'),
-                                'icon' => 'bi bi-key',
-                                'route' => 'vtual.platform-credentials.index',
-                                'type' => 'c',
-                                'roles' => $adminRoles,
-                            ],
-                            [
-                                // Integration incident triage. Core perms
-                                // (`view|manage vtual incident`), so Root/Admin
-                                // only — the same audience as the credentials
-                                // branch above, because most incidents are
-                                // credential and subscription failures.
-                                'name' => $this->translations('Incidents', 'Insiden', 'インシデント'),
-                                'icon' => 'bi bi-exclamation-triangle',
-                                'route' => 'vtual.incidents.index',
-                                'type' => 'c',
-                                'roles' => $adminRoles,
-                            ],
-                        ],
-                    ],
-                    [
                         'name' => $this->translations('Settings', 'Pengaturan', '設定'),
                         'icon' => 'bi bi-gear',
                         'type' => 'p',
@@ -438,13 +324,6 @@ class MenuSeeder extends Seeder
                                 'name' => $this->translations('Microstock', 'Microstock', 'Microstock'),
                                 'icon' => 'bi bi-images',
                                 'route' => 'settings.microstock',
-                                'type' => 'c',
-                                'roles' => $adminRoles,
-                            ],
-                            [
-                                'name' => $this->translations('vTual', 'vTual', 'vTual'),
-                                'icon' => 'bi bi-broadcast',
-                                'route' => 'settings.vtual',
                                 'type' => 'c',
                                 'roles' => $adminRoles,
                             ],
@@ -502,41 +381,6 @@ class MenuSeeder extends Seeder
                 'icon' => 'bi bi-house',
                 'route' => 'dashboard',
                 'type' => 'p',
-            ],
-        ];
-    }
-
-    /**
-     * Public vTual navigation tree (Valkivid3 template).
-     *
-     * Guest-visible nodes rendered by the SPA's VkStr1Layout header/mobile/footer.
-     * No roles, audience `all` — visible to everyone including guests.
-     */
-    private function vtualTree(): array
-    {
-        return [
-            [
-                'name' => $this->translations('Home', 'Beranda', 'ホーム'),
-                'icon' => 'bi bi-house',
-                'route' => 'vtual.public',
-                'type' => 'p',
-                'audience' => MenuAudience::All,
-            ],
-            [
-                'name' => $this->translations('Directory', 'Direktori', 'ディレクトリ'),
-                'icon' => 'bi bi-people',
-                'route' => 'vtual.public',
-                'hash' => '#vtubers',
-                'type' => 'p',
-                'audience' => MenuAudience::All,
-            ],
-            [
-                'name' => $this->translations('Contents', 'Konten', 'コンテンツ'),
-                'icon' => 'bi bi-play-btn',
-                'route' => 'vtual.public',
-                'hash' => '#contents',
-                'type' => 'p',
-                'audience' => MenuAudience::All,
             ],
         ];
     }
@@ -600,30 +444,6 @@ class MenuSeeder extends Seeder
                 'zh_CN' => 'DMCA 黑名单',
                 'ar' => 'قائمة حظر DMCA',
                 'ru' => 'Список блокировки DMCA',
-            ],
-            'vTual' => [
-                'ko' => 'vTual',
-                'zh_CN' => 'vTual',
-                'ar' => 'vTual',
-                'ru' => 'vTual',
-            ],
-            'My vTuber profiles' => [
-                'ko' => '내 vTuber 프로필',
-                'zh_CN' => '我的 vTuber 资料',
-                'ar' => 'ملفات vTuber الخاصة بي',
-                'ru' => 'Мои профили vTuber',
-            ],
-            'My claims' => [
-                'ko' => '내 클레임',
-                'zh_CN' => '我的认领',
-                'ar' => 'مطالباتي',
-                'ru' => 'Мои заявки',
-            ],
-            'Claims queue' => [
-                'ko' => '클레임 대기열',
-                'zh_CN' => '认领队列',
-                'ar' => 'قائمة المطالبات',
-                'ru' => 'Очередь заявок',
             ],
             'Administration' => [
                 'ko' => '관리',
@@ -739,36 +559,6 @@ class MenuSeeder extends Seeder
                 'ar' => 'سجل الأخطاء',
                 'ru' => 'Журнал ошибок',
             ],
-            'Orphan vTubers' => [
-                'ko' => '미등록 vTuber',
-                'zh_CN' => '未认领的 vTuber',
-                'ar' => 'vTubers غير المطالب بها',
-                'ru' => 'Невостребованные vTuber',
-            ],
-            'Managements' => [
-                'ko' => '매니지먼트',
-                'zh_CN' => '管理机构',
-                'ar' => 'جهات الإدارة',
-                'ru' => 'Управляющие команды',
-            ],
-            'Events' => [
-                'ko' => '이벤트',
-                'zh_CN' => '活动',
-                'ar' => 'الفعاليات',
-                'ru' => 'События',
-            ],
-            'Platform credentials' => [
-                'ko' => '플랫폼 자격 증명',
-                'zh_CN' => '平台凭据',
-                'ar' => 'بيانات اعتماد المنصة',
-                'ru' => 'Учётные данные платформ',
-            ],
-            'Incidents' => [
-                'ko' => '인시던트',
-                'zh_CN' => '事件',
-                'ar' => 'الحوادث',
-                'ru' => 'Инциденты',
-            ],
             'Settings' => [
                 'ko' => '설정',
                 'zh_CN' => '设置',
@@ -816,24 +606,6 @@ class MenuSeeder extends Seeder
                 'zh_CN' => '已删除菜单',
                 'ar' => 'القوائم المحذوفة',
                 'ru' => 'Удалённые меню',
-            ],
-            'Home' => [
-                'ko' => '홈',
-                'zh_CN' => '首页',
-                'ar' => 'الرئيسية',
-                'ru' => 'Главная',
-            ],
-            'Directory' => [
-                'ko' => '디렉터리',
-                'zh_CN' => '目录',
-                'ar' => 'الدليل',
-                'ru' => 'Каталог',
-            ],
-            'Contents' => [
-                'ko' => '콘텐츠',
-                'zh_CN' => '内容',
-                'ar' => 'المحتوى',
-                'ru' => 'Контент',
             ],
         ];
 

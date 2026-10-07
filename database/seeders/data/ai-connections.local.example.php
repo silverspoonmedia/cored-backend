@@ -76,16 +76,6 @@ return [
             'binds' => ['microstock.ai.thinking.connection'],
         ],
 
-        'vtual-classify' => [
-            'label' => 'vTual content classification (local)',
-            'binds' => ['vtual.content_classification.ai.connection'],
-            // `test_model` is inherited from `vtual.content_classification.ai.model`
-            // (config/settings-local.php -> internal.sspn_misc). Override it here
-            // only when this connection needs a different probe model than the
-            // consumer sends — check the alias with `php scripts/ai/list_models.php`.
-            // 'test_model' => 'internal.sspn_misc',
-        ],
-
     ],
 
 ];

@@ -17,7 +17,7 @@ use Throwable;
  *
  * Reads a gitignored data file (endpoint + API key per slug), upserts
  * `ai_connections` rows through {@see AiConnectionService}, probes each new row,
- * binds consumer slug settings (Microstock vision/thinking, vTual classify) and
+ * binds consumer slug settings (Microstock vision/thinking) and
  * promotes the flagged entry to default.
  *
  * Same contract as {@see LocalSettingsSeeder}: `APP_ENV=local` only, idempotent
@@ -123,7 +123,7 @@ class AiConnectionSeeder extends Seeder
             }
 
             if ($testModel === '') {
-                $this->command?->warn("Skipped {$slug}: no test model known. Set 'test_model' here, or the consumer's model setting (Settings → Microstock / vTual).");
+                $this->command?->warn("Skipped {$slug}: no test model known. Set 'test_model' here, or the consumer's model setting (Settings → Microstock).");
 
                 continue;
             }

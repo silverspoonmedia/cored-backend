@@ -67,13 +67,6 @@ class SettingRegistryEnvPolicyTest extends TestCase
             'MICROSTOCK_AI_VISION_API_KEY',
             'MICROSTOCK_AI_THINKING_ENDPOINT',
             'MICROSTOCK_AI_THINKING_API_KEY',
-            'VTUAL_AI_CLASSIFY_ENDPOINT',
-            'VTUAL_AI_CLASSIFY_API_KEY',
-            'VTUAL_YT_PROBE_CHANNEL_ID',
-            'VTUAL_CLAIM_TOKEN_PREFIX',
-            'VTUAL_CLAIM_TOKEN_BYTES',
-            'VTUAL_CHANNEL_CLAIM_TOKEN_PREFIX',
-            'VTUAL_CHANNEL_CLAIM_TOKEN_BYTES',
         ];
     }
 
@@ -109,7 +102,6 @@ class SettingRegistryEnvPolicyTest extends TestCase
         $this->assertNotNull(setting_config('jwt.ttl'));
         $this->assertNotNull(setting_config('archivd.max_file_size_bytes'));
         $this->assertNotNull(setting_config('microstock.daily_free.enabled'));
-        $this->assertNotNull(setting_config('vtual.claim.ttl_hours'));
     }
 
     public function test_operational_env_keys_are_not_used_in_config_files(): void

@@ -404,7 +404,6 @@ class DomainCommandsTest extends TestCase
         $this->assertNull($domains->parentOf('Archivd'));
         $this->assertNull($domains->parentOf('Identity'));
         $this->assertContains('Microstock', $domains->childrenOf('Archivd'));
-        $this->assertSame([], $domains->childrenOf('Vtual'));
 
         $this->artisan('domain:list')
             ->assertSuccessful()

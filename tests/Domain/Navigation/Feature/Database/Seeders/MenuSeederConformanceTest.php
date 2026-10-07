@@ -11,7 +11,6 @@ use App\Support\Navigation\SpaRouteRegistry;
 use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MenuSeeder;
 use Database\Seeders\RoleSeeder;
-use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -30,7 +29,6 @@ class MenuSeederConformanceTest extends TestCase
 
         $this->seed(RoleSeeder::class);
         $this->seed(ArchivdRoleSeeder::class);
-        $this->seed(VtualRoleSeeder::class);
         $this->seed(MenuSeeder::class);
     }
 
@@ -62,8 +60,8 @@ class MenuSeederConformanceTest extends TestCase
                 $violations[] = "{$label}: invalid layout.";
             }
 
-            // Hierarchy: strict h -> p -> c nesting; navbar/vtual are flat
-            // template trees whose roots are parentless `p` nodes (no header).
+            // Hierarchy: strict h -> p -> c nesting; navbar is a flat
+            // template tree whose roots are parentless `p` nodes (no header).
             $expected = $expectedParentType[$menu->type] ?? null;
             $parentType = $menu->parent_id
                 ? Menu::query()->whereKey($menu->parent_id)->value('type')

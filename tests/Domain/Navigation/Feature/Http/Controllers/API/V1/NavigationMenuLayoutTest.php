@@ -38,13 +38,6 @@ class NavigationMenuLayoutTest extends TestCase
             'route' => 'users.index',
         ], 'append', null);
 
-        $this->repo()->createMenu([
-            'name' => 'VtualOnly',
-            'type' => 'p',
-            'layout' => MenuLayout::VTUAL,
-            'route' => 'vtual.public',
-        ], 'append', null);
-
         $user = $this->userWithRole('Admin');
 
         $sidebar = $this->actingAsJwt($user)
@@ -57,31 +50,8 @@ class NavigationMenuLayoutTest extends TestCase
             ->assertOk()
             ->json('data');
 
-        $vtual = $this->actingAsJwt($user)
-            ->getJson('/api/v1/navigation/menus?layout=vtual')
-            ->assertOk()
-            ->json('data');
-
         $this->assertSame(['SidebarOnly'], collect($sidebar)->pluck('name')->all());
         $this->assertSame(['NavbarOnly'], collect($navbar)->pluck('name')->all());
-        $this->assertSame(['VtualOnly'], collect($vtual)->pluck('name')->all());
-    }
-
-    public function test_guest_can_fetch_vtual_navigation_tree(): void
-    {
-        $this->repo()->createMenu([
-            'name' => 'Public Home',
-            'type' => 'p',
-            'layout' => MenuLayout::VTUAL,
-            'route' => 'vtual.public',
-            'audience' => MenuAudience::All,
-        ], 'append', null);
-
-        $tree = $this->getJson('/api/v1/navigation/menus?layout=vtual')
-            ->assertOk()
-            ->json('data');
-
-        $this->assertSame(['Public Home'], collect($tree)->pluck('name')->all());
     }
 
     public function test_layouts_endpoint_exposes_configured_layouts(): void
@@ -93,7 +63,6 @@ class NavigationMenuLayoutTest extends TestCase
 
         $this->assertContains('sidebar', $layouts);
         $this->assertContains('navbar', $layouts);
-        $this->assertContains('vtual', $layouts);
     }
 
     public function test_store_rejects_parent_from_different_layout(): void

@@ -23,7 +23,7 @@ class IndexActivityLogRequest extends FormRequest
     {
         return array_merge($this->listQueryPagingRules(), [
             'limit' => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'log_name' => ['sometimes', 'string', Rule::in(['user', 'menu', 'auth', 'vtual', 'default'])],
+            'log_name' => ['sometimes', 'string', Rule::in(['user', 'menu', 'auth', 'default'])],
             'subject' => ['sometimes', 'string', Rule::in(app(SubjectTypeResolver::class)->supportedAliases())],
             'subject_id' => ['required_with:subject', 'uuid'],
             'event' => ['sometimes', 'string', 'max:255'],

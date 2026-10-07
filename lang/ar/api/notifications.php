@@ -17,9 +17,7 @@ return [
         // curated at 2026-09-22T20:32:27+07:00 — ar curation wave
         'service_subscription_expired' => 'انتهت فترة السماح لاشتراكك في :service. تم فرض حدود تخزين المستوى المجاني (تمت إزالة :deleted ملف/ملفات).',
         'inference_unregistered_model' => 'تمت فوترة النموذج غير المسجل :resolved_model على :provider_slug بأسعار مؤقتة ($:input_per_million_usd / $:output_per_million_usd لكل مليون رمز). صنّفه في كتالوج النماذج لإتمام الفوترة.',
-        'vtual_management_invite_received' => 'دعاك :inviter للانضمام إلى :management بدور :role.',
         // curated at 2026-09-22T20:32:27+07:00 — ar curation wave
-        'vtual_management_creator_invite_received' => 'دعاك :inviter لربط ملفك الشخصي في vTuber بـ :management.',
     ],
     'audiences' => [
         'list_success' => 'تم تحميل جماهير الإشعارات.',

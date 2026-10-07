@@ -14,9 +14,6 @@ class DiscordOAuthStateTest extends TestCase
         $state = DiscordOAuthState::encode(
             'user-1',
             'profile',
-            null,
-            null,
-            null,
             'https://spa.test/apps/profile/connections',
         );
 

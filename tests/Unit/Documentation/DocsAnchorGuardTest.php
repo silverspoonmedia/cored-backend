@@ -59,7 +59,6 @@ class DocsAnchorGuardTest extends TestCase
             ['[Foo](bar.md) label', 'foo-label'],
             ['Cache policy — forever + invalidate', 'cache-policy--forever--invalidate'],
             ['Tier A — env / artisan only (not in Web UI)', 'tier-a--env--artisan-only-not-in-web-ui'],
-            ['vTual — product domain', 'vtual--product-domain'],
             ['Auth (`log_name: auth`)', 'auth-log_name-auth'],
             ['VA bank catalog (`VaBankCatalog`)', 'va-bank-catalog-vabankcatalog'],
         ];

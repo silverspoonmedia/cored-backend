@@ -78,16 +78,6 @@ final class SpaPublicUrl
         return self::to('/s/d/'.self::assertSafeSegment($folderId));
     }
 
-    public static function vtuberProfile(string $slug): string
-    {
-        return self::to('/vtual/vtubers/'.self::assertSafeSegment($slug));
-    }
-
-    public static function vtuberClaim(string $slug): string
-    {
-        return self::to('/apps/vtual/vtubers/'.self::assertSafeSegment($slug).'/claim');
-    }
-
     public static function paymentReturn(): string
     {
         if (self::origin() !== null) {

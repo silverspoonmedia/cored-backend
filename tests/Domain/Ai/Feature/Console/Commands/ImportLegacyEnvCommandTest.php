@@ -28,7 +28,6 @@ class ImportLegacyEnvCommandTest extends TestCase
         config([
             'microstock.ai.vision.model' => 'internal.vision',
             'microstock.ai.thinking.model' => 'internal.thinking',
-            'vtual.content_classification.ai.model' => 'vtual-audit',
         ]);
     }
 
@@ -81,14 +80,14 @@ class ImportLegacyEnvCommandTest extends TestCase
     {
         $this->seedActor();
 
-        putenv('VTUAL_AI_CLASSIFY_ENDPOINT=https://ai.example.test/v1/chat/completions');
-        putenv('VTUAL_AI_CLASSIFY_API_KEY=sk-vtual');
+        putenv('MICROSTOCK_AI_VISION_ENDPOINT=https://ai.example.test/v1/chat/completions');
+        putenv('MICROSTOCK_AI_VISION_API_KEY=sk-vision');
 
         try {
             $this->artisan('ai:import-legacy-env', ['--dry-run' => true])->assertSuccessful();
         } finally {
-            putenv('VTUAL_AI_CLASSIFY_ENDPOINT');
-            putenv('VTUAL_AI_CLASSIFY_API_KEY');
+            putenv('MICROSTOCK_AI_VISION_ENDPOINT');
+            putenv('MICROSTOCK_AI_VISION_API_KEY');
         }
 
         $this->assertDatabaseCount('ai_connections', 0);
@@ -97,17 +96,17 @@ class ImportLegacyEnvCommandTest extends TestCase
     #[Test]
     public function it_skips_a_source_without_a_known_test_model(): void
     {
-        config(['vtual.content_classification.ai.model' => '']);
+        config(['microstock.ai.vision.model' => '']);
         $this->seedActor();
 
-        putenv('VTUAL_AI_CLASSIFY_ENDPOINT=https://ai.example.test/v1/chat/completions');
-        putenv('VTUAL_AI_CLASSIFY_API_KEY=sk-vtual');
+        putenv('MICROSTOCK_AI_VISION_ENDPOINT=https://ai.example.test/v1/chat/completions');
+        putenv('MICROSTOCK_AI_VISION_API_KEY=sk-vision');
 
         try {
             $this->artisan('ai:import-legacy-env')->assertFailed();
         } finally {
-            putenv('VTUAL_AI_CLASSIFY_ENDPOINT');
-            putenv('VTUAL_AI_CLASSIFY_API_KEY');
+            putenv('MICROSTOCK_AI_VISION_ENDPOINT');
+            putenv('MICROSTOCK_AI_VISION_API_KEY');
         }
 
         $this->assertDatabaseCount('ai_connections', 0);
@@ -122,17 +121,17 @@ class ImportLegacyEnvCommandTest extends TestCase
 
         $this->seedActor();
 
-        putenv('VTUAL_AI_CLASSIFY_ENDPOINT=https://ai.example.test/v1/chat/completions');
-        putenv('VTUAL_AI_CLASSIFY_API_KEY=sk-first');
+        putenv('MICROSTOCK_AI_VISION_ENDPOINT=https://ai.example.test/v1/chat/completions');
+        putenv('MICROSTOCK_AI_VISION_API_KEY=sk-first');
 
         try {
             $this->artisan('ai:import-legacy-env')->assertSuccessful();
 
-            putenv('VTUAL_AI_CLASSIFY_API_KEY=sk-second');
+            putenv('MICROSTOCK_AI_VISION_API_KEY=sk-second');
             $this->artisan('ai:import-legacy-env')->assertSuccessful();
         } finally {
-            putenv('VTUAL_AI_CLASSIFY_ENDPOINT');
-            putenv('VTUAL_AI_CLASSIFY_API_KEY');
+            putenv('MICROSTOCK_AI_VISION_ENDPOINT');
+            putenv('MICROSTOCK_AI_VISION_API_KEY');
         }
 
         $this->assertDatabaseCount('ai_connections', 1);

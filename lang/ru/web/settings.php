@@ -11,7 +11,6 @@ return [
         'platform' => 'Платформа',
         'archivd' => 'Archivd',
         'microstock' => 'Microstock',
-        'vtual' => 'vTual',
         'notification_audiences' => 'Аудитории уведомлений',
         'currencies' => 'Валюты',
     ],
@@ -210,105 +209,48 @@ return [
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.upstream.release_after_seconds' => 'Освобождение слота провайдера после (секунд)',
         'microstock.csv_disk' => 'Диск экспорта CSV',
-        // vTual
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.credential_test.http_timeout' => 'HTTP-таймаут проверки учётных данных (секунд)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.credential_test.twitch_token_skew_seconds' => 'Запас токена Twitch (секунд)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.credential_test.youtube_probe_channel_id' => 'ID канала для проверки YouTube',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.credential.failover.enabled' => 'Отказоустойчивость учётных данных включена',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.credential.failover.auth_fail_threshold' => 'Порог ошибок аутентификации для отказоустойчивости',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.credential.failover.skip_minutes' => 'Длительность пропуска при отказоустойчивости (минут)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.credential.failover.max_retries_per_call' => 'Максимум повторов на вызов при отказоустойчивости',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.http.timeout' => 'HTTP-таймаут (секунд)',
         // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
-        'vtual.claim.ttl_hours' => 'Срок действия заявки (часов)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim.verify_cooldown_seconds' => 'Перерыв между проверками заявки (секунд)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim.max_attempts' => 'Максимум попыток проверки заявки',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim.block_hours_after_max_attempts' => 'Блокировка заявки после исчерпания попыток (часов)',
-        'vtual.claim.max_pending_per_user' => 'Максимум ожидающих заявок на пользователя',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim.accept_anyway_enabled' => 'Принятие заявки без подтверждения включено',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim.discord_verify_enabled' => 'Проверка заявок через Discord включена',
-        'vtual.claim.token_prefix' => 'Префикс токена заявки',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim.token_bytes' => 'Случайные байты токена заявки',
         // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
-        'vtual.channel_claim.ttl_hours' => 'Срок действия заявки на канал (часов)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_claim.verify_cooldown_seconds' => 'Перерыв между проверками заявки на канал (секунд)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_claim.max_attempts' => 'Максимум попыток проверки заявки на канал',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_claim.accept_anyway_enabled' => 'Принятие заявки на канал без подтверждения включено',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_claim.discord_verify_enabled' => 'Проверка заявок на канал через Discord включена',
-        'vtual.channel_claim.token_prefix' => 'Префикс токена заявки на канал',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_claim.token_bytes' => 'Случайные байты токена заявки на канал',
-        'vtual.channel_pool.threshold' => 'Нижний порог пула каналов',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_pool.max_wait_minutes' => 'Максимальное ожидание пула каналов (минут)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_pool.schedule_every_minutes' => 'Интервал расписания пула каналов (минут)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_pool.resync_stale_hours' => 'Срок устаревания при повторной синхронизации пула каналов (часов)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_pool.resync_enqueue_limit' => 'Лимит постановки в очередь повторной синхронизации пула каналов',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_pool.flush_lock_seconds' => 'Блокировка сброса пула каналов (секунд)',
-        'vtual.claim_verify_pool.threshold' => 'Нижний порог пула проверки заявок',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim_verify_pool.max_wait_minutes' => 'Максимальное ожидание пула проверки заявок (минут)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim_verify_pool.flush_lock_seconds' => 'Блокировка сброса пула проверки заявок (секунд)',
-        'vtual.content_pool.threshold' => 'Нижний порог пула контента',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.content_pool.max_wait_minutes' => 'Максимальное ожидание пула контента (минут)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.content_pool.flush_lock_seconds' => 'Блокировка сброса пула контента (секунд)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.feed_poll.interval_minutes' => 'Интервал опроса ленты (минут)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.live_poll.interval_minutes' => 'Интервал опроса live CCV (минут)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.websub.lease_seconds' => 'Аренда WebSub (секунд)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.websub.renew_before_hours' => 'Продление WebSub до истечения (часов)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.websub.max_body_bytes' => 'Максимальный размер тела уведомления WebSub (байт)',
-        'vtual.landing.event.title' => 'Заголовок события лендинга',
-        'vtual.landing.event.starts_at' => 'Время начала события лендинга',
-        'vtual.landing.event.body' => 'Текст события лендинга',
-        'vtual.content_classification.ai.enabled' => 'Включить ИИ-аудит (классификация контента)',
-        'vtual.content_classification.ai.model' => 'Модель ИИ-аудита',
-        'vtual.content_classification.ai.max_tokens' => 'Максимум токенов ответа ИИ-аудита',
         // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
-        'vtual.content_classification.ai.timeout' => 'Тайм-аут ИИ-аудита (секунд)',
-        'vtual.content_classification.ai.min_confidence' => 'Минимальная достоверность ИИ-аудита',
         // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
-        'vtual.content_classification.ai.cache_ttl_hours' => 'Кэш результатов ИИ-аудита (часов)',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.content_classification.ai.connection' => 'Подключение ИИ для аудита (пусто = по умолчанию)',
-        'vtual.incidents.enabled' => 'Запись инцидентов включена (разбор сбоев интеграции vTual)',
         // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
-        'vtual.metrics.enabled' => 'История метрик включена (снимки vTual)',
         // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
-        'vtual.metrics.channel_interval_minutes' => 'Интервал метрик канала (минут)',
         // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
-        'vtual.metrics.content_interval_minutes' => 'Интервал метрик live CCV (минут)',
         // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
-        'vtual.metrics.retention_days' => 'Хранение истории метрик (дней)',
     ],
     'hints' => [
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
@@ -328,7 +270,6 @@ return [
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.upstream.window_seconds' => 'Эталонное окно бюджета токенов провайдера (ограничение — через пределы параллелизма).',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.credential_test.youtube_probe_channel_id' => 'Публичный ID канала для проверочных тестов учётных данных YouTube Data API.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.jwt.refresh_skew' => 'Обновлять токен доступа за столько минут до его истечения.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
@@ -352,16 +293,10 @@ return [
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.stage.thinking_backlog_after' => 'Секунды до перемещения заданий мышления в очередь отложенных задач.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.credential.failover.enabled' => 'Переключаться на следующие учётные данные после повторных ошибок аутентификации.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim.accept_anyway_enabled' => 'Разрешить пользователям принимать заявку, даже когда проверка не даёт однозначного результата.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.claim.discord_verify_enabled' => 'Разрешить пользователям подтверждать заявки на сирот по совпадению связанных с Discord аккаунтов YouTube/Twitch.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        'vtual.channel_claim.discord_verify_enabled' => 'Разрешить владельцам профилей подтверждать заявки на привязку каналов по совпадению связанных с Discord аккаунтов YouTube/Twitch.',
-        'vtual.incidents.enabled' => 'Записывать сбои интеграции vTual (WebSub, EventSub, учётные данные, загрузка данных) как сгруппированные инциденты для разбора. Отключите при общем сбое платформы, чтобы очередь оставалась читаемой.',
         // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
-        'vtual.metrics.enabled' => 'Добавлять снимок числа подписчиков и одновременных зрителей в таблицы истории при каждом обновлении. Отключите, чтобы хранить только текущие значения.',
         'identity.discord.connections_snapshot_max_age_minutes' => 'Как долго сохранённые снимки подключений Discord считаются достоверными, прежде чем промах проверки вызовет живое обновление через Discord API.',
     ],
     'options' => [

@@ -11,7 +11,6 @@ return [
         'platform' => 'Platform',
         'archivd' => 'Archivd',
         'microstock' => 'Microstock',
-        'vtual' => 'vTual',
         'notification_audiences' => 'Audiens notifikasi',
         'currencies' => 'Mata uang',
     ],
@@ -148,90 +147,33 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => 'Konkurensi thinking solo',
         'microstock.ai.upstream.release_after_seconds' => 'Lepas slot upstream setelah (detik)',
         'microstock.csv_disk' => 'Disk ekspor CSV',
-        // vTual
-        'vtual.credential_test.http_timeout' => 'Timeout HTTP uji kredensial (detik)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.credential_test.twitch_token_skew_seconds' => 'Jeda token Twitch (detik)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.credential_test.youtube_probe_channel_id' => 'ID kanal probe YouTube',
-        'vtual.credential.failover.enabled' => 'Failover kredensial aktif',
-        'vtual.credential.failover.auth_fail_threshold' => 'Ambang kegagalan auth failover',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.credential.failover.skip_minutes' => 'Durasi lewati failover (menit)',
-        'vtual.credential.failover.max_retries_per_call' => 'Percobaan ulang failover maksimum per panggilan',
-        'vtual.http.timeout' => 'Timeout HTTP (detik)',
-        'vtual.claim.ttl_hours' => 'TTL klaim (jam)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.claim.verify_cooldown_seconds' => 'Jeda verifikasi klaim (detik)',
-        'vtual.claim.max_attempts' => 'Percobaan verifikasi klaim maksimum',
-        'vtual.claim.block_hours_after_max_attempts' => 'Durasi blokir klaim setelah percobaan maksimum (jam)',
-        'vtual.claim.max_pending_per_user' => 'Klaim tertunda maksimum per pengguna',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.claim.accept_anyway_enabled' => 'Izinkan terima klaim tanpa verifikasi',
-        'vtual.claim.discord_verify_enabled' => 'Verifikasi klaim Discord aktif',
-        'vtual.claim.token_prefix' => 'Prefiks token klaim',
-        'vtual.claim.token_bytes' => 'Byte acak token klaim',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_claim.ttl_hours' => 'TTL klaim kanal (jam)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_claim.verify_cooldown_seconds' => 'Jeda verifikasi klaim kanal (detik)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_claim.max_attempts' => 'Percobaan klaim kanal maksimum',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_claim.accept_anyway_enabled' => 'Izinkan terima klaim kanal tanpa verifikasi',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_claim.discord_verify_enabled' => 'Verifikasi Discord klaim kanal aktif',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_claim.token_prefix' => 'Prefiks token klaim kanal',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_claim.token_bytes' => 'Byte acak token klaim kanal',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_pool.threshold' => 'Ambang rendah pool kanal',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_pool.max_wait_minutes' => 'Tunggu maksimum pool kanal (menit)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_pool.schedule_every_minutes' => 'Interval jadwal pool kanal (menit)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_pool.resync_stale_hours' => 'Resync pool kanal setelah usang (jam)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_pool.resync_enqueue_limit' => 'Batas antrean resync pool kanal',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_pool.flush_lock_seconds' => 'Kunci flush pool kanal (detik)',
-        'vtual.claim_verify_pool.threshold' => 'Ambang rendah pool verifikasi klaim',
-        'vtual.claim_verify_pool.max_wait_minutes' => 'Tunggu maksimum pool verifikasi klaim (menit)',
-        'vtual.claim_verify_pool.flush_lock_seconds' => 'Kunci flush pool verifikasi klaim (detik)',
-        'vtual.content_pool.threshold' => 'Ambang rendah pool konten',
-        'vtual.content_pool.max_wait_minutes' => 'Tunggu maksimum pool konten (menit)',
-        'vtual.content_pool.flush_lock_seconds' => 'Kunci flush pool konten (detik)',
-        'vtual.feed_poll.interval_minutes' => 'Interval poll feed (menit)',
-        'vtual.live_poll.interval_minutes' => 'Interval poll live CCV (menit)',
-        'vtual.websub.lease_seconds' => 'Lease WebSub (detik)',
-        'vtual.websub.renew_before_hours' => 'Perpanjang WebSub sebelum kedaluwarsa (jam)',
-        'vtual.websub.max_body_bytes' => 'Ukuran maks body notifikasi WebSub (byte)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.landing.event.title' => 'Judul acara landing',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.landing.event.starts_at' => 'Waktu mulai acara landing',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.landing.event.body' => 'Isi acara landing',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.content_classification.ai.enabled' => 'Audit AI aktif (klasifikasi konten)',
-        'vtual.content_classification.ai.model' => 'Model audit AI',
-        'vtual.content_classification.ai.max_tokens' => 'Token respons maksimum audit AI',
-        'vtual.content_classification.ai.timeout' => 'Timeout audit AI (detik)',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.content_classification.ai.min_confidence' => 'Keyakinan minimum audit AI',
-        'vtual.content_classification.ai.cache_ttl_hours' => 'Cache hasil audit AI (jam)',
-        'vtual.content_classification.ai.connection' => 'Koneksi audit AI (kosong = default)',
-        'vtual.incidents.enabled' => 'Perekam insiden aktif (triage integrasi vTual)',
         // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        'vtual.metrics.enabled' => 'Riwayat metrik aktif (snapshot vTual)',
         // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        'vtual.metrics.channel_interval_minutes' => 'Interval metrik kanal (menit)',
         // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        'vtual.metrics.content_interval_minutes' => 'Interval metrik CCV live (menit)',
         // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        'vtual.metrics.retention_days' => 'Retensi riwayat metrik (hari)',
     ],
     'hints' => [
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
@@ -248,7 +190,6 @@ return [
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'microstock.ai.upstream.window_seconds' => 'Jendela referensi anggaran token upstream (penegakan melalui batas konkurensi).',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.credential_test.youtube_probe_channel_id' => 'ID kanal publik untuk uji cepat YouTube Data API.',
         'platform.jwt.refresh_skew' => 'Refresh token akses beberapa menit sebelum kedaluwarsa.',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'platform.notifications.delivery' => 'Realtime memakai WebSocket dan membutuhkan kredensial PUSHER_* / broadcast yang valid; jika tidak, lonceng kembali ke polling HTTP.',
@@ -266,15 +207,9 @@ return [
         'microstock.ai.stage.thinking_grace_after' => 'Detik sebelum tahap thinking masuk mode tenggang.',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'microstock.ai.stage.thinking_backlog_after' => 'Detik sebelum job thinking berpindah ke antrean backlog.',
-        'vtual.credential.failover.enabled' => 'Rotasi ke kredensial berikutnya setelah kegagalan auth berulang.',
-        'vtual.claim.accept_anyway_enabled' => 'Izinkan pengguna menerima klaim meski verifikasi tidak meyakinkan.',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.claim.discord_verify_enabled' => 'Izinkan pengguna memverifikasi klaim yatim dengan mencocokkan akun YouTube/Twitch yang tertaut di Discord.',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        'vtual.channel_claim.discord_verify_enabled' => 'Izinkan pemilik profil memverifikasi klaim kanal melalui akun YouTube/Twitch yang tertaut di Discord.',
-        'vtual.incidents.enabled' => 'Catat kegagalan integrasi vTual (WebSub, EventSub, kredensial, ingest) sebagai insiden terkelompok yang bisa ditriase. Matikan saat gangguan platform menyeluruh agar antrean tetap terbaca.',
         // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        'vtual.metrics.enabled' => 'Tambahkan sampel jumlah pelanggan / penonton bersamaan ke tabel riwayat pada setiap penyegaran. Matikan untuk menyimpan kolom nilai saat ini saja.',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => 'Berapa lama snapshot koneksi Discord tersimpan dipercaya sebelum kegagalan verifikasi memicu penyegaran langsung melalui Discord API.',
     ],
