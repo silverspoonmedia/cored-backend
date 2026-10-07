@@ -31,7 +31,7 @@ Data traffic does not hit this Worker. Remaining controls trim Laravel load:
 
 - **`POST /api/v1/batch`** — up to 10 read-only (`GET`/`HEAD`) sub-requests; throttle `30,1`; mutations `422` per entry. SPA `batch()` in `src/api/client.ts`. Rules: [api-aggregation.md](../platform/api-aggregation.md).
 - **Shell hydrate** — `GET auth/me` then, on success, one batch (me, sidebar, navbar, unread-count, recent notifications). Guests never `POST /batch`. Echo starts **after** that batch. Sibling [auth-session.md](../../../monolith-vue-workers/docs/auth-session.md).
-- **Per-domain hydrates** — Archivd browse/workspaces; navigation/notification/user/service/payment/inference/microstock/vTual edit screens. Failed subs `null` → individual loader; terminal `401`/`403`/`429` skip fallback (`TerminalBatchError`).
+- **Per-domain hydrates** — Archivd browse/workspaces; navigation/notification/user/service/payment/inference/microstock edit screens. Failed subs `null` → individual loader; terminal `401`/`403`/`429` skip fallback (`TerminalBatchError`).
 - **JWT TTL 240** — `setting_config('jwt.ttl')`. Realtime only (no polling); reconnect fires a resync bus.
 
 ## Local dogfood checklist
@@ -67,7 +67,7 @@ Sibling `.github/workflows/ci.yml`: `type-check` → `check:i18n` → `check:doc
 
 ## API contract reference
 
-Per-domain APIs: [payment-gateway](../domains/payment-gateway/README.md), [microstock](../domains/microstock/README.md), [notification](../domains/notification/README.md), [product-activations](../domains/product-activations/README.md), [identity](../domains/identity/README.md), [navigation](../domains/navigation/README.md), [archivd](../domains/archivd/README.md), [inference](../domains/inference/README.md), [service](../domains/service/README.md), [vtual](../domains/vtual/README.md).
+Per-domain APIs: [payment-gateway](../domains/payment-gateway/README.md), [microstock](../domains/microstock/README.md), [notification](../domains/notification/README.md), [product-activations](../domains/product-activations/README.md), [identity](../domains/identity/README.md), [navigation](../domains/navigation/README.md), [archivd](../domains/archivd/README.md), [inference](../domains/inference/README.md), [service](../domains/service/README.md).
 
 ### Endpoint path gotchas
 
@@ -102,12 +102,6 @@ Canonical envelope: [api-envelope.md](../platform/api-envelope.md). Deviations:
 | `POST profile/connections/{oauth_provider}/sync` | Same `{ providers }` as GET | Unknown provider 404 |
 | `DELETE profile/connections/{oauth_provider}` | `null` data | Replaces `DELETE …/discord` |
 | `GET auth/discord/authorize-url` | `{ url }` | Requires `SPA_URL`. `return_path` is a path |
-| `GET vtual/public/vtubers/{slug}` contents items | Each item carries `content_type` (`music` \| `non_music`, null = unknown) + `content_category` (`cover` \| `original` \| `singing_stream`) + `content_category_detail` (nullable) | Both layers program-classified (multi-signal, not `categoryId` alone) with an async AI audit for rows the program pass leaves unknown. See [vtual reference-classification.md — Content classification](../domains/vtual/reference-classification.md#content-classification-music-layer--cover-song-detection) |
-| `GET vtual/public/vtubers/{slug}?platform=&type=&content_type=&sort=` | `data.contents.filters` echoes `{ platform, type, content_type, sort }` | Guest-only grid filters. Unknown values clamp to `null` / `newest` — **never 422** — and `sort=oldest` drops the live-first pinning (`published_at` asc). `data.contents.pagination.total` / `last_page` follow the filtered set. Only this endpoint echoes `filters`; `/vtual/public/contents` and the landing payload do not. The SPA SWR key must include the filter tuple (`useVtualPublic.profileCacheKey`), and `useVtualProfileQuery` mirrors the tuple + page into the URL (`?platform=&type=&content_type=&sort=&page=`) so a filtered grid is linkable — it seeds from `route.query` and does a normalized `router.replace` on change, keeping `sort=newest` and `page=1` out of the URL. |
-| `GET vtual/public/vtubers/{slug}` + `/managements/{slug}` head | No server-side structured data | The schema.org graph is emitted **client-side** from the loaded payload (`utils/vtualJsonLd.ts` → `setHeadMeta({ jsonLd })`) — `Person` + `VideoObject` `ItemList` on a creator profile, `Organization` + `member` roster on a management profile. Never add a Worker/Pages Function for it; the graph must describe what the visitor can see, so it is rebuilt per payload (and removed by `clearHeadMeta()`). See sibling `docs/head-meta.md`. |
-| `GET vtual/claims/mine` + `vtual/claims/pending` | `{ items, pagination }` where `pagination` is `{ current_page, per_page, total, has_more }` | **No `last_page`** — the claims hub pages with `has_more` only. `per_page` clamps to 1–50 (default 15). Rows carry `actions[]` built server-side by `VtualClaimQueryRowActions` (owner: `verify` / `cancel` / `view_profile`; staff: `accept_anyway` when the setting is on); `pending` is 403 without `manage any vtual resource`. |
-| `GET vtual/public/vtubers/{slug}` channels | Each channel carries `last_synced_at` + `_formatted` + `_human` | Metrics freshness — render `last_synced_at_human` (relative label). A channel that never synced sends `null`; show a "never synced" fallback, never a placeholder date. |
-| `GET vtual/public/contents` + profile contents | Items carry `region_allowed` / `region_blocked` (ISO 3166-1 alpha-2 arrays or `null`) | Region **hint**, not a filter — restricted rows stay listed and the card shows a notice. `null` on both = unrestricted. See [vtual reference.md — Region restriction](../domains/vtual/reference.md#content-primary-host-and-appearances). |
 
 ## Type alignment
 
@@ -173,7 +167,7 @@ SPA `/payment/return` and `/payment/cancel` (`requiresAuth`, site root, not unde
 
 ## `/apps` shell
 
-Authenticated `AppLayout` routes are prefixed `/apps/*`. Route **names** stay unprefixed. **Not prefixed:** auth screens, public share `/s/*`, payment bounce, vTual public `/vtual` + `/vtual/vtubers/:slug` + `/vtual/managements/:slug` (the singular `/vtual/vtuber/:slug` and `/vtual/management/:slug` are redirects onto the plural routes). Verify-email uses `meta.authChrome` (not `guestOnly`). Legacy bare paths redirect. Catch-all 404 is last, inside `AppLayout` (public vTuber misses stay in Valkivid3).
+Authenticated `AppLayout` routes are prefixed `/apps/*`. Route **names** stay unprefixed. **Not prefixed:** auth screens, public share `/s/*`, payment bounce. Verify-email uses `meta.authChrome` (not `guestOnly`). Legacy bare paths redirect. Catch-all 404 is last, inside `AppLayout`.
 
 ## Domain SPA surfaces
 
@@ -181,10 +175,9 @@ Do not load this contract for screen-level UX. Use the domain README (Agent entr
 
 - Archivd Drive-lite, trash, workspaces, public share — [archivd README](../domains/archivd/README.md)
 - Microstock collection lifecycle on Archivd workspaces — [microstock README](../domains/microstock/README.md)
-- vTual public / claims hub / orphans / profiles / managements / events — [vtual README](../domains/vtual/README.md). Landing HomeView is **FROZEN** (sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md)).
 - Inference rate editor: `PUT inference/providers/{id}/rates` full replace (`manage inference catalog`).
 - AI connections: SPA `/apps/ai/connections` (`ai.connections.index` / `.create` / `.edit`, sibling of Inference under Administration — not Monitoring). API `/api/v1/ai/connections` CRUD + `POST {id}/test` + `POST {id}/default` (`view`/`manage ai connections`); response carries `secret_hint` + `has_secret` only — never the key. PATCH is partial: blank text = keep, blank `api_key` = keep, explicit `null` on the numeric/header overrides = clear. Detail: [domains/ai README](../domains/ai/README.md).
-- Settings: `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`). MenuSeeder children `settings.platform|archivd|microstock|vtual` are named SPA routes **before** parameterized `settings.group.view`.
+- Settings: `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`). MenuSeeder children `settings.platform|archivd|microstock` are named SPA routes **before** parameterized `settings.group.view`.
 - Navigation menus: `POST/PATCH navigation/menus` send `audience` (`all` | `auth` | `role` | `guest`, default `auth` when omitted) and `roles` **only** with `audience=role`; rows return `audience` + `role_ids`. `is_authenticate` / `is_guest_only` were removed — breaking for older SPA builds, so both repos deploy together. Admin surface: [navigation README](../domains/navigation/README.md).
 ## Mimic doctrine
 
@@ -255,14 +248,8 @@ SPA implementation: sibling [auth-session.md](../../../monolith-vue-workers/docs
 | Navigation menus | `navigation.menus` | `.menu.tree.changed` | `useMenusRealtime.ts` |
 | Navigation (targeted) | user channel | `.menu.tree.changed` + `target_user_id` | `useNavigation.ts` |
 | Product activations / domain access | `product-activations`, `domain-access` | `.product.activation.changed`, `.domain.visibility.changed` | `useAdminRealtime.ts` |
-| vTual claim | `vtual.claim.{claimId}` | `.claim.progress` | `useVtualClaimRealtime.ts` (consumed by `VtualVtuberClaimView.vue`); owner-only channel — the payload carries the bio token, which is why it must not be widened |
-| vTual claim queue (staff) | `vtual.claims` | `.claim.changed` | `useVtualClaims.ts` (consumed by `VtualClaimsView.vue`) — ids + action + status only, never a snapshot; gated on `manage any vtual resource` |
-| vTual creator snapshots | `vtual.creator.{creatorId}` | `.channel.snapshot.updated` | `useVtualRealtime.ts` |
-| vTual credentials | `vtual.platform-credentials` | `.platform.credential.changed` | `useVtualRealtime.ts` |
-| vTual management | `vtual.management.{managementId}` | `.management.updated` | `useVtualRealtime.ts` — payload `kind` is `management` / `member` / `invite` / `creator` / `creator_invite` / `event` / `creator_grant`. `VtualEventEditView` refetches on `kind=event` (without overwriting unsaved fields, and locking the form read-only when the event left an editable status); `VtualEventsView` binds one channel per org on the page through `syncVtualManagementChannels`, since there is no "all managements" channel — see [vtual reference-api.md — Realtime](../domains/vtual/reference-api.md#realtime) |
-| vTual incidents | `vtual.incidents` | `.incident.changed` | `useVtualIncidents.ts` (consumed by `VtualIncidentsView.vue`) — ids + enums only; incident title/detail are free text from platform errors and never travel on the wire. Gated on `view vtual incident` |
 
-All channel callbacks live in `routes/channels.php` (Spatie permission or ownership/access service; admin-facing channels gate on the matching `view *` permission). Payloads are invalidation pings (ids + `action`, plus `kind` on the vTual management channel) — never model snapshots.
+All channel callbacks live in `routes/channels.php` (Spatie permission or ownership/access service; admin-facing channels gate on the matching `view *` permission). Payloads are invalidation pings (ids + `action`) — never model snapshots.
 
 ## Payment UI / service checkout
 

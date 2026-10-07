@@ -23,7 +23,7 @@ After changing `.env` directly (Tier A only), run `php artisan config:rebuild`. 
 | `view settings` | Read settings groups |
 | `manage settings` | Update operational settings |
 
-Root and Admin receive both via `RoleSeeder`. After adding a core permission, re-run `RoleSeeder` **and** `ArchivdRoleSeeder` + `VtualRoleSeeder` (those `givePermissionTo` product perms back onto Admin after the core `syncPermissions`), then `php artisan permission:cache-reset`. Do **not** run full `DatabaseSeeder` on an existing database — it tries to recreate `admin@example.com`. Log out/in so `auth/me` picks up the new list. The SPA manage form is gated on `manage settings` in that payload.
+Root and Admin receive both via `RoleSeeder`. After adding a core permission, re-run `RoleSeeder` **and** `ArchivdRoleSeeder` (which `givePermissionTo`s product perms back onto Admin after the core `syncPermissions`), then `php artisan permission:cache-reset`. Do **not** run full `DatabaseSeeder` on an existing database — it tries to recreate `admin@example.com`. Log out/in so `auth/me` picks up the new list. The SPA manage form is gated on `manage settings` in that payload.
 
 ## Web surface (hybrid)
 
@@ -32,10 +32,9 @@ Root and Admin receive both via `RoleSeeder`. After adding a core permission, re
 | Platform hub | `/apps/settings/platform` | `platform` |
 | Archivd | `/apps/archivd/settings` | `archivd` |
 | Microstock | `/apps/microstock/settings` | `microstock` |
-| Vtual | `/apps/vtual/settings` | `vtual` |
 | Notification audiences | `/apps/notification-audiences` | (separate table) |
 
-Menu: **Administration → Settings** — single hub for all groups (`settings.platform`, `settings.archivd`, `settings.microstock`, `settings.vtual`, plus notification audiences and currencies). Root/Admin via `view settings` / `manage settings`.
+Menu: **Administration → Settings** — single hub for all groups (`settings.platform`, `settings.archivd`, `settings.microstock`, plus notification audiences and currencies). Root/Admin via `view settings` / `manage settings`.
 
 ### Localization
 
@@ -121,10 +120,6 @@ SKU codes and free-tier bytes stay in `ArchivdCatalog` (deploy + seeder).
 
 Daily free tier, AI billing markup, pipeline batch/watchdog, image prep, retries, vision delivery / variant kind, stage models + timeouts, inference provider slug, upstream window/budget/concurrency. **Queue names stay env**; AI endpoints and API keys moved to core Ai `ai_connections` (Tier C) and are bound per stage via `microstock.ai.vision.connection` / `microstock.ai.thinking.connection` (empty = default connection).
 
-### Vtual (`vtual.*`)
-
-Claim/channel-claim TTLs and bio token mint (`token_prefix` / `token_bytes`), credential failover, HTTP timeouts, YouTube probe channel id, channel pool thresholds. Platform credentials stay in `vtual_platform_credentials`; AI audit transport binds via `vtual.content_classification.ai.connection` to core Ai `ai_connections`, and the audit knobs (`enabled`, `model`, `max_tokens`, `timeout`, `min_confidence`, `cache_ttl_hours`) live under `vtual.content_classification.ai.*`.
-
 ## Already UI-manageable (DB, not system_settings)
 
 | Area | Admin route |
@@ -138,7 +133,6 @@ Claim/channel-claim TTLs and bio token mint (`token_prefix` / `token_bytes`), cr
 | Payment gateways | `payment-gateways.*` (CRUD) |
 | Currencies | `currencies.*` |
 | Notification audiences | `notification-audiences.*` |
-| Vtual credentials | `vtual.admin.credentials.*` |
 | Archivd blocklist | `archivd.blocklist.*` |
 | AI connections | `ai.connections.*` (Tier C — see [domains/ai](../domains/ai/README.md)) |
 
@@ -152,13 +146,13 @@ Payment routing fees: YAML → `payments:sync-routing-policy` (partial UI toggle
 php artisan db:seed --class=SettingsSeeder
 ```
 
-**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also runs `LocalSettingsSeeder`, which `upsertMany`s dev overrides from [`config/settings-local.php`](../../config/settings-local.php) (e.g. generous daily free, realtime notifications, local Open WebUI model aliases for the Microstock stages and the vTual audit). Re-seeding local refreshes those values; staging/production never run this seeder. Full override inventory: [reference-configuration-policy.md — Local profile overrides](reference-configuration-policy.md#local-profile-overrides).
+**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also runs `LocalSettingsSeeder`, which `upsertMany`s dev overrides from [`config/settings-local.php`](../../config/settings-local.php) (e.g. generous daily free, realtime notifications, local Open WebUI model aliases for the Microstock stages). Re-seeding local refreshes those values; staging/production never run this seeder. Full override inventory: [reference-configuration-policy.md — Local profile overrides](reference-configuration-policy.md#local-profile-overrides).
 
 ```bash
 php artisan db:seed --class=LocalSettingsSeeder   # local only; upserts dev pack
 ```
 
-**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also ends with `AiConnectionSeeder`, which upserts `ai_connections` rows (Tier C) from the gitignored `database/seeders/data/ai-connections.local.php`, probes each new row, binds the consumer slug settings (`microstock.ai.vision.connection`, `microstock.ai.thinking.connection`, `vtual.content_classification.ai.connection`) and promotes the flagged entry to default. It runs last because it needs the seeded users for `created_by` and `LocalSettingsSeeder`'s model aliases for `test_model`. `php artisan db:seed` on a fresh local checkout is therefore enough once the data file is filled in — see [domains/ai/README.md — Local seeding](../domains/ai/reference.md#local-seeding--wiring).
+**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also ends with `AiConnectionSeeder`, which upserts `ai_connections` rows (Tier C) from the gitignored `database/seeders/data/ai-connections.local.php`, probes each new row, binds the consumer slug settings (`microstock.ai.vision.connection`, `microstock.ai.thinking.connection`) and promotes the flagged entry to default. It runs last because it needs the seeded users for `created_by` and `LocalSettingsSeeder`'s model aliases for `test_model`. `php artisan db:seed` on a fresh local checkout is therefore enough once the data file is filled in — see [domains/ai/README.md — Local seeding](../domains/ai/reference.md#local-seeding--wiring).
 
 Cache is rebuilt automatically after seeding. See [configuration-policy.md](configuration-policy.md) for tier rules and cache contract.
 

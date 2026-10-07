@@ -11,7 +11,7 @@ Two scopes, both finalized-only. Columns are config-driven (`microstock.csv.colu
 
 ## Marketplace credentials
 
-`microstock_marketplace_credentials` stores per-user marketplace connection secrets (host/username/password/port/…/`remote_path`) for the marketplace auto-upload. `secret_payload` uses the shared **envelope encryption** cast (`EnvelopeEncryptedArray`, resource type `microstock_marketplace_credentials`) — the same KEK/DEK infra as payment/vTual credentials; plaintext never reaches the DB. List rows emit query-mode `actions[]` (`delete`); SPA maps into `RowActions`.
+`microstock_marketplace_credentials` stores per-user marketplace connection secrets (host/username/password/port/…/`remote_path`) for the marketplace auto-upload. `secret_payload` uses the shared **envelope encryption** cast (`EnvelopeEncryptedArray`, resource type `microstock_marketplace_credentials`) — the same KEK/DEK infra as the payment and Archivd credentials; plaintext never reaches the DB. List rows emit query-mode `actions[]` (`delete`); SPA maps into `RowActions`.
 
 The row also carries a **status written by the upload job, never by the owner**: `status` (`pending` / `verified` / `failed`), `last_error`, `last_verified_at`, `last_used_at`. A transfer that the marketplace accepted flips the credential to `verified`; a rejected one to `failed` with the reason on `last_error`, which the SPA renders as a badge `title`. Upload is implemented — see [reference-marketplace-upload.md](reference-marketplace-upload.md) for the decision, the per-marketplace field mapping, and the non-destructive copy-out contract.
 

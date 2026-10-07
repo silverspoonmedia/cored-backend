@@ -10,7 +10,7 @@ KEK = OCI KMS master key; one DEK per value (AES-256-GCM). Tier 1 (`SESSION_ENCR
 
 - **Never** envelope-encrypt sessions — a KMS round-trip plus a `crypto` audit row on every request. Keep `ENCRYPTION_SESSION_ENABLED=false`.
 - `EnvelopeEncryptionService` is the **sole** decrypt choke point. Nothing else unwraps a DEK or touches `dek_ciphertext`; new sensitive columns go through an `EnvelopeEncrypted*` cast, never ad-hoc `Crypt`.
-- Decrypt cache: forever by default, invalidated on encrypt / cast set / flush. Only `activity_log` (`900`) and `vtual_platform_credentials` (`0`) have a per-`resourceType` entry; a new one is a deliberate `config/encryption.php` edit, not a code branch.
+- Decrypt cache: forever by default, invalidated on encrypt / cast set / flush. Only `activity_log` (`900`) has a per-`resourceType` entry; a new one is a deliberate `config/encryption.php` edit, not a code branch.
 - **Production and Octane need a shared cache store (Redis).** A per-worker `array` cache silently breaks forever semantics across processes.
 - Keep `ENCRYPTION_AUDIT_DECRYPTS=cache_miss`. `CryptoActivityRecorder` writes a `crypto` row inside `decrypt()`, so each audited decrypt costs one extra DEK wrap; `always` multiplies that.
 - Never log plaintext, DEKs, `dek_ciphertext`, or `ENCRYPTION_BLIND_INDEX_PEPPER`. Rotating `APP_KEY` or the pepper breaks decrypt and blind-index lookups — rotate with `APP_PREVIOUS_KEYS`, then `config:rebuild`.

@@ -4,11 +4,11 @@ Schema, test gate, resolution, consumers, import command, local seeding. Invaria
 
 ## Why a central connection
 
-Microstock (vision + thinking) and vTual (content classification) all speak the same `openai_compatible` chat-completions shape. Their endpoints were env keys, so rotating one key meant editing five `.env` files and redeploying.
+Microstock (vision + thinking) and other consumers all speak the same `openai_compatible` chat-completions shape. Their endpoints were env keys, so rotating one key meant editing five `.env` files and redeploying.
 
 | Before | After |
 |--------|-------|
-| `MICROSTOCK_AI_VISION_ENDPOINT` / `_API_KEY`, `MICROSTOCK_AI_THINKING_*`, `VTUAL_AI_CLASSIFY_*` in `.env` (Tier A) | One `ai_connections` row (Tier C) per endpoint + key |
+| `MICROSTOCK_AI_VISION_ENDPOINT` / `_API_KEY`, `MICROSTOCK_AI_THINKING_*` in `.env` (Tier A) | One `ai_connections` row (Tier C) per endpoint + key |
 | Consumer picked its own model/knobs from `config()` | Consumer keeps its Tier B knobs and binds a connection **slug** |
 | Key rotation = redeploy every app | Key rotation = edit the row, run Test |
 
@@ -41,7 +41,7 @@ Uniform by default (all consumers share the default connection), independent whe
 
 ## Test gate
 
-Mirrors vTual platform credentials: **nothing resolves until a manual Test passes**.
+Mirrors other credential stores: **nothing resolves until a manual Test passes**.
 
 | Event | Effect |
 |-------|--------|
@@ -66,7 +66,7 @@ Endpoints that cannot be probed write to `last_error_message`; the SPA list surf
 
 Both read a row directly (including `pending` ones — the resolver refuses those on purpose) and never print the key.
 
-Local consumer aliases live in [`config/settings-local.php`](../../../config/settings-local.php) — `microstock.ai.vision.model` / `.thinking.model` and `vtual.content_classification.ai.model` (plus `.enabled`, `.max_tokens` = 4000, `.timeout`); re-seed `LocalSettingsSeeder` after changing them, then `AiConnectionSeeder` picks the alias up as the probe model.
+Local consumer aliases live in [`config/settings-local.php`](../../../config/settings-local.php) — `microstock.ai.vision.model` / `.thinking.model` (plus `.enabled`, `.max_tokens` = 4000, `.timeout`); re-seed `LocalSettingsSeeder` after changing them, then `AiConnectionSeeder` picks the alias up as the probe model.
 
 ## Resolution
 
@@ -89,7 +89,6 @@ Returns `AiConnectionData` (readonly DTO: id, slug, driver, endpoint, `apiKey`, 
 |----------|-----------------|--------|
 | Microstock vision | `microstock.ai.vision.connection` (empty = default) | `HttpAiMetadataService::stageConfig()` merges Tier B knobs with `AiConnectionData` |
 | Microstock thinking | `microstock.ai.thinking.connection` | same |
-| vTual content classification | `vtual.content_classification.ai.connection` | `ContentAiClassifier::classifyContent()` — decides **both** layers (`is_music` + sub-category) as the async fallback for rows the program classifier left incomplete; also reads `max_tokens` and unwraps fenced JSON ([vtual/reference-classification.md](../vtual/reference-classification.md)) |
 
 A consumer with no bound connection and no default resolves to `null` and reports "AI not configured" instead of issuing an HTTP call. Connection timeouts override the consumer's Tier B timeout when set.
 
@@ -121,7 +120,6 @@ Row actions (`AiConnectionQueryRowActions`): `test`, `default` (active + non-def
 |------------|---------|
 | `MICROSTOCK_AI_VISION_ENDPOINT` + `_API_KEY` | connection `microstock-vision`, bound to `microstock.ai.vision.connection` |
 | `MICROSTOCK_AI_THINKING_ENDPOINT` + `_API_KEY` | connection `microstock-thinking` |
-| `VTUAL_AI_CLASSIFY_ENDPOINT` + `_API_KEY` | connection `vtual-classify` |
 
 Behavior:
 
@@ -138,7 +136,7 @@ The env keys are **removed** from `EnvironmentVariableCatalog` and all `.env.*.e
 
 ## Local seeding / wiring
 
-Setting up local from scratch is the fiddly part: an empty `ai_connections` table plus three unbound consumer settings means Microstock and vTual silently report "AI not configured".
+Setting up local from scratch is the fiddly part: an empty `ai_connections` table plus an unbound consumer setting means Microstock silently reports "AI not configured".
 
 `AiConnectionSeeder` wires it in one command. It reads a **gitignored** data file — the only place a plaintext AI key may live on disk besides the encrypted column:
 
@@ -189,7 +187,7 @@ Behaviour:
 3. `created_by` = the first `Root` user (falls back to the oldest user). No users yet = skipped with a warning.
 4. Binds through `SystemSettingRepository::upsertMany()`, then `AiConnectionResolver::forget($slug)` so the next request sees the new value.
 5. Renaming a slug in the data file leaves the old row behind — delete it at Administration → AI connections.
-6. Each local consumer resolves its own alias, so all three entries seed without an explicit `test_model`: Microstock from `microstock.ai.vision.model` / `.thinking.model`, vTual from `vtual.content_classification.ai.model` (`config/settings-local.php`). Name `test_model` here only when a connection needs a probe model different from what the consumer sends.
+6. Each local consumer resolves its own alias, so both entries seed without an explicit `test_model`: Microstock from `microstock.ai.vision.model` / `.thinking.model` (`config/settings-local.php`). Name `test_model` here only when a connection needs a probe model different from what the consumer sends.
 7. A probe can fail on a renamed alias (`HTTP 400: {"detail":"Model not found"}`) — the row is still created + bound, but stays `pending`, so consumers keep resolving the default. Fix the alias setting (Tier B) or the entry's `test_model`, then re-seed or re-Test from the SPA.
 
 `DatabaseSeeder` calls it last (local only), after the users exist and after `LocalSettingsSeeder`'s model aliases — so `php artisan db:seed` on a fresh local checkout is enough, provided the data file is filled in.
@@ -215,4 +213,4 @@ The data file must stay out of git: `/database/seeders/data/*.local.php` is in `
 | `tests/Feature/Broadcasting/AiConnectionsChannelTest.php` | channel authorization |
 | `tests/Concerns/BindsAiConnection.php` | consumer-test stub (no DB, no encryption) |
 
-Consumer suites (`HttpAiMetadataService*`, `ContentAiClassifierTest`, `ClassifyContentsCommandTest`) bind the stub through `BindsAiConnection` instead of seeding a row.
+Consumer suites (`HttpAiMetadataService*`) bind the stub through `BindsAiConnection` instead of seeding a row.

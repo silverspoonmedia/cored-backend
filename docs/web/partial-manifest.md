@@ -27,8 +27,6 @@ The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came 
 | subscriptions | `$action`, `$method`, `$isEdit`, subscription | create, edit |
 | inference/providers | `$isEdit`, `$provider` | create, edit |
 | inference/model-cards | `$isEdit`, `$card` | create, edit |
-| vtual/orphans | `$action`, `$method`, `$isEdit`, creator | create, edit |
-| vtual/platform-credentials | `$credential` | create, edit |
 
 ## Archivd
 
@@ -39,26 +37,6 @@ The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came 
 ### Archived (no active caller)
 
 `toolbar-zone`, `browse-views`, `trash-show-panels` — superseded by Vue island first paint. Location: `resources/views/_archive/adminlte4/archivd/partials/`. See [archivd README](../domains/archivd/README.md).
-
-## vTual
-
-| Partial | Callers | Notes |
-|---------|---------|-------|
-| `vtual/partials/confirm-modal` | profiles/show, platform-credentials/platform | singleton `#vtualConfirmModal` |
-| `vtual/partials/channel-add-form` | orphans/partials/channels, profiles/partials/channels | shared add form |
-| `vtual/orphans/partials/channels` | orphans/edit | staff pending table |
-| `vtual/orphans/partials/channel-row` | orphans/partials/channels | nested row fragment |
-| `vtual/profiles/partials/meta-form` | profiles/show | profile metadata |
-| `vtual/profiles/partials/merge-form` | profiles/show | absorb merge |
-| `vtual/profiles/partials/links` | profiles/show | external links |
-| `vtual/profiles/partials/channels` | profiles/show | claims + active/archived — **do not merge with orphans** |
-| `vtual/profiles/partials/content-stub` | profiles/show | content placeholder |
-| `vtual/platform-credentials/partials/credential-actions` | platform-credentials/platform | row action bar |
-| `vtual/vtuber/partials/sidebar` | vtuber/show | identity + stats |
-| `vtual/vtuber/partials/content-panel` | vtuber/show | main column shell |
-| `vtual/vtuber/partials/channels` | vtuber/partials/sidebar | channel ID cards |
-| `vtual/vtuber/partials/contents` | vtuber/partials/content-panel | content grid |
-| `vtual/vtuber/partials/claim-active-panel` | vtuber/claim (Vue island bootstrap) | claim state mount |
 
 ## Payments
 
@@ -72,5 +50,4 @@ The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came 
 
 - [blade-admin.md](blade-admin.md) — what remains on the `web` stack after removal
 - [archive/ui-patterns-blade.md](../archive/ui-patterns-blade.md) — **archived** UX patterns referencing these partials
-- [domains/vtual/README.md](../domains/vtual/README.md) — live vTual SPA surfaces
 - [domains/archivd/README.md](../domains/archivd/README.md) — removed Blade island history

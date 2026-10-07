@@ -47,8 +47,6 @@
 | `service.mdc` | `app/Domain/Service/**`, catalog seeder, FX/service config |
 | `product-activations.mdc` | `app/Support/Product/**`, product registry config |
 | `payment-gateway.mdc` | `app/Domain/PaymentGateway/**`, payment config/routing |
-| `vtual.mdc` / `vtual-content.mdc` | `app/Domain/Vtual/**`, `routes/api/v1/vtual*.php` |
-| `archivd.mdc` | `app/Domain/Archivd/**`, Archivd routes/config |
-| `microstock.mdc` | `app/Domain/Microstock/**`, microstock routes/config |
+| `archivd.mdc` / `microstock.mdc` | `app/Domain/Archivd/**`, `app/Domain/Microstock/**`, their routes/config |
 
 Doc map: [docs/README.md](docs/README.md). History and audits: [docs/archive/](docs/archive/). Backend work stays here; SPA work stays in the sibling.

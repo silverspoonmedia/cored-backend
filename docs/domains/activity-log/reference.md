@@ -21,7 +21,6 @@ Models with `LogsActivity` / `HasActivity` + `logOnlyDirty()`:
 | User | `user` | name, email, locale, verified_at |
 | Service | `service` | fillable |
 | Menu | `menu` | structural + translatable |
-| vTual management models | `vtual` | see [vTual management trail](#vtual-management-trail) below |
 
 ## Manual / semantic
 
@@ -30,21 +29,6 @@ Pivots (e.g. role assign) → explicit `activity()->useLog('user')->event('role_
 ### Auth (`log_name: auth`)
 
 Login, logout, 2FA, password — via domain events + `AuthActivityRecorder`. Coverage matrix: [platform/security.md](../../platform/security.md). Filter `?log_name=auth`.
-
-### vTual management trail
-
-Every mutation of a talent org and its memberships, invites and events. Six models carry `LogsActivity` with `logFillable` + `logOnlyDirty` + `dontLogEmptyChanges` + `useLogName('vtual')`:
-
-| Model | Table |
-|-------|-------|
-| `Management` | `vtual_managements` |
-| `ManagementMember` | `vtual_management_members` |
-| `ManagementCreator` | `vtual_management_creators` |
-| `ManagementInvite` | `vtual_management_invites` |
-| `CreatorManagementInvite` | `vtual_creator_management_invites` |
-| `VtualEvent` | `vtual_events` |
-
-Both invite models add `logExcept(['token'])`: the row carries the 48-char respond-endpoint bearer secret, and that secret must never reach the log. Filter the trail with `?log_name=vtual` (`IndexActivityLogRequest` allow-list). `Creator`, `Channel` and `Content` are deliberately **out** — they are personal-data surfaces, not the management trail, and `creator` / `channel` / `content` are not `vtual` log rows. The management models themselves are documented in the vTual deep dive: [vtual/reference.md](../vtual/reference.md).
 
 ### Crypto (`log_name: crypto`)
 

@@ -1,6 +1,6 @@
 # vTual — Legacy broadercastv2 audit (foundation)
 
-One-shot assessment before implementing the **Vtual** product domain in Monolith. Not a living daily guide — current product behavior lives in [domains/vtual/README.md](../domains/vtual/README.md).
+One-shot assessment before implementing the **Vtual** product domain in Monolith. Not a living daily guide — the domain was removed on 2026-10-07 (see [vtual-sunset-postmortem.md](vtual-sunset-postmortem.md)); this file is history.
 
 **Sources:** `broadercastv2` source tree; AI analysis files `Result_Sol.md`, `Result_Grok.md`, `Result_GLM.md` treated as **hypotheses** until code-checked. **No legacy secrets or seeder credentials are reproduced here.**
 
@@ -127,6 +127,5 @@ All three analyses agree on: poll-only ingestion, no Kick, no Jobs, User=creator
 
 ## 6. Related living docs
 
-- [domains/vtual/README.md](../domains/vtual/README.md) — current product surface  
 - [product-activations/README.md](../domains/product-activations/README.md) — runtime gate  
 - [platform/architecture.md](../platform/architecture.md) — domain registry  

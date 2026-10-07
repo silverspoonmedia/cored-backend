@@ -8,7 +8,7 @@ Detail behind [configuration-policy.md](configuration-policy.md): the tier table
 |------|---------|----------|--------------|
 | **A — env only** | `.env` + `config/*.php` `env()` bindings | `APP_KEY`, `JWT_SECRET`, `DB_*`, `REDIS_*`, `OCI_*`, mail/broadcast secrets, S3/upload-proxy credentials, payment gateway keys | `config()` at bootstrap only |
 | **B — DB plaintext** | `system_settings` via Settings UI | JWT TTLs, upload limits, notification delivery, claim TTLs, timezone knobs, AI consumer knobs (model / timeouts / max_tokens / connection slug) | `setting()` / `setting_config()` → **cached snapshot** |
-| **C — DB envelope** | Dedicated credential tables | AI connections (`ai_connections`), YouTube/Twitch keys (`vtual_platform_credentials`), marketplace FTP (`microstock_marketplace_credentials`) | Model cast → `EnvelopeEncryptionService` |
+| **C — DB envelope** | Dedicated credential tables | AI connections (`ai_connections`), marketplace FTP (`microstock_marketplace_credentials`) | Model cast → `EnvelopeEncryptionService` |
 
 **Never** put Tier B values in `.env`. **Never** put Tier C secrets in `.env` or `system_settings`.
 
@@ -45,9 +45,9 @@ See [reference-settings.md — Tier A](reference-settings.md#tier-a--env--artisa
 
 ## Tier C pattern
 
-Envelope encryption for product-domain secrets follows `EnvelopeEncryptionService` + `EnvelopeEncryptedArray` cast. Reference: [envelope-encryption.md](envelope-encryption.md), vTual `PlatformCredential`, Microstock `MarketplaceCredential`, core Ai [`ai_connections`](../domains/ai/README.md).
+Envelope encryption for product-domain secrets follows `EnvelopeEncryptionService` + `EnvelopeEncryptedArray` cast. Reference: [envelope-encryption.md](envelope-encryption.md), Microstock `MarketplaceCredential`, core Ai [`ai_connections`](../domains/ai/README.md).
 
-**AI transport is Tier C, not Tier A.** Endpoints + API keys live in `ai_connections` (managed at Administration → AI connections, per-consumer binding by slug). A consumer's non-secret knobs (model, timeout, max_tokens, min confidence) stay Tier B. `MICROSTOCK_AI_*` / `VTUAL_AI_CLASSIFY_*` env keys are gone; `php artisan ai:import-legacy-env` performs the one-time import.
+**AI transport is Tier C, not Tier A.** Endpoints + API keys live in `ai_connections` (managed at Administration → AI connections, per-consumer binding by slug). A consumer's non-secret knobs (model, timeout, max_tokens, min confidence) stay Tier B. `MICROSTOCK_AI_*` env keys are gone; `php artisan ai:import-legacy-env` performs the one-time import.
 
 Payment gateway **signing secrets** remain Tier A env today (CRUD manages metadata only).
 
@@ -89,12 +89,6 @@ Mirrors [`config/settings-local.php`](../../config/settings-local.php) — updat
 | `platform.notifications.delivery` | `realtime` | Bell without polling |
 | `archivd.download_vault.enabled` | `true` | Vault download path in hybrid proxy |
 | `microstock.ai.http_retries` | `1` | Faster AI failure in dev |
-| `vtual.claim.accept_anyway_enabled` | `true` | Claim dev ergonomics |
-| `vtual.channel_claim.accept_anyway_enabled` | `true` | Channel claim dev ergonomics |
-| `vtual.content_classification.ai.enabled` | `true` | Local AI sub-category audit on |
-| `vtual.content_classification.ai.model` | `internal.sspn_misc` | Local audit alias (also the probe model for the `vtual-classify` connection) |
-| `vtual.content_classification.ai.max_tokens` | `2_000` | Reasoning models need headroom before they emit JSON |
-| `vtual.content_classification.ai.timeout` | `120` | Local alias answers in 6-20 s; prod literal is 15 s |
 | `microstock.ai.vision.model` | `internal.sspn_vision` | Local Open WebUI vision alias (catalogue: `php scripts/ai/list_models.php` / `probe_models.php`) |
 | `microstock.ai.vision.free_model` | `''` | Inherits paid — no separate local free alias |
 | `microstock.ai.vision.timeout` | `300` | Shorter local vision HTTP timeout |

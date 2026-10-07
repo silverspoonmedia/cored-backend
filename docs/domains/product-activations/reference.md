@@ -18,7 +18,7 @@ Paid entitlement was already tracked by `service_entitlements` (Active / Grace /
 
 | Type | Behavior | Example |
 |------|----------|---------|
-| **Implicit** | Auto-activated on register. Registry activation requires no approval; product-specific entitlement/provisioning may still apply. Lifecycle: `active` ↔ `suspended`. | Archivd, Vtual, Microstock |
+| **Implicit** | Auto-activated on register. Registry activation requires no approval; product-specific entitlement/provisioning may still apply. Lifecycle: `active` ↔ `suspended`. | Archivd, Microstock |
 | **Explicit** | Requires provisioning / approval before `active`. Lifecycle: `pending` → `active` → `suspended` → `expired`. | Future products (e.g. KYC-gated billing) |
 
 Declared in `config/products.php`:
@@ -28,17 +28,6 @@ Declared in `config/products.php`:
     'activation_type' => 'implicit',
     'fulfillment_target' => 'archivd',
     'menu_routes' => ['archivd.index'], // menu routes hidden when not Active
-],
-'Vtual' => [
-    'activation_type' => 'implicit',
-    'fulfillment_target' => null,
-    'menu_routes' => [
-        'vtual.index',
-        'vtual.profiles.index',
-        'vtual.claims.index',
-        'vtual.admin.registry',
-        'vtual.admin.credentials.index',
-    ],
 ],
 'Microstock' => [
     'activation_type' => 'implicit',

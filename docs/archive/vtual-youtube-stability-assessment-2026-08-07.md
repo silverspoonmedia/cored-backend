@@ -216,7 +216,7 @@ Pending pool counts after observation: 0 pending (drained).
 
 ## Open risks (not probe failures)
 
-From [implementation-status.md](../domains/vtual/implementation-status.md):
+From the (now archived with its domain) vTual implementation status:
 
 - WebSub tombstone / deleted video 404 handling not implemented
 - Content pool / channel pool `done` row retention not implemented

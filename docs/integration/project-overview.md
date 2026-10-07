@@ -64,7 +64,7 @@ Multi-tab: the cookie is shared. `BroadcastChannel('monolith-auth')` only coordi
 Two live-update patterns:
 
 - **Pattern A — Bell-driven listing reload:** `UserActivityNotificationReceived` on `App.Models.User.{id}` carries a `table_id`; the bell forwards it to `useListingReload` registry; registered listing views refetch. Active on `UsersView` (`users-table`), `InferenceModelCardsView` (`inference-model-cards-table`).
-- **Pattern B — Direct channel subscription:** domain-specific private channels via singleton composables (`useArchivdRealtime.ts`, `usePaymentRealtime.ts`, `useVtualClaimRealtime.ts`, `useVtualRealtime.ts`, `useAiConnectionsRealtime.ts`).
+- **Pattern B — Direct channel subscription:** domain-specific private channels via singleton composables (`useArchivdRealtime.ts`, `usePaymentRealtime.ts`, `useAiConnectionsRealtime.ts`).
 
 Channel lifecycle is not per-composable: every binding goes through `src/composables/echo/channelRegistry.ts`, ref-counted per channel name, attach deferred until Echo exists. Full channel inventory: [vue-workers-spa.md — Realtime](reference-vue-workers-spa.md#realtime).
 

@@ -8,12 +8,11 @@ alwaysApply: false
 
 Immutable forensic log of domain mutations (`activity_log`). It is **not** the notification bell and **not** [error-log.mdc](error-log.mdc).
 
-- **Log names are a closed vocabulary:** `user`, `menu`, `service`, `vtual`, `auth`, `crypto`. Adding a name means adding it to the `IndexActivityLogRequest` allow-list in the same task, or it is unreachable through the API filter.
+- **Log names are a closed vocabulary:** `user`, `menu`, `service`, `auth`, `crypto`. Adding a name means adding it to the `IndexActivityLogRequest` allow-list in the same task, or it is unreachable through the API filter.
 - Automatic logging uses `LogsActivity` / `HasActivity` **with `logOnlyDirty()`**. A model that logs every save turns the trail into noise and hides the change that mattered.
 - Pivot or semantic mutations (role assign, status change) use an explicit `activity()->useLog(...)->event(...)` call — never a model-level hook that would also fire on unrelated writes.
 - **`log_name: auth`** covers login, logout, 2FA and password through domain events + `AuthActivityRecorder`. The coverage matrix is the contract; a new auth path that bypasses the events is a security gap, not a logging gap.
-- **`log_name: vtual`** is the management audit trail: `Management`, `ManagementMember`, `ManagementCreator`, `ManagementInvite`, `CreatorManagementInvite`, `VtualEvent`, all with `logFillable` + `logOnlyDirty` + `dontLogEmptyChanges` + `useLogName('vtual')`. Both invite models add `logExcept(['token'])` — the row carries a 48-char respond-endpoint bearer secret and that secret must never reach the log.
-- `Creator`, `Channel` and `Content` are deliberately **out** of the `vtual` trail: they are personal-data surfaces, not the management trail. Never add them to it.
+- **Personal-data surfaces stay out of the forensic trail.** A model whose rows carry user content (profiles, channels, uploads) is logged only when the change is an operational act, never by a blanket model-level hook. Never widen a trail to a model just because it is convenient.
 - **`properties` keys `ip_address`, `user_agent`, `email` are envelope-encrypted at rest** (OCI KMS) through `SensitiveActivityProperties::encryptInPlace()`, called from `LogActivityAction::beforeLogging()` — the single choke point for every recorder plus the `activity()` helper. Decrypt for API through `SensitiveActivityPropertyPresenter::forApi()`, which returns the `[unavailable]` sentinel rather than ciphertext.
 - Every other `properties` key stays **plaintext** so `properties->some_key` JSON queries and list filters keep working (e.g. `properties->workspace_id` in the Archivd workspace feed). Never encrypt a key the query layer filters on.
 - **PII keys apply to every log name**, including `crypto` rows. A KMS failure during an audit write **drops** that key instead of failing the request (login must never break because the audit row could not be encrypted) and reports the exception.

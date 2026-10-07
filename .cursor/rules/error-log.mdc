@@ -15,7 +15,7 @@ Grouped runtime failures in `error_logs`. It is **not** the audit trail ([activi
 - A new hit increments `occurrence_count`, refreshes the latest sample (`message`, `trace`, `context`, `last_seen_at`) and **reopens** `resolved`/`ignored` back to `open`. Never leave a reopened row resolved.
 - `context` is **redacted** with `config/errorlog.php` `redact_keys`, the same list activity-log redacts with. Adding a sensitive key means updating both; a key present in one list and missing in the other leaks.
 - `redact_keys` and `dont_store` are bootstrap config literals read through `config()` — never promote them to Tier B settings. The operational knobs (`enabled`, `clean_after_days`, `max_message_length`, `max_trace_length`, `max_context_json_length`) are `platform.errorlog.*` registry keys.
-- Domains that need an **intentional ops signal** (not a thrown bug) call `ErrorLogRecorder::recordLog()` — e.g. vTual `PlatformErrorLogger` for platform HTTP / credential Test failures, whose `PlatformApiException` is a `BusinessRuleException` and would be skipped.
+- Domains that need an **intentional ops signal** (not a thrown bug) call `ErrorLogRecorder::recordLog()` — e.g. an upstream HTTP failure or a credential Test that the domain classifies as a business-rule error (`BusinessRuleException`), which `recordException()` would skip.
 - **The writer never throws into the request or log pipeline**, and never keeps request-scoped state in a static (Octane).
 - Retention: `php artisan errorlog:clean [--days=30]`, default `clean_after_days = 90`.
 - API is `auth:api` + `permission:view error log` (Root/Admin). Realtime: `logs.errors` private channel, `.log.error.recorded` with `{level, type}` only — never the message.

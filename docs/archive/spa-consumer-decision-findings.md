@@ -6,8 +6,6 @@ Blocking cases (client `canAffordAnalysis` math, sync-status default `'midtrans'
 
 | Finding | Why it is decision-making | Why not blocking |
 |---------|---------------------------|------------------|
-| Accept Anyway always painted on the claim page | SPA cannot read `vtual.claim.accept_anyway_enabled` | API 422s when off |
-| Discord verify settings on the creator claim page are not read | SPA cannot read `vtual.claim` Discord-verify flags | Button can still 422; bio verify still works |
 | `collection_status` → CTA map | Local state machine in `ArchivdView` | API rejects illegal transitions |
 | Invoice/purchase `status` → PaymentSteps / hero | Chrome | Display only |
 | `plan_kind === 'addon'` qty editor | Chrome from a field | API rejects non-addon qty |

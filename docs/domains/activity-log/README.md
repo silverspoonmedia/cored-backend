@@ -1,6 +1,6 @@
 # ActivityLog — Spatie audit trail
 
-Immutable forensic log of domain mutations, so a change to a user, menu, service or vTual management can be traced back to a causer. It is **not** the notification bell and **not** [error-log](../error-log/README.md): this records what someone did, error-log records what broke. Code: `app/Domain/ActivityLog/`. Invariants: [.cursor/rules/activity-log.mdc](../../../.cursor/rules/activity-log.mdc).
+Immutable forensic log of domain mutations, so a change to a user, menu or service can be traced back to a causer. It is **not** the notification bell and **not** [error-log](../error-log/README.md): this records what someone did, error-log records what broke. Code: `app/Domain/ActivityLog/`. Invariants: [.cursor/rules/activity-log.mdc](../../../.cursor/rules/activity-log.mdc).
 
 | System | Table | Purpose |
 |--------|-------|---------|
@@ -18,4 +18,4 @@ Immutable forensic log of domain mutations, so a change to a user, menu, service
 | Tests | `tests/Domain/ActivityLog/` · `tests/Feature/Http/CorsBroadcastAuthTest.php` |
 | Pakem | [.cursor/rules/activity-log.mdc](../../../.cursor/rules/activity-log.mdc) |
 | Deep dive | [reference.md](reference.md) — log names, PII envelope encryption, API, maintenance |
-| Related | [error-log](../error-log/README.md) (shared redaction) · [identity](../identity/README.md) (`auth` log name) · [vtual](../vtual/README.md) (`vtual` log name) |
+| Related | [error-log](../error-log/README.md) (shared redaction) · [identity](../identity/README.md) (`auth` log name) |

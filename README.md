@@ -2,7 +2,7 @@
 
 Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; the global surface is health checks (`GET /api/ping`, `GET /whatsup`).
 
-It is the **API backend** for the sibling **Monolith-Vue-Workers** SPA — the sole browser UI — which consumes `/api/v1/*` cross-site with HttpOnly cookies and CSRF double-submit. Minimal server `web` routes remain for public share, payment return, and OAuth callbacks. Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,Archivd,Vtual,Microstock,...}/`.
+It is the **API backend** for the sibling **Monolith-Vue-Workers** SPA — the sole browser UI — which consumes `/api/v1/*` cross-site with HttpOnly cookies and CSRF double-submit. Minimal server `web` routes remain for public share, payment return, and OAuth callbacks. Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,Archivd,Microstock,...}/`.
 
 ## Documentation
 

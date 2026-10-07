@@ -24,7 +24,7 @@ Steps, and why each one is there:
 
 ### `backend` job
 
-Runs `php artisan test` — the whole suite (`tests/Unit`, `tests/Feature`, `tests/Domain`), not a `--testsuite` subset. It exists because `--filter=Locale` was the only thing the workflow ran: a change that broke `tests/Domain/**` merged green, and the vTual domain alone is 60+ feature test files. `--testsuite=Domain` was the alternative and was rejected: `tests/Unit` and `tests/Feature` boot the same app and cost little, and a subset invites "which suite was that in?" as a permanent question.
+Runs `php artisan test` — the whole suite (`tests/Unit`, `tests/Feature`, `tests/Domain`), not a `--testsuite` subset. It exists because `--filter=Locale` was the only thing the workflow ran: a change that broke `tests/Domain/**` merged green, and a single product domain can be 60+ feature test files. `--testsuite=Domain` was the alternative and was rejected: `tests/Unit` and `tests/Feature` boot the same app and cost little, and a subset invites "which suite was that in?" as a permanent question.
 
 The job reuses the `locale` job's environment through a YAML alias (`env: &test-env` / `env: *test-env`), so the two cannot drift into different database settings. It repeats the PHP pin, the Composer cache, the install, and the empty `.env` step for the same reasons as `locale`.
 
@@ -52,7 +52,7 @@ Both are green: `failed: 0` is the contract, and the total is `2454` in both. Th
 |---|---|---|
 | `skipped: 1` (any checkout) | `tests/Feature/Oci/OciKmsConnectionIntegrationTest.php` | Live OCI KMS connectivity check; it skips unless `OCI_KMS_INTEGRATION_TEST=true` is exported. Never enable it in CI — it needs real cloud credentials and the network. |
 | `skipped: +7` (sibling-free only) | `LocaleGuardTest` ×4 — `locale-prose-scan.php`, `locale-rawkey-scan.php`, `locale-pack-parity.php`, `locale-glossary-scan.php` — and `DocsStructureGuardTest`, `DocsCrossRepoLinkTest`, `DocsBudgetGuardTest` | Each cross-repo case first asserts the guard **fails loudly** without the sibling (`exit 1`, `cannot see the SPA repo`) and only then marks itself skipped. A pass would claim coverage the run never had, so the skip is the honest summary — see [reference-localization.md — CI coverage vs manual runs](reference-localization.md#ci-coverage-vs-manual-runs). |
-| `risky: 1` | `tests/Domain/Service/Unit/Services/ArchivdAdminJourneyScenarioTest.php` | The test prints its scenario report (a JSON journey dump) to stdout, which PHPUnit reports as risky output. Pre-existing since 2026-09-08 and unrelated to the vTual work; it pollutes the job log but does not fail the run. |
+| `risky: 1` | `tests/Domain/Service/Unit/Services/ArchivdAdminJourneyScenarioTest.php` | The test prints its scenario report (a JSON journey dump) to stdout, which PHPUnit reports as risky output. Pre-existing since 2026-09-08; it pollutes the job log but does not fail the run. |
 
 Do not "fix" either by adding `--fail-on-risky` or by deleting the skip: the first turns a cosmetic warning into a red build, the second removes the only coverage of the live-cloud path. If the Archivd report output ever needs silencing, capture it with `ob_start()` / `ob_get_clean()` inside that test rather than suppressing the whole suite's output.
 

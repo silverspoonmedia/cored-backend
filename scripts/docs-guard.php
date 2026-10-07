@@ -14,8 +14,8 @@
 // a link whose `#anchor` no longer matches any heading, and `docs/agents/` creeping
 // back as a second home for agent rules.
 //
-// Not every living doc is a brief. A deep dive, a progress tracker, a settled-terms
-// glossary and an edge-case inventory each have their own budget (see
+// Not every living doc is a brief. A deep dive, a settled-terms glossary and an
+// edge-case inventory each have their own budget (see
 // `docs_budget_doc_kind()`), and a deep dive only earns its size when the brief in the
 // same directory links to it. The allowlist is the last resort for a file that
 // outgrows even its own kind — and an entry whose file now fits is itself a finding,

@@ -16,11 +16,11 @@ Three documentation surfaces, **one owner per topic**. Never state the same rule
 1. `# Title` + one sentence naming the scope.
 2. One paragraph: what it is, where the code lives, why it exists.
 3. Pointer table: Code · Config · API · SPA · Tests · Pakem · Deep dive.
-4. Nothing else — no history, no gap analysis, no status dump, no restated rules. Worked example of the shape: [docs/domains/vtual/README.md](../../docs/domains/vtual/README.md).
+4. Nothing else — no history, no gap analysis, no status dump, no restated rules. Worked example of the shape: [docs/domains/service/README.md](../../docs/domains/service/README.md).
 
 ## Doc kinds and size budgets (registry: `docs_budget_doc_kind()` in `scripts/lib/docs-budget-support.php`)
 
-The kind comes from the file name, so a new kind is a deliberate edit to that function, not a new registry. Budgets: index `docs/README.md` 150 · brief (any other `**/README.md`, and anything unnamed) 90 · deep dive `reference.md` / `reference-*.md` 400 · tracker `implementation-status.md` 500 · glossary `naming-conventions.md` 200 · edge case `*-edge-cases.md` / `daily-free-trial.md` 200.
+The kind comes from the file name, so a new kind is a deliberate edit to that function, not a new registry. Budgets: index `docs/README.md` 150 · brief (any other `**/README.md`, and anything unnamed) 90 · deep dive `reference.md` / `reference-*.md` 400 · glossary `naming-conventions.md` 200 · edge case `*-edge-cases.md` / `daily-free-trial.md` 200.
 
 - Those numbers are asserted against `docs_budget_doc_kind()` by `DocsBudgetGuardTest`, which also compares them with the SPA twin in `scripts/check-docs.mjs` (`RULE_MAX_LINES`, `ALWAYS_ON_MAX_LINES`, `docKind()`) — editing one copy alone fails the suite.
 - A **deep dive** must be linked from the `README.md` in the same directory. Unlinked, it is a second front door to the same topic.

@@ -4,7 +4,7 @@ Historical assessments, one-shot audits, and migration handoffs. **Not** for dai
 
 Some archive files describe a former three-repo workspace (Monolith + Gateway + Frontend). That workflow is dissolved; treat those sections as historical only.
 
-The **Status** column exists because four entries are not purely historical: their *findings* are a snapshot, but a procedure, a design rationale or an open item inside them is still the current reference. Those four are named in the column, so a reader knows which ones a living doc deliberately delegates to. Everything else is frozen narrative — do not update it, do not cite it as current behavior.
+The **Status** column exists because five entries are not purely historical: their *findings* are a snapshot, but a procedure, a design rationale or an open item inside them is still the current reference. Those five are named in the column, so a reader knows which ones a living doc deliberately delegates to. Everything else is frozen narrative — do not update it, do not cite it as current behavior.
 
 | File | What it was | Status |
 |------|-------------|--------|
@@ -19,7 +19,8 @@ The **Status** column exists because four entries are not purely historical: the
 | [AUDIT-LOG.md](AUDIT-LOG.md) | 2026-06-27 docs vs code audit notes | Historical |
 | [vtual-legacy-audit.md](vtual-legacy-audit.md) | broadercastv2 claim ledger + gap analysis before Vtual product domain | Historical |
 | [vtual-vue-island-assessment.md](vtual-vue-island-assessment.md) | Vue island promotion analysis (2026-08); all surfaces are SPA now | Historical |
-| [vtual-youtube-stability-assessment-2026-08-07.md](vtual-youtube-stability-assessment-2026-08-07.md) | YouTube ops probe rubric (credentials, gateway, DB, quota, scheduler) | **Partly live** — the rubric is re-runnable; re-run it after major ingestion changes |
+| [vtual-youtube-stability-assessment-2026-08-07.md](vtual-youtube-stability-assessment-2026-08-07.md) | YouTube ops probe rubric (credentials, gateway, DB, quota, scheduler) | Historical — the ingestion stack it probes was removed with the domain |
+| [vtual-sunset-postmortem.md](vtual-sunset-postmortem.md) | Why the vTual product domain was removed (2026-10-07) and how to restore it | **Live reference** — the restore recipe is current |
 | [microstock-probes/](microstock-probes/) | One-shot AI probe summaries (2026-07/08); living summary in [domains/microstock/README.md](../domains/microstock/README.md) | **Partly live** — `decoupled_stages_collection_summary.md` justifies the shipped `url` default in [`config/microstock.php`](../../config/microstock.php) |
 
 Living architecture: [platform/architecture.md](../platform/architecture.md).

@@ -38,7 +38,7 @@ const DOCS_BUDGET_ALWAYS_ON_MAX_LINES = 150;
  * siblings; the `reference` prefix keeps every one of them a deep dive, so each is
  * still linked from the brief in the same directory.
  *
- * @param  string  $relativeToDocs  path relative to docs/, e.g. `domains/vtual/reference.md`
+ * @param  string  $relativeToDocs  path relative to docs/, e.g. `platform/tooling.md`
  * @return array{name: string, budget: int}
  */
 function docs_budget_doc_kind(string $relativeToDocs): array
@@ -48,7 +48,6 @@ function docs_budget_doc_kind(string $relativeToDocs): array
     return match (true) {
         $relativeToDocs === 'README.md' => ['name' => 'index', 'budget' => 150],
         str_starts_with($name, 'reference') => ['name' => 'deep-dive', 'budget' => 400],
-        $name === 'implementation-status.md' => ['name' => 'tracker', 'budget' => 500],
         $name === 'naming-conventions.md' => ['name' => 'glossary', 'budget' => 200],
         in_array($name, ['billing-edge-cases.md', 'daily-free-trial.md'], true) => ['name' => 'edge-case', 'budget' => 200],
         default => ['name' => 'brief', 'budget' => 90],
@@ -71,7 +70,6 @@ function docs_budget_kind_samples(): array
         'index' => ['index', 'README.md'],
         'brief' => ['brief', 'platform/tooling.md'],
         'deep dive' => ['deep-dive', 'platform/reference-tooling.md'],
-        'tracker' => ['tracker', 'domains/vtual/implementation-status.md'],
         'glossary' => ['glossary', 'platform/naming-conventions.md'],
         'edge case' => ['edge-case', 'domains/microstock/billing-edge-cases.md'],
     ];
