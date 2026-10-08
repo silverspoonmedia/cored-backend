@@ -254,7 +254,7 @@ Fee breakdown shows **0** until the buyer selects a payment method (restored fro
 
 `CheckoutPanel.vue` renders payment instructions (VA number, QRIS, ewallet deeplink) **only** from its local `checkoutResult` state, which is filled two ways: a successful `channelCheckout()` response, or — on mount — by restoring `invoice.checkout_session` (when `instructions.type` is present) into `checkoutResult` and syncing `selectedChannel` from the session's `channel_code`. Without that restore a hard reload after channel-checkout would drop back to the bare channel picker as if no method was ever chosen, and the Confirm-paid button (`v-if="checkoutResult"`) would vanish with it.
 
-Realtime + poll behavior lives in `src/composables/usePaymentRealtime.ts` and `src/composables/useInvoices.ts`; the backend contract is unchanged and documented below.
+Realtime + poll behavior lives in `src/composables/payment-gateway/usePaymentRealtime.ts` and `src/composables/payment-gateway/useInvoices.ts`; the backend contract is unchanged and documented below.
 
 ### Realtime invoice status (no hard reload)
 
@@ -267,7 +267,7 @@ Checkout pages soft-update hero / steps / panel / sidebar when invoice status ch
 | Channel | Private `payments.invoice.{invoiceId}` — auth via `InvoiceChannelAuthorizer`: `view invoice` **or** invoiceable owner (`ServicePurchase` / `ServiceAddonRenewal` `user_id`; Subscription matches `subscriber_email`) |
 | Event name | `invoice.status.changed` (client: `.invoice.status.changed`) |
 | Emit | Both Midtrans + iPaymu synchronizers after save + fulfillment, **only when status string actually changed** (webhook, sync-status, Midtrans reconcile cron all converge here) |
-| Client | `usePaymentRealtime.ts` subscribes per-caller (invoice channel bindings are ref-counted per invoice id by `createKeyedRealtimeChannel` — `InvoiceShowView` and `CheckoutPanel` can hold subscriptions simultaneously) |
+| Client | `src/composables/payment-gateway/usePaymentRealtime.ts` subscribes per-caller (invoice channel bindings are ref-counted per invoice id by `createKeyedRealtimeChannel` — `InvoiceShowView` and `CheckoutPanel` can hold subscriptions simultaneously) |
 | Soft updates | Channel checkout success → `showInstructions()` (no reload); terminal `paid` / `expired` / `cancelled` / `failed` → badge/steps/panel/sidebar patch, stop poll |
 | Fallback | 15s `sync-status` poll while instructions active (and when broadcast unconfigured). Confirm-paid button kept; loading state while syncing. Poll response carries `invoiceable_status` so the purchase badge soft-updates without a reload. |
 
@@ -283,7 +283,7 @@ When admins toggle payment channels/routes or run `payments:sync-routing-policy`
 | Channel | Private `payments.routing` — auth: `initiate payment` or `view invoice` |
 | Emit | `PaymentChannelService` (channel/route update), `PaymentRouteMaterializer::sync` (non-dry-run) |
 | Refresh API | `GET /api/v1/invoices/{invoice}/checkout-channels` (invoice subtotal quotes) — no web proxy |
-| Client | `usePaymentRealtime.ts` listens on the routing channel; `useInvoices.fetchCheckoutChannels` refetches and re-quotes fees, re-renders the picker, and toasts fee/removal changes; **60s poll** fallback when broadcast unconfigured |
+| Client | `src/composables/payment-gateway/usePaymentRealtime.ts` listens on the routing channel; `useInvoices.fetchCheckoutChannels` refetches and re-quotes fees, re-renders the picker, and toasts fee/removal changes; **60s poll** fallback when broadcast unconfigured |
 
 Payload: `revision`, `reason` (`channel_updated` | `route_updated` | `policy_synced`), optional `channel_code`.
 
@@ -298,7 +298,7 @@ Admin CRUD surfaces soft-refetch via the `payments.admin` private channel (permi
 | `payments.channel.changed` | `action`, `channel_code` | `PaymentChannelsView` |
 | `payments.subscription.changed` | `action`, `subscription_id` | Subscriptions views (`Service` domain UI) |
 
-SPA composable: `usePaymentRealtime.ts` — three registry bindings: `createKeyedRealtimeChannel` for `payments.invoice.{id}` (one ref-counted channel per invoice), `createRealtimeChannel` for `payments.routing`, and `createRealtimeChannel` for `payments.admin`, whose handler set is ref-counted over 4 streams (invoice list / gateway / channel / subscription); it binds when the first handler attaches and leaves only when every stream is empty. `unsubscribe*` requires the exact handler argument (no implicit clear-all). Lifecycle (attach/leave/refcount) lives in `src/composables/echo/channelRegistry.ts`, not here.
+SPA composable: `src/composables/payment-gateway/usePaymentRealtime.ts` — three registry bindings: `createKeyedRealtimeChannel` for `payments.invoice.{id}` (one ref-counted channel per invoice), `createRealtimeChannel` for `payments.routing`, and `createRealtimeChannel` for `payments.admin`, whose handler set is ref-counted over 4 streams (invoice list / gateway / channel / subscription); it binds when the first handler attaches and leaves only when every stream is empty. `unsubscribe*` requires the exact handler argument (no implicit clear-all). Lifecycle (attach/leave/refcount) lives in `src/composables/echo/channelRegistry.ts`, not here.
 
 ## Permissions & morph map
 
