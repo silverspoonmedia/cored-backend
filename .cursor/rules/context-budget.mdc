@@ -1,13 +1,5 @@
 # Agent context budget
 
-Open the workspace that matches the task tag — every workspace is multi-root and injects each loaded repo's `AGENTS.md` on every turn; all three also carry the sibling `docs` site repo as a peer root.
+Open the workspace that matches the task tag — every workspace is multi-root and injects each loaded repo's `AGENTS.md` on every turn; all three also carry the sibling `docs` site repo as a peer root. [Monolith-Backend.code-workspace](../../Monolith-Backend.code-workspace) — API, migrations, seeders, PHP tests (`[backend]`); sibling `Monolith-SPA.code-workspace` — Vue screens, SPA i18n, Worker shell (`[frontend]`); [Monolith-Fullstack.code-workspace](../../Monolith-Fullstack.code-workspace) — only when the contract moves: endpoints, Resource shapes, cookies/CSRF, headers, route names.
 
-| Workspace | Use for |
-|-----------|---------|
-| [Monolith-Backend.code-workspace](../../Monolith-Backend.code-workspace) | API, migrations, seeders, PHP tests — `[backend]` |
-| sibling `Monolith-SPA.code-workspace` | Vue screens, SPA i18n, Worker shell — `[frontend]` |
-| [Monolith-Fullstack.code-workspace](../../Monolith-Fullstack.code-workspace) | Only when the contract moves: endpoints, Resource shapes, cookies/CSRF, headers, route names |
-
-Per task open: the file under edit + its nearest test, and the **one** owning brief or rule. Never `@folder`, `@AGENTS.md`, or `@src/i18n/locales` in a prompt. Never `Read` a whole locale JSON — Grep the key, patch all locales.
-
-Targets: `[backend]` / `[frontend]` median well under 70k tokens; fullstack contract under 120k.
+Per task open: the file under edit + its nearest test, and the **one** owning brief or rule. Never `@folder`, `@AGENTS.md`, or `@src/i18n/locales` in a prompt. Never `Read` a whole locale JSON — Grep the key, patch all locales. Targets: `[backend]` / `[frontend]` median well under 70k tokens; fullstack contract under 120k.
