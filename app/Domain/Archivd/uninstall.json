@@ -1171,6 +1171,6 @@
         "The `ignore` section is the reviewed hand-edit list: each entry names the exact edit and line.",
         "Microstock is registered as a subproduct of this domain (`'parent' => 'Archivd'` in config/domains.php), so `domain:remove Archivd` is refused while Microstock is still registered. The coupling (WorkspaceKind::Microstock, microstockMetadata, MicrostockCatalog) is removed by the Microstock manifest — run that removal first.",
         "`DomainAccessSeeder::PRODUCT_DOMAINS` loses this domain in the same change (recorded as an edit); the docblock naming the domains is prose and needs a reword.",
-        "Files owned by another product domain (app/Domain/Microstock/**, src/valkivid3/**) are listed as owned elsewhere — they leave with their own domain."
+        "Files owned by another product domain (app/Domain/Microstock/**) are listed as owned elsewhere — they leave with their own domain."
     ]
 }
