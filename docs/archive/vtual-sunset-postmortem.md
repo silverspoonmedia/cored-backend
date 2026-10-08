@@ -16,7 +16,7 @@ The platform keeps the nine core domains and the Archivd product with its Micros
 
 | Surface | Removed |
 |---------|---------|
-| Backend module | `app/Domain/Vtual/**`, `app/Providers/Domain/VtualServiceProvider.php`, `routes/api/v1/vtual*.php`, `app/Console/Commands/Vtual/**`, `database/seeders/VtualRoleSeeder.php`, `config/vtual.php`, `tests/Domain/Vtual/**` |
+| Backend module | `app/Domain/Vtual/**`, `app/Providers/Domain/VtualServiceProvider.php`, `routes/api/v1/vtual*.php`, `app/Console/Commands/Vtual/**`, `database/seeders/VtualRoleSeeder.php`, `config/vtual.php`, `tests/Domain/Vtual/**`, `tests/Fixtures/vtual/**` |
 | Shared backend files | `config/{domains,products,spa-routes,settings-local,ai,encryption,navigation}.php`, `SettingRegistry`, `SystemSettingRepository`, `MenuSeeder`, `DomainAccessSeeder`, `RoleSeeder`, `RequireSpaRequestHeader`, `SpaPublicUrl`, the eight `app/Support/ListActions/Builders/*QueryRowActions.php`, `routes/{api/v1,channels,console}.php`, the locale tooling (`scripts/locale-dynamic-key-check.php`, `scripts/lib/locale-latin-allowlist.php`, `scripts/locale-glossary-scan.php` floors) and the cross-domain tests |
 | Locale files | seven `lang/*/api/vtual.php`, seven `lang/*/web/vtual-vtuber.php`, seven `lang/*/web/vtual-orphans.php`; the `vtual.*` blocks and `list_actions` claim strings removed from the surviving files |
 | SPA | `src/views/vtual/**`, `src/components/vtual/**`, `src/composables/vtual/**`, `src/router/routes/vtual.ts`, `src/valkivid3/**` (the frozen vTual landing template), the vTual utilities in `src/utils/vtual*.ts`, the `// --- Vtual ---` block in `src/api/types.ts`, the seven locale blocks, `curation-log.json` entries, and the SPA tests |
