@@ -57,10 +57,9 @@ $machine = [
     'LinkAja', 'Stripe', 'Snap', 'hCaptcha', 'reCAPTCHA', 'Railgun', 'FFmpeg', 'Monolith',
     'Shutterstock', 'Adobe', 'Getty', 'iStock', 'Dreamstime', 'Vecteezy', 'Freepik',
     'Depositphotos', 'Frankfurter', 'Pusher', 'WebSub', 'Laravel', 'Redis', 'Slack', 'Sentry',
-    'Valkivid', 'Vault', 'Bootstrap', 'Icons', 'Router', 'OpenAI',
-    // Layout identifiers (`AdminLTE4`, `Valkivid3`) and the example IDs a user has to
-    // replace with their own value.
-    'Valkivid3', 'abc123', 'def456',
+    'Vault', 'Bootstrap', 'Icons', 'Router',
+    // Example IDs a user has to replace with their own value.
+    'abc123', 'def456',
     // Midtrans API surface names.
     'Open', 'Core',
     // HTTP methods. A user has to send exactly this verb, so it is not translated.
@@ -74,13 +73,9 @@ $machine = [
     'RFC', 'WWW', 'FAQ', 'KYC', 'AML', 'VAT', 'NIB', 'PDF', 'CSV', 'XLSX', 'ZIP', 'PNG',
     'JPEG', 'WebP', 'GIF', 'SVG', 'ICO', 'AVIF', 'MP4', 'WebM', 'HLS', 'RTMP', 'HMAC', 'AES',
     'RSA', 'TLS', 'SSL', 'TTL', 'DMCA', 'S3', 'R2', 'OAuth', 'Bearer', 'Helix', 'PHP', 'Vue',
-    'SPA', 'QR', 'PG', 'VA', 'TOTP', 'CCV', 'VOD', 'MVP', 'HEX', 'SHA', 'YAML', 'yaml',
+    'SPA', 'QR', 'PG', 'VA', 'TOTP', 'MVP', 'HEX', 'SHA', 'YAML', 'yaml',
     'sha256', 'SIGNATURE', 'env', 'regex', 'enum', 'cron', 'webhook', 'Webhook', 'px',
-    'Worker', 'Moderator', 'Data', 'OpenAI',
-    // Brand spellings that appear without the camel case: vTuber / VTuber / vtubers.
-    'vtuber', 'vtubers',
-    // IP versions. The trailing digit stops the letter run, so both forms are listed.
-    'IPv4', 'IPv6',
+    'Data', 'OpenAI',
     // AI model and mode names.
     'gpt', 'vision', 'Thinking', 'chat', 'completions',
     // Enum values and field literals the API itself defines. They are contract text,
@@ -88,17 +83,17 @@ $machine = [
     'pending', 'challenge', 'existing', 'new', 'true', 'false', 'before', 'after',
     'cascade', 'position', 'parent', 'reference', 'type', 'order', 'path', 'style',
     'price', 'length', 'content', 'part', 'parts', 'slot', 'team', 'root', 'admin',
-    'client', 'oauth', 'key', 'app', 'live', 'upcoming', 'completed', 'public',
+    'client', 'oauth', 'key', 'app', 'live', 'completed', 'public',
     'private', 'Free', 'Paid', 'section', 'route',
     // Values a user has to locate in an external platform's own UI, or that name an
     // internal role/permission/component by its identifier.
-    'handle', 'login', 'Enter', 'email', 'Email', 'From', 'Slug', 'cookie', 'Cookie',
-    'Web', 'Beta', 'owner', 'initiate', 'payment', 'snippet', 'snippets', 'videos',
-    'service', 'house', 'dashboard', 'feed', 'Feed', 'abc', 'def', 'upstream',
-    'multipart', 'presigned', 'captcha', 'Captcha', 'hash', 'hash', 'Foundation',
-    'broadcast', 'realtime', 'token', 'VOD', 'claim',
+    'login', 'Enter', 'email', 'Email', 'From', 'Slug', 'cookie', 'Cookie',
+    'Web', 'Beta', 'owner', 'initiate', 'payment',
+    'service', 'house', 'dashboard', 'abc', 'def', 'upstream',
+    'multipart', 'presigned', 'captcha', 'Captcha', 'hash',
+    'broadcast', 'realtime', 'token',
     // External platform field names a user must locate in that platform's own UI.
-    'About', 'bio',
+    'About',
     // Payment route kinds, taken from `Routing_Price.yaml` and used as literals.
     'primary', 'only', 'fallback',
 ];
@@ -108,10 +103,9 @@ $machine = [
 $glossary = [
     'workspace' => ['id' => 'workspace', 'ja' => 'ワークスペース', 'ko' => '워크스페이스', 'zh_CN' => '工作区', 'ar' => 'مساحة العمل', 'ru' => 'рабочая область'],
     'orphan' => ['id' => 'yatim', 'ja' => 'オーファン', 'ko' => '고아', 'zh_CN' => '孤立', 'ar' => 'يتيم', 'ru' => 'сирота'],
-    'claim' => ['id' => 'klaim', 'ja' => '申請', 'ko' => '클레임', 'zh_CN' => '认领', 'ar' => 'مطالبة', 'ru' => 'заявка'],
     'verify' => ['id' => 'verifikasi', 'ja' => '検証', 'ko' => '검증', 'zh_CN' => '验证', 'ar' => 'تحقق', 'ru' => 'проверка'],
     'creator' => ['id' => 'kreator', 'ja' => 'クリエイター', 'ko' => '크리에이터', 'zh_CN' => '创作者', 'ar' => 'منشئ', 'ru' => 'автор'],
-    'channel' => ['id' => 'channel', 'ja' => 'チャンネル', 'ko' => '채널', 'zh_CN' => '频道', 'ar' => 'قناة', 'ru' => 'канал'],
+    'channel' => ['id' => 'channel', 'ja' => 'チャンネル', 'ko' => '채널', 'zh_CN' => '渠道', 'ar' => 'قناة', 'ru' => 'канал'],
     'slug' => ['id' => 'Slug', 'ja' => 'スラッグ', 'ko' => '슬러그', 'zh_CN' => '标识', 'ar' => 'المعرّف', 'ru' => 'Слаг'],
     'activation' => ['id' => 'aktivasi', 'ja' => 'アクティベーション', 'ko' => '활성화', 'zh_CN' => '激活', 'ar' => 'تفعيل', 'ru' => 'активация'],
     'entitlement' => ['id' => 'hak akses produk', 'ja' => 'エンタイトルメント', 'ko' => '이용 권한', 'zh_CN' => '授权', 'ar' => 'استحقاق', 'ru' => 'право доступа'],
@@ -119,7 +113,6 @@ $glossary = [
     'gateway' => ['id' => 'gateway', 'ja' => 'ゲートウェイ', 'ko' => '게이트웨이', 'zh_CN' => '网关', 'ar' => 'بوابة', 'ru' => 'шлюз'],
     'settlement' => ['id' => 'settlement', 'ja' => '精算', 'ko' => '정산', 'zh_CN' => '结算', 'ar' => 'تسوية', 'ru' => 'расчёт'],
     'batch' => ['id' => 'batch', 'ja' => 'バッチ', 'ko' => '배치', 'zh_CN' => '批次', 'ar' => 'دفعة', 'ru' => 'пакет'],
-    'persona' => ['id' => 'persona', 'ja' => 'ペルソナ', 'ko' => '페르소나', 'zh_CN' => '形象', 'ar' => 'شخصية', 'ru' => 'персона'],
     'role' => ['id' => 'peran', 'ja' => 'ロール', 'ko' => '역할', 'zh_CN' => '角色', 'ar' => 'الدور', 'ru' => 'роль'],
     'permission' => ['id' => 'izin', 'ja' => '権限', 'ko' => '권한', 'zh_CN' => '权限', 'ar' => 'الصلاحيات', 'ru' => 'разрешение'],
     'staff' => ['id' => 'staf', 'ja' => 'スタッフ', 'ko' => '스태프', 'zh_CN' => '工作人员', 'ar' => 'الموظفون', 'ru' => 'сотрудники'],
@@ -140,7 +133,6 @@ $glossary = [
     'asset' => ['id' => 'aset', 'ja' => 'アセット', 'ko' => '에셋', 'zh_CN' => '素材', 'ar' => 'أصل', 'ru' => 'актив'],
     'queue' => ['id' => 'antrean', 'ja' => 'キュー', 'ko' => '대기열', 'zh_CN' => '队列', 'ar' => 'قائمة الانتظار', 'ru' => 'очередь'],
     'storage' => ['id' => 'penyimpanan', 'ja' => 'ストレージ', 'ko' => '저장소', 'zh_CN' => '存储服务', 'ar' => 'التخزين', 'ru' => 'хранилище'],
-    'invoice' => ['id' => 'invoice', 'ja' => '請求書', 'ko' => '인보이스', 'zh_CN' => '发票', 'ar' => 'فاتورة', 'ru' => 'счёт'],
     // `test` (the credential / AI-connection action) renders as `uji` in `id` and
     // `测试` in `zh_CN`; the button label itself is `list_actions.test`. No locale
     // keeps the English word, so it is watched rather than allowed.

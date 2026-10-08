@@ -300,7 +300,7 @@ Scheduler entry point: `php artisan service:process-entitlements` (hourly).
 
 ## Tests
 
-**Production qualification suite (50 IDs, automated):** `tests/Domain/Archivd/Qualification/ArchivdQualification{Low,Normal,Medium,Hard,Anomaly}Test.php` — method names `test_Ar_L01_…` … `test_Ar_A10_…`. Run: `composer test -- --filter=ArchivdQualification`.
+**Production qualification suite (49 methods, automated):** `tests/Domain/Archivd/Qualification/ArchivdQualification{Low,Normal,Medium,Hard,Anomaly}Test.php` — method names `test_f_h_l01_…` … `test_f_h_a10_…`; Low carries 9 (`l09` is unused), Normal/Medium/Hard/Anomaly carry 10 each. Run: `composer test -- --filter=ArchivdQualification`.
 
 ```bash
 composer test -- --filter=Archivd
@@ -309,11 +309,11 @@ npm run test:js
 
 | Suite | What it covers |
 |-------|----------------|
-| PHPUnit `--filter=Archivd` | API feature tests (`ArchivdTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 8 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `ArchivdRealtimeEventsTest`, `ArchivdRealtimeTest`, `ArchivdRealtimeEmitTest`, `ArchivdChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
+| PHPUnit `--filter=Archivd` | API feature tests (`ArchivdTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 8 MiB defaults, `AllocateUniqueDisplayNameTest`, `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `ArchivdRealtimeEventsTest`, `ArchivdRealtimeTest`, `ArchivdRealtimeEmitTest`, `ArchivdChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
 | Vitest `npm test` (SPA) | Client-side helpers and composables under `monolith-vue-workers/src/` (e.g. `utils/archivd/arCollectionDescribe.ts`, `utils/archivd/arMicrostockBadge.ts`, BFF helpers in `tests/`). The removed Monolith `resources/js/**/*.test.js` island tests are historical only — see [UI architecture / SPA shell](reference-realtime.md#ui-architecture--spa-shell-historical). |
 | CORS / quota probes | `QuotaThrottleProbeTest` + `QuotaPreflightProbeTest` (`tests/Domain/Archivd/.../API/V1/`) — regression guards confirming `archivd/quota` responses (throttled 429 and `OPTIONS` preflight) carry the correct CORS headers. Added after a transient browser "CORS error" report that traced to infra, not Laravel. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Gateway uploader tests: `c:\laragon\www\gateway` (`npm test`). |
-| Qualification | `composer test -- --filter=ArchivdQualification` — 50 IDs (Low/Normal/Medium/Hard/Anomaly) |
+| Qualification | `composer test -- --filter=ArchivdQualification` — 49 methods (Low 9 / Normal 10 / Medium 10 / Hard 10 / Anomaly 10) |
 
 ## Related
 

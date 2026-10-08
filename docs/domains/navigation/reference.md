@@ -21,7 +21,7 @@ Bound in `NavigationServiceProvider`.
 | `id`, `parent_id` | UUID; self-FK cascade |
 | `layout` | Shell region: `sidebar`, `navbar` (config `navigation.layouts`) |
 | `name`, `description` | JSON translatable |
-| `icon`, `route`, `hash` | Full icon class; **SPA Vue Router symbolic name** (or remaining Laravel web route name), never a URL; `hash` optional in-page anchor (e.g. `#vtubers`) appended client-side |
+| `icon`, `route`, `hash` | Full icon class; **SPA Vue Router symbolic name** (or remaining Laravel web route name), never a URL; `hash` optional in-page anchor (e.g. `#overview`) appended client-side |
 | `type` | `h` header, `p` parent, `c` child |
 | `order` | Contiguous within `(layout, parent_id, type)`; NULL for soft-deleted |
 | `audience` | Who may see the node: `all`, `auth` (default), `role`, `guest` |

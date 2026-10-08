@@ -138,7 +138,7 @@ Managed files listed in `config/localization.php` → `managed_files`.
 | Static nav labels | `__('menu.dashboard')` |
 | DB menus | `$menu->name` (Spatie) |
 | SPA JSON | `t('ui.swal.ok')`, `t('ui.dialog.error_title')` — Swal chrome in `monolith-vue-workers/src/i18n/locales/*.json`; domain confirm bodies stay on their domain keys. Contract: sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md) |
-| SPA chrome (nav) | `t('ui.navigation.load_failed')` — Valkivid3 nav-load fallback used by `useVkNavigation`. Catalog: `ui.error_state.*`, `ui.empty_state.*`, `ui.datatable.*`, `ui.navigation.*` live in the SPA JSON; enumeration in sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md) |
+| SPA chrome (nav) | `t('web.navigation.load_failed')` — shell nav-load fallback used by `useNavigation` / `useMenuLayouts`. Catalog: `ui.error_state.*`, `ui.datatable.*`, `ui.ajax.*`, `ui.dialog.*`, `ui.actions.*` live in the SPA JSON; enumeration in sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md) |
 
 ## Packages & parity
 

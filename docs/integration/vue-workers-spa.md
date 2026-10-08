@@ -10,7 +10,7 @@ This file is the **cross-repo contract**: cookies, CSRF, headers, envelopes, `SP
 | Cookie, CSRF, hydrate, logout, BroadcastChannel | [auth-session.md](../../../monolith-vue-workers/docs/auth-session.md) |
 | `client.ts`, headers, 401/419, batch helper | [api-client.md](../../../monolith-vue-workers/docs/api-client.md) |
 | Locales, RTL, `check:i18n` | [i18n.md](../../../monolith-vue-workers/docs/i18n.md) |
-| AdminLTE vs Valkivid3, Swal, skeletons, FROZEN landing | [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md) |
+| AdminLTE4 layout, Swal, skeletons, loading/error/empty states | [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md) |
 | Vue Router names ↔ `config/spa-routes.php` | [routes.md](../../../monolith-vue-workers/docs/routes.md) |
 | Worker guard-only stub | [worker.md](../../../monolith-vue-workers/docs/worker.md) |
 | Deploy / Wrangler envs | [deployment.md](../../../monolith-vue-workers/docs/deployment.md) |
