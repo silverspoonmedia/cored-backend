@@ -30,13 +30,13 @@ The platform keeps the nine core domains and the Archivd product with its Micros
 
 An annotated tag was cut **before** anything was deleted, in all three repos:
 
-| Repo | Tag | Branch |
-|------|-----|--------|
-| `monolith` | [`vtual-sunset-v1`](https://github.com/silverspoonmedia/monolith/releases/tag/vtual-sunset-v1) | `rev/sunset-vtual` |
-| `monolith-vue-workers` | [`vtual-sunset-v1`](https://github.com/silverspoonmedia/monolith-vue-workers/releases/tag/vtual-sunset-v1) | `rev/sunset-vtual` |
-| `docs` | [`vtual-sunset-v1`](https://github.com/silverspoonmedia/docs/releases/tag/vtual-sunset-v1) | `rev/sunset-vtual` |
+| Repo | Tag |
+|------|-----|
+| `monolith` | [`vtual-sunset-v1`](https://github.com/silverspoonmedia/monolith/releases/tag/vtual-sunset-v1) |
+| `monolith-vue-workers` | [`vtual-sunset-v1`](https://github.com/silverspoonmedia/monolith-vue-workers/releases/tag/vtual-sunset-v1) |
+| `docs` | [`vtual-sunset-v1`](https://github.com/silverspoonmedia/docs/releases/tag/vtual-sunset-v1) |
 
-Both the tag and the branch are pushed to `origin` and are kept - the branch is the working backup, the tag is the immutable restore point. Both point at the same commit as `main` did at sunset, so a restore is a checkout, not a merge. The tag also carries the only copy of the three deleted assessment files.
+The tag is pushed to `origin` and is the immutable restore point - it points at the same commit as `main` did at sunset, so a restore is a checkout, not a merge. The tag also carries the only copy of the three deleted assessment files. The tag is the **only** restore point: the temporary `rev/sunset-vtual` working branches were deleted on 2026-10-08, after the tag was verified reachable at the same commit. Deleting a branch never touches a tag, so nothing about the recovery path changed.
 
 Restore recipe:
 
