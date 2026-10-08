@@ -30,13 +30,13 @@ There was no `app/Domain/Blog/uninstall.json` and no `config/domains.php` regist
 
 An annotated tag was cut at `main`'s tip immediately before the removal, in all three repos:
 
-| Repo | Tag | Branch |
-|------|-----|--------|
-| `monolith` | [`blog-sunset-v1`](https://github.com/silverspoonmedia/monolith/releases/tag/blog-sunset-v1) | `rev/sunset-blog` |
-| `monolith-vue-workers` | [`blog-sunset-v1`](https://github.com/silverspoonmedia/monolith-vue-workers/releases/tag/blog-sunset-v1) | `rev/sunset-blog` |
-| `docs` | [`blog-sunset-v1`](https://github.com/silverspoonmedia/docs/releases/tag/blog-sunset-v1) | `rev/sunset-blog` |
+| Repo | Tag |
+|------|-----|
+| `monolith` | [`blog-sunset-v1`](https://github.com/silverspoonmedia/monolith/releases/tag/blog-sunset-v1) |
+| `monolith-vue-workers` | [`blog-sunset-v1`](https://github.com/silverspoonmedia/monolith-vue-workers/releases/tag/blog-sunset-v1) |
+| `docs` | [`blog-sunset-v1`](https://github.com/silverspoonmedia/docs/releases/tag/blog-sunset-v1) |
 
-Both the tag and the branch are pushed to `origin` and are kept — the branch is the working backup, the tag is the immutable restore point. Both point at the same commit as `main` did at sunset, so a restore is a checkout, not a merge.
+The tag is pushed to `origin` and is the immutable restore point — it points at the same commit as `main` did at sunset, so a restore is a checkout, not a merge. The tag is the **only** restore point: the temporary `rev/sunset-blog` working branches were deleted on 2026-10-08, after the tag was verified reachable at the same commit. Deleting a branch never touches a tag, so nothing about the recovery path changed.
 
 Restore recipe:
 
