@@ -1,6 +1,6 @@
 # vTual sunset - post-mortem (2026-10-07)
 
-The `Vtual` product domain was removed on **2026-10-07**. This file records why, what left, and how to bring it back. It is the only *live* archive entry of the vTual set: the three assessment files beside it (`vtual-legacy-audit.md`, `vtual-vue-island-assessment.md`, `vtual-youtube-stability-assessment-2026-08-07.md`) are frozen narrative.
+The `Vtual` product domain was removed on **2026-10-07**. This file records why, what left, and how to bring it back. It is the only surviving archive entry of the vTual set — the three assessment files that used to sit beside it (`vtual-legacy-audit.md`, `vtual-vue-island-assessment.md`, `vtual-youtube-stability-assessment-2026-08-07.md`) were deleted on 2026-10-08, and the restore point below is the only copy of that history.
 
 ## Why
 
@@ -32,11 +32,11 @@ An annotated tag was cut **before** anything was deleted, in all three repos:
 
 | Repo | Tag | Branch |
 |------|-----|--------|
-| `monolith` | `vtual-sunset-v1` | `rev/sunset-vtual` |
-| `monolith-vue-workers` | `vtual-sunset-v1` | `rev/sunset-vtual` |
-| `docs` | `vtual-sunset-v1` | `rev/sunset-vtual` |
+| `monolith` | [`vtual-sunset-v1`](https://github.com/silverspoonmedia/monolith/releases/tag/vtual-sunset-v1) | `rev/sunset-vtual` |
+| `monolith-vue-workers` | [`vtual-sunset-v1`](https://github.com/silverspoonmedia/monolith-vue-workers/releases/tag/vtual-sunset-v1) | `rev/sunset-vtual` |
+| `docs` | [`vtual-sunset-v1`](https://github.com/silverspoonmedia/docs/releases/tag/vtual-sunset-v1) | `rev/sunset-vtual` |
 
-Both the tag and the branch are pushed to `origin` and are kept - the branch is the working backup, the tag is the immutable restore point. Both point at the same commit as `main` did at sunset, so a restore is a checkout, not a merge.
+Both the tag and the branch are pushed to `origin` and are kept - the branch is the working backup, the tag is the immutable restore point. Both point at the same commit as `main` did at sunset, so a restore is a checkout, not a merge. The tag also carries the only copy of the three deleted assessment files.
 
 Restore recipe:
 
@@ -57,7 +57,7 @@ The SPA and `docs` halves restore the same way in their own repos. Re-lock the d
 - **The manifest is the removal plan, not the whole job.** `--dry-run` reported 0 unresolved, yet 73 `ignore` entries were still hand edits. A removal task is sized by the `ignore` list, not by the manifest's `delete`/`edits` counts. Budget for the hand edits first.
 - **A closed vocabulary hides copy.** `log_name: vtual` in the activity-log rule, `MenuLayout::VTUAL`, `vtual.*` route names, `settings.vtual` - every one was a string in a fixed set that no scanner can distinguish from a value. They surfaced only by reading each owning rule against the surviving code.
 - **Deleting locale files moves the glossary floors.** `locale-glossary-scan.php`'s `MIN_OCCURRENCES` is calibrated to the corpus, and `lang/*/api/vtual.php` carried the bulk of several `ru`, `id`, `ja`, `zh_CN` and `ar` terms. Removing the domain without re-measuring turned the guard red for reasons unrelated to translation quality. Re-measure and lower in the same change - see [reference-localization.md - Curation tooling](../platform/reference-localization.md#curation-tooling).
-- **Sweep the archive last, and reword rather than delete.** The three archived assessments are history worth keeping; their *links* into `domains/vtual/**` are what break. `docs-guard.php` resolves link paths, so an archive file that links a deleted tree fails the build even though the prose is fine.
+- **Sweep the archive last, and reword rather than delete.** The archived assessments carried prose that linked into `domains/vtual/**`; `docs-guard.php` resolves link paths, so an archive file that links a deleted tree fails the build even though the prose is fine. Reword the survivors, and delete the entries that are nothing but that dead link - their history lives in the tag.
 - **A domain that mirrors an external platform carries a permanent cost.** Ingestion, freshness, quota, retries, webhook leases, credential failover: none of it ends when the feature ships. Price that before the second platform is added, not after.
 
 ## Related

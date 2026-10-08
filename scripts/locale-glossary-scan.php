@@ -188,11 +188,12 @@ const MIN_OCCURRENCES = [
     // once. Stems are used on purpose so inflection (`оформлени` for
     // `оформление`/`оформления`) does not break the floor.
     'ru' => [
-        // Lowered on 2026-10-07 (vTual domain removed): `lang/ru/api/vtual.php`
-        // carried the bulk of these terms on the backend side and the vTual SPA
-        // keys carried the bulk on the front. `заявк`, `организац` and `хендл`
-        // are gone from the corpus entirely — vTual was their only home — so they
-        // are no longer floored.
+        // Lowered on 2026-10-07 (a product domain was sunset): the deleted
+        // domain locale files carried the bulk of these terms on the backend
+        // side and its SPA keys carried the bulk on the front. `заявк`,
+        // `организац` and `хендл` left the corpus entirely — that domain was
+        // their only home — so they are no longer floored. See the sunset
+        // post-mortems in docs/archive/.
         'ИИ' => ['backend' => 47, 'spa' => 58],
         'оформлени' => ['backend' => 19, 'spa' => 20],
         'област' => ['backend' => 45, 'spa' => 65],
@@ -216,29 +217,32 @@ const MIN_OCCURRENCES = [
     // floor.
     'id' => [
         'Terlarang' => ['backend' => 2, 'spa' => 1],
-        // Lowered on 2026-10-07 (vTual domain removed): the vTual locale files
-        // were the bulk of these terms on the backend side and the vTual SPA keys
-        // were the bulk on the front. `klaim`, `manajemen` and `kreator` are gone
-        // from the corpus entirely — vTual was their only home — so they are no
-        // longer floored.
+        // Lowered on 2026-10-07 (a product domain was sunset): the deleted
+        // domain locale files carried the bulk of these terms on the backend
+        // side and its SPA keys carried the bulk on the front. `klaim`,
+        // `manajemen` and `kreator` left the corpus entirely — that domain was
+        // their only home — so they are no longer floored. See the sunset
+        // post-mortems in docs/archive/.
         'kedaluwarsa' => ['backend' => 11, 'spa' => 11],
         'Berkas' => ['backend' => 27, 'spa' => 24],
         'verifikasi' => ['backend' => 14, 'spa' => 23],
         'kredensial' => ['backend' => 9, 'spa' => 12],
-        // Lowered 23 → 18 on 2026-10-02 (Blog domain removed): the five
-        // `web.blog.*.slug` SPA keys were the only `Slug` hits that went away.
+        // Lowered 23 → 18 on 2026-10-02 (a product domain was sunset): the five
+        // `slug` SPA keys were the only `Slug` hits that went away. See the
+        // sunset post-mortems in docs/archive/.
         'Slug' => ['backend' => 6, 'spa' => 10],
         'yatim' => ['backend' => 1, 'spa' => 1],
         'penagihan' => ['backend' => 13, 'spa' => 20],
     ],
     'ja' => [
-        // Lowered on 2026-10-07 (vTual domain removed): the vTual locale files
-        // were the bulk of these terms on the backend side and the vTual SPA keys
-        // were the bulk on the front. `プローブ`, `マネジメント`, `クリエイター`,
-        // `申請` and `オーファン` are gone from the corpus entirely — vTual was
-        // their only home — so they are no longer floored.
-        // Lowered 25 → 20 on 2026-10-02 (Blog domain removed) and again to the
-        // surviving 8/12 on 2026-10-07 (vTual domain removed).
+        // Lowered on 2026-10-07 (a product domain was sunset): the deleted
+        // domain locale files carried the bulk of these terms on the backend
+        // side and its SPA keys carried the bulk on the front. `プローブ`,
+        // `マネジメント`, `クリエイター`, `申請` and `オーファン` left the corpus
+        // entirely — that domain was their only home — so they are no longer
+        // floored. See the sunset post-mortems in docs/archive/.
+        // Lowered 25 → 20 on 2026-10-02 (a product domain was sunset) and again
+        // to the surviving 8/12 on 2026-10-07 (the second sunset).
         'スラッグ' => ['backend' => 8, 'spa' => 12],
         // 403 `Forbidden` is `アクセス禁止`, not the validation sentence
         // `…の入力は禁止されています。`, which is why the phrase cannot be banned —
@@ -251,11 +255,12 @@ const MIN_OCCURRENCES = [
         '認証情報' => ['backend' => 13, 'spa' => 22],
     ],
     'zh_CN' => [
-        // Lowered on 2026-10-07 (vTual domain removed): the vTual locale files
-        // were the bulk of these terms on the backend side and the vTual SPA keys
-        // were the bulk on the front. `管理机构` and `认领` are gone from the
-        // corpus entirely — vTual was their only home — so they are no longer
-        // floored.
+        // Lowered on 2026-10-07 (a product domain was sunset): the deleted
+        // domain locale files carried the bulk of these terms on the backend
+        // side and its SPA keys carried the bulk on the front. `管理机构` and
+        // `认领` left the corpus entirely — that domain was their only home —
+        // so they are no longer floored. See the sunset post-mortems in
+        // docs/archive/.
         '标识' => ['backend' => 8, 'spa' => 14],
         '结账' => ['backend' => 21, 'spa' => 31],
         '计费' => ['backend' => 14, 'spa' => 27],
@@ -269,11 +274,12 @@ const MIN_OCCURRENCES = [
         '退出登录' => ['backend' => 6, 'spa' => 7],
     ],
     'ar' => [
-        // Lowered on 2026-10-07 (vTual domain removed): the vTual locale files
-        // carried most of these terms on the backend side and the vTual SPA keys
-        // carried most on the front. `مطالبة` is gone from the corpus entirely
-        // and `فحص` survives only on the backend, so neither keeps a floor on the
-        // side that emptied.
+        // Lowered on 2026-10-07 (a product domain was sunset): the deleted
+        // domain locale files carried most of these terms on the backend side
+        // and its SPA keys carried most on the front. `مطالبة` left the corpus
+        // entirely and `فحص` survives only on the backend, so neither keeps a
+        // floor on the side that emptied. See the sunset post-mortems in
+        // docs/archive/.
         'المعرّف' => ['backend' => 1, 'spa' => 7],
         'فحص' => ['backend' => 1],
         'إتمام الشراء' => ['backend' => 16, 'spa' => 23],
