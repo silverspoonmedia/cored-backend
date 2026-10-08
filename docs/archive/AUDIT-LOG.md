@@ -1,6 +1,6 @@
 # Documentation audit log (2026-06-27)
 
-> **Note (2026-09-03):** One-shot probe summaries moved from `docs/domains/microstock/probes/` to [`microstock-probes/`](microstock-probes/); the dated vTual assessments (`vue-island-assessment.md`, `ops/youtube-stability-assessment-2026-08-07.md`) moved to this archive as `vtual-vue-island-assessment.md` and `vtual-youtube-stability-assessment-2026-08-07.md`. Links in `docs/domains/microstock/README.md`, `docs/README.md`, and `config/microstock.php` updated. (The `docs/domains/vtual/**` referrers were removed with the domain on 2026-10-07.)
+> **Note (2026-09-03):** One-shot probe summaries moved from `docs/domains/microstock/probes/` to [`microstock-probes/`](microstock-probes/). Links in `docs/domains/microstock/README.md`, `docs/README.md`, and `config/microstock.php` updated. (The dated product-domain assessments that used to sit beside them were removed from this archive on 2026-10-08.)
 
 Verification of README and `docs/` against the codebase. **Code is the source of truth**; docs updated after automated tests passed.
 

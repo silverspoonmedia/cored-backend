@@ -357,7 +357,7 @@ class UninstallFileEditor
         }
 
         // A container left empty by the removals goes too, so the pack does not
-        // keep a `"blog": {}` ghost.
+        // keep an empty-namespace ghost.
         $removed += $this->pruneEmptyJsonContainers($contents, $notes);
 
         return [$contents, $removed];

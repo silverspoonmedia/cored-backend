@@ -73,45 +73,45 @@ Implementation: [`DomainManager`](../../app/Support/Domain/DomainManager.php), `
 
 ## Domain uninstall manifest
 
-A product domain records everything it touched outside `app/Domain/{Name}/` in **one file inside the domain**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. `domain:make` scaffolds it, it dies with the domain, and `domain:remove` executes it — so removing a domain is reading one reviewed map instead of re-auditing the tree. Only product domains have one; core domains are refused before a manifest is ever read. The sample below is illustrative — `Blog` is not a live domain (it was removed 2026-10-02); the two current manifests are Archivd and Microstock.
+A product domain records everything it touched outside `app/Domain/{Name}/` in **one file inside the domain**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. `domain:make` scaffolds it, it dies with the domain, and `domain:remove` executes it — so removing a domain is reading one reviewed map instead of re-auditing the tree. Only product domains have one; core domains are refused before a manifest is ever read. The sample below is abridged from the live `Archivd` manifest — the two current manifests are Archivd and Microstock, and the real files are far longer (`edits[]` and `ignore[]` carry hundreds of entries each).
 
 ```json
 {
   "schema": "domain-uninstall/v1",
-  "domain": "Blog",
+  "domain": "Archivd",
   "repos": {
     "backend": {
-      "delete": ["app/Domain/Blog", "config/blog.php", "routes/api/v1/blog.php", "lang/*/api/blog.php"],
+      "delete": ["app/Domain/Archivd", "app/Providers/Domain/ArchivdServiceProvider.php", "routes/api/v1/archivd.php", "routes/web/archivd-public.php", "config/archivd.php", "lang/*/api/archivd.php", "tests/Domain/Archivd", "docs/domains/archivd"],
       "edits": [
-        { "file": "database/seeders/RoleSeeder.php", "op": "remove_quoted_strings", "match": ["view posts"] },
-        { "file": "config/spa-routes.php", "op": "remove_quoted_strings", "match": ["blog.index"] },
-        { "file": "lang/*/list_actions.php", "op": "remove_array_keys", "match": ["posts."] },
-        { "file": ".env.example", "op": "remove_lines_matching", "match": "^BLOG_" }
+        { "file": ".env.example", "op": "remove_lines_matching", "match": "^(?:ARCHIVD_S3_CE_REGION|ARCHIVD_DISK|ARCHIVD_DIRECTORY)=" },
+        { "file": "config/products.php", "op": "remove_block", "begin": "'Archivd' =>" },
+        { "file": "config/spa-routes.php", "op": "remove_quoted_strings", "match": ["archivd.index", "archivd.trash", "archivd.workspaces"] },
+        { "file": "lang/*/list_actions.php", "op": "remove_array_keys", "match": ["archivd."] }
       ],
       "unresolved": [],
       "ignore": []
     },
-    "spa": { "delete": ["src/views/blog"], "edits": [], "unresolved": [], "ignore": [] },
-    "docs": { "delete": ["docs/blog"], "edits": [], "unresolved": [], "ignore": [] }
+    "spa": { "delete": ["src/views/archivd", "src/composables/archivd"], "edits": [], "unresolved": [], "ignore": [] },
+    "docs": { "delete": ["docs/archivd"], "edits": [], "unresolved": [], "ignore": [] }
   },
   "data": {
-    "tables": ["blog_posts"],
-    "migrations": ["database/migrations/2026_09_16_000001_create_blog_tables.php"],
-    "rbac": { "permissions": ["view posts"], "roles": ["Beta tester Blog"] },
+    "tables": ["archivd_files", "archivd_folders", "archivd_uploads"],
+    "migrations": ["database/migrations/2026_07_15_100001_create_archivd_tables.php"],
+    "rbac": { "permissions": ["access archivd product"], "roles": ["Beta tester Archivd"] },
     "rows": [
-      { "table": "product_activations", "key": { "product_key": "Blog" } },
-      { "table": "menus", "match": { "column": "route", "operator": "like", "value": "blog.%" } }
+      { "table": "product_activations", "key": { "product_key": "Archivd" } },
+      { "table": "menus", "match": { "column": "route", "operator": "like", "value": "archivd.%" } }
     ]
   },
   "needles": [],
-  "notes": ["External WebSub subscriptions must be revoked by hand."]
+  "notes": ["Without --purge-data the migrations stay; drop them by hand once the tables are gone."]
 }
 ```
 
 | Section | Meaning |
 |---------|---------|
 | `repos.backend` / `repos.spa` / `repos.docs` | One section per checkout. `backend` is this repo; `spa` and `docs` are sibling checkouts. |
-| `delete[]` | Repo-relative file or directory paths; `*` globs allowed (`lang/*/api/blog.php`). A path that matches nothing is a plan warning, not a failure — the domain may never have added it. |
+| `delete[]` | Repo-relative file or directory paths; `*` globs allowed (`lang/*/api/archivd.php`). A path that matches nothing is a plan warning, not a failure — the domain may never have added it. |
 | `edits[]` | Shared-file surgery: `file` (may glob) + `op` + its spec. |
 | `unresolved[]` | Draft-time worklist — `{file, reason}`. `domain:remove` refuses to run while it is not empty (unless `--force`) and the drift guard fails on it. |
 | `ignore[]` | Reviewed survivor references — `{path, reason}`. The reason is mandatory and may not start with `TODO`; it says why the reference survives **or** spells out the hand edit the closed op vocabulary cannot express. |
@@ -145,7 +145,7 @@ The scan runs in both directions: `--draft-manifest` turns it into a candidate m
 
 Machine-local files are out of scope. A `.gitignore`d override (for example `database/seeders/data/*.local.php`) exists on one machine and not in a clean checkout, so scanning it would make the manifest — and the guard — depend on who runs them; a backend path has no "unverifiable" escape the way an absent sibling checkout does. The reference is neither scanned nor recorded, and a hand edit such an override still needs goes in `notes[]`.
 
-**Size is a silent blind spot.** The scanner reads files up to `UninstallReferenceScanner::MAX_FILE_BYTES` (2 MB) and skips anything larger without a warning, so a big sidecar can sit unscanned for months and then surface the moment a removal shrinks it under the cap. That is what happened on 2026-10-07: the SPA `src/i18n/curation-log.json` was 2.06 MB, the vTual key drop took it to 1.44 MB, and the drift guard started reporting Archivd and Microstock references in it for the first time. Both manifests now carry an `ignore` entry for it. Treat a large generated sidecar as **unscanned, not clean** — either add the `ignore` entry up front with the reason, or raise the cap deliberately.
+**Size is a silent blind spot.** The scanner reads files up to `UninstallReferenceScanner::MAX_FILE_BYTES` (2 MB) and skips anything larger without a warning, so a big sidecar can sit unscanned for months and then surface the moment a removal shrinks it under the cap. That happened when a domain removal dropped the SPA `src/i18n/curation-log.json` from 2.06 MB to 1.44 MB: the drift guard started reporting Archivd and Microstock references in it for the first time. Both manifests now carry an `ignore` entry for it. Treat a large generated sidecar as **unscanned, not clean** — either add the `ignore` entry up front with the reason, or raise the cap deliberately.
 
 ### Day-2 workflow
 

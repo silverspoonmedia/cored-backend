@@ -86,7 +86,7 @@ The browser UI lives in the sibling SPA. These are historical only; the live lis
 
 ## Archive (not daily reading)
 
-[archive/](archive/) holds historical assessments, one-shot audits, the original bootstrap brief ([bootstrap-task-2026-08.md](archive/bootstrap-task-2026-08.md)), the [security audit](archive/security-audit-2026-06-16.md), the [archived Blade UI patterns](archive/ui-patterns-blade.md), the [SPA consumer decision findings](archive/spa-consumer-decision-findings.md), and [microstock probe summaries](archive/microstock-probes/). Archive files may mention a former three-repo workflow; that model is dissolved.
+[archive/](archive/) holds historical assessments, one-shot audits, the [security audit](archive/security-audit-2026-06-16.md), the [archived Blade UI patterns](archive/ui-patterns-blade.md), the [SPA consumer decision findings](archive/spa-consumer-decision-findings.md), [microstock probe summaries](archive/microstock-probes/), and the sunset post-mortems ([Blog](archive/blog-sunset-postmortem.md), [vTual](archive/vtual-sunset-postmortem.md)) that carry the restore recipe for each retired product domain. Archive files may mention a former three-repo workflow; that model is dissolved.
 
 ## Writing docs
 

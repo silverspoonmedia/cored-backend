@@ -1046,7 +1046,7 @@
                 },
                 {
                     "path": "src/i18n/curation-log.json",
-                    "reason": "hand edit (i18n sidecar): the log names `src/views/archivd/…` and `lang/*/api/archivd.php` as the provenance of curated keys, not code. When the domain leaves, delete every entry whose key the `edits[]` above removed — a logged key that no longer exists in `en.json` fails `check-curation-log.mjs`. Not scanned before 2026-10-07: the file sat above the scanner's 2 MB `MAX_FILE_BYTES` cap and only fell under it when the vTual keys were dropped."
+                    "reason": "hand edit (i18n sidecar): the log names `src/views/archivd/…` and `lang/*/api/archivd.php` as the provenance of curated keys, not code. When the domain leaves, delete every entry whose key the `edits[]` above removed — a logged key that no longer exists in `en.json` fails `check-curation-log.mjs`. Not scanned before 2026-10-07: the file sat above the scanner's 2 MB `MAX_FILE_BYTES` cap and only fell under it when a retired product domain's locale keys were dropped."
                 }
             ]
         },

@@ -21,7 +21,7 @@ use RuntimeException;
  * Shape (`domain-uninstall/v1`):
  *
  *   schema   "domain-uninstall/v1"
- *   domain   "Blog"                     must equal the registry key
+ *   domain   "{Name}"                   must equal the registry key
  *   repos    { backend|spa|docs: { delete[], edits[], unresolved[], ignore[] } }
  *   data     { tables[], migrations[], rbac{permissions[],roles[]}, rows[] }
  *   needles  []                         extra literals the drift scan looks for
