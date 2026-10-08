@@ -180,7 +180,7 @@ API (Bearer, any authenticated user):
 
 | Method | URI | Behavior |
 |--------|-----|----------|
-| GET | `/api/v1/profile/connections` | `{ providers: [...] }` — one row per `OAuthProvider` case. Stale Discord snapshots still auto-refresh here (`identity.discord.connections_snapshot_max_age_minutes`, default 60) and on vTual verify miss. |
+| GET | `/api/v1/profile/connections` | `{ providers: [...] }` — one row per `OAuthProvider` case. Stale Discord snapshots still auto-refresh here (`identity.discord.connections_snapshot_max_age_minutes`, default 60). |
 | POST | `/api/v1/profile/connections/{oauth_provider}/sync` | Force-refresh that provider's snapshot (bypasses TTL). Discord is the only case with `supports_sync: true`. Throttled `throttle:10,1`. Returns the same `{ providers }` payload as GET. Not connected / token refresh failed → existing `IdentityOAuthException` (422 / 401). |
 | DELETE | `/api/v1/profile/connections/{oauth_provider}` | Disconnect that provider. |
 | GET | `/api/v1/auth/discord/authorize-url` | Discord connect URL. |
@@ -195,9 +195,9 @@ Scopes: `identify` + `connections`. Table `identity_oauth_accounts` stores envel
 
 Post-OAuth browser return: encrypted state may carry `return_to`. Allowlisted origins are `APP_URL` and `SPA_URL`. Paths must start with `/apps/`. SPA passes `return_path` only; the API prefixes `SPA_URL`. Empty `SPA_URL` → authorize-url 503.
 
-vTual consumes the snapshot in two ways: **`ownershipEligible()`** (YouTube/Twitch verified subset) for claim verify paths; other connection types map to creator external links via `DiscordConnectionExternalLinkMapper`. Private discovered YouTube/Twitch channels bind on orphan Discord claim until owner promote — see [vTual — creator claim](../vtual/reference.md).
+The snapshot is read by consumers through the connections API: `ownershipEligible()` answers whether a verified YouTube/Twitch connection exists, and other connection types map to external links via `DiscordConnectionExternalLinkMapper`.
 
-Env: non-empty `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` required; `DISCORD_REDIRECT_URI` defaults to `{APP_URL}/apps/auth/discord/callback` when unset. `SPA_URL` is the Vue-Workers public origin (OAuth return allowlist). Connected-accounts and claim Discord UI stay hidden until Discord credentials are configured.
+Env: non-empty `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` required; `DISCORD_REDIRECT_URI` defaults to `{APP_URL}/apps/auth/discord/callback` when unset. `SPA_URL` is the Vue-Workers public origin (OAuth return allowlist). The connected-accounts Discord UI stays hidden until Discord credentials are configured.
 
 ## Tests
 

@@ -26,7 +26,7 @@ class ImportLegacyEnvCommand extends Command
                             {--skip-test : Do not probe the endpoint; import rows as pending}
                             {--actor= : User id credited as creator (defaults to the first Root user)}';
 
-    protected $description = 'Import legacy AI env keys (MICROSTOCK_AI_*, VTUAL_AI_CLASSIFY_*) into ai_connections + consumer bindings';
+    protected $description = 'Import legacy AI env keys (MICROSTOCK_AI_*) into ai_connections + consumer bindings';
 
     public function handle(
         AiConnectionService $connections,
@@ -40,7 +40,7 @@ class ImportLegacyEnvCommand extends Command
         $importable = array_filter($sources, fn (array $source): bool => $source['endpoint'] !== '' && $source['api_key'] !== '');
 
         if ($importable === []) {
-            $this->warn('No legacy AI env values found (MICROSTOCK_AI_VISION_*, MICROSTOCK_AI_THINKING_*, VTUAL_AI_CLASSIFY_*).');
+            $this->warn('No legacy AI env values found (MICROSTOCK_AI_VISION_*, MICROSTOCK_AI_THINKING_*).');
 
             return self::SUCCESS;
         }
@@ -127,8 +127,6 @@ class ImportLegacyEnvCommand extends Command
             'MICROSTOCK_AI_VISION_API_KEY',
             'MICROSTOCK_AI_THINKING_ENDPOINT',
             'MICROSTOCK_AI_THINKING_API_KEY',
-            'VTUAL_AI_CLASSIFY_ENDPOINT',
-            'VTUAL_AI_CLASSIFY_API_KEY',
         ] as $key) {
             $this->line('  - '.$key);
         }
@@ -180,14 +178,6 @@ class ImportLegacyEnvCommand extends Command
                 'api_key' => $this->envValue('MICROSTOCK_AI_THINKING_API_KEY'),
                 'test_model' => (string) setting_config('microstock.ai.thinking.model', ''),
                 'setting' => 'microstock.ai.thinking.connection',
-            ],
-            [
-                'label' => 'vtual classify',
-                'slug' => 'vtual-classify',
-                'endpoint' => $this->envValue('VTUAL_AI_CLASSIFY_ENDPOINT'),
-                'api_key' => $this->envValue('VTUAL_AI_CLASSIFY_API_KEY'),
-                'test_model' => (string) setting_config('vtual.content_classification.ai.model', ''),
-                'setting' => 'vtual.content_classification.ai.connection',
             ],
         ];
     }

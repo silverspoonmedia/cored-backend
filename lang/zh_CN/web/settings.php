@@ -11,7 +11,6 @@ return [
         'platform' => '平台',
         'archivd' => 'Archivd',
         'microstock' => 'Microstock',
-        'vtual' => 'vTual',
         'notification_audiences' => '通知受众',
         'currencies' => '货币',
     ],
@@ -148,71 +147,14 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => '单项思考并发数',
         'microstock.ai.upstream.release_after_seconds' => '上游槽位释放时间（秒）',
         'microstock.csv_disk' => 'CSV 导出磁盘',
-        // vTual
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
-        'vtual.credential_test.http_timeout' => '凭证测试 HTTP 超时（秒）',
-        'vtual.credential_test.twitch_token_skew_seconds' => 'Twitch 令牌提前量（秒）',
-        'vtual.credential_test.youtube_probe_channel_id' => 'YouTube 探针频道 ID',
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
-        'vtual.credential.failover.enabled' => '启用凭证故障转移',
-        'vtual.credential.failover.auth_fail_threshold' => '故障转移身份验证失败阈值',
-        'vtual.credential.failover.skip_minutes' => '故障转移跳过时长（分钟）',
-        'vtual.credential.failover.max_retries_per_call' => '每次调用的故障转移最大重试次数',
-        'vtual.http.timeout' => 'HTTP 超时（秒）',
-        'vtual.claim.ttl_hours' => '认领有效期（小时）',
-        'vtual.claim.verify_cooldown_seconds' => '认领验证冷却时间（秒）',
-        'vtual.claim.max_attempts' => '认领最大验证尝试次数',
-        'vtual.claim.block_hours_after_max_attempts' => '达到最大尝试次数后的认领阻止时长（小时）',
-        'vtual.claim.max_pending_per_user' => '每位用户最大待处理认领数',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
-        'vtual.claim.accept_anyway_enabled' => '启用认领的“仍可接受”选项',
-        'vtual.claim.discord_verify_enabled' => '启用认领 Discord 验证',
-        'vtual.claim.token_prefix' => '认领令牌前缀',
-        'vtual.claim.token_bytes' => '认领令牌随机字节数',
-        'vtual.channel_claim.ttl_hours' => '频道认领有效期（小时）',
-        'vtual.channel_claim.verify_cooldown_seconds' => '频道认领验证冷却时间（秒）',
-        'vtual.channel_claim.max_attempts' => '频道认领最大尝试次数',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
-        'vtual.channel_claim.accept_anyway_enabled' => '启用频道认领的“仍可接受”选项',
-        'vtual.channel_claim.discord_verify_enabled' => '启用频道认领 Discord 验证',
-        'vtual.channel_claim.token_prefix' => '频道认领令牌前缀',
-        'vtual.channel_claim.token_bytes' => '频道认领令牌随机字节数',
-        'vtual.channel_pool.threshold' => '频道池低阈值',
-        'vtual.channel_pool.max_wait_minutes' => '频道池最长等待时间（分钟）',
-        'vtual.channel_pool.schedule_every_minutes' => '频道池调度间隔（分钟）',
-        'vtual.channel_pool.resync_stale_hours' => '频道池重新同步失效时间（小时）',
-        'vtual.channel_pool.resync_enqueue_limit' => '频道池重新同步入队上限',
-        'vtual.channel_pool.flush_lock_seconds' => '频道池刷新锁定时间（秒）',
-        'vtual.claim_verify_pool.threshold' => '认领验证池低阈值',
-        'vtual.claim_verify_pool.max_wait_minutes' => '认领验证池最长等待时间（分钟）',
-        'vtual.claim_verify_pool.flush_lock_seconds' => '认领验证池刷新锁定时间（秒）',
-        'vtual.content_pool.threshold' => '内容池低阈值',
-        'vtual.content_pool.max_wait_minutes' => '内容池最长等待时间（分钟）',
-        'vtual.content_pool.flush_lock_seconds' => '内容池刷新锁定时间（秒）',
-        'vtual.feed_poll.interval_minutes' => '动态轮询间隔（分钟）',
-        'vtual.live_poll.interval_minutes' => '直播 CCV 轮询间隔（分钟）',
-        'vtual.websub.lease_seconds' => 'WebSub 租约（秒）',
-        'vtual.websub.renew_before_hours' => 'WebSub 到期前续租时间（小时）',
-        'vtual.websub.max_body_bytes' => 'WebSub 通知正文最大大小（字节）',
-        'vtual.landing.event.title' => '落地页活动标题',
-        'vtual.landing.event.starts_at' => '落地页活动开始时间',
-        'vtual.landing.event.body' => '落地页活动正文',
-        'vtual.content_classification.ai.enabled' => '启用 AI 审查（内容分类）',
-        'vtual.content_classification.ai.model' => 'AI 审查模型',
-        'vtual.content_classification.ai.max_tokens' => 'AI 审查最大响应 token 数',
-        'vtual.content_classification.ai.timeout' => 'AI 审查超时（秒）',
-        'vtual.content_classification.ai.min_confidence' => 'AI 审查最低置信度',
-        'vtual.content_classification.ai.cache_ttl_hours' => 'AI 审查结果缓存（小时）',
-        'vtual.content_classification.ai.connection' => 'AI 审查连接（留空 = 默认）',
-        'vtual.incidents.enabled' => '启用事件记录（vTual 集成分诊）',
         // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        'vtual.metrics.enabled' => '启用指标历史（vTual 快照）',
         // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        'vtual.metrics.channel_interval_minutes' => '频道指标间隔（分钟）',
         // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        'vtual.metrics.content_interval_minutes' => '直播 CCV 指标间隔（分钟）',
         // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        'vtual.metrics.retention_days' => '指标历史保留（天）',
     ],
     'hints' => [
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
@@ -228,7 +170,6 @@ return [
         'microstock.ai.thinking.connection' => '思考阶段使用的 AI 连接标识（设置 → AI 连接）；留空则使用默认连接。',
         'microstock.ai.upstream.window_seconds' => '上游 token 预算的参考窗口（实际限制通过并发上限执行）。',
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
-        'vtual.credential_test.youtube_probe_channel_id' => '用于 YouTube Data API 凭证冒烟测试的公开频道 ID。',
         // curated at 2026-09-22T13:09:56+07:00 — zh_CN curation wave
         'platform.jwt.refresh_skew' => '在访问令牌过期前的这几分钟刷新令牌。',
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
@@ -244,13 +185,7 @@ return [
         'microstock.ai.stage.thinking_grace_after' => '思考阶段进入宽限模式前的等待秒数。',
         'microstock.ai.stage.thinking_backlog_after' => '思考任务移入积压队列前的等待秒数。',
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
-        'vtual.credential.failover.enabled' => '连续身份验证失败后切换到下一个凭证。',
-        'vtual.claim.accept_anyway_enabled' => '允许用户在验证结果不明确时仍接受认领。',
-        'vtual.claim.discord_verify_enabled' => '允许用户通过匹配 Discord 关联的 YouTube/Twitch 账户来验证孤立认领。',
-        'vtual.channel_claim.discord_verify_enabled' => '允许资料所有者通过匹配 Discord 关联的 YouTube/Twitch 账户来验证频道附加认领。',
-        'vtual.incidents.enabled' => '将 vTual 集成故障（WebSub、EventSub、凭证、采集）记录为可分组、可分诊的事件。平台级故障期间可关闭，以保持待办队列清晰可读。',
         // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        'vtual.metrics.enabled' => '每次刷新时向历史表追加订阅数与同时观看数样本。关闭后仅保留当前值字段。',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => '存储的 Discord 连接快照的有效期；超过该时长后，若验证未命中就会触发实时 Discord API 刷新。',
     ],

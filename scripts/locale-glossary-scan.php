@@ -27,7 +27,7 @@
 //     when a wave reverts many keys at once, which is the realistic regression.
 //     Floors only ever need raising when keys are added, since added keys raise the
 //     real count. They must be **re-measured and lowered in the same change that
-//     deletes keys** — the 2026-09-24 sweep of 344 unreachable `web.vtual*` SPA keys
+//     deletes keys** — the 2026-09-24 sweep of 344 unreachable SPA keys
 //     dropped every `spa` floor below its recorded value and turned this gate red
 //     with 40 false "reverted?" findings. Run `--verbose`, confirm the terms are
 //     present and the *drop* is explained by deleted keys rather than rewording, then
@@ -88,7 +88,7 @@ const FORBIDDEN = [
         'претензи' => 'заявка',
         'заявление' => 'заявка',
         'претенд' => 'заявить права',
-        // `management` (the vTual entity with owners, members, and invites) is
+        // `management` (an entity with owners, members, and invites) is
         // `организация`. `менеджмент` is an uncountable collective noun in Russian
         // and was pluralized and declined into ungrammatical forms.
         'менеджмент' => 'организация',
@@ -185,26 +185,28 @@ const MIN_OCCURRENCES = [
     // `ru` has no single rejected word for most of its collapses — `оплата` is
     // correct outside checkout and `тариф` is correct outside the tier metric — so
     // these floors are the tripwire: they fail when a wave reverts many keys at
-    // once. Stems are used on purpose so inflection (`заявка`/`заявки`/`заявок`)
-    // does not break the floor.
+    // once. Stems are used on purpose so inflection (`оформлени` for
+    // `оформление`/`оформления`) does not break the floor.
     'ru' => [
-        'ИИ' => ['backend' => 54, 'spa' => 65],
+        // Lowered on 2026-10-07 (vTual domain removed): `lang/ru/api/vtual.php`
+        // carried the bulk of these terms on the backend side and the vTual SPA
+        // keys carried the bulk on the front. `заявк`, `организац` and `хендл`
+        // are gone from the corpus entirely — vTual was their only home — so they
+        // are no longer floored.
+        'ИИ' => ['backend' => 47, 'spa' => 58],
         'оформлени' => ['backend' => 19, 'spa' => 20],
         'област' => ['backend' => 45, 'spa' => 65],
-        'заявк' => ['backend' => 56, 'spa' => 55],
-        'организац' => ['backend' => 21, 'spa' => 32],
-        'автор' => ['backend' => 14, 'spa' => 24],
-        'хендл' => ['backend' => 5, 'spa' => 7],
-        'проверк' => ['backend' => 43, 'spa' => 56],
+        'автор' => ['backend' => 6, 'spa' => 7],
+        'проверк' => ['backend' => 6, 'spa' => 16],
         // `Session Has Expired` is `истёк`, not `устарела`; the *messages* keep that
         // verb while the expiry *column labels* settle on the noun phrase
         // `Действует до`, so both are floored. The two casings are floored
         // separately: `substr_count` is case-sensitive, and the original single
         // floor of 11 silently summed `истёк` + `Истёк`, so it could never be met.
-        'истёк' => ['backend' => 10, 'spa' => 10],
+        'истёк' => ['backend' => 7, 'spa' => 8],
         'Истёк' => ['backend' => 1, 'spa' => 1],
-        'Действует до' => ['backend' => 2, 'spa' => 5],
-        'Источник' => ['backend' => 5, 'spa' => 6],
+        'Действует до' => ['backend' => 2, 'spa' => 4],
+        'Источник' => ['backend' => 4, 'spa' => 5],
         'провайдер' => ['backend' => 19, 'spa' => 37],
     ],
     // `id` has no single rejected word for most of its collapses — `channel` is
@@ -214,25 +216,30 @@ const MIN_OCCURRENCES = [
     // floor.
     'id' => [
         'Terlarang' => ['backend' => 2, 'spa' => 1],
-        'kedaluwarsa' => ['backend' => 16, 'spa' => 14],
+        // Lowered on 2026-10-07 (vTual domain removed): the vTual locale files
+        // were the bulk of these terms on the backend side and the vTual SPA keys
+        // were the bulk on the front. `klaim`, `manajemen` and `kreator` are gone
+        // from the corpus entirely — vTual was their only home — so they are no
+        // longer floored.
+        'kedaluwarsa' => ['backend' => 11, 'spa' => 11],
         'Berkas' => ['backend' => 27, 'spa' => 24],
-        'klaim' => ['backend' => 54, 'spa' => 57],
-        'verifikasi' => ['backend' => 51, 'spa' => 59],
-        'kredensial' => ['backend' => 28, 'spa' => 39],
-        // The loanwords that replaced the English words left in prose.
-        'manajemen' => ['backend' => 21, 'spa' => 31],
-        'kreator' => ['backend' => 10, 'spa' => 23],
+        'verifikasi' => ['backend' => 14, 'spa' => 23],
+        'kredensial' => ['backend' => 9, 'spa' => 12],
         // Lowered 23 → 18 on 2026-10-02 (Blog domain removed): the five
         // `web.blog.*.slug` SPA keys were the only `Slug` hits that went away.
-        'Slug' => ['backend' => 11, 'spa' => 18],
-        'yatim' => ['backend' => 13, 'spa' => 21],
+        'Slug' => ['backend' => 6, 'spa' => 10],
+        'yatim' => ['backend' => 1, 'spa' => 1],
         'penagihan' => ['backend' => 13, 'spa' => 20],
     ],
     'ja' => [
-        'プローブ' => ['backend' => 9, 'spa' => 14],
-        // Lowered 25 → 20 on 2026-10-02 (Blog domain removed): the five
-        // `web.blog.*.slug` SPA keys were the only `スラッグ` hits that went away.
-        'スラッグ' => ['backend' => 13, 'spa' => 20],
+        // Lowered on 2026-10-07 (vTual domain removed): the vTual locale files
+        // were the bulk of these terms on the backend side and the vTual SPA keys
+        // were the bulk on the front. `プローブ`, `マネジメント`, `クリエイター`,
+        // `申請` and `オーファン` are gone from the corpus entirely — vTual was
+        // their only home — so they are no longer floored.
+        // Lowered 25 → 20 on 2026-10-02 (Blog domain removed) and again to the
+        // surviving 8/12 on 2026-10-07 (vTual domain removed).
+        'スラッグ' => ['backend' => 8, 'spa' => 12],
         // 403 `Forbidden` is `アクセス禁止`, not the validation sentence
         // `…の入力は禁止されています。`, which is why the phrase cannot be banned —
         // the floor is the tripwire instead. Same for 302 `一時的な移動`: `発見` is
@@ -241,49 +248,47 @@ const MIN_OCCURRENCES = [
         '一時的な移動' => ['backend' => 2, 'spa' => 1],
         'チェックアウト' => ['backend' => 20, 'spa' => 25],
         '課金' => ['backend' => 9, 'spa' => 12],
-        '認証情報' => ['backend' => 41, 'spa' => 66],
-        'マネジメント' => ['backend' => 25, 'spa' => 39],
-        'クリエイター' => ['backend' => 19, 'spa' => 37],
-        '申請' => ['backend' => 84, 'spa' => 96],
-        'オーファン' => ['backend' => 6, 'spa' => 9],
+        '認証情報' => ['backend' => 13, 'spa' => 22],
     ],
     'zh_CN' => [
-        // Lowered 27 → 22 on 2026-10-02 (Blog domain removed): the five
-        // `web.blog.*.slug` SPA keys were the only `标识` hits that went away.
-        '标识' => ['backend' => 13, 'spa' => 22],
+        // Lowered on 2026-10-07 (vTual domain removed): the vTual locale files
+        // were the bulk of these terms on the backend side and the vTual SPA keys
+        // were the bulk on the front. `管理机构` and `认领` are gone from the
+        // corpus entirely — vTual was their only home — so they are no longer
+        // floored.
+        '标识' => ['backend' => 8, 'spa' => 14],
         '结账' => ['backend' => 21, 'spa' => 31],
         '计费' => ['backend' => 14, 'spa' => 27],
-        '归档' => ['backend' => 26, 'spa' => 31],
-        '凭证' => ['backend' => 47, 'spa' => 70],
-        '管理机构' => ['backend' => 26, 'spa' => 40],
-        '孤立' => ['backend' => 16, 'spa' => 21],
-        '认领' => ['backend' => 80, 'spa' => 94],
-        '验证' => ['backend' => 93, 'spa' => 139],
-        '创作者' => ['backend' => 20, 'spa' => 41],
+        '归档' => ['backend' => 7, 'spa' => 8],
+        '凭证' => ['backend' => 15, 'spa' => 24],
+        '孤立' => ['backend' => 1, 'spa' => 1],
+        '验证' => ['backend' => 39, 'spa' => 81],
+        '创作者' => ['backend' => 1, 'spa' => 1],
         '方案' => ['backend' => 24, 'spa' => 30],
-        '登录' => ['backend' => 22, 'spa' => 43],
+        '登录' => ['backend' => 22, 'spa' => 33],
         '退出登录' => ['backend' => 6, 'spa' => 7],
     ],
     'ar' => [
-        // Lowered 25 → 20 and 28 → 27 on 2026-10-02 (Blog domain removed): the
-        // five `web.blog.*` SPA keys carried the only `المعرّف` hits, and the
-        // deleted `lang/ar/api/blog.php` carried one `استعادة`.
-        'المعرّف' => ['backend' => 8, 'spa' => 20],
-        'فحص' => ['backend' => 4, 'spa' => 8],
+        // Lowered on 2026-10-07 (vTual domain removed): the vTual locale files
+        // carried most of these terms on the backend side and the vTual SPA keys
+        // carried most on the front. `مطالبة` is gone from the corpus entirely
+        // and `فحص` survives only on the backend, so neither keeps a floor on the
+        // side that emptied.
+        'المعرّف' => ['backend' => 1, 'spa' => 7],
+        'فحص' => ['backend' => 1],
         'إتمام الشراء' => ['backend' => 16, 'spa' => 23],
         'الفوترة' => ['backend' => 5, 'spa' => 15],
-        'أرشفة' => ['backend' => 14, 'spa' => 21],
-        'استعادة' => ['backend' => 16, 'spa' => 27],
-        'بيانات الاعتماد' => ['backend' => 29, 'spa' => 43],
-        'قائمة الانتظار' => ['backend' => 15, 'spa' => 10],
+        'أرشفة' => ['backend' => 5, 'spa' => 9],
+        'استعادة' => ['backend' => 15, 'spa' => 22],
+        'بيانات الاعتماد' => ['backend' => 10, 'spa' => 14],
+        'قائمة الانتظار' => ['backend' => 7, 'spa' => 4],
         'التخزين' => ['backend' => 13, 'spa' => 21],
-        'يتيم' => ['backend' => 13, 'spa' => 18],
-        'مطالبة' => ['backend' => 65, 'spa' => 72],
-        'منشئ' => ['backend' => 20, 'spa' => 38],
+        'يتيم' => ['backend' => 1, 'spa' => 1],
+        'منشئ' => ['backend' => 1, 'spa' => 1],
         'خطة' => ['backend' => 16, 'spa' => 20],
         // The glossary row used to say `تحقّق` (with a shadda) and the corpus said
         // `تحقق`; the corpus is right and the row was corrected.
-        'تحقق' => ['backend' => 68, 'spa' => 85],
+        'تحقق' => ['backend' => 18, 'spa' => 30],
     ],
 ];
 

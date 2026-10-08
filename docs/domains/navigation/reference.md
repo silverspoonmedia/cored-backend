@@ -19,7 +19,7 @@ Bound in `NavigationServiceProvider`.
 | Column | Notes |
 |--------|-------|
 | `id`, `parent_id` | UUID; self-FK cascade |
-| `layout` | Shell region: `sidebar`, `navbar`, `vtual` (config `navigation.layouts`) |
+| `layout` | Shell region: `sidebar`, `navbar` (config `navigation.layouts`) |
 | `name`, `description` | JSON translatable |
 | `icon`, `route`, `hash` | Full icon class; **SPA Vue Router symbolic name** (or remaining Laravel web route name), never a URL; `hash` optional in-page anchor (e.g. `#vtubers`) appended client-side |
 | `type` | `h` header, `p` parent, `c` child |
@@ -40,7 +40,7 @@ Pivots: `menu_roles`, `menu_user_includes`, `menu_user_excludes`. Unique index o
 
 Validation rejects every illegal combination (`role` without roles → error on `roles`; roles under any other audience → error on `audience`), and `MenuService` clears `menu_roles` as soon as the stored audience is not `role`, so a pivot can never contradict the audience.
 
-**Layouts:** independent trees; parent/child must share layout; layout fixed after create. `sidebar` is the only layout that enforces a header root (`h`); the flat template layouts (`navbar`, `vtual`) also accept parentless `p` roots.
+**Layouts:** independent trees; parent/child must share layout; layout fixed after create. `sidebar` is the only layout that enforces a header root (`h`); the flat template layout (`navbar`) also accepts parentless `p` roots.
 
 **Menu route validation:** `StoreMenuRequest` / `UpdateMenuRequest` validate `route` via `App\Support\Navigation\SpaRouteRegistry`. Allowed SPA Vue Router names (not `*.view`) live in `config/spa-routes.php` `menu`; `deny` rejects auth/public-utility names even if Laravel `Route::has()` would pass. Remaining Laravel web route names (share, iPaymu, Discord callback) still pass via `Route::has()` unless denied. Keep the allowlist in sync with `monolith-vue-workers/src/router/index.ts`.
 
@@ -53,8 +53,7 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 3. **Audience** — `guest` hides the node from signed-in viewers; `auth` and `role` hide it from guests; `all` never hides.
 4. **Domain Access gate** — if the node's route maps to a product through `config/products.php` `menu_routes`, `DomainAccessService::canAccess` must allow the viewer. This runs for guests too. Private products allow Root/Admin and holders of the matching `Beta tester {Domain}` role or `access {domain} product` permission. See [Domain Access — menu visibility](../domain-access/README.md).
 5. **Product activation gate** — for the same mapped product, an authenticated viewer must have an `active` activation. Suspended, expired, pending, or missing activation hides the node. Guests skip this activation check. See [Product Activations — menu visibility](../product-activations/reference.md).
-6. **vTual management membership gate** — for nodes whose stored route is in `MenuRepository::MANAGEMENT_MEMBER_ROUTES` (`vtual.profiles.index` — the Workspace vTual parent, `vtual.managements.index` — the Managements children, and `vtual.events.index` — the Events child), a viewer without the attached roles is still granted if they hold any `vtual_management_members` row. Guests are never granted. This gate applies **per node**: the Products "Managements" and "Events" children store **no roles at all** and are therefore visible *only* through membership (rule 7's no-roles-fallback is never reached because rule 6 returns first for non-members too — empty roles + rule 6 route = member-only node). The Administration "Managements" child is NOT effectively granted to members: rule 6's route check would grant the node itself, but the Administration parent (`vtual.orphans.index`) is not in the constant, so the ancestor chain fails and the branch stays hidden. Staff reach Managements only through Administration; members only through Products.
-7. If roles are attached, the viewer must have any attached role; no roles means open to viewers who passed prior rules. Role pivots only exist for `audience = role`, so this rule is the `role` audience in practice.
+6. If roles are attached, the viewer must have any attached role; no roles means open to viewers who passed prior rules. Role pivots only exist for `audience = role`, so this rule is the `role` audience in practice.
 
 `MenuRepository` evaluates every candidate node and each ancestor in its chain. For each route-bearing node it resolves `ProductRegistry::productKeyByMenuRoute` using the **stored DB route** (never the presentational `#`); product parent routes therefore gate all descendants, including children whose own routes are not mapped. Empty headers and non-navigable parents are pruned; a parent with a route remains a valid leaf when children are all hidden. Validation rejects illegal audience/role combinations (see the audience table above).
 
@@ -76,11 +75,11 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 
 Permissions come from `RoleSeeder`: `view menu`, `manage menu`, `restore menu`.
 
-SPA menus admin consumes this API directly. Sidebar/navbar trees come from `GET /api/v1/navigation/menus`; the Valkivid3 public template fetches its `vtual` tree from the same endpoint (`?layout=vtual`) and renders it via `useVkNavigation`. Admin layout select options are populated dynamically from `GET /api/v1/navigation/menus/layouts`. Form option lookups use `/api/v1/lookups/*` — the menu edit parent/reference selects consume `lookups/menus` as a nested tree per root group, pre-sorted like this sidebar (type rank h<p<c, then `order`).
+SPA menus admin consumes this API directly. Sidebar/navbar trees come from `GET /api/v1/navigation/menus`. Admin layout select options are populated dynamically from `GET /api/v1/navigation/menus/layouts`. Form option lookups use `/api/v1/lookups/*` — the menu edit parent/reference selects consume `lookups/menus` as a nested tree per root group, pre-sorted like this sidebar (type rank h<p<c, then `order`).
 
 ### Request fields (store/update)
 
-Service maps friendly names: `parent` → `parent_id`, and the rest 1:1 (`audience`, `roles`, `type`, `layout`, …). Placement accepts optional `position` + `reference_id` (`before`/`after`/`append`). Structure is `h` root → `p` under `h` → `c` under `p`; flat template layouts (`navbar`, `vtual`) additionally allow parentless `p` roots — no header wrapper. Create/update wrap row and pivot synchronization in one transaction.
+Service maps friendly names: `parent` → `parent_id`, and the rest 1:1 (`audience`, `roles`, `type`, `layout`, …). Placement accepts optional `position` + `reference_id` (`before`/`after`/`append`). Structure is `h` root → `p` under `h` → `c` under `p`; the flat template layout (`navbar`) additionally allows parentless `p` roots — no header wrapper. Create/update wrap row and pivot synchronization in one transaction.
 
 `audience` is `sometimes|enum:MenuAudience` and defaults to `auth` when omitted — the same default as the DB column, the repository and the factory, so no layer invents its own. `roles` is only accepted together with `audience = role`: `role` without roles fails on `roles`, and roles under `all`/`auth`/`guest` fail on `audience`. On update, omitting `audience` keeps the stored value, and moving away from `role` clears the `menu_roles` pivots in the same transaction.
 
@@ -107,22 +106,19 @@ On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), 
 | Menu create/update/delete/restore/reorder/seeder; role update/delete; `menu:flush-cache` | Forget snapshot + bump epoch (all presented keys miss) |
 | Domain Access visibility upsert | Bump epoch |
 | Product activation state change for user U | Forget presented keys for U under the current epoch (both layouts) |
-| User role sync that affects menu RBAC (`UserManagementService`, claim assignRole) | Forget presented keys for that user |
-| vTual management membership change for user U (invite accept / cancel-accepted / member remove) | `ManagementService` forgets presented keys for U (`forgetPresentedTreeForUserId`) and fires `NavigationRealtime::userTreeChanged(U, 'membership')` → targeted `.menu.tree.changed` broadcast carrying `target_user_id`; only that viewer's SPA refetches sidebar/navbar. The SPA-side accept flow also calls `refetchNavigation()` directly before redirecting. |
-| Claim completion in SPA | SPA refreshes `auth/me`, then refetches sidebar/navbar before opening claimed profile; claim route rejects non-claimable profiles back to read-only profile |
+| User role sync that affects menu RBAC (`UserManagementService`) | Forget presented keys for that user |
 
 `php artisan menu:flush-cache` remains available for manual recovery.
 
 ## Authoritative seeding
 
-`MenuSeeder` is the sole canonical navigation definition. Every run force-deletes all active and trashed menu rows; FK cascades remove their pivot rows. It rebuilds the sidebar, navbar, and vtual layouts inside one DB transaction and intentionally removes admin-created/custom menus. A failure inside that transaction restores the prior DB tree. After commit, the seeder flushes the navigation snapshot and bumps the presented-tree epoch; no separate cache command is needed. Each node's `audience` is derived from its declared `roles` (`$roleNames === [] ? Auth : Role`) unless the node sets `audience` explicitly, so a seeded node can never carry role pivots under a non-role audience; the `vtual` tree's public nodes declare `audience => MenuAudience::All`, and Directory/Contents use the `hash` column (`#vtubers` / `#contents`) for in-page anchors.
+`MenuSeeder` is the sole canonical navigation definition. Every run force-deletes all active and trashed menu rows; FK cascades remove their pivot rows. It rebuilds the sidebar and navbar layouts inside one DB transaction and intentionally removes admin-created/custom menus. A failure inside that transaction restores the prior DB tree. After commit, the seeder flushes the navigation snapshot and bumps the presented-tree epoch; no separate cache command is needed. Each node's `audience` is derived from its declared `roles` (`$roleNames === [] ? Auth : Role`) unless the node sets `audience` explicitly, so a seeded node can never carry role pivots under a non-role audience.
 
 `MenuSeeder` assumes these role catalogs already exist, in order:
 
 ```bash
 php artisan db:seed --class=RoleSeeder
 php artisan db:seed --class=ArchivdRoleSeeder
-php artisan db:seed --class=VtualRoleSeeder
 php artisan db:seed --class=MenuSeeder
 ```
 
@@ -139,11 +135,6 @@ php artisan db:seed --class=MenuSeeder
     - My Files — `archivd.index`
     - Trash — `archivd.trash`
     - DMCA Blocklist — `archivd.blocklist.index`; Root, Admin, Moderator, Management, Archivd Admin
-  - **vTual** — parent route `vtual.profiles.index`; Vtual vTuber, Vtual Editor, Vtual Admin (+ any vTual management member via rule 6)
-    - My vTuber profiles — `vtual.profiles.index`
-    - My claims — `vtual.claims.index`; Vtual vTuber, Vtual Editor, Vtual Admin
-    - Managements — `vtual.managements.index`; **no stored roles** — member-only via rule 6 (safe only while the route stays in `MANAGEMENT_MEMBER_ROUTES`)
-    - Events — `vtual.events.index`; **no stored roles** — same rule-7 member-only pattern (event submission is an org Owner/Admin power)
 - **Administration**
   - **Access control** — Root, Admin, Moderator, Management
     - User management — `users.index`
@@ -163,37 +154,19 @@ php artisan db:seed --class=MenuSeeder
   - **Monitoring** — Root, Admin
     - Activity log — `activity-logs.index`
     - Error log — `error-logs.index`
-  - **vTual** — parent route `vtual.orphans.index`; Root, Admin, Moderator
-    - Orphan vTubers — `vtual.orphans.index`
-    - Claims queue — `vtual.claims.index`; Root, Admin, Moderator
-    - Managements — `vtual.managements.index`; Root, Admin (staff manage orgs; membership never grants this branch because the parent route is not in `MANAGEMENT_MEMBER_ROUTES`)
-    - Platform credentials — `vtual.platform-credentials.index` (Root, Admin)
   - **Settings** — Root, Admin (single hub for all `settings.*` groups)
     - Platform — `settings.platform`
     - Archivd — `settings.archivd`
     - Microstock — `settings.microstock`
-    - vTual — `settings.vtual`
     - Notification audiences — `notification-audiences.index`
     - Currencies — `currencies.index`
   - **Navigation** — Root, Admin, Moderator, Management
     - Menu list — `menus.index`
     - Trashed menus — `menus.trashed`
 
-Two nodes share the `vtual.claims.index` route: **My claims** (Products → vTual) is the owner side of the claims hub, **Claims queue** (Administration → vTual) the staff side. Both carry **stored roles**, so neither reaches the rule-6/rule-7 membership fallback: `vtual.claims.index` is not in `MANAGEMENT_MEMBER_ROUTES`, and an empty-role node it is not. A vTual role holder without `manage any vtual resource` therefore still reaches its own claims, while the staff *tab* inside the single view is what the permission gates — the view, the `claims/pending` endpoint and the `private-vtual.claims` channel all require the same permission. Do not collapse the two nodes into one: the audiences reach the screen from different sidebars.
+Navbar contains one **Home** shortcut using `dashboard`. Archivd stacks Domain Access and activation gates across its branches. Microstock remains discoverable through Services and the Archivd workspace switcher, with no dynamic-menu node.
 
-Navbar contains one **Home** shortcut using `dashboard`. Archivd and vTual parent routes stack Domain Access and activation gates across their branches. Microstock remains discoverable through Services and the Archivd workspace switcher, with no dynamic-menu node.
-
-### Canonical vtual tree (Valkivid3 public template)
-
-Guest-visible nodes, `audience => MenuAudience::All`, no roles — visible to everyone including unauthenticated visitors:
-
-- **Home** — `vtual.public`
-- **Directory** — `vtual.public` + `hash: #vtubers`
-- **Contents** — `vtual.public` + `hash: #contents`
-
-`hash` is a nullable column appended client-side by the SPA router (`router-link` `:to` includes `hash`), and `router.scrollBehavior` handles the in-page anchor. `hash` also discriminates the active-state marker in the Valkivid3 nav (`isVkNavActive`): because Home/Directory/Contents share the `vtual.public` route, a node with a `hash` is marked active only when `route.hash` matches, and a node without one only when the route has no hash. This keeps the public nav fully dynamic (managed via Menu CRUD) without hardcoding links in the Valkivid3 layout.
-
-No Debug fixture, Microstock node, or vTual Platform API Probe menu node is seeded. Platform API Probe is linked from Platform credentials index (`vtual.platform-credentials.probe`); probe is excluded from dynamic navigation.
+No Debug fixture or Microstock product node is seeded. `hash` is a nullable column appended client-side by the SPA router (`router-link` `:to` includes `hash`), and `router.scrollBehavior` handles the in-page anchor.
 
 Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module registry stays in [`config/domains.php`](../../../config/domains.php); RBAC catalog ownership remains separate (`domain_kind` on roles/permissions). Do not add menu schema merely to mirror those axes.
 
@@ -210,13 +183,11 @@ Menu mutations (create/update/delete/trash/restore) ping the `navigation.menus` 
 ## Tests
 
 - `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.
-- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 56-row sidebar/navbar/vtual tree, all-seven-locale (`en`/`id`/`ja`/`ko`/`zh_CN`/`ar`/`ru`) `name` translations, selected role pivots (both `vtual.managements.index` rows: Products member-only `[]`, Administration `['Admin','Root']`; `vtual.events.index` Products `[]`; both `vtual.claims.index` rows carry stored roles — Administration `['Admin','Moderator','Root']`, Products `['Vtual Admin','Vtual Editor','Vtual vTuber']`), vtual `hash` anchors, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
+- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 38-row sidebar/navbar tree, all-seven-locale (`en`/`id`/`ja`/`ko`/`zh_CN`/`ar`/`ru`) `name` translations, selected role pivots, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
 - `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederConformanceTest.php` asserts every seeded row satisfies the same rules the Store/Update FormRequests enforce (type enum, layout enum, h→p→c hierarchy with flat-layout `p` roots, parent-layout match, route via `SpaRouteRegistry`, hash/icon/name max lengths, all-locale non-empty `name`, audience validity + role-pivot invariant, contiguous sibling order) so editing a seeded node never trips validation.
 - `tests/Domain/Navigation/Unit/Enums/MenuAudienceTest.php` locks the four audience cases and their predicates (`allowsGuests`, `requiresUser`, `usesRoles`, `isGuestOnly`).
 - `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuTest.php` covers menu CRUD including SPA symbolic route acceptance and garbage route rejection, the audience default/round-trip and both audience error paths (`role` without roles, roles outside `role`), pivot clearing when the audience leaves `role`, plus `zh-CN` alias acceptance on translatable maps (store/update, mixed-key merge, unknown-locale rejection).
-- `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuLayoutTest.php` covers layout scoping (sidebar/navbar/vtual), parent-layout mismatch rejection, guest fetch of the vtual tree, and the `layouts` endpoint exposing the configured identifiers.
-- `tests/Domain/Navigation/Unit/Support/MenuLayoutTest.php` asserts the three configured layouts (`sidebar`/`navbar`/`vtual`) and the default.
+- `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuLayoutTest.php` covers layout scoping (sidebar/navbar), parent-layout mismatch rejection, and the `layouts` endpoint exposing the configured identifiers.
+- `tests/Domain/Navigation/Unit/Support/MenuLayoutTest.php` asserts the two configured layouts (`sidebar`/`navbar`) and the default.
 - `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` covers public/private product visibility, guests, privileged access, and empty-branch pruning.
 - `tests/Domain/Product/Feature/MenuVisibilityTest.php` covers authenticated product-activation visibility; its guest case is a rendering smoke test, not a guest tree assertion.
-- `tests/Domain/Navigation/Feature/ManagementMemberMenuVisibilityTest.php` covers the vTual management-membership visibility rule (rule 6) under the dual placement: members see the Products Managements node without staff roles, non-members and guests see neither, staff without membership see only the Administration node, staff with membership see both, and membership loss removes only the Products grant.
-- `tests/Domain/Vtual/Feature/Http/Controllers/API/V1/ManagementMembershipNavigationTest.php` locks `ManagementService` membership mutations (accept invite, cancel accepted invite, remove member): presented-tree invalidation for the affected viewer plus targeted `MenuTreeChanged` broadcast with `target_user_id`.

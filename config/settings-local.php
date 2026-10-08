@@ -18,20 +18,6 @@ return [
         'platform.notifications.delivery' => 'realtime',
         'archivd.download_vault.enabled' => true,
         'microstock.ai.http_retries' => 1,
-        'vtual.claim.accept_anyway_enabled' => true,
-        'vtual.claim.discord_verify_enabled' => true,
-        'vtual.channel_claim.accept_anyway_enabled' => true,
-        // Local vTual AI audit: the classifier needs `enabled` plus a model; the
-        // alias must exist in the endpoint catalogue (see below). The pass now
-        // decides both layers (music/non-music + sub-category), so the answer is
-        // longer than before. `max_tokens` / `timeout` are raised because the
-        // local alias is a reasoning model that spends the budget on reasoning
-        // tokens before it emits any JSON (the prod-safe literals are much
-        // tighter). Measured: 600 returned empty content on 4 of 5 videos.
-        'vtual.content_classification.ai.enabled' => true,
-        'vtual.content_classification.ai.model' => 'internal.sspn_misc',
-        'vtual.content_classification.ai.max_tokens' => 4_000,
-        'vtual.content_classification.ai.timeout' => 120,
         // Local Open WebUI model aliases + shorter stage timeouts (ops, not secrets).
         // Aliases must exist in the endpoint's `/api/models` catalogue — check with
         // `php scripts/ai/list_models.php` after changing them here.

@@ -22,9 +22,7 @@ return [
         // curated at 2026-09-23T13:18:49+07:00 — ko curation wave: register normalized to 해요체
         'inference_unregistered_model' => ':provider_slug의 미등록 모델 :resolved_model에 임시 요금이 적용되었습니다(1M당 입력 $:input_per_million_usd / 출력 $:output_per_million_usd). 최종 과금을 위해 모델 카탈로그에서 분류하세요.',
         // curated at 2026-09-23T11:22:13+07:00 — ko curation wave
-        'vtual_management_invite_received' => ':inviter님이 :management에 :role(으)로 초대했습니다.',
         // curated at 2026-09-23T11:22:13+07:00 — ko curation wave
-        'vtual_management_creator_invite_received' => ':inviter님이 vTuber 프로필을 :management에 연결하도록 초대했습니다.',
     ],
     'audiences' => [
         'list_success' => '알림 대상 목록을 불러왔습니다.',

@@ -29,9 +29,7 @@ return [
         // curated at 2026-09-21T17:00:09+07:00 — id curation wave
         'inference_unregistered_model' => 'Model :resolved_model yang belum terdaftar pada :provider_slug ditagih dengan tarif sementara ($:input_per_million_usd / $:output_per_million_usd per 1 juta token). Klasifikasikan di katalog model untuk menyelesaikan penagihan.',
         // curated at 2026-09-21T17:00:09+07:00 — id curation wave
-        'vtual_management_invite_received' => ':inviter mengundang Anda bergabung ke :management sebagai :role.',
         // curated at 2026-09-21T17:00:09+07:00 — id curation wave
-        'vtual_management_creator_invite_received' => ':inviter mengundang Anda menautkan profil vTuber Anda ke :management.',
     ],
     'audiences' => [
         // curated at 2026-09-21T17:00:09+07:00 — id curation wave

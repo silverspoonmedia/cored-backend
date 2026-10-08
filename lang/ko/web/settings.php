@@ -9,7 +9,6 @@ return [
         'platform' => '플랫폼',
         'archivd' => 'Archivd',
         'microstock' => 'Microstock',
-        'vtual' => 'vTual',
         'notification_audiences' => '알림 대상',
         'currencies' => '통화',
     ],
@@ -136,80 +135,23 @@ return [
         'microstock.ai.upstream.release_after_seconds' => '업스트림 슬롯 해제 시간(초)',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
         'microstock.csv_disk' => 'CSV 내보내기 디스크',
-        // vTual
-        'vtual.credential_test.http_timeout' => '자격 증명 테스트 HTTP 시간 초과(초)',
-        'vtual.credential_test.twitch_token_skew_seconds' => 'Twitch 토큰 허용 오차(초)',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        'vtual.credential_test.youtube_probe_channel_id' => 'YouTube 점검 채널 ID',
-        'vtual.credential.failover.enabled' => '자격 증명 장애 조치 활성화',
-        'vtual.credential.failover.auth_fail_threshold' => '장애 조치 인증 실패 임계값',
-        'vtual.credential.failover.skip_minutes' => '장애 조치 건너뛰기 시간(분)',
-        'vtual.credential.failover.max_retries_per_call' => '호출당 장애 조치 최대 재시도 횟수',
-        'vtual.http.timeout' => 'HTTP 시간 초과(초)',
-        'vtual.claim.ttl_hours' => '클레임 유효 기간(시간)',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.claim.verify_cooldown_seconds' => '클레임 검증 쿨다운(초)',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.claim.max_attempts' => '클레임 최대 검증 시도 횟수',
-        'vtual.claim.block_hours_after_max_attempts' => '최대 시도 후 클레임 차단 시간(시간)',
-        'vtual.claim.max_pending_per_user' => '사용자당 최대 대기 클레임 수',
-        'vtual.claim.accept_anyway_enabled' => '클레임 무조건 수락 활성화',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.claim.discord_verify_enabled' => 'Discord 클레임 검증 활성화',
-        'vtual.claim.token_prefix' => '클레임 토큰 접두사',
-        'vtual.claim.token_bytes' => '클레임 토큰 무작위 바이트 수',
-        'vtual.channel_claim.ttl_hours' => '채널 클레임 유효 기간(시간)',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.channel_claim.verify_cooldown_seconds' => '채널 클레임 검증 쿨다운(초)',
-        'vtual.channel_claim.max_attempts' => '채널 클레임 최대 시도 횟수',
-        'vtual.channel_claim.accept_anyway_enabled' => '채널 클레임 무조건 수락 활성화',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.channel_claim.discord_verify_enabled' => 'Discord 채널 클레임 검증 활성화',
-        'vtual.channel_claim.token_prefix' => '채널 클레임 토큰 접두사',
-        'vtual.channel_claim.token_bytes' => '채널 클레임 토큰 무작위 바이트 수',
-        'vtual.channel_pool.threshold' => '채널 풀 하한 임계값',
-        'vtual.channel_pool.max_wait_minutes' => '채널 풀 최대 대기 시간(분)',
-        'vtual.channel_pool.schedule_every_minutes' => '채널 풀 스케줄 간격(분)',
-        'vtual.channel_pool.resync_stale_hours' => '채널 풀 재동기화 유효 기간(시간)',
-        'vtual.channel_pool.resync_enqueue_limit' => '채널 풀 재동기화 큐 등록 한도',
-        'vtual.channel_pool.flush_lock_seconds' => '채널 풀 플러시 잠금(초)',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.claim_verify_pool.threshold' => '클레임 검증 풀 하한 임계값',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.claim_verify_pool.max_wait_minutes' => '클레임 검증 풀 최대 대기 시간(분)',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.claim_verify_pool.flush_lock_seconds' => '클레임 검증 풀 플러시 잠금(초)',
-        'vtual.content_pool.threshold' => '콘텐츠 풀 하한 임계값',
-        'vtual.content_pool.max_wait_minutes' => '콘텐츠 풀 최대 대기 시간(분)',
-        'vtual.content_pool.flush_lock_seconds' => '콘텐츠 풀 플러시 잠금(초)',
-        'vtual.feed_poll.interval_minutes' => '피드 폴링 간격(분)',
-        'vtual.live_poll.interval_minutes' => '라이브 CCV 폴링 간격(분)',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        'vtual.websub.lease_seconds' => 'WebSub 리스 기간(초)',
-        'vtual.websub.renew_before_hours' => 'WebSub 만료 전 갱신 시간(시간)',
-        'vtual.websub.max_body_bytes' => 'WebSub 알림 본문 최대 크기(바이트)',
-        'vtual.landing.event.title' => '랜딩 이벤트 제목',
-        'vtual.landing.event.starts_at' => '랜딩 이벤트 시작 시간',
-        'vtual.landing.event.body' => '랜딩 이벤트 본문',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        'vtual.content_classification.ai.enabled' => 'AI 감사 활성화(콘텐츠 분류)',
-        'vtual.content_classification.ai.model' => 'AI 감사 모델',
-        'vtual.content_classification.ai.max_tokens' => 'AI 감사 최대 응답 토큰',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        'vtual.content_classification.ai.timeout' => 'AI 감사 시간 제한(초)',
-        'vtual.content_classification.ai.min_confidence' => 'AI 감사 최소 신뢰도',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        'vtual.content_classification.ai.cache_ttl_hours' => 'AI 감사 결과 캐시(시간)',
-        'vtual.content_classification.ai.connection' => 'AI 감사 연결(비워두면 기본값)',
-        'vtual.incidents.enabled' => '인시던트 기록 활성화(vTual 연동 트리아지)',
         // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        'vtual.metrics.enabled' => '지표 기록 활성화(vTual 스냅샷)',
         // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        'vtual.metrics.channel_interval_minutes' => '채널 지표 간격(분)',
         // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        'vtual.metrics.content_interval_minutes' => '라이브 CCV 지표 간격(분)',
         // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        'vtual.metrics.retention_days' => '지표 기록 보존(일)',
     ],
     'hints' => [
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
@@ -226,7 +168,6 @@ return [
         'microstock.ai.thinking.connection' => '사고 단계가 사용할 AI 연결 슬러그(설정 → AI 연결)입니다. 비워두면 기본 연결을 사용합니다.',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
         'microstock.ai.upstream.window_seconds' => '업스트림 토큰 예산의 기준 창입니다(실제 제한은 동시 처리 상한으로 적용됩니다).',
-        'vtual.credential_test.youtube_probe_channel_id' => 'YouTube Data API 자격 증명 스모크 테스트에 사용되는 공개 채널 ID입니다.',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
         'platform.jwt.refresh_skew' => '액세스 토큰이 만료되기 전에 지정한 시간(분)만큼 미리 갱신합니다.',
         'platform.notifications.delivery' => '실시간 모드는 WebSocket을 사용하며 구성된 PUSHER_* / 브로드캐스트 자격 증명이 필요합니다. 그렇지 않으면 알림 벨이 HTTP 폴링으로 대체됩니다.',
@@ -242,16 +183,10 @@ return [
         'microstock.ai.stage.vision_grace_after' => '비전 단계가 유예 모드에 진입하기까지의 초입니다.',
         'microstock.ai.stage.thinking_grace_after' => '사고 단계가 유예 모드에 진입하기까지의 초입니다.',
         'microstock.ai.stage.thinking_backlog_after' => '사고 작업이 백로그 큐로 이동하기까지의 초입니다.',
-        'vtual.credential.failover.enabled' => '인증 실패가 반복되면 다음 자격 증명으로 전환합니다.',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.claim.accept_anyway_enabled' => '검증 결과가 불확실해도 사용자가 클레임을 수락할 수 있도록 허용합니다.',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.claim.discord_verify_enabled' => '사용자가 Discord에 연결된 YouTube/Twitch 계정을 매칭하여 고아 클레임을 검증할 수 있도록 허용합니다.',
         // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        'vtual.channel_claim.discord_verify_enabled' => '프로필 소유자가 Discord에 연결된 YouTube/Twitch 계정을 매칭하여 채널 연결 클레임을 검증할 수 있도록 허용합니다.',
-        'vtual.incidents.enabled' => 'vTual 연동 실패(WebSub, EventSub, 자격 증명, 수집)를 그룹화된 트리아지 가능 인시던트로 기록합니다. 플랫폼 전체 장애 중에는 대기열을 읽기 쉽게 유지하도록 끕니다.',
         // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        'vtual.metrics.enabled' => '새로 고칠 때마다 구독자 수·동시 시청자 수 표본을 기록 테이블에 추가합니다. 끄면 현재 값 열만 유지합니다.',
         'identity.discord.connections_snapshot_max_age_minutes' => '저장된 Discord 연결 스냅샷이 신뢰되는 기간입니다. 확인 실패 시 이 기간이 지나면 실시간 Discord API 새로고침이 트리거됩니다.',
     ],
     'options' => [

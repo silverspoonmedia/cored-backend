@@ -31,7 +31,6 @@ class DomainAccessSeederTest extends TestCase
     {
         return [
             'Archivd' => ['Archivd'],
-            'Vtual' => ['Vtual'],
         ];
     }
 

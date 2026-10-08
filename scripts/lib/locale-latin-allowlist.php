@@ -52,7 +52,7 @@ $machinePatterns = [
 
 $machine = [
     // Product and platform brands — never translated, per the glossary preamble.
-    'Archivd', 'vTual', 'Vtual', 'Microstock', 'Discord', 'YouTube', 'Twitch', 'Kick',
+    'Archivd', 'Microstock', 'Discord', 'YouTube', 'Twitch', 'Kick',
     'QRIS', 'iPaymu', 'Midtrans', 'Xendit', 'Doku', 'GoPay', 'OVO', 'Dana', 'ShopeePay',
     'LinkAja', 'Stripe', 'Snap', 'hCaptcha', 'reCAPTCHA', 'Railgun', 'FFmpeg', 'Monolith',
     'Shutterstock', 'Adobe', 'Getty', 'iStock', 'Dreamstime', 'Vecteezy', 'Freepik',

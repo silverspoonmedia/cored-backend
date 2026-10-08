@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
         $this->call(ArchivdRoleSeeder::class);
-        $this->call(VtualRoleSeeder::class);
         $this->call(MicrostockRoleSeeder::class);
         $this->call(DomainAccessSeeder::class);
         $this->call(NotificationTypeSettingSeeder::class);

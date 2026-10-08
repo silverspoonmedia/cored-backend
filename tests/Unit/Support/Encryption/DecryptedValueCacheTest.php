@@ -105,12 +105,12 @@ class DecryptedValueCacheTest extends TestCase
         $this->assertSame(2, Activity::query()->where('log_name', 'crypto')->count());
     }
 
-    public function test_vtual_platform_credentials_resource_uses_forever_ttl(): void
+    public function test_zero_resource_ttl_override_is_forever(): void
     {
         config([
             'encryption.decrypted_cache_max_ttl' => 86400,
             'encryption.decrypted_cache_ttl_by_resource_type' => [
-                'vtual_platform_credentials' => 0,
+                'invoices' => 0,
             ],
             'encryption.audit_decrypts' => 'cache_miss',
         ]);
@@ -126,10 +126,10 @@ class DecryptedValueCacheTest extends TestCase
         );
 
         $context = new DecryptionContext(
-            'vtual_platform_credentials',
+            'invoices',
             'cred-1',
             'secret_payload',
-            'vtual',
+            'invoices',
         );
         $this->assertSame(0, $service->resolveDecryptCacheTtl($context));
 
@@ -182,7 +182,7 @@ class DecryptedValueCacheTest extends TestCase
         config([
             'encryption.decrypted_cache_max_ttl' => 60,
             'encryption.decrypted_cache_ttl_by_resource_type' => [
-                'vtual_platform_credentials' => 0,
+                'invoices' => 0,
             ],
             'encryption.audit_decrypts' => 'cache_miss',
         ]);

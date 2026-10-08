@@ -52,7 +52,6 @@ return [
 
     // Product
     'Archivd' => ['kind' => 'product', 'locked' => true],
-    'Vtual' => ['kind' => 'product', 'locked' => true],
 
     // Subproduct (product with a parent)
     'Microstock' => ['kind' => 'product', 'locked' => true, 'parent' => 'Archivd'],

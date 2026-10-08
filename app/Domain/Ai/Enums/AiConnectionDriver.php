@@ -4,7 +4,7 @@ namespace App\Domain\Ai\Enums;
 
 /**
  * Wire shape of an AI connection. Only one today — the [OI]-compatible
- * chat-completions shape both Microstock and vTual already speak.
+ * chat-completions shape the platform already speaks.
  */
 enum AiConnectionDriver: string
 {

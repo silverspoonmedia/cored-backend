@@ -20,14 +20,8 @@ class DiscordAuthorizeUrlRequest extends FormRequest
         return [
             'intent' => ['required', 'string', Rule::in([
                 'profile',
-                'claim_verify',
-                'claim_channel',
-                'channel_claim_verify',
             ])],
             'return_path' => ['required', 'string', 'max:512'],
-            'slug' => ['required_if:intent,claim_verify,claim_channel,channel_claim_verify', 'nullable', 'string', 'max:128'],
-            'claim_id' => ['required_if:intent,claim_verify,channel_claim_verify', 'nullable', 'uuid'],
-            'channel_id' => ['required_if:intent,claim_channel', 'nullable', 'uuid'],
         ];
     }
 }

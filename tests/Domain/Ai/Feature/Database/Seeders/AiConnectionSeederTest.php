@@ -40,7 +40,6 @@ class AiConnectionSeederTest extends TestCase
             'ai.seed.path' => $this->sandbox.'/ai-connections.local.php',
             'microstock.ai.vision.model' => 'internal.vision',
             'microstock.ai.thinking.model' => 'internal.thinking',
-            'vtual.content_classification.ai.model' => 'vtual-audit',
         ]);
     }
 
@@ -104,7 +103,7 @@ class AiConnectionSeederTest extends TestCase
 
         $this->seed(AiConnectionSeeder::class);
 
-        $this->assertDatabaseCount('ai_connections', 3);
+        $this->assertDatabaseCount('ai_connections', 2);
 
         $vision = AiConnection::query()->where('slug', 'microstock-vision')->firstOrFail();
         $this->assertSame(AiConnectionStatus::Active, $vision->status);
@@ -119,14 +118,9 @@ class AiConnectionSeederTest extends TestCase
         $this->assertSame(AiConnectionStatus::Active, $thinking->status);
         $this->assertFalse($thinking->is_default);
 
-        $classify = AiConnection::query()->where('slug', 'vtual-classify')->firstOrFail();
-        $this->assertSame('vtual-audit', $classify->test_model);
-        $this->assertSame(AiConnectionStatus::Active, $classify->status);
-
         $snapshot = app(SystemSettingRepositoryInterface::class)->snapshot();
         $this->assertSame('microstock-vision', $snapshot['microstock.ai.vision.connection'] ?? null);
         $this->assertSame('microstock-thinking', $snapshot['microstock.ai.thinking.connection'] ?? null);
-        $this->assertSame('vtual-classify', $snapshot['vtual.content_classification.ai.connection'] ?? null);
 
         $this->assertSame('microstock-vision', app(AiConnectionResolver::class)->defaultSlug());
         $this->assertTrue(app(AiConnectionResolver::class)->configured('microstock-vision'));
@@ -150,28 +144,21 @@ class AiConnectionSeederTest extends TestCase
                 'binds' => ['microstock.ai.vision.connection'],
             ],
             'microstock-thinking' => [
-                'label' => 'Blank endpoint',
-                'endpoint' => '',
-                'api_key' => 'sk-thinking-key',
-                'binds' => ['microstock.ai.thinking.connection'],
-            ],
-            'vtual-classify' => [
                 'label' => 'Complete',
                 'endpoint' => 'https://ai.example.test/v1/chat/completions',
-                'api_key' => 'sk-vtual-key',
-                'binds' => ['vtual.content_classification.ai.connection'],
+                'api_key' => 'sk-thinking-key',
+                'binds' => ['microstock.ai.thinking.connection'],
             ],
         ]);
 
         $this->seed(AiConnectionSeeder::class);
 
         $this->assertDatabaseCount('ai_connections', 1);
-        $this->assertDatabaseHas('ai_connections', ['slug' => 'vtual-classify']);
+        $this->assertDatabaseHas('ai_connections', ['slug' => 'microstock-thinking']);
 
         $snapshot = app(SystemSettingRepositoryInterface::class)->snapshot();
-        $this->assertSame('vtual-classify', $snapshot['vtual.content_classification.ai.connection'] ?? null);
+        $this->assertSame('microstock-thinking', $snapshot['microstock.ai.thinking.connection'] ?? null);
         $this->assertArrayNotHasKey('microstock.ai.vision.connection', $snapshot);
-        $this->assertArrayNotHasKey('microstock.ai.thinking.connection', $snapshot);
     }
 
     #[Test]
@@ -180,14 +167,14 @@ class AiConnectionSeederTest extends TestCase
         $this->app['env'] = 'local';
         $this->seedActor();
 
-        config(['vtual.content_classification.ai.model' => '']);
+        config(['microstock.ai.thinking.model' => '']);
 
         $this->writeDataFile([
-            'vtual-classify' => [
+            'microstock-thinking' => [
                 'label' => 'No model',
                 'endpoint' => 'https://ai.example.test/v1/chat/completions',
-                'api_key' => 'sk-vtual-key',
-                'binds' => ['vtual.content_classification.ai.connection'],
+                'api_key' => 'sk-thinking-key',
+                'binds' => ['microstock.ai.thinking.connection'],
             ],
         ]);
 
@@ -204,23 +191,23 @@ class AiConnectionSeederTest extends TestCase
         $this->seedActor();
         $this->fakeProbeOk();
         $this->writeDataFile([
-            'vtual-classify' => [
+            'microstock-vision' => [
                 'label' => 'Typo binding',
                 'endpoint' => 'https://ai.example.test/v1/chat/completions',
-                'api_key' => 'sk-vtual-key',
+                'api_key' => 'sk-vision-key',
                 // Kept so the entry is not skipped for a missing test model —
                 // this test isolates the unknown-binding warning.
-                'test_model' => 'vtual-audit',
-                'binds' => ['vtual.content_classification.ai.conection'],
+                'test_model' => 'vision-audit',
+                'binds' => ['microstock.ai.vision.conection'],
             ],
         ]);
 
         $this->seed(AiConnectionSeeder::class);
 
-        $this->assertDatabaseHas('ai_connections', ['slug' => 'vtual-classify']);
+        $this->assertDatabaseHas('ai_connections', ['slug' => 'microstock-vision']);
 
         $snapshot = app(SystemSettingRepositoryInterface::class)->snapshot();
-        $this->assertArrayNotHasKey('vtual.content_classification.ai.conection', $snapshot);
+        $this->assertArrayNotHasKey('microstock.ai.vision.conection', $snapshot);
     }
 
     #[Test]
@@ -240,7 +227,7 @@ class AiConnectionSeederTest extends TestCase
 
         $this->seed(AiConnectionSeeder::class);
 
-        $this->assertDatabaseCount('ai_connections', 3);
+        $this->assertDatabaseCount('ai_connections', 2);
 
         $fresh = AiConnection::query()->where('slug', 'microstock-vision')->firstOrFail();
         $this->assertSame(AiConnectionStatus::Active, $fresh->status);
@@ -288,17 +275,17 @@ class AiConnectionSeederTest extends TestCase
         ]);
 
         $this->writeDataFile([
-            'vtual-classify' => [
+            'microstock-vision' => [
                 'label' => 'Rejected key',
                 'endpoint' => 'https://ai.example.test/v1/chat/completions',
                 'api_key' => 'sk-bad-key',
-                'binds' => ['vtual.content_classification.ai.connection'],
+                'binds' => ['microstock.ai.vision.connection'],
             ],
         ]);
 
         $this->seed(AiConnectionSeeder::class);
 
-        $connection = AiConnection::query()->where('slug', 'vtual-classify')->firstOrFail();
+        $connection = AiConnection::query()->where('slug', 'microstock-vision')->firstOrFail();
         $this->assertSame(AiConnectionStatus::Pending, $connection->status);
         $this->assertNull($connection->verified_at);
         $this->assertNotNull($connection->last_error_at);
@@ -306,7 +293,7 @@ class AiConnectionSeederTest extends TestCase
 
         // Still bound — the consumer reports "AI not configured" until Test passes.
         $snapshot = app(SystemSettingRepositoryInterface::class)->snapshot();
-        $this->assertSame('vtual-classify', $snapshot['vtual.content_classification.ai.connection'] ?? null);
+        $this->assertSame('microstock-vision', $snapshot['microstock.ai.vision.connection'] ?? null);
 
         // A pending row is never the default.
         $this->assertNull(app(AiConnectionResolver::class)->defaultSlug());
@@ -322,9 +309,9 @@ class AiConnectionSeederTest extends TestCase
 
         $this->seed(AiConnectionSeeder::class);
 
-        $this->assertDatabaseCount('ai_connections', 3);
+        $this->assertDatabaseCount('ai_connections', 2);
         $this->assertSame(
-            3,
+            2,
             AiConnection::query()->where('status', AiConnectionStatus::Pending->value)->count(),
         );
 
@@ -374,7 +361,7 @@ class AiConnectionSeederTest extends TestCase
         $this->fakeProbeOk();
 
         $this->seed(AiConnectionSeeder::class);
-        Http::assertSentCount(3);
+        Http::assertSentCount(2);
 
         // Re-registering clears the recorded requests; the 500 body is never
         // reached because every row is already active.
@@ -386,9 +373,9 @@ class AiConnectionSeederTest extends TestCase
 
         Http::assertNothingSent();
 
-        $this->assertDatabaseCount('ai_connections', 3);
+        $this->assertDatabaseCount('ai_connections', 2);
         $this->assertSame(
-            3,
+            2,
             AiConnection::query()->where('status', AiConnectionStatus::Active->value)->count(),
         );
     }
@@ -545,10 +532,10 @@ class AiConnectionSeederTest extends TestCase
 
         return [
             'connections' => [
-                'vtual-classify' => [
+                'microstock-vision' => [
                     'endpoint' => 'https://ai.example.test/v1/chat/completions',
-                    'api_key' => 'sk-vtual-key',
-                    'binds' => ['vtual.content_classification.ai.connection'],
+                    'api_key' => 'sk-vision-key',
+                    'binds' => ['microstock.ai.vision.connection'],
                 ],
             ],
         ];
@@ -556,11 +543,11 @@ class AiConnectionSeederTest extends TestCase
 
         $this->seed(AiConnectionSeeder::class);
 
-        $this->assertDatabaseHas('ai_connections', ['slug' => 'vtual-classify']);
-        $this->assertSame('sk-vtual-key', AiConnection::query()->firstOrFail()->secret_payload['api_key']);
+        $this->assertDatabaseHas('ai_connections', ['slug' => 'microstock-vision']);
+        $this->assertSame('sk-vision-key', AiConnection::query()->firstOrFail()->secret_payload['api_key']);
 
         $snapshot = app(SystemSettingRepositoryInterface::class)->snapshot();
-        $this->assertSame('vtual-classify', $snapshot['vtual.content_classification.ai.connection'] ?? null);
+        $this->assertSame('microstock-vision', $snapshot['microstock.ai.vision.connection'] ?? null);
     }
 
     #[Test]
@@ -720,12 +707,6 @@ class AiConnectionSeederTest extends TestCase
                     'endpoint' => 'https://ai.example.test/v1/chat/completions',
                     'api_key' => 'sk-thinking-key',
                     'binds' => ['microstock.ai.thinking.connection'],
-                ],
-                'vtual-classify' => [
-                    'label' => 'vTual content classification (local)',
-                    'endpoint' => 'https://ai.example.test/v1/chat/completions',
-                    'api_key' => 'sk-vtual-key',
-                    'binds' => ['vtual.content_classification.ai.connection'],
                 ],
             ],
         ];

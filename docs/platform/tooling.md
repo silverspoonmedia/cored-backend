@@ -48,7 +48,6 @@ Reproduce the `backend` job locally before pushing — same command, same in-mem
 
 ```bash
 php artisan test                 # whole suite; ~13 min on the dev machine, longer on a runner
-php artisan test --filter=Vtual  # the subset to iterate on while working
 ```
 
 A green run is `failed: 0`, **not** `passed == tests`: the suite ends with one skipped OCI KMS integration test, seven more cross-repo skips when the sibling checkout is absent, and one risky stdout report — all by design. The exact counts and why they must stay are in [reference-tooling.md](reference-tooling.md#a-green-run-is-failed-0).

@@ -7,7 +7,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Discord user connections API — full connection snapshot for identity + vTual discovery.
+ * Discord user connections API — full connection snapshot for identity.
  */
 class DiscordConnectionsClient
 {

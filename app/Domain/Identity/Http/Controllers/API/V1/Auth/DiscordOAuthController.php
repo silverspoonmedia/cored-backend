@@ -30,9 +30,6 @@ class DiscordOAuthController extends Controller
         $state = DiscordOAuthState::encode(
             (string) $user->id,
             (string) $validated['intent'],
-            isset($validated['slug']) ? (string) $validated['slug'] : null,
-            isset($validated['channel_id']) ? (string) $validated['channel_id'] : null,
-            isset($validated['claim_id']) ? (string) $validated['claim_id'] : null,
             $returnTo,
         );
 

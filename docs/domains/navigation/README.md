@@ -1,6 +1,6 @@
 # Navigation — dynamic menu tree
 
-Self-referential, orderable menus with RBAC, domain-access, product-activation and per-user visibility — the single source of the SPA sidebar, navbar and the Valkivid3 public template nav. `MenuSeeder` is the authoritative tree; admin CRUD edits it at runtime. Code: `app/Domain/Navigation/`. Invariants: [.cursor/rules/navigation-menus.mdc](../../../.cursor/rules/navigation-menus.mdc).
+Self-referential, orderable menus with RBAC, domain-access, product-activation and per-user visibility — the single source of the SPA sidebar and navbar. `MenuSeeder` is the authoritative tree; admin CRUD edits it at runtime. Code: `app/Domain/Navigation/`. Invariants: [.cursor/rules/navigation-menus.mdc](../../../.cursor/rules/navigation-menus.mdc).
 
 | Need | Path |
 |------|------|

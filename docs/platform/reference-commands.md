@@ -84,30 +84,11 @@ Domain data caches are forever + rebuild-on-miss + invalidate-on-change — [cac
 | `archivd:prune-stale-uploads` | Abort expired/S3-inactive pending multipart sessions; reclaim orphaned storage | [domains/archivd/README.md](../domains/archivd/README.md) |
 | `archivd:blocklist-hash` | Add/remove a sha256 from the DMCA hash blocklist | [domains/archivd/README.md](../domains/archivd/README.md) |
 
-## vTual (`vtual:*`)
-
-| Command | Purpose | Details |
-|---------|---------|---------|
-| `vtual:poll-channel-feeds` | Poll YouTube Atom feeds; enqueue new video ids for API hydrate | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:poll-live-contents` | Poll API for live contents (CCV snapshot + ended detection) | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:flush-channel-pool` | Flush channel fetch pool (batch platform channel snapshots; registration phase first) | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:flush-content-pool` | Flush content fetch pool (batch `videos.list` hydrate) | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:flush-claim-verify-pool` | Flush creator claim verify pool (queued bio verification) | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:renew-websub-subscriptions` | Renew YouTube WebSub subscriptions nearing lease expiry | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:repair-archived-websub` | Re-subscribe archived channels missing active WebSub (legacy repair) | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:backfill-initial-content` | One-time YouTube content backfill for an existing active channel | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:fetch-channel-content` | Fetch channel content and upsert into `vtual_contents` (POC) | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:classify-contents` | Backfill `content_type` / `content_category` on hydrated YouTube rows (`--chunk`, `--include-classified`, `--refresh` to recompute existing verdicts after a classifier change, `--ai`) | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:audit-content-ai` | Drain the `vtual_content_ai_audit` pool — AI resolves the rows the program classifier left incomplete (`--limit`, `--max-attempts`, `--stale-minutes`); scheduled every 5 min with `--limit=5` | [domains/vtual/README.md](../domains/vtual/README.md) |
-| `vtual:prune-fetch-pools` | Prune done/failed channel + content fetch pool rows past the retention window | [domains/vtual/README.md](../domains/vtual/README.md) |
-
-**Upstream retry (all of the above):** every platform read goes through `PlatformHttp`, which retries 429 / 5xx up to `vtual.http.retry.times` (default 3) with exponential backoff + full jitter, honouring a sane `Retry-After`, and raises a distinct quota-exhaustion error when the 429 survives the budget. Retry lives **inside one HTTP call** — the pool commands keep their own batch/attempt semantics, so a stalled pool never doubles its work. Each attempt logs to ErrorLog (`platform_http_retry_scheduled` / `platform_http_quota_exhausted` / `platform_http_failed`). Knobs: `vtual.http.retry.*` in [config/vtual.php](../../config/vtual.php); see [domains/vtual/reference-ingestion.md — Upstream retry and backoff](../domains/vtual/reference-ingestion.md#upstream-retry-and-backoff-429--5xx).
-
 ## AI
 
 | Command | Purpose | Details |
 |---------|---------|---------|
-| `ai:import-legacy-env` | One-time import of the former `MICROSTOCK_AI_*` / `VTUAL_AI_CLASSIFY_*` env pairs into `ai_connections` rows + consumer slug bindings (`--dry-run`, `--skip-test`, `--actor=`). Read-only alias helpers (not Artisan): `php scripts/ai/list_models.php`, `php scripts/ai/probe_models.php` | [domains/ai/README.md](../domains/ai/README.md) |
+| `ai:import-legacy-env` | One-time import of the former `MICROSTOCK_AI_*` env pairs into `ai_connections` rows + consumer slug bindings (`--dry-run`, `--skip-test`, `--actor=`). Read-only alias helpers (not Artisan): `php scripts/ai/list_models.php`, `php scripts/ai/probe_models.php` | [domains/ai/README.md](../domains/ai/README.md) |
 
 ## Microstock
 

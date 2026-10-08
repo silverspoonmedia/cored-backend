@@ -11,9 +11,8 @@ use Illuminate\Support\Facades\Cache;
  * Single entry point for consumers that need to *call* AI.
  *
  * Contract:
- * - Never throws. `null` means "no usable AI connection" — every current
- *   consumer (Microstock stage, vTual classifier) already has a
- *   "not configured" branch and must keep working without one.
+ * - Never throws. `null` means "no usable AI connection" — every consumer
+ *   already has a "not configured" branch and must keep working without one.
  * - Resolution order: explicit slug (per-consumer binding) → `is_default` row.
  * - Only `active` rows resolve. `pending` (never probed / edited since) and
  *   `disabled` never do.

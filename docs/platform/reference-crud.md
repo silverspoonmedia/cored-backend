@@ -58,7 +58,6 @@ Do **not** copy-paste full rule arrays between Store/Update. Prefer domain `Http
 | Identity users | `UserMutationRules` (assignable roles + password once) |
 | Microstock | `MicrostockRequestRules` (collection lock, metadata, workspace, credentials) |
 | Product activations | `ProductActivationRequestRules` (admin filters, suspend/approve/reject) |
-| Vtual | `VtualRequestRules` (external links, creator/management store vs update, credential secrets, invite email) |
 | Inference | `InferenceCatalogRules` (provider/model-card slug uniqueness, store vs update `display_name`) |
 | Translatable locale maps | `App\Support\Localization\Concerns\ValidatesTranslatableInput` (`zh-CN` → `zh_CN` canonicalization, all-locale requirement, empty-map opt-out) — [reference-localization.md](reference-localization.md#translatable-payload-maps) |
 

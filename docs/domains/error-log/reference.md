@@ -30,7 +30,7 @@ flowchart LR
 - Anything while `platform.errorlog.enabled` is off (Settings → Platform)
 - Nested writes while the recorder is already active (recursion guard)
 
-Domains may still call `ErrorLogRecorder::recordLog()` for **intentional ops signals** that are not thrown as reportable exceptions — e.g. vTual `PlatformErrorLogger` for platform HTTP / credential Test failures (`PlatformApiException` is a BRE and would be skipped by `recordException`).
+Domains may still call `ErrorLogRecorder::recordLog()` for **intentional ops signals** that are not thrown as reportable exceptions — e.g. an upstream HTTP failure or a credential Test that the domain classifies as a business-rule error (a `BusinessRuleException` is skipped by `recordException`).
 
 ## Fingerprint grouping
 
@@ -117,7 +117,7 @@ php artisan db:seed --class=RoleSeeder   # adds view error log + syncs Root/Admi
 php artisan db:seed --class=MenuSeeder   # authoritative rebuild; removes custom menus
 ```
 
-`MenuSeeder` fails fast on missing roles (`RuntimeException` naming them), so seed `RoleSeeder` + `ArchivdRoleSeeder` + `VtualRoleSeeder` first on any database that does not already have the full role catalog.
+`MenuSeeder` fails fast on missing roles (`RuntimeException` naming them), so seed `RoleSeeder` + `ArchivdRoleSeeder` first on any database that does not already have the full role catalog.
 
 ## Safety
 

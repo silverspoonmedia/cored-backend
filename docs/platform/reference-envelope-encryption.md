@@ -40,7 +40,6 @@ Current map:
 
 | resourceType | TTL |
 |--------------|-----|
-| `vtual_platform_credentials` | `0` (forever until secret/runtime rewrite / `markFailed` / flush) |
 | `activity_log` | `900` (audit-trail PII: rows are immutable, so plaintext in cache is bounded, never forever) |
 | (all others) | global `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` (default `0`) |
 
@@ -57,7 +56,6 @@ Envelope JSON v1: `v`, `alg`, `kms_key_id`, `dek_ciphertext`, `iv`, `tag`, `ciph
 | attachments | `cached_url` |
 | password_reset_tokens | token + blind index |
 | cache | `2fa_token:*` values only |
-| vtual_platform_credentials | `secret_payload`, `runtime_payload` (purpose `vtual`; forever decrypt cache; runtime = system tokens e.g. Twitch app access) |
 | activity_log | `properties` keys `ip_address`, `user_agent`, `email` (per-key selective; every other key stays plaintext) |
 
 ## Env (encryption)

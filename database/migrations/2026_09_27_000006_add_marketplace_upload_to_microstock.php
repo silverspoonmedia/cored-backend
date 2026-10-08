@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\Schema;
  * Two additions, both driven by the same decision record:
  *
  * 1. `microstock_marketplace_credentials` gains the columns every other
- *    credential store in this app already has (`vtual_platform_credentials`):
- *    a status, the last error, and the last-use/verification timestamps. Without
- *    them the credentials page can only show that a row exists — not whether the
- *    host accepted it, which is the one thing an owner needs before uploading.
+ *    credential store in this app already has: a status, the last error, and the
+ *    last-use/verification timestamps. Without them the credentials page can only
+ *    show that a row exists — not whether the host accepted it, which is the one
+ *    thing an owner needs before uploading.
  * 2. `microstock_marketplace_uploads` records each **attempt**. The upload is a
  *    copy-out (nothing local is moved or deleted), so this row is the audit
  *    trail and the status the SPA renders.

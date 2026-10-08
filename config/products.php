@@ -38,17 +38,6 @@ return [
         'fulfillment_target' => 'archivd',
         'menu_routes' => ['archivd.index'],
     ],
-    'Vtual' => [
-        'activation_type' => 'implicit',
-        'fulfillment_target' => null,
-        'menu_routes' => [
-            'vtual.orphans.index',
-            'vtual.claims.index',
-            'vtual.platform-credentials.index',
-            'vtual.profiles.index',
-            'vtual.profiles.show',
-        ],
-    ],
     'Microstock' => [
         'activation_type' => 'implicit',
         // Subproduct of Archivd (config/domains.php: 'parent' => 'Archivd').

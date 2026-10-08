@@ -17,8 +17,6 @@ return [
         'service_subscription_expired' => 'Льготный период вашей подписки на :service истёк. Применяются лимиты бесплатного тарифа (удалено файлов: :deleted).',
         // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
         'inference_unregistered_model' => 'Незарегистрированная модель :resolved_model у :provider_slug тарифицирована по предварительным ставкам ($:input_per_million_usd / $:output_per_million_usd за 1 млн токенов). Классифицируйте её в каталоге моделей, чтобы завершить оплату.',
-        'vtual_management_invite_received' => ':inviter пригласил вас присоединиться к :management в роли :role.',
-        'vtual_management_creator_invite_received' => ':inviter пригласил вас привязать ваш профиль vTuber к :management.',
     ],
     'audiences' => [
         'list_success' => 'Аудитории уведомлений загружены.',

@@ -16,10 +16,9 @@ return [
     // the model it knows how to reach.
     'default_test_model' => '',
 
-    // Per-consumer bindings are Tier B settings (Settings → Microstock / vTual):
+    // Per-consumer bindings are Tier B settings (Settings → Microstock):
     //   microstock.ai.vision.connection
     //   microstock.ai.thinking.connection
-    //   vtual.content_classification.ai.connection
     // Empty = use the connection flagged `is_default`.
 
     /*
@@ -38,7 +37,6 @@ return [
         'binding_models' => [
             'microstock.ai.vision.connection' => 'microstock.ai.vision.model',
             'microstock.ai.thinking.connection' => 'microstock.ai.thinking.model',
-            'vtual.content_classification.ai.connection' => 'vtual.content_classification.ai.model',
         ],
     ],
 ];

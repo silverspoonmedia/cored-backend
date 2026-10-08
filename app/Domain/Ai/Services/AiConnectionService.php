@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
 /**
  * Lifecycle for AI connections.
  *
- * Test gate mirrors vTual platform credentials: nothing is resolvable until a
+ * Test gate: nothing is resolvable until a
  * manual Test succeeds. Any edit that touches the secret or the endpoint
  * demotes the row back to `pending`.
  */

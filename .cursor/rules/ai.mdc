@@ -8,7 +8,7 @@ alwaysApply: false
 
 Core domain for **where** we call AI, with which key and which timeout/retry. It owns the connection, never the price — token rates live in [inference.mdc](inference.mdc).
 
-- **Never reintroduce per-consumer AI env keys.** `MICROSTOCK_AI_VISION_*`, `MICROSTOCK_AI_THINKING_*` and `VTUAL_AI_CLASSIFY_*` are retired; the keys are removed from `EnvironmentVariableCatalog` and all `.env.*.example`, guarded by `SettingRegistryEnvPolicyTest`. Run `php artisan ai:import-legacy-env [--dry-run]` to migrate an old install, then `php artisan env:curate --sync-snapshot`.
+- **Never reintroduce per-consumer AI env keys.** `MICROSTOCK_AI_VISION_*` and `MICROSTOCK_AI_THINKING_*` are retired; the keys are removed from `EnvironmentVariableCatalog` and all `.env.*.example`, guarded by `SettingRegistryEnvPolicyTest`. Run `php artisan ai:import-legacy-env [--dry-run]` to migrate an old install, then `php artisan env:curate --sync-snapshot`.
 - A connection is **Tier C** (`ai_connections`, envelope-encrypted `secret_payload`), never `.env`, never a registry setting. `config/ai.php` holds non-secret defaults only.
 - **Consumers bind by slug** through Tier B settings (`{consumer}.ai.*.connection`, empty string = default connection) and keep their own model/timeout/max_tokens knobs. A consumer must never read the endpoint or key directly.
 - **Test gate: nothing resolves until a manual Test passes.** Create → `pending`; Test success → `active` + `verified_at`; Test failure → status unchanged with `last_error_at`/`last_error_message`. Editing secret/endpoint/driver demotes to `pending` and clears `verified_at`; editing only label/model/timeouts does not. `disabled → active` keeps `verified_at` — no re-Test.

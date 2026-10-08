@@ -19,7 +19,7 @@ This file is the **cross-repo contract**: cookies, CSRF, headers, envelopes, `SP
 |------|------|
 | Backend envelope | [api-envelope.md](../platform/api-envelope.md) · aggregation rules [api-aggregation.md](../platform/api-aggregation.md) |
 | Response minimization | [reference-security.md — response data minimization](../platform/reference-security.md#response-data-minimization-mandatory) |
-| Per-domain API surfaces | [archivd](../domains/archivd/README.md) · [microstock](../domains/microstock/README.md) · [vtual](../domains/vtual/README.md) · [payment-gateway](../domains/payment-gateway/README.md) · [identity](../domains/identity/README.md) |
+| Per-domain API surfaces | [archivd](../domains/archivd/README.md) · [microstock](../domains/microstock/README.md) · [payment-gateway](../domains/payment-gateway/README.md) · [identity](../domains/identity/README.md) |
 | Orientation | [project-overview.md](project-overview.md) |
 | Pakem | [context-budget.mdc](../../.cursor/rules/context-budget.mdc) · [task-scope.mdc](../../.cursor/rules/task-scope.mdc) |
 | Deep dive | [reference-vue-workers-spa.md](reference-vue-workers-spa.md) — architecture, direct API + CORS, invocation budget, `SPA_URL` minting, contract gotchas, type alignment, realtime channel inventory |

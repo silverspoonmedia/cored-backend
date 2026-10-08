@@ -7,8 +7,8 @@ name: CI
 #   `backend` — the backend test suite (`php artisan test`), which is where the
 #               domain suites live. Before this job existed, `ci.yml` ran only
 #               `--filter=Locale`, so a change that broke `tests/Domain/**` could
-#               merge green: the vTual domain alone is 60+ feature test files that
-#               never executed on the runner.
+#               merge green: a single product domain alone is 60+ feature test files
+#               that never executed on the runner.
 #
 # An earlier version of `locale` checked out `monolith-vue-workers` as a sibling so
 # the four cross-repo guards (`locale-prose-scan`, `locale-rawkey-scan`,

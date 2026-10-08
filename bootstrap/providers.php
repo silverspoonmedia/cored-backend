@@ -12,7 +12,6 @@ use App\Providers\Domain\NavigationServiceProvider;
 use App\Providers\Domain\NotificationServiceProvider;
 use App\Providers\Domain\PaymentGatewayServiceProvider;
 use App\Providers\Domain\ServiceServiceProvider;
-use App\Providers\Domain\VtualServiceProvider;
 use App\Providers\DomainAccessServiceProvider;
 use App\Providers\EncryptionServiceProvider;
 use App\Providers\ProductServiceProvider;
@@ -39,6 +38,5 @@ return [
 
     // Product domains (kind=product). domain:make appends; keep product last.
     ArchivdServiceProvider::class,
-    VtualServiceProvider::class,
     MicrostockServiceProvider::class,
 ];

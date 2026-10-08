@@ -11,7 +11,7 @@ use Illuminate\Validation\Validator;
  * Shared menu hierarchy rules:
  *  - structural integrity: header(h) is a root, parent(p) sits under a header,
  *    child(c) sits under a parent (strict h -> p -> c nesting); flat template
- *    layouts (navbar, vtual) allow parentless `p` roots;
+ *    layouts (navbar) allow parentless `p` roots;
  *  - cycle safety: a menu may not be re-parented under one of its descendants;
  *  - audience integrity: role restrictions belong to the `role` audience only.
  */
@@ -19,8 +19,8 @@ trait ValidatesMenuStructure
 {
     /**
      * Each type must sit directly under a parent exactly one rank higher.
-     * Exception: navbar and vtual layouts are flat template trees whose roots
-     * are parentless `p` nodes (no headers); only the sidebar enforces a
+     * Exception: the navbar layout is a flat template tree whose roots are
+     * parentless `p` nodes (no headers); only the sidebar enforces a
      * header root.
      */
     private const EXPECTED_PARENT_TYPE = ['h' => null, 'p' => 'h', 'c' => 'p'];

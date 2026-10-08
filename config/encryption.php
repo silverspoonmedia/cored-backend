@@ -41,7 +41,6 @@ return [
     | Keys not listed fall back to decrypted_cache_max_ttl.
     */
     'decrypted_cache_ttl_by_resource_type' => [
-        'vtual_platform_credentials' => 0,
         // Audit-trail PII (activity_log.properties) is admin-read only and
         // immutable per row — keep plaintext in cache bounded, never forever.
         'activity_log' => 900,

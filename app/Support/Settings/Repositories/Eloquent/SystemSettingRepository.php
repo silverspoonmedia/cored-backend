@@ -60,8 +60,6 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
 
     public function upsertMany(array $values, ?string $updatedByUserId = null): void
     {
-        $touchesVtualLanding = false;
-
         foreach ($values as $key => $rawValue) {
             $definition = SettingRegistry::get((string) $key);
 
@@ -80,17 +78,9 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
                     'updated_by' => $updatedByUserId,
                 ],
             );
-
-            if (str_starts_with((string) $key, 'vtual.landing.')) {
-                $touchesVtualLanding = true;
-            }
         }
 
         $this->rebuildCache();
-
-        if ($touchesVtualLanding) {
-            \App\Domain\Vtual\Support\PublicLandingCache::flush();
-        }
     }
 
     /**

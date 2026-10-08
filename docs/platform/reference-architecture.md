@@ -9,7 +9,7 @@ Do **not** collapse taxonomy, lifecycle and composition into one label.
 | Term | Axis | Meaning |
 |------|------|---------|
 | **Core domain** | Taxonomy (`kind`) | Foundation. Without it the app does not run well (Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service, Inference, Ai). |
-| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (Archivd, Vtual, Microstock). Extends core (Identity, H-RBAC, payments, …). |
+| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (Archivd, Microstock). Extends core (Identity, H-RBAC, payments, …). |
 | **Subproduct domain** | Composition (`parent`) | A product domain that extends another **product** domain: `'parent' => 'Archivd'` (Microstock is the only one). It is **not** a third `kind` value — a subproduct is still a full product with its own key, activation, RBAC, SKU, namespace and `uninstall.json`. Only the removal order changes: `domain:remove` refuses a parent while a registered child points at it. |
 | **`locked`** | Lifecycle (product only) | `domain:remove` refuses until you set `'locked' => false` in [`config/domains.php`](../../config/domains.php). |
 | **Removable** | Derived | Product with `locked => false`. Not a config key. |
@@ -24,7 +24,7 @@ Do **not** collapse taxonomy, lifecycle and composition into one label.
 | Kind | Examples | `domain:remove` |
 |------|----------|-----------------|
 | **Core** | Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service, Inference, Ai + Kernel | **Always refused** — `PLATFORM_CORE`; flipping `kind` in config does nothing |
-| **Product + locked** | Default for `domain:make`; Archivd, Vtual | Refused until `'locked' => false` in config |
+| **Product + locked** | Default for `domain:make`; Archivd | Refused until `'locked' => false` in config |
 | **Product + removable** | `domain:make --removable` | Allowed (`--force`) |
 | **Subproduct + locked** | `'parent' => 'Archivd'`; Microstock | Same as product **plus** a composition guard: refused while a registered child points here |
 
@@ -38,7 +38,6 @@ Removal then reads that domain's [`uninstall.json`](#domain-uninstall-manifest).
 // config/domains.php
 'Identity' => ['kind' => 'core'],
 'Archivd' => ['kind' => 'product', 'locked' => true],
-'Vtual' => ['kind' => 'product', 'locked' => true],
 'Microstock' => ['kind' => 'product', 'locked' => true, 'parent' => 'Archivd'],
 // removable product: ['kind' => 'product', 'locked' => false]
 ```
@@ -74,7 +73,7 @@ Implementation: [`DomainManager`](../../app/Support/Domain/DomainManager.php), `
 
 ## Domain uninstall manifest
 
-A product domain records everything it touched outside `app/Domain/{Name}/` in **one file inside the domain**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. `domain:make` scaffolds it, it dies with the domain, and `domain:remove` executes it — so removing a domain is reading one reviewed map instead of re-auditing the tree. Only product domains have one; core domains are refused before a manifest is ever read. The sample below is illustrative — `Blog` is not a live domain (it was removed 2026-10-02); the three current manifests are Archivd, Vtual and Microstock.
+A product domain records everything it touched outside `app/Domain/{Name}/` in **one file inside the domain**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. `domain:make` scaffolds it, it dies with the domain, and `domain:remove` executes it — so removing a domain is reading one reviewed map instead of re-auditing the tree. Only product domains have one; core domains are refused before a manifest is ever read. The sample below is illustrative — `Blog` is not a live domain (it was removed 2026-10-02); the two current manifests are Archivd and Microstock.
 
 ```json
 {
@@ -146,6 +145,8 @@ The scan runs in both directions: `--draft-manifest` turns it into a candidate m
 
 Machine-local files are out of scope. A `.gitignore`d override (for example `database/seeders/data/*.local.php`) exists on one machine and not in a clean checkout, so scanning it would make the manifest — and the guard — depend on who runs them; a backend path has no "unverifiable" escape the way an absent sibling checkout does. The reference is neither scanned nor recorded, and a hand edit such an override still needs goes in `notes[]`.
 
+**Size is a silent blind spot.** The scanner reads files up to `UninstallReferenceScanner::MAX_FILE_BYTES` (2 MB) and skips anything larger without a warning, so a big sidecar can sit unscanned for months and then surface the moment a removal shrinks it under the cap. That is what happened on 2026-10-07: the SPA `src/i18n/curation-log.json` was 2.06 MB, the vTual key drop took it to 1.44 MB, and the drift guard started reporting Archivd and Microstock references in it for the first time. Both manifests now carry an `ignore` entry for it. Treat a large generated sidecar as **unscanned, not clean** — either add the `ignore` entry up front with the reason, or raise the cap deliberately.
+
 ### Day-2 workflow
 
 ```powershell
@@ -174,7 +175,6 @@ app/
 │   ├── ActivityLog/    # Spatie audit trail (core)
 │   ├── ErrorLog/       # Grouped persistent app errors (core)
 │   ├── Archivd/        # Nested files, chunk S3 upload, Drive-lite share (product, locked)
-│   ├── Vtual/          # Creator aggregator foundation (product, locked)
 │   ├── Microstock/     # Microstock asset mgmt on Archivd system workspace (product, locked; subproduct of Archivd)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   ├── Service/        # Catalog, entitlements, DB FX→IDR, Archivd grace/purge (core)
@@ -197,7 +197,7 @@ Tests: `tests/Domain/{Domain}/` (PHPUnit suite `Domain`).
 
 API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/web.php` → `routes/web/{domain}.php`.
 
-**Web URI layout:** The Blade admin is removed. Authenticated UI lives in the SPA under `/apps/*` paths (Vue Router symbolic names like `dashboard`, `archivd.index` — stored in menu rows, validated via `config/spa-routes.php`). Monolith `web` routes are **server endpoints only**: `GET /` → SPA redirect; public share `/s/*`; iPaymu return; Discord OAuth callback. API paths (`/api/v1/*`) are unchanged. Root product path `/vtual` is the Vue-Workers public landing (plus `/vtual/vtubers/{slug}`). See [blade-admin.md](../web/blade-admin.md) and [vue-workers-spa.md](../integration/vue-workers-spa.md).
+**Web URI layout:** The Blade admin is removed. Authenticated UI lives in the SPA under `/apps/*` paths (Vue Router symbolic names like `dashboard`, `archivd.index` — stored in menu rows, validated via `config/spa-routes.php`). Monolith `web` routes are **server endpoints only**: `GET /` → SPA redirect; public share `/s/*`; iPaymu return; Discord OAuth callback. API paths (`/api/v1/*`) are unchanged. See [blade-admin.md](../web/blade-admin.md) and [vue-workers-spa.md](../integration/vue-workers-spa.md).
 
 **Loader convention (presentation only):** list **core** requires first, **product** last, with short `// Core` / `// Product` comment sections. Same order in `bootstrap/providers.php` and `config/domains.php`. Does **not** change API URL paths or route names. `domain:make` still appends into the `/apps` auth group; re-order once if a new product lands mid-file. Guest/public web specials stay outside kind sections — those groups are auth surface, not taxonomy.
 
@@ -213,7 +213,6 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `payment-gateway.php` | Gateways, invoices, subscriptions | core |
 | `service.php` | Service catalog, checkout, service purchases | core |
 | `archivd.php` | Archivd (auth + public share) folders/files/uploads | product |
-| `vtual.php` | vTual creators, managements, channels (foundation) | product |
 | `microstock.php` | Microstock (API + thin web entry; Archivd mounts most UI) | product — subproduct of Archivd |
 
 Kernel product registry (`app/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
