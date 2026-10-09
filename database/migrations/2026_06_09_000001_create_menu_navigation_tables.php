@@ -1,9 +1,19 @@
 <?php
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Menu navigation, squashed.
+ *
+ * The `is_authenticate` / `is_guest_only` boolean pair is gone: `audience`
+ * carries the axis explicitly (role restrictions live inside it as `role`).
+ * Translatable `name` / `description` are JSON from the start, and `layout`
+ * partitions the ordering key so the sidebar and any future layout order
+ * independently.
+ */
 return new class extends Migration
 {
     /**
@@ -19,25 +29,29 @@ return new class extends Migration
         Schema::create('menus', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('parent_id')->nullable();
-            $table->string('name');
+            $table->string('layout', 32)->default('sidebar');
             $table->string('icon')->nullable();
             $table->string('route')->nullable();
+            // Content hash used by the seeder to detect a changed menu row.
+            $table->string('hash', 64)->nullable();
+            // Localized {locale: string} maps, resolved by the API resource.
+            $table->json('name')->nullable();
+            $table->json('description')->nullable();
             // h = header, p = parent, c = child.
             $table->char('type', 1);
-            // Position within a (parent_id, type) sibling group. Nullable on
-            // purpose: an active row always holds a distinct integer, while
-            // soft-deleted (and transiently reordered) rows are parked at NULL
-            // so they never collide with the unique index below. Multiple NULLs
-            // are allowed by SQL unique semantics on every supported engine.
+            // Position within a (layout, parent_id, type) sibling group. Nullable
+            // on purpose: an active row always holds a distinct integer, while
+            // soft-deleted (and transiently reordered) rows are parked at NULL so
+            // they never collide with the unique index below. Multiple NULLs are
+            // allowed by SQL unique semantics on every supported engine.
             $table->unsignedInteger('order')->nullable();
-            $table->boolean('is_authenticate')->nullable();
-            $table->boolean('is_guest_only')->nullable();
+            $table->string('audience', 16)->default(MenuAudience::Auth->value);
             $table->softDeletes();
             $table->timestamps();
 
             // Enforce the ordering invariant at the database level for active rows.
             $table->index('parent_id', 'menus_parent_id_index');
-            $table->unique(['parent_id', 'type', 'order']);
+            $table->unique(['layout', 'parent_id', 'type', 'order']);
         });
 
         Schema::table('menus', function (Blueprint $table): void {

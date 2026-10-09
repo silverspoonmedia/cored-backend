@@ -396,20 +396,12 @@
                     "reason": "hand edit: review the Microstock reference and drop it (line 10, 114, 117, 118, 119, 121)"
                 },
                 {
-                    "path": "database/migrations/2026_07_25_200001_add_kind_to_archivd_workspaces.php",
-                    "reason": "owned by the Archivd domain: this migration leaves with Archivd's own uninstall, nothing to do here (line 9)"
-                },
-                {
-                    "path": "database/migrations/2026_07_26_100001_add_collection_fields_to_archivd_folders.php",
-                    "reason": "owned by the Archivd domain: this migration leaves with Archivd's own uninstall, nothing to do here (line 8, 9)"
+                    "path": "database/migrations/2026_07_15_100001_create_archivd_tables.php",
+                    "reason": "owned by the Archivd domain: this migration leaves with Archivd's own uninstall, nothing to do here (line 12, 30, 85)"
                 },
                 {
                     "path": "database/migrations/2026_08_01_120001_create_inference_pricing_tables.php",
                     "reason": "shipped migration: the Microstock value it writes is purged by data.rows; migrations are never edited (line 62, 78)"
-                },
-                {
-                    "path": "database/migrations/2026_08_01_150001_unknown_model_billing_schema.php",
-                    "reason": "shipped migration: the Microstock value it writes is purged by data.rows; migrations are never edited (line 19, 37, 48, 53, 60)"
                 },
                 {
                     "path": "database/seeders/AiConnectionSeeder.php",
@@ -1239,6 +1231,10 @@
                     "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 79)"
                 },
                 {
+                    "path": "src/pages/index.tsx",
+                    "reason": "hand edit (docs site): the homepage meta description names Microstock — reword it (line 36)"
+                },
+                {
                     "path": "src/components/HomepageFeatures/index.tsx",
                     "reason": "hand edit (docs site): review the Microstock reference and drop it (line 19)"
                 }
@@ -1256,16 +1252,7 @@
             "microstock_daily_free_usage"
         ],
         "migrations": [
-            "database/migrations/2026_07_25_200002_create_microstock_asset_metadata_table.php",
-            "database/migrations/2026_07_25_200003_create_microstock_marketplace_credentials_table.php",
-            "database/migrations/2026_07_26_000001_remove_microstock_menu.php",
-            "database/migrations/2026_07_26_100002_add_error_to_microstock_asset_metadata.php",
-            "database/migrations/2026_07_27_100001_add_category_description_to_microstock_asset_metadata.php",
-            "database/migrations/2026_07_28_100001_create_microstock_ai_billing_tables.php",
-            "database/migrations/2026_07_28_120001_add_analysis_stages_to_microstock_asset_metadata.php",
-            "database/migrations/2026_07_28_140001_add_billing_run_tracking_to_microstock.php",
-            "database/migrations/2026_07_28_160001_add_microstock_daily_free_trial.php",
-            "database/migrations/2026_09_27_000006_add_marketplace_upload_to_microstock.php"
+            "database/migrations/2026_07_25_200002_create_microstock_tables.php"
         ],
         "rbac": {
             "permissions": [
