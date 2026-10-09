@@ -24,7 +24,7 @@ Kernel and cross-cutting topics. Each entry is a brief; the deep dive holds the 
 | [settings.md](settings.md) | `system_settings` registry, Settings UI | [reference-settings.md](reference-settings.md) |
 | [cache-policy.md](cache-policy.md) | Forever cache + explicit invalidation | — |
 | [octane.md](octane.md) | Long-lived worker safety | — |
-| [database-safety.md](database-safety.md) | Dev-DB wipe prevention, migration portability | — |
+| [database-safety.md](database-safety.md) | Dev-DB wipe prevention, migration portability, development-phase migration baseline | — |
 | [tooling.md](tooling.md) | Pint usage, gate list | [reference-tooling.md](reference-tooling.md) |
 
 ## Security & language

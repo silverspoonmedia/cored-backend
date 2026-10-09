@@ -35,6 +35,7 @@
 | `settings.mdc` | `app/Support/Settings/**`, `config/settings*.php`, `*SettingsSeeder.php` — snapshot chain, permissions, labels |
 | `security.mdc` | `config/cors.php`, `bootstrap/app.php`, `app/Http/Middleware/**`, `app/Support/Security/**` — perimeter + audit procedure |
 | `database-safety.mdc` | `database/**`, `app/Domain/**/Models/**`, `tests/**`, `phpunit.xml` — UUID v7 PKs, destructive commands |
+| `migration-baseline.mdc` | `database/**`, `app/Domain/**/Models/**` — edit the owning migration in place, no alter/data migration (dev phase, deleted at production) |
 | `octane.mdc` | Any file under `app/**` (long-lived worker safety) |
 | `cache-policy.mdc` | `app/Domain/**`, `app/Support/**` — cache lifetime and invalidation |
 | `navigation-menus.mdc` | Menu seeder, tree, visibility gates, navigation cache |

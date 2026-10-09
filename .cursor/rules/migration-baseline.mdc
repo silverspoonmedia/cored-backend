@@ -1,0 +1,43 @@
+---
+description: Development-phase migration baseline — change the migration that owns the table instead of adding an alter or data migration
+globs: database/**,app/Domain/**/Models/**,tests/**,phpunit.xml,composer.json
+alwaysApply: false
+---
+
+# Migration baseline (development phase only)
+
+**This rule is deleted when the project reaches production.** From then on migrations are append-only history and this policy is wrong. Until then `database/migrations` is a *baseline*, not a log: one create migration per owning group (framework, permission, navigation, each product).
+
+## Change the migration, never add one
+
+Any schema change — add/drop/rename a column, change a type or nullability, add/drop an index or unique, add/drop a foreign key — is written **into the migration that creates the table**. Never a new `add_*_to_*`, `drop_*_from_*` or `change_*` migration; never an alter in a new file.
+
+- New table → one new `<timestamp>_create_<name>_table.php`, timestamped so FK order stays valid.
+- A value a seeder or `config/**` already owns → no migration at all.
+- No data migration, not even a one-off backfill.
+
+## Table order is the FK contract
+
+Migrations run in filename order. When table B needs an FK to table A and B's create runs first, the FK is declared in **A's** migration via `Schema::table('b', …)->foreign(…)` — the pattern in [2026_08_01_120001_create_inference_pricing_tables.php](../../database/migrations/2026_08_01_120001_create_inference_pricing_tables.php) adding the FKs on `microstock_ai_usage_events`. Never renumber an existing file to fix order.
+
+## Shape of a baseline migration
+
+- `up()` = the final DDL, written as if the table never existed.
+- `down()` = `Schema::dropIfExists()` only. No backfill, no NULL check, no restore.
+- Portability, UUID v7 PKs, `foreignUuid`, bounded strings, no driver-specific enums stay owned by [database-safety.mdc](database-safety.mdc) — this rule does not restate them.
+
+## After every change
+
+```sh
+ALLOW_DESTRUCTIVE_DB=true php artisan migrate:fresh --seed
+```
+
+Prove the schema, never eyeball it: `mysqldump --no-data --skip-comments --skip-dump-date --skip-add-drop-table --databases monolith` before and after must differ **only** in the `migrations` table, and `information_schema.columns` / `.statistics` / `.key_column_usage` must match column-for-column. `composer test` (SQLite) covers `MigrationPortabilityTest` and `DomainUninstallManifestTest`.
+
+## Product domains
+
+A migration creating a product-domain table is listed in `app/Domain/{Product}/uninstall.json` under `data.migrations` in the same task. A stale entry fails `DomainUninstallManifestTest`.
+
+## When this rule is deleted
+
+At production: delete this file, drop its row from [AGENTS.md](../../AGENTS.md), keep `database-safety.mdc` as-is. Nothing in code or in `database-safety.mdc` depends on it.
