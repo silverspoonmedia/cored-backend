@@ -1,4 +1,0 @@
-$f = $this->databaseTree(MenuLayout::SIDEBAR);
-file_put_contents(sys_get_temp_dir().'/sidebar_actual.json', json_encode($f, JSON_PRETTY_PRINT));
-$this->assertSame([],
-    array_diff_key($f, $f));
