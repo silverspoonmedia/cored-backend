@@ -347,24 +347,8 @@
                     "reason": "hand edit: review the Archivd reference and drop it (line 9, 39, 42, 46, 49, 54)"
                 },
                 {
-                    "path": "database/migrations/2026_07_19_140000_allow_multiple_owned_workspaces.php",
-                    "reason": "shipped migration: the Archivd value it writes is purged by data.rows; migrations are never edited (line 19, 32, 36, 40, 49, 57)"
-                },
-                {
-                    "path": "database/migrations/2026_07_25_200002_create_microstock_asset_metadata_table.php",
-                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 14)"
-                },
-                {
-                    "path": "database/migrations/2026_07_26_000001_remove_microstock_menu.php",
-                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 9)"
-                },
-                {
-                    "path": "database/migrations/2026_07_28_100001_create_microstock_ai_billing_tables.php",
-                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 38, 39)"
-                },
-                {
-                    "path": "database/migrations/2026_09_27_000006_add_marketplace_upload_to_microstock.php",
-                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 38)"
+                    "path": "database/migrations/2026_07_25_200002_create_microstock_tables.php",
+                    "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 58, 61, 64, 71, 109)"
                 },
                 {
                     "path": "database/seeders/MenuSeeder.php",
@@ -1072,6 +1056,10 @@
                     "reason": "hand edit (docs site): review the Archivd reference and drop it (line 38, 42, 44)"
                 },
                 {
+                    "path": "src/pages/index.tsx",
+                    "reason": "hand edit (docs site): the homepage meta description names Archivd — reword it (line 36)"
+                },
+                {
                     "path": "src/components/HomepageFeatures/index.tsx",
                     "reason": "hand edit (docs site): review the Archivd reference and drop it (line 19)"
                 }
@@ -1091,21 +1079,7 @@
             "archivd_workspaces"
         ],
         "migrations": [
-            "database/migrations/2026_07_15_100001_create_archivd_tables.php",
-            "database/migrations/2026_07_15_200001_add_stats_and_signed_url_to_archivd_files.php",
-            "database/migrations/2026_07_15_210001_add_visibility_to_archivd_tables.php",
-            "database/migrations/2026_07_16_000004_create_archivd_user_quotas_table.php",
-            "database/migrations/2026_07_19_100001_create_archivd_workspaces_tables.php",
-            "database/migrations/2026_07_25_100001_add_resume_columns_to_archivd_uploads.php",
-            "database/migrations/2026_07_25_100002_add_prune_indexes_to_archivd_uploads.php",
-            "database/migrations/2026_07_25_100003_drop_resume_columns_from_archivd_uploads.php",
-            "database/migrations/2026_07_25_100004_add_checksum_index_to_archivd_files.php",
-            "database/migrations/2026_07_25_100005_create_archivd_hash_blocklist_table.php",
-            "database/migrations/2026_07_25_200001_add_kind_to_archivd_workspaces.php",
-            "database/migrations/2026_07_26_100001_add_collection_fields_to_archivd_folders.php",
-            "database/migrations/2026_07_28_200001_create_archivd_file_variants_table.php",
-            "database/migrations/2026_07_31_070319_add_collection_billing_mode_to_archivd_folders.php",
-            "database/migrations/2026_08_22_000001_update_archivd_chunk_size_to_8mb.php"
+            "database/migrations/2026_07_15_100001_create_archivd_tables.php"
         ],
         "rbac": {
             "permissions": [

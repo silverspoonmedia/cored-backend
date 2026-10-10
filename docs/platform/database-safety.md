@@ -21,6 +21,12 @@ php artisan migrate:rollback --step=1
 
 `tests/Unit/Database/MigrationPortabilityTest.php` covers generated MySQL/PostgreSQL DDL without opening a live database. `composer test` remains SQLite-only and must stay protected by the existing destructive-command guard.
 
+## Squashed baseline (pre-production)
+
+While the project is unreleased, `database/migrations` is a **baseline**, not a log: one create migration per owning group (framework, permission, navigation, each product), no `alter` and no data migration. A column or index that arrives later is added to the create that owns the table, and the DB is rebuilt with `migrate:fresh --seed`; nothing backfills, because seeders and `config/**` own the final values. `app/Domain/{Product}/uninstall.json` lists the migrations that survive under `data.migrations` — the drift guard fails on a stale entry.
+
+The policy, the FK-order contract, and the DDL-diff verification recipe are owned by [migration-baseline.mdc](../../.cursor/rules/migration-baseline.mdc). It is temporary: deleted when the project reaches production, after which migrations become append-only history.
+
 ## Defense layers
 
 0. `composer test` → `config:clear`
@@ -48,4 +54,4 @@ Default sign-in: `admin@example.com` / `123456789`. Invoices are **not** recreat
 | Config | `config/database.php`, `phpunit.xml`, `ALLOW_DESTRUCTIVE_DB` |
 | Commands | `composer test`, `db:migration-diagnose`, `db:seed`, `migrate:rollback` |
 | Tests | `tests/Unit/Database/MigrationPortabilityTest.php` |
-| Pakem | [database-safety.mdc](../../.cursor/rules/database-safety.mdc) |
+| Pakem | [database-safety.mdc](../../.cursor/rules/database-safety.mdc) · [migration-baseline.mdc](../../.cursor/rules/migration-baseline.mdc) |

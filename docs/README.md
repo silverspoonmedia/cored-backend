@@ -41,7 +41,7 @@ Every living brief is listed in this index; narrative, audits and progress track
 | [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
 | [localization.md](platform/localization.md) | Locale list, resolution order, parity guards, curation tooling |
 | [naming-conventions.md](platform/naming-conventions.md) | Settled translation terms per locale + drift logs (glossary) |
-| [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, migration portability, tests |
+| [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, migration portability, migration baseline, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
 | [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, response minimization, CORS perimeter |
 | [envelope-encryption.md](platform/envelope-encryption.md) | Tiered crypto, OCI KMS, decrypt cache, P0 columns |

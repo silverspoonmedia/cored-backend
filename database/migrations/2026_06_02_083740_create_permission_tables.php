@@ -4,11 +4,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Spatie permission tables, squashed.
+ *
+ * `domain_kind` (core|product RBAC catalog) and `level` (H-RBAC ladder) are part
+ * of the baseline instead of arriving as two later alters. `level` is only
+ * unique inside a `domain_kind` — a null level (beta tester roles) stays out of
+ * the ladder, and `unique(domain_kind, level)` is what enforces that.
+ */
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         $teams = config('permission.teams');
@@ -24,8 +29,10 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('guard_name');
+            $table->string('domain_kind', 32)->default('core');
             $table->timestamps();
 
+            $table->index('domain_kind');
             $table->unique(['name', 'guard_name']);
         });
 
@@ -37,12 +44,18 @@ return new class extends Migration
             }
             $table->string('name');
             $table->string('guard_name');
+            $table->string('domain_kind', 32)->default('core');
+            // Null keeps beta-tester roles out of the ladder.
+            $table->unsignedInteger('level')->nullable();
             $table->timestamps();
+
+            $table->index('domain_kind');
             if ($teams || config('permission.testing')) {
                 $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
             } else {
                 $table->unique(['name', 'guard_name']);
             }
+            $table->unique(['domain_kind', 'level']);
         });
 
         Schema::create($tableNames['model_has_permissions'], static function (Blueprint $table) use ($tableNames, $columnNames, $pivotPermission, $teams) {
@@ -113,9 +126,6 @@ return new class extends Migration
             ->forget(config('permission.cache.key'));
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         $tableNames = config('permission.table_names');

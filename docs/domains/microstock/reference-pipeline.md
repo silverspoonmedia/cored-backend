@@ -4,7 +4,7 @@
 
 ## Collections (folder-as-collection lifecycle)
 
-A **folder** inside a Microstock workspace is a **collection** — the unit the AI processes. Uploads must live inside a collection, never the workspace root. Collection state lives directly on `ARCHIVD_folders` (migration `2026_07_26_100001`), driven by `App\Domain\Archivd\Enums\CollectionStatus` and `App\Domain\Microstock\Services\CollectionService`.
+A **folder** inside a Microstock workspace is a **collection** — the unit the AI processes. Uploads must live inside a collection, never the workspace root. Collection state lives directly on `ARCHIVD_folders` (the `collection_*` columns of `2026_07_15_100001_create_archivd_tables.php`), driven by `App\Domain\Archivd\Enums\CollectionStatus` and `App\Domain\Microstock\Services\CollectionService`.
 
 ```mermaid
 flowchart LR
