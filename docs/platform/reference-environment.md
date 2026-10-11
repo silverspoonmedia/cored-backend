@@ -127,6 +127,7 @@ Never bare `config:cache` without verify. After secret changes: `config:rebuild`
 |----------|-------|--------------------|
 | `APP_DEBUG` | true | false |
 | `SESSION_SECURE_COOKIE` / encrypt | false | true |
+| OCI KMS credentials | `.oci/testing/` + testing vault pair | `production`: `.oci/production/` + production vault pair; `staging` uses the testing folder and pair |
 | `HCAPTCHA_SITEKEY` / `HCAPTCHA_SECRET` | optional / false | required when enabled in Settings |
 | Cache/queue | database | redis |
 | Tier B settings seed | `LocalSettingsSeeder` + [settings-local.php](../../config/settings-local.php) (after `SettingsSeeder`) | `SettingsSeeder` + config literals only |

@@ -42,7 +42,6 @@ final class EnvironmentVariableCatalog
             'APP_FAKER_LOCALE' => self::TYPE_STRING,
             'APP_MAINTENANCE_DRIVER' => self::TYPE_STRING,
             'BCRYPT_ROUNDS' => self::TYPE_INT,
-            'OCI_CONFIG_FILE' => self::TYPE_STRING,
             'OCI_PROFILE' => self::TYPE_STRING,
             'OCI_KMS_KEY_ID' => self::TYPE_STRING,
             'OCI_KMS_CRYPTO_ENDPOINT' => self::TYPE_STRING,

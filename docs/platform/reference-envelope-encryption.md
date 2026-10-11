@@ -70,12 +70,25 @@ Envelope JSON v1: `v`, `alg`, `kms_key_id`, `dek_ciphertext`, `iv`, `tag`, `ciph
 
 ## OCI connectivity
 
+Credentials live in **one folder per profile**, chosen by `APP_ENV`, not by a path in `.env`:
+
+| `APP_ENV` | Folder | Vault |
+|---|---|---|
+| `production` | `.oci/production/` | production KEK |
+| `local`, `staging`, `testing` | `.oci/testing/` | testing KEK |
+
+`OciConfigPath::configFile(env('APP_ENV'))` resolves `{base}/.oci/{production|testing}/config` at config load, so `env:switch` moves the credentials with the profile — nothing is copied into a shared `.oci/config`. Each folder is self-contained: its own `config` plus `oci_api_key.pem`, with `key_file` relative so it resolves next to the config. The folder is gitignored; the vault **pair** below is not, so it is committed per profile template.
+
 | Variable | Purpose |
 |----------|---------|
-| `OCI_CONFIG_FILE`, `OCI_PROFILE` | SDK config (Windows: forward slashes) |
-| `OCI_KMS_KEY_ID` | Master key OCID |
-| `OCI_KMS_CRYPTO_ENDPOINT` | Vault **crypto** endpoint |
+| `OCI_PROFILE` | Profile section inside the config file (default `DEFAULT`) |
+| `OCI_KMS_KEY_ID` | Master key OCID, per profile |
+| `OCI_KMS_CRYPTO_ENDPOINT` | Vault **crypto** endpoint, per profile |
 | `OCI_HTTP_TIMEOUT` | default 15s |
+
+A config file may be the one `oci setup config` writes, as-is: OCI emits `#` comments and PHP's INI parser only accepts `;`, so `OciConfigLoader` normalizes the comment marker before parsing (and converts a parse warning into the config failure, exit `1`).
+
+`OCI_KMS_KEY_ID` and `OCI_KMS_CRYPTO_ENDPOINT` must belong to the **same vault**. A key from one vault with another vault's crypto endpoint authenticates fine and then answers `404 NotAuthorizedOrNotFound` — the endpoint is what identifies the vault, not the key. A truncated key OCID answers `400 InvalidParameter`. Keep the pair aligned with the folder: `.oci/testing/` pairs with the testing vault, `.oci/production/` with the production one.
 
 ```bash
 php artisan oci:kms-verify          # generateDek probe

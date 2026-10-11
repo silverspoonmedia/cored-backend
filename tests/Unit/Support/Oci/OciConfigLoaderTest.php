@@ -53,6 +53,38 @@ class OciConfigLoaderTest extends TestCase
         );
     }
 
+    public function test_load_parses_oci_generated_config_with_hash_comments(): void
+    {
+        config([
+            'oci.config_file' => $this->fixtureDir.'/config-hash-comments',
+            'oci.profile' => 'DEFAULT',
+            'oci.kms_key_id' => 'ocid1.key.ap-singapore-1.example',
+            'oci.kms_crypto_endpoint' => 'https://example-crypto.kms.ap-singapore-1.oraclecloud.com',
+        ]);
+
+        $config = (new OciConfigLoader)->load();
+
+        $this->assertSame('ocid1.tenancy.oc1..aaaaaaaaexampletenancy', $config->tenancy);
+        $this->assertSame('ocid1.user.oc1..aaaaaaaaexampleuser', $config->user);
+        $this->assertSame('aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99', $config->fingerprint);
+        $this->assertSame('ap-singapore-1', $config->region);
+        $this->assertSame($this->fixtureDir.DIRECTORY_SEPARATOR.'test_api_key.pem', $config->privateKeyPath);
+    }
+
+    public function test_configuration_error_reports_unparsable_config_instead_of_throwing(): void
+    {
+        config([
+            'oci.config_file' => $this->fixtureDir.'/config-malformed',
+            'oci.profile' => 'DEFAULT',
+            'oci.kms_key_id' => 'ocid1.key.ap-singapore-1.example',
+            'oci.kms_crypto_endpoint' => 'https://example-crypto.kms.ap-singapore-1.oraclecloud.com',
+        ]);
+
+        $error = (new OciConfigLoader)->configurationError();
+
+        $this->assertSame('OCI config file could not be parsed.', $error['message']);
+    }
+
     public function test_is_configured_returns_false_when_kms_key_id_missing(): void
     {
         config([
