@@ -17,7 +17,7 @@ class OciConfigLoader
         $cryptoEndpoint = config('oci.kms_crypto_endpoint');
 
         if (! is_string($configFile) || $configFile === '') {
-            return ['message' => 'OCI_CONFIG_FILE is not set.'];
+            return ['message' => 'OCI config file path is not configured.'];
         }
 
         if (! is_string($profile) || $profile === '') {
@@ -33,7 +33,7 @@ class OciConfigLoader
         }
 
         if (! is_file($configFile)) {
-            return ['message' => 'OCI config file does not exist.'];
+            return ['message' => "OCI config file does not exist: {$configFile}."];
         }
 
         try {
@@ -43,7 +43,7 @@ class OciConfigLoader
         }
 
         if (! is_readable($ociConfig->privateKeyPath)) {
-            return ['message' => 'OCI API private key file is not readable.'];
+            return ['message' => "OCI API private key file is not readable: {$ociConfig->privateKeyPath}."];
         }
 
         return null;
@@ -64,7 +64,7 @@ class OciConfigLoader
         }
 
         if (! is_file($configFile)) {
-            throw new RuntimeException('OCI config file does not exist.');
+            throw new RuntimeException("OCI config file does not exist: {$configFile}.");
         }
 
         $parsed = $this->parseConfigFile($configFile);
@@ -84,7 +84,7 @@ class OciConfigLoader
         $privateKeyPath = $this->resolveKeyFilePath($configFile, $keyFile);
 
         if (! is_readable($privateKeyPath)) {
-            throw new RuntimeException('OCI API private key file is not readable.');
+            throw new RuntimeException("OCI API private key file is not readable: {$privateKeyPath}.");
         }
 
         return new OciConfig(

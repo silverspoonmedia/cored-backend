@@ -1,8 +1,12 @@
 <?php
 
+use App\Support\Oci\OciConfigPath;
+
 return [
 
-    'config_file' => env('OCI_CONFIG_FILE'),
+    // Derived from APP_ENV, not set per environment: production reads
+    // .oci/production/, everything else reads .oci/testing/. See OciConfigPath.
+    'config_file' => OciConfigPath::configFile(env('APP_ENV')),
 
     'profile' => env('OCI_PROFILE', 'DEFAULT'),
 
