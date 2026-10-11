@@ -77,6 +77,10 @@ Envelope JSON v1: `v`, `alg`, `kms_key_id`, `dek_ciphertext`, `iv`, `tag`, `ciph
 | `OCI_KMS_CRYPTO_ENDPOINT` | Vault **crypto** endpoint |
 | `OCI_HTTP_TIMEOUT` | default 15s |
 
+`OCI_CONFIG_FILE` may be the file `oci setup config` writes, as-is: OCI emits `#` comments and PHP's INI parser only accepts `;`, so `OciConfigLoader` normalizes the comment marker before parsing (and converts a parse warning into the config failure, exit `1`).
+
+`OCI_KMS_KEY_ID` and `OCI_KMS_CRYPTO_ENDPOINT` must belong to the **same vault**. A key from one vault with another vault's crypto endpoint authenticates fine and then answers `404 NotAuthorizedOrNotFound` — the endpoint is what identifies the vault, not the key.
+
 ```bash
 php artisan oci:kms-verify          # generateDek probe
 php artisan encryption:migrate-p0

@@ -67,11 +67,7 @@ class OciConfigLoader
             throw new RuntimeException('OCI config file does not exist.');
         }
 
-        $parsed = parse_ini_file($configFile, true, INI_SCANNER_RAW);
-
-        if ($parsed === false) {
-            throw new RuntimeException('OCI config file could not be parsed.');
-        }
+        $parsed = $this->parseConfigFile($configFile);
 
         if (! isset($parsed[$profile]) || ! is_array($parsed[$profile])) {
             throw new RuntimeException("OCI profile [{$profile}] was not found in the config file.");
@@ -98,6 +94,43 @@ class OciConfigLoader
             privateKeyPath: $privateKeyPath,
             region: $region,
         );
+    }
+
+    /**
+     * OCI writes its generated config with `#` comments, but PHP's INI parser
+     * (PHP 7+) only accepts `;` — a `#` line is read as a key, so a comment such
+     * as `# Generated … (ap-singapore-1).` fails with "unexpected '('". Normalize
+     * before parsing so a vendor-generated file loads as-is.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function parseConfigFile(string $configFile): array
+    {
+        $contents = @file_get_contents($configFile);
+
+        if ($contents === false) {
+            throw new RuntimeException('OCI config file could not be read.');
+        }
+
+        $contents = preg_replace('/^([ \t]*)#/m', '$1;', $contents);
+
+        // A malformed line raises a warning that Laravel's error handler turns
+        // into an ErrorException; callers catch RuntimeException, so convert it
+        // here and let the config failure keep its own exit code.
+        set_error_handler(static fn (): bool => true);
+
+        try {
+            $parsed = parse_ini_string((string) $contents, true, INI_SCANNER_RAW);
+        } finally {
+            restore_error_handler();
+        }
+
+        if ($parsed === false) {
+            throw new RuntimeException('OCI config file could not be parsed.');
+        }
+
+        /** @var array<string, array<string, string>> $parsed */
+        return $parsed;
     }
 
     /**

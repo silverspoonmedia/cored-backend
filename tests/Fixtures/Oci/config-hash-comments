@@ -1,0 +1,10 @@
+# OCI generated config, exactly as the OCI CLI writes it.
+# Generated 2026-10-11. API credentials for tenancy example (ap-singapore-1).
+# Paired KMS resources (for app reference, not used by OCI CLI auth itself):
+# Key "example-kek" (AES-256, software, 1 version): ocid1.key.oc1.ap-singapore-1.example
+[DEFAULT]
+user=ocid1.user.oc1..aaaaaaaaexampleuser
+fingerprint=aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99
+tenancy=ocid1.tenancy.oc1..aaaaaaaaexampletenancy
+region=ap-singapore-1
+key_file=test_api_key.pem
