@@ -52,11 +52,11 @@ $machinePatterns = [
 
 $machine = [
     // Product and platform brands — never translated, per the glossary preamble.
-    'Archivd', 'Microstock', 'Discord', 'YouTube', 'Twitch', 'Kick',
+    'Archivd', 'Microstock', 'Discord', 'YouTube', 'Twitch',
     'QRIS', 'iPaymu', 'Midtrans', 'Xendit', 'Doku', 'GoPay', 'OVO', 'Dana', 'ShopeePay',
     'LinkAja', 'Stripe', 'Snap', 'hCaptcha', 'reCAPTCHA', 'Railgun', 'FFmpeg', 'Monolith',
     'Shutterstock', 'Adobe', 'Getty', 'iStock', 'Dreamstime', 'Vecteezy', 'Freepik',
-    'Depositphotos', 'Frankfurter', 'Pusher', 'WebSub', 'Laravel', 'Redis', 'Slack', 'Sentry',
+    'Depositphotos', 'Frankfurter', 'Pusher', 'Laravel', 'Redis', 'Slack', 'Sentry',
     'Vault', 'Bootstrap', 'Icons', 'Router',
     // Example IDs a user has to replace with their own value.
     'abc123', 'def456',
@@ -72,7 +72,7 @@ $machine = [
     'CDN', 'DNS', 'IP', 'IPv4', 'IPv6', 'MAC', 'USD', 'IDR', 'IANA', 'UTC', 'GMT', 'ISO',
     'RFC', 'WWW', 'FAQ', 'KYC', 'AML', 'VAT', 'NIB', 'PDF', 'CSV', 'XLSX', 'ZIP', 'PNG',
     'JPEG', 'WebP', 'GIF', 'SVG', 'ICO', 'AVIF', 'MP4', 'WebM', 'HLS', 'RTMP', 'HMAC', 'AES',
-    'RSA', 'TLS', 'SSL', 'TTL', 'DMCA', 'S3', 'R2', 'OAuth', 'Bearer', 'Helix', 'PHP', 'Vue',
+    'RSA', 'TLS', 'SSL', 'TTL', 'DMCA', 'S3', 'R2', 'OAuth', 'Bearer', 'PHP', 'Vue',
     'SPA', 'QR', 'PG', 'VA', 'TOTP', 'MVP', 'HEX', 'SHA', 'YAML', 'yaml',
     'sha256', 'SIGNATURE', 'env', 'regex', 'enum', 'cron', 'webhook', 'Webhook', 'px',
     'Data', 'OpenAI',
