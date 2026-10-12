@@ -6,8 +6,8 @@ return [
     'discord_heading' => 'Discord',
     // curated at 2026-09-21T17:12:47+07:00 — id curation wave
     'discord_connected' => 'Akun Discord Anda sudah terhubung.',
-    // curated at 2026-09-21T17:12:47+07:00 — id curation wave
-    'discord_not_connected' => 'Hubungkan Discord untuk menautkan akun YouTube dan Twitch dari profil Discord Anda.',
+    // curated at 2026-10-12T12:56:26+07:00 — id curation wave
+    'discord_not_connected' => 'Hubungkan Discord untuk menautkan akun dari profil Discord Anda.',
     'discord_connect' => 'Hubungkan Discord',
     'discord_disconnect' => 'Putuskan Discord',
     // curated at 2026-09-21T17:12:47+07:00 — id curation wave
@@ -21,8 +21,8 @@ return [
     // curated at 2026-09-21T17:12:47+07:00 — id curation wave
     'discord_not_configured' => 'OAuth Discord belum dikonfigurasi di server ini.',
     'linked_accounts_heading' => 'Platform tertaut di Discord',
-    // curated at 2026-09-21T17:12:47+07:00 — id curation wave
-    'linked_accounts_empty' => 'Belum ada akun YouTube atau Twitch yang tertaut di profil Discord Anda.',
+    // curated at 2026-10-12T12:56:26+07:00 — id curation wave
+    'linked_accounts_empty' => 'Belum ada akun yang tertaut di profil Discord Anda.',
     'linked_verified' => 'Terverifikasi',
     'linked_unverified' => 'Belum terverifikasi',
     'linked_revoked' => 'Dicabut',

@@ -5,7 +5,8 @@ return [
     'card_title' => '連携アカウント',
     'discord_heading' => 'Discord',
     'discord_connected' => 'Discordアカウントは連携済みです。',
-    'discord_not_connected' => 'Discordを連携して、DiscordプロフィールのYouTubeおよびTwitchアカウントをリンクしてください。',
+    // curated at 2026-10-12T12:56:26+07:00 — ja curation wave
+    'discord_not_connected' => 'Discordプロフィールのアカウントをリンクするには、Discordを連携してください。',
     'discord_connect' => 'Discordを連携',
     'discord_disconnect' => 'Discordの連携を解除',
     'discord_disconnected' => 'Discordの連携を解除しました。',
@@ -15,7 +16,8 @@ return [
     'discord_callback_invalid' => 'Discordの認可に失敗しました。もう一度お試しください。',
     'discord_not_configured' => 'このサーバーではDiscord OAuthが設定されていません。',
     'linked_accounts_heading' => 'Discordにリンクされたプラットフォーム',
-    'linked_accounts_empty' => 'DiscordプロフィールにYouTubeまたはTwitchアカウントがまだリンクされていません。',
+    // curated at 2026-10-12T12:56:26+07:00 — ja curation wave
+    'linked_accounts_empty' => 'Discordプロフィールにリンクされたアカウントはまだありません。',
     'linked_verified' => '認証済み',
     'linked_unverified' => '未認証',
     'linked_revoked' => '取り消し済み',
