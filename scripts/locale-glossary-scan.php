@@ -72,7 +72,11 @@ const FORBIDDEN = [
         'биллинг' => 'оплата',
         'зонд' => 'проверка',
         'Имперсонац' => 'Войти под пользователем',
-        'хэндл' => 'хендл',
+        // `хэндл` → `хендл` used to sit here. Both forms are gone: `хендл` was the
+        // `ru` rendering of the channel *handle*, which the 2026-10-07 product-domain
+        // sunset deleted along with the domain, so the ban enforced a term the corpus
+        // no longer has. The remaining `host` sense is `хостинг` (4 values) and was
+        // never what this entry was about.
         'чекаут' => 'оформление заказа',
         // `checkout` and `billing` both used to render as `оплат`; the settled
         // split is checkout = `оформление заказа`, billing = `оплата`.
@@ -83,11 +87,11 @@ const FORBIDDEN = [
         'рабочего пространства' => 'рабочей области',
         'рабочем пространстве' => 'рабочей области',
         'рабочим пространством' => 'рабочей областью',
-        // `claim` is `заявка`; `претензия`/`заявление` are the wrong nouns, and the
-        // verb is `заявить права`, never `претендовать`.
-        'претензи' => 'заявка',
-        'заявление' => 'заявка',
-        'претенд' => 'заявить права',
+        // `claim` (the ownership claim the vTual domain owned) is retired with it: the
+        // 2026-10-07 sunset took the concept, its keys, and the `заявка` / `заявить
+        // права` terms with it. Its three bans are gone rather than left behind,
+        // because `претензи`/`заявление`/`претенд` are ordinary Russian words and a ban
+        // with no corpus to justify it is a trap for the next unrelated key.
         // `management` (an entity with owners, members, and invites) is
         // `организация`. `менеджмент` is an uncountable collective noun in Russian
         // and was pluralized and declined into ungrammatical forms.
@@ -103,7 +107,8 @@ const FORBIDDEN = [
         'AI-' => 'ИИ-',
         ' AI ' => ' ИИ ',
         // `probe` renders as `Проверка`, `backlog` as `очередь`, `upstream` as the
-        // storage noun, `handle` as `хендл`, the payment pipeline as `шлюз`.
+        // storage noun, the payment pipeline as `шлюз`. (`handle` as `хендл` used to be
+        // in this list; it left the corpus with the vTual domain on 2026-10-07.)
         'Test' => 'Проверка',
         'Origin' => 'Источник',
         'backlog' => 'очередь',
@@ -132,11 +137,19 @@ const FORBIDDEN = [
         'Identitas URL' => 'Slug',
     ],
     'ja' => [
-        // `claim` is `申請`; `クレーム` is a false friend — it means "complaint" in
-        // Japanese, which is why the wave never used it despite the glossary row.
-        'クレーム' => '申請',
-        // `probe` transliterates as `プローブ`; `点検` is the `ko` word for it.
-        '点検' => 'プローブ',
+        // `claim` (the ownership claim the vTual domain owned) is retired with it. The
+        // row was the glossary's one false friend — `クレーム` means "complaint" in
+        // Japanese — and the ban existed only to keep the `申請` rendering from
+        // collapsing. Both left with the domain on 2026-10-07; `クレーム` is no longer
+        // banned, because a ban whose concept is gone only misleads the next wave.
+        //
+        // `点検` → `プローブ` used to sit here, and it is removed for the same reason
+        // and one more: `プローブ` was the vTual rendering of *probe* (8 keys in
+        // `lang/ja/api/vtual.php`, 1 in `web/settings.php`), so the replacement left
+        // with the domain; and `点検` never occurred in a `ja` value at all, which made
+        // the entry a `ko` word in the `ja` map. The surviving `probe` sentence is
+        // `api/ai.connection.test_model_required`, which `ja` renders as `検査` — see
+        // the corrected glossary row in `docs/platform/naming-conventions.md`.
     ],
     'zh_CN' => [
         // `slug` is `标识`; `子弹` ("bullet") was the SPA variant. `别名` is *not*
@@ -165,8 +178,12 @@ const FORBIDDEN = [
         // `redirect` is `إعادة توجيه`; the bare verbal noun `الإنتقال` — with a
         // wrong hamza seat — was dropped.
         'الإنتقال' => 'إعادة توجيه',
-        // `hosting` takes a plain alef: `الاستضافة`, not `الإستضافة`.
-        'الإستضافة' => 'الاستضافة',
+        // `hosting` took a plain alef: `الاستضافة`, not `الإستضافة`. Both spellings
+        // are gone now — `الاستضافة` was the vTual *hosting channel*, and the
+        // 2026-10-07 sunset deleted the only two values that used it. A ban whose
+        // replacement has no corpus left enforces nothing and misleads the next wave,
+        // so it is removed rather than kept. (The surviving `host` sense is the
+        // Microstock store host, `مضيف`, which this entry never covered.)
         // `email` is `البريد الإلكتروني`, not the transliteration `الإيميل`.
         'الإيميل' => 'البريد الإلكتروني',
     ],
