@@ -374,6 +374,65 @@ function docs_guard_globs(string $contents): array
     return array_values(array_filter(array_map('trim', explode(',', trim($match[1], " \t\"'[]")))));
 }
 
+/**
+ * Every relative path under `$root` that a rule glob is allowed to match.
+ *
+ * Built once per root and pruned *while walking*: the skip list below used to be
+ * applied after `RecursiveDirectoryIterator` had already descended into the tree,
+ * so every glob of every rule re-walked `node_modules/` and `vendor/` to discard
+ * them one path at a time. That made this guard's runtime a property of the machine
+ * rather than of the repo — on a loaded box the walk blew the suite's 180s timeout,
+ * which reads as a broken doc split instead of a slow disk.
+ */
+function docs_guard_root_files(string $root): array
+{
+    static $cache = [];
+
+    if (isset($cache[$root])) {
+        return $cache[$root];
+    }
+
+    $skipPrefixes = ['vendor/', 'node_modules/', '.git/', 'storage/', 'public/build/'];
+    $prefix = strlen($root) + 1;
+
+    $relativePath = static function (SplFileInfo $file) use ($prefix): string {
+        return str_replace('\\', '/', substr($file->getPathname(), $prefix));
+    };
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveCallbackFilterIterator(
+            new RecursiveDirectoryIterator($root, RecursiveDirectoryIterator::SKIP_DOTS),
+            static function (SplFileInfo $file) use ($relativePath, $skipPrefixes): bool {
+                $relative = $relativePath($file);
+
+                foreach ($skipPrefixes as $skip) {
+                    if (str_starts_with($relative, $skip)) {
+                        return false;
+                    }
+
+                    // The directory entry itself carries no trailing slash, so it has
+                    // to be pruned by name — otherwise the walk descends into the tree
+                    // and discards it one path at a time, which is the cost this
+                    // function exists to avoid.
+                    if ($file->isDir() && $relative === rtrim($skip, '/')) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        )
+    );
+
+    $files = [];
+
+    foreach ($iterator as $file) {
+        $files[] = $relativePath($file);
+    }
+
+    return $cache[$root] = $files;
+}
+
 function docs_guard_glob_matches(string $root, string $glob): bool
 {
     $regex = '#^'.str_replace(
@@ -382,19 +441,7 @@ function docs_guard_glob_matches(string $root, string $glob): bool
         preg_quote($glob, '#')
     ).'$#';
 
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($root, RecursiveDirectoryIterator::SKIP_DOTS)
-    );
-
-    foreach ($iterator as $file) {
-        $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
-
-        foreach (['vendor/', 'node_modules/', '.git/', 'storage/', 'public/build/'] as $skip) {
-            if (str_starts_with($relative, $skip)) {
-                continue 2;
-            }
-        }
-
+    foreach (docs_guard_root_files($root) as $relative) {
         if (preg_match($regex, $relative) === 1) {
             return true;
         }

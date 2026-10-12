@@ -89,6 +89,8 @@ Two things narrow the gap without a credential:
 
 The behaviour itself is covered on the runner: `DocsCrossRepoLinkTest` drives the same library against a throwaway two-repo fixture, asserting that an absent sibling is skipped, a missing target is reported, and a dead `#anchor` is reported. Closing the gap fully needs a fine-grained PAT scoped to read the sibling — deliberately not taken; the workflow carries no credentials by design.
 
+The guard resolves each rule's `globs:` by walking the checkout, so the walk is part of the gate's cost. It prunes `vendor/`, `node_modules/`, `.git/`, `storage/` and `public/build/` **while descending**, and builds the path list once per repo. The skip list used to be applied *after* `RecursiveDirectoryIterator` had already entered those trees, so every glob of every rule re-walked them path by path. That made the guard's runtime a property of the machine instead of the repo: under load the walk blew `DocsStructureGuardTest`'s 180s timeout and reported a broken doc split when the real cause was a slow disk. Pruning only drops paths the post-filter discarded anyway, so the finding set is unchanged.
+
 ## The sibling's CI job
 
 `monolith-vue-workers/.github/workflows/ci.yml` runs `type-check` → `check:i18n` → `check:docs` → **`check:env`** → `test` → `build-only`, and the deploy workflow repeats the same gates before a build so a deploy can never bypass them.
