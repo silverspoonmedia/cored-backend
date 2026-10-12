@@ -20,9 +20,10 @@ name: CI
 # a machine that has both repos, via `php artisan test --filter=Locale`.
 #
 # What runs in `locale` is the sibling-free half: key/placeholder parity across
-# locales, literal call-site resolution, the flat pack against its PHP owners, and
-# the runtime-assembled keys. `LocaleGuardTest` reports the four cross-repo guards as
-# skipped when the sibling is absent, so a green run cannot be mistaken for "all six
+# locales, literal call-site resolution, the flat pack against its PHP owners, the
+# runtime-assembled keys, and the orphaned `// curated at` flags left behind by a
+# deleted key. `LocaleGuardTest` reports the four cross-repo guards as
+# skipped when the sibling is absent, so a green run cannot be mistaken for "all seven
 # guards ran". The `backend` job reruns those locale tests as part of the whole suite;
 # the narrow job stays because its direct guard runs name the offending key and locale
 # in the job log, which an aggregated PHPUnit failure does not.
@@ -118,6 +119,7 @@ jobs:
         run: |
           php scripts/locale-flat-pack-parity.php
           php scripts/locale-dynamic-key-check.php
+          php scripts/locale-curation-flag-scan.php
 
   backend:
     name: Backend suite (sqlite in-memory)

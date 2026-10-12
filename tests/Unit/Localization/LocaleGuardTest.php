@@ -20,7 +20,9 @@ use Tests\TestCase;
  *   - a value that is itself a dotted key, rendered verbatim to the user;
  *   - a runtime-assembled key that resolves in no locale;
  *   - a settled glossary term that a later batch re-translated back to a rejected
- *     variant.
+ *     variant;
+ *   - a `// curated at` flag whose key was deleted, left behind as a comment about
+ *     nothing (132 of them after the 2026-10-07 product-domain sunset).
  *
  * Those live in `scripts/`, not in the test suite, because they are cross-repo and
  * because a curation batch wants to run them directly. This test shells out to them
@@ -49,6 +51,7 @@ class LocaleGuardTest extends TestCase
             'dynamic key check (runtime-assembled keys)' => ['scripts/locale-dynamic-key-check.php', false],
             'pack parity (framework packs vs SPA)' => ['scripts/locale-pack-parity.php', true],
             'flat pack parity (pack vs its PHP owners)' => ['scripts/locale-flat-pack-parity.php', false],
+            'curation flag scan (orphaned curated comments)' => ['scripts/locale-curation-flag-scan.php', false],
             'glossary scan (settled terms and banned variants)' => ['scripts/locale-glossary-scan.php', true],
         ];
     }

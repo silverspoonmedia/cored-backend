@@ -57,6 +57,7 @@ php scripts/locale-dynamic-key-check.php   # runtime-assembled keys resolve ever
 php scripts/locale-glossary-scan.php       # settled terms and banned variants
 php scripts/locale-pack-parity.php         # framework packs, both repos
 php scripts/locale-flat-pack-parity.php    # flat pack vs its PHP owners
+php scripts/locale-curation-flag-scan.php  # a deleted key left its `// curated at` flag behind
 php artisan test --filter=Locale
 cd ../monolith-vue-workers; npm run check:i18n; npm run check:env   # `;` not `&&` — PowerShell rejects `&&`
 ```
