@@ -209,48 +209,6 @@ return [
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.upstream.release_after_seconds' => 'Освобождение слота провайдера после (секунд)',
         'microstock.csv_disk' => 'Диск экспорта CSV',
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
-        // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
     ],
     'hints' => [
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms

@@ -135,23 +135,6 @@ return [
         'microstock.ai.upstream.release_after_seconds' => '업스트림 슬롯 해제 시간(초)',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
         'microstock.csv_disk' => 'CSV 내보내기 디스크',
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
     ],
     'hints' => [
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave

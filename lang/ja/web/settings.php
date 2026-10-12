@@ -128,29 +128,6 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => 'ソロ思考並行数',
         'microstock.ai.upstream.release_after_seconds' => 'アップストリームスロット解放まで（秒）',
         'microstock.csv_disk' => 'CSVエクスポートディスク',
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
     ],
     'hints' => [
         'platform.mail.from_address' => '送信メールのグローバルFromアドレス（輸送資格情報は.envのまま）。',

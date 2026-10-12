@@ -23,8 +23,6 @@ return [
         'service_subscription_expired' => '您的 :service 订阅宽限期已结束。现已执行免费层级存储限制（已删除 :deleted 个文件）。',
         // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
         'inference_unregistered_model' => '未注册模型 :resolved_model 在 :provider_slug 上按临时费率计费（每 1M 输入 $:input_per_million_usd、每 1M 输出 $:output_per_million_usd）。请在模型目录中完成分类，以最终确定计费。',
-        // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
     ],
     'audiences' => [
         'list_success' => '通知受众已加载。',

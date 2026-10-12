@@ -18,7 +18,6 @@ return [
         'service_subscription_grace' => ':service のサブスクリプションが終了しました。:grace_days 日以内（:grace_ends_at まで）に更新しないと、無料枠を超えるファイルが削除されます。',
         'service_subscription_expired' => ':service の猶予期間が終了しました。無料枠が適用され、:deleted 件のファイルが削除されました。',
         'inference_unregistered_model' => '未登録モデル :resolved_model（:provider_slug）が暫定料金（入力 $:input_per_million_usd / 出力 $:output_per_million_usd / 100万）で課金されました。モデルカタログで分類して課金を確定してください。',
-        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
     ],
     'audiences' => [
         'list_success' => '通知オーディエンスを読み込みました。',

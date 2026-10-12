@@ -147,33 +147,6 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => 'Konkurensi thinking solo',
         'microstock.ai.upstream.release_after_seconds' => 'Lepas slot upstream setelah (detik)',
         'microstock.csv_disk' => 'Disk ekspor CSV',
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
     ],
     'hints' => [
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave

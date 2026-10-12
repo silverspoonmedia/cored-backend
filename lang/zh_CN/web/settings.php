@@ -147,14 +147,6 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => '单项思考并发数',
         'microstock.ai.upstream.release_after_seconds' => '上游槽位释放时间（秒）',
         'microstock.csv_disk' => 'CSV 导出磁盘',
-        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
     ],
     'hints' => [
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
