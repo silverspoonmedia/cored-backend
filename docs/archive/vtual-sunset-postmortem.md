@@ -52,6 +52,8 @@ php artisan permission:cache-reset
 
 The SPA and `docs` halves restore the same way in their own repos. Re-lock the domain afterwards (`config/domains.php` -> `'Vtual' => ['kind' => 'product', 'locked' => true]`) - the tag predates the unlock, but a restore that leaves it removable is a foot-gun.
 
+There is also a second, independent record of the domain, kept as an archive rather than a restore target: the vTual-era predecessor site at `github.com/silverwakaba/silverspoondocs` was **archived (read-only) on 2026-10-12**. Its content is untouched, and it holds material this repo never carried - `docs/vtual/**` (27 pages covering the account manager, dashboard and creator flows), the 24 screenshots under `static/assets/docs/vtual/**`, and a blog whose eight of nine posts are the vTual build alpha reports together with their 13 screenshots. Read that archive before reconstructing any vTual prose from scratch. It is a personal-account repo, not a platform repo and not part of any workspace, so treat it as read-only history rather than something to edit.
+
 ## What the removal taught
 
 - **The manifest is the removal plan, not the whole job.** `--dry-run` reported 0 unresolved, yet 73 `ignore` entries were still hand edits. A removal task is sized by the `ignore` list, not by the manifest's `delete`/`edits` counts. Budget for the hand edits first.

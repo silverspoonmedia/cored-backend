@@ -26,6 +26,14 @@ The platform keeps the nine core domains and the Archivd product with its Micros
 
 There was no `app/Domain/Blog/uninstall.json` and no `config/domains.php` registry line — Blog was an admin-only module that predated the manifest convention, so the removal was hand-driven (PR #89 backend, #19 SPA, #3 docs) rather than executed by `domain:remove`.
 
+### The dependency the removal left behind (swept 2026-10-12)
+
+Deleting the `blog` profile from `config/purifier.php` left the package itself in place. `mews/purifier` stayed a `composer.json` requirement, `config/purifier.php` stayed as an application override carrying only its `default` profile, and the provider kept booting on every request through auto-discovery in `composer.lock`'s `extra.laravel.providers`. Its docblock still read *"for remaining application use"* — there was no remaining use. `ezyang/htmlpurifier` came in only transitively, so it stayed too.
+
+Nothing could have caught it. The manifest vocabulary deletes **paths** — `app/Domain/Blog/**`, a route file, a locale pack — and a `composer.json` requirement is not a path, so it had no entry to be listed under. The check that found it is the one the vTual sweep used: grep the whole repo for the package name and ask who still calls it. Nobody did — there is no `*.blade.php` anywhere in this repo and no `Purifier::`/`purify()` call in `app/**`, `routes/**`, `database/**` or `tests/**`. `composer remove --no-scripts mews/purifier` took both packages out, `config/purifier.php` was deleted, and `php artisan package:discover` rebuilt the manifest.
+
+One trap for whoever repeats this: `--no-scripts` skips `post-autoload-dump`, so `bootstrap/cache/packages.php` keeps naming the removed provider. The next boot then fails during provider load, and because `bootstrap/app.php` reports every exception through `ErrorLogRecorder` — whose own dependency is not bound yet at that point — the console shows `ErrorLogRepositoryInterface is not instantiable` instead of the real cause. Clear `bootstrap/cache/packages.php` and `services.php`, or let `package:discover` run. `--no-scripts` is still the right flag, because the default path also fires `@php artisan lang:update`, which can rewrite `lang/**` and silently widen a dependency PR into a locale one.
+
 ## Restore point
 
 An annotated tag was cut at `main`'s tip immediately before the removal, in all three repos:
@@ -53,11 +61,14 @@ php artisan menu:flush-cache
 
 The SPA and `docs` halves restore the same way in their own repos (`git checkout blog-sunset-v1 -- .`, then `npm install`). Blog was never a `config/domains.php` entry, so a restore needs no registry edit — the file checkout plus the migrate is the whole job.
 
+The backend recipe also brings `mews/purifier` back on its own: `blog-sunset-v1` predates the 2026-10-12 dependency sweep, so the checkout overwrites `composer.json` and `composer.lock` with the tag's versions and the following `composer install` reinstalls `mews/purifier` and `ezyang/htmlpurifier`. `config/purifier.php` returns with the tree, `blog` profile included. Nothing extra to do.
+
 ## What the removal taught
 
 - **A domain can be admin-only and still be a product surface.** Blog was never sold, but it carried the same shape as a sold one (RBAC, menu, locale namespaces, a migration). The manifest convention came later, so the removal had no single reviewed map to read — the cost of an undocumented domain is paid at removal time, not at build time.
 - **"No public reader" is a smell, not a feature.** A writing tool whose only consumer is its own admin UI produces content with no destination. If a surface has no reader and no buyer, it is a cost centre with a schema.
 - **The tag must be cut before the merge, or it is a guess.** Blog was removed through a PR before the tag convention existed, so the restore point had to be reconstructed from the removal commit's parent. That works, but only because the history is linear; cut the tag in the removal branch and the guess disappears.
+- **A removed consumer leaves its dependency behind, and no manifest op covers it.** Blog was the last caller of `mews/purifier`, but the requirement lived in `composer.json` — not in a file the manifest can list. The `uninstall.json` schema has no op for a dependency entry, so this class of residue is invisible by construction and has to be swept by hand: for every package a domain pulled in, ask what else requires it. Do that in the same task as the removal, because a week later the answer takes a whole grep to reconstruct.
 - **Locale floors move when a domain's namespace dies.** `locale-glossary-scan.php`'s `MIN_OCCURRENCES` is calibrated to the corpus; the `web.blog.*.slug` SPA keys were the only `Slug` hits in `id`, so the floor dropped 23 → 18 in the same change. Re-measure and lower together — see [reference-localization.md - Curation tooling](../platform/reference-localization.md#curation-tooling).
 
 ## Related
