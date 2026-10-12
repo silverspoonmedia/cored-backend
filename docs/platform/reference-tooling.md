@@ -39,14 +39,16 @@ The job is the slow half of the workflow (the `locale` job is seconds). That is 
 
 ## A green run is `failed: 0`
 
-**A green run is `failed: 0`, not `passed == tests`.** The suite is `2454` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. Each row is quoted exactly as that environment prints it:
+**A green run is `failed: 0`, not `passed == tests`.** The suite is `1698` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. The local row is quoted exactly as that environment prints it. The runner row is the same run with those seven cases moved from `passed` to `skipped`, so it is derived, not quoted:
 
-| Source | Result (re-measured 2026-10-05) |
+| Source | Result |
 |---|---|
-| Local `php artisan test`, both siblings present | JSON report: `"tests":2454, "passed":2453, "skipped":1, "risky":1, "assertions":25268` (~13 min) |
-| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 2445 passed (25238 assertions)` |
+| Local `php artisan test`, both siblings present (re-measured 2026-10-12) | JSON report: `"tests":1698, "passed":1697, "skipped":1, "risky":1, "assertions":18392` (~8 min) |
+| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 1690 passed` — derived: the same `1698` total with the seven cross-repo cases skipped |
 
-Both are green: `failed: 0` is the contract, and the total is `2454` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
+Both are green: `failed: 0` is the contract, and the total is `1698` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
+
+The `1698` is the post-sunset corpus: the pre-removal figure was `2454`, and the 2026-10-07 product-domain removal plus the migration squash are what took the difference. Re-measure this pair whenever a product domain is removed or a testsuite is added — a stale total here reads as a corpus failure in the next session that touches it.
 
 | Count | Source | Why it is expected |
 |---|---|---|
@@ -55,6 +57,16 @@ Both are green: `failed: 0` is the contract, and the total is `2454` in both. Th
 | `risky: 1` | `tests/Domain/Service/Unit/Services/ArchivdAdminJourneyScenarioTest.php` | The test prints its scenario report (a JSON journey dump) to stdout, which PHPUnit reports as risky output. Pre-existing since 2026-09-08; it pollutes the job log but does not fail the run. |
 
 Do not "fix" either by adding `--fail-on-risky` or by deleting the skip: the first turns a cosmetic warning into a red build, the second removes the only coverage of the live-cloud path. If the Archivd report output ever needs silencing, capture it with `ob_start()` / `ob_get_clean()` inside that test rather than suppressing the whole suite's output.
+
+## One suite at a time
+
+**Never run two PHPUnit processes against this checkout at once.** The suite is not parallel-safe, and the failure it produces is indistinguishable from a real regression: `bootstrap/cache` is per-repo, `Filesystem::replace()` writes the config cache through `tempnam(dirname($path), basename($path))` + `rename()`, and on Windows that `rename()` fails with `Access is denied` whenever a second process is holding the same path. The temporary domain fixtures that `DomainCommandsTest` and `DomainUninstallManifestTest` create are shared for the same reason.
+
+The symptom is not a red gate you can attribute. It is six errors in whichever run lost — `bootstrap/cache/services.php` rename denied, missing `ZzDemo` / `zz-child.php` fixtures — in files the change under review never touched, next to a focused rerun of the same tests that passes. That is exactly the shape that gets a working diff "fixed" until it breaks.
+
+`tests/bootstrap.php` holds an advisory `flock` on `bootstrap/cache/.phpunit.lock` and exits `1` with the lock path when another run holds it, so a second run stops before booting anything instead of corrupting the first. The OS releases the lock when the process exits, so a killed run cannot wedge the suite; delete the file only when no run is active. This is a harness guard, not a product behavior — if a future change makes the suite parallel-safe (no shared `bootstrap/cache` writes, per-process domain fixtures), the lock is what should be deleted, not worked around.
+
+The lock only stops a second *PHPUnit*. Heavy I/O against the same checkout while a run is in flight breaks it just as well, and that cause is invisible in the summary: a `git status --untracked-files=all` that walks `vendor/` is enough to make the `.env` rewrite in `EnvInstallCommandTest` fail with `Permission denied` and to push a full-tree walk past `DocsStructureGuardTest`'s 180s timeout. Both are errors in files the change under review never touched, both disappear on a focused rerun. Keep the machine quiet for the duration — the suite owns the checkout.
 
 One cross-repo guard deliberately does **not** skip. `DomainUninstallManifestTest` proves the sibling-absent path without a sibling by binding a scanner whose `root()` returns `null` for the SPA and docs repos (`test_the_target_guard_degrades_loudly_when_a_sibling_is_absent`), then asserting the plan reports `sibling checkout absent — section [...] skipped (unverifiable, not clean)`. It runs green on the runner, so the degradation is **covered** there rather than only counted as skipped. Copy that shape when a new cross-repo guard needs runner coverage: a skip proves the guard ran and could not see half its input; an injected absent sibling proves the guard is *correct* about it.
 
