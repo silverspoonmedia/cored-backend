@@ -6,7 +6,6 @@ use App\Domain\Identity\Enums\OAuthProvider;
 use App\Domain\Identity\Exceptions\IdentityOAuthException;
 use App\Domain\Identity\Models\IdentityOAuthAccount;
 use App\Domain\Identity\Models\User;
-use Illuminate\Support\Carbon;
 
 class UserOAuthAccountService
 {
@@ -14,14 +13,6 @@ class UserOAuthAccountService
     private readonly DiscordOAuthService $discordOAuth,
     private readonly DiscordConnectionsClient $connectionsClient,
   ) {}
-
-  public function hasDiscordConnection(User $user): bool
-  {
-    return IdentityOAuthAccount::query()
-      ->where('user_id', $user->id)
-      ->where('provider', OAuthProvider::Discord->value)
-      ->exists();
-  }
 
   public function discordAccountFor(User $user): ?IdentityOAuthAccount
   {
@@ -62,33 +53,6 @@ class UserOAuthAccountService
     ));
 
     return $account->connections_synced_at->gt(now()->subMinutes($maxAgeMinutes));
-  }
-
-  /**
-   * Snapshot-first connections for ownership verify: use stored snapshot when it
-   * satisfies $matcher; sync from Discord only when snapshot misses and is stale/empty.
-   *
-   * @param  callable(list<array<string, mixed>>): bool  $matcher
-   * @return list<array<string, mixed>>
-   */
-  public function connectionsForOwnershipVerify(User $user, callable $matcher): array
-  {
-    if (! $this->hasDiscordConnection($user)) {
-      throw new IdentityOAuthException(__('api/identity.oauth.discord_not_connected'), 422);
-    }
-
-    $snapshot = $this->connectionsSnapshotFor($user);
-    $eligible = $this->connectionsClient->ownershipEligible($snapshot);
-
-    if ($eligible !== [] && $matcher($eligible)) {
-      return $snapshot;
-    }
-
-    if ($snapshot !== [] && $this->isConnectionsSnapshotFresh($user)) {
-      return $snapshot;
-    }
-
-    return $this->syncDiscordConnections($user);
   }
 
   /**
