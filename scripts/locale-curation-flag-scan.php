@@ -11,16 +11,17 @@
 // the prose scan strips comments before it reads values, and the usage test only walks
 // call sites. Nothing in the corpus was watching the comments themselves.
 //
-// A flag is a finding when the next non-empty line is not a key line
-// (`'name' =>`), which covers both shapes the corpus uses: a leaf and a group opener
-// (`'groups' => [`). A flag that is the last non-empty line of the file is a finding
-// for the same reason.
+// A flag belongs to exactly one key, so it is a finding when the next non-empty line
+// is anything other than that key:
 //
-// A flag repeated on the *same* key is deliberately not a finding: the corpus carries
-// those from consecutive curation waves (`apply-locale-translations.php` replaces the
-// flag above the key it touches, so the next touch collapses a stack), and they are an
-// artefact of the tooling rather than residue of a deletion. Reporting them would put
-// this gate permanently red for a defect no deletion produced.
+//   - the next line is a key line (`'name' =>`)? fine — that covers both shapes the
+//     corpus uses, a leaf and a group opener (`'groups' => [`);
+//   - the next line is another flag? a finding. The stack below a surviving key is
+//     what a deleted key leaves behind: the 2026-10-07 sunset removed the `vtual.*`
+//     definitions that sat *between* the surviving ones, and the flags piled up above
+//     the next key that lived. `apply-locale-translations.php` collapses the stack for
+//     the key it rewrites, so a stack can only survive where a key went away;
+//   - no next line at all? a finding, for the same reason.
 //
 // Scope is the backend PHP namespaces: `lang/{locale}/**/*.php`. The flat pack
 // `lang/{locale}.json` cannot carry comments, and the SPA's equivalent record is a
@@ -74,24 +75,18 @@ function curationFlagFindings(string $path): array
 
         $next = $i + 1;
 
-        // Skip blank lines and any flag lines stacked on the same key, so a stack is
-        // judged by the key its last flag sits above.
-        while (true) {
-            while ($next < $count && trim($lines[$next]) === '') {
-                $next++;
-            }
-
-            if ($next < $count && str_starts_with(ltrim($lines[$next]), FLAG_PREFIX)) {
-                $next++;
-
-                continue;
-            }
-
-            break;
+        while ($next < $count && trim($lines[$next]) === '') {
+            $next++;
         }
 
         if ($next >= $count) {
             $findings[$i + 1] = 'flag is the last line of the file';
+
+            continue;
+        }
+
+        if (str_starts_with(ltrim($lines[$next]), FLAG_PREFIX)) {
+            $findings[$i + 1] = 'stacked flag — the flag on line '.($next + 1).' is the one above a key';
 
             continue;
         }

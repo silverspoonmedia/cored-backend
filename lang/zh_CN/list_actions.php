@@ -11,19 +11,13 @@ return [
     'remove' => '移除',
     'confirm' => [
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'delete_service' => '确定要删除该服务吗？',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'delete_inference' => '确定要删除该记录吗？此操作无法撤销。',
         'delete_named_title' => '删除“:name”',
         'delete_menu' => '确定要删除“:name”吗？',
-        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
         'delete_microstock_credential' => '确定要删除该凭证吗？',
-        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
         // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
         'delete_ai_connection_title' => '删除连接',
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave

@@ -228,7 +228,6 @@ return [
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.upstream.window_seconds' => 'Эталонное окно бюджета токенов провайдера (ограничение — через пределы параллелизма).',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.jwt.refresh_skew' => 'Обновлять токен доступа за столько минут до его истечения.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.notifications.delivery' => 'Режим реального времени использует WebSockets и требует настроенных учётных данных PUSHER_* / broadcast; иначе колокольчик переключается на HTTP-опрос.',
@@ -250,10 +249,6 @@ return [
         'microstock.ai.stage.thinking_grace_after' => 'Секунды до перехода стадии мышления в льготный режим.',
         // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.stage.thinking_backlog_after' => 'Секунды до перемещения заданий мышления в очередь отложенных задач.',
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         // curated at 2026-09-27T19:30:00+07:00 — ru curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => 'Как долго сохранённые снимки подключений Discord считаются достоверными, прежде чем промах проверки вызовет живое обновление через Discord API.',
     ],

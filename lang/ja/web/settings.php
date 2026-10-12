@@ -155,10 +155,6 @@ return [
         'microstock.ai.stage.thinking_grace_after' => '思考ステージが猶予モードに入るまでの秒数。',
         'microstock.ai.stage.thinking_backlog_after' => '思考ジョブがバックログキューに移るまでの秒数。',
         // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ja curation wave
-        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => '検証に失敗したときに Discord API から最新情報を取得するまで、保存済みの Discord 接続スナップショットを信頼する時間です。',
     ],
     'options' => [

@@ -26,6 +26,9 @@
 $root = dirname(__DIR__);
 $locales = ['en', 'id', 'ja', 'ko', 'zh_CN', 'ar', 'ru'];
 
+// The flag marker, matched exactly as `scripts/locale-curation-flag-scan.php` does.
+const FLAG_PREFIX = '// curated at ';
+
 $args = array_slice($argv, 1);
 $positional = array_values(array_filter($args, fn (string $a): bool => ! str_starts_with($a, '--')));
 
@@ -209,11 +212,18 @@ foreach ($map as $key => $value) {
 
         $indent = str_repeat(' ', intdiv(strlen($lines[$line]) - strlen(ltrim($lines[$line])), 4) * 4);
 
-        if ($line > 0 && str_starts_with(ltrim($lines[$line - 1]), '// curated at ')) {
-            $lines[$line - 1] = $indent.$flagLine;
-        } else {
-            array_splice($lines, $line, 0, [$indent.$flagLine]);
+        // Collapse the whole stack of flags above the key into the one being written.
+        // Replacing only the line directly above the key left the flags of keys that had
+        // since been deleted stacked above the surviving one — 25 of them outlived the
+        // 2026-10-07 product-domain sunset that way, and every locale gate stayed green
+        // until `locale-curation-flag-scan.php` learned to report a stacked flag.
+        $stackTop = $line;
+
+        while ($stackTop > 0 && str_starts_with(ltrim($lines[$stackTop - 1]), FLAG_PREFIX)) {
+            $stackTop--;
         }
+
+        array_splice($lines, $stackTop, $line - $stackTop, [$indent.$flagLine]);
 
         $replaced[] = (string) $key;
 

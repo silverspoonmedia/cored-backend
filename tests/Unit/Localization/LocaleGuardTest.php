@@ -98,6 +98,58 @@ class LocaleGuardTest extends TestCase
         );
     }
 
+    /**
+     * The scan must not be vacuously green, and the shape it has to catch is the one
+     * the first version of it deliberately ignored: a flag stacked on another flag.
+     *
+     * A stack is what a deleted key leaves behind. The flags sit above the next key
+     * that survived, so the "is there a key line below me?" test — which skips blank
+     * lines and stacked flags — judged the whole stack by its last member and passed.
+     * Twenty-five flags outlived the 2026-10-07 product-domain sunset that way, in
+     * seven files, while every gate stayed green.
+     */
+    public function test_curation_flag_scan_reports_a_stacked_flag(): void
+    {
+        $fixture = base_path('lang/en/_guard-flag-fixture.php');
+
+        file_put_contents($fixture, implode(PHP_EOL, [
+            '<?php',
+            '',
+            'return [',
+            '    // curated at 2026-09-21T00:00:00+07:00 — fixture',
+            '    // curated at 2026-09-22T00:00:00+07:00 — fixture',
+            "    'stacked' => 'value',",
+            '    // curated at 2026-09-23T00:00:00+07:00 — fixture',
+            "    'owned' => 'value',",
+            '];',
+            '',
+        ]));
+
+        try {
+            $process = $this->runGuard('scripts/locale-curation-flag-scan.php', 'en', '--verbose');
+
+            $this->assertSame(
+                1,
+                $process->getExitCode(),
+                'A curation flag stacked on another flag must fail the scan, not pass silently.'
+            );
+            $this->assertStringContainsString(
+                'stacked flag',
+                $process->getOutput(),
+                'The scan must say why the flag is a finding.'
+            );
+            // Exactly one of the two flags above `stacked` is orphaned; the flag above
+            // `owned` is the one that owns it. Precision matters as much as the exit code.
+            $this->assertStringContainsString(
+                'total orphaned curation flags: 1',
+                $process->getOutput(),
+                'The scan must report the surplus flag alone, not the whole stack.'
+            );
+        } finally {
+            @unlink($fixture);
+        }
+    }
+
     public function test_sibling_repo_detection_matches_the_guard_helper(): void
     {
         // The helper the guards use is the single definition of "can I see the SPA?".
