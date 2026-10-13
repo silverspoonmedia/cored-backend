@@ -135,23 +135,6 @@ return [
         'microstock.ai.upstream.release_after_seconds' => '업스트림 슬롯 해제 시간(초)',
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
         'microstock.csv_disk' => 'CSV 내보내기 디스크',
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
     ],
     'hints' => [
         // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
@@ -183,9 +166,6 @@ return [
         'microstock.ai.stage.vision_grace_after' => '비전 단계가 유예 모드에 진입하기까지의 초입니다.',
         'microstock.ai.stage.thinking_grace_after' => '사고 단계가 유예 모드에 진입하기까지의 초입니다.',
         'microstock.ai.stage.thinking_backlog_after' => '사고 작업이 백로그 큐로 이동하기까지의 초입니다.',
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
-        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
         // curated at 2026-09-27T19:30:00+07:00 — ko curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => '저장된 Discord 연결 스냅샷이 신뢰되는 기간입니다. 확인 실패 시 이 기간이 지나면 실시간 Discord API 새로고침이 트리거됩니다.',
     ],

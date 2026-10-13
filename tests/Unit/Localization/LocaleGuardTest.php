@@ -20,7 +20,9 @@ use Tests\TestCase;
  *   - a value that is itself a dotted key, rendered verbatim to the user;
  *   - a runtime-assembled key that resolves in no locale;
  *   - a settled glossary term that a later batch re-translated back to a rejected
- *     variant.
+ *     variant;
+ *   - a `// curated at` flag whose key was deleted, left behind as a comment about
+ *     nothing (132 of them after the 2026-10-07 product-domain sunset).
  *
  * Those live in `scripts/`, not in the test suite, because they are cross-repo and
  * because a curation batch wants to run them directly. This test shells out to them
@@ -49,6 +51,7 @@ class LocaleGuardTest extends TestCase
             'dynamic key check (runtime-assembled keys)' => ['scripts/locale-dynamic-key-check.php', false],
             'pack parity (framework packs vs SPA)' => ['scripts/locale-pack-parity.php', true],
             'flat pack parity (pack vs its PHP owners)' => ['scripts/locale-flat-pack-parity.php', false],
+            'curation flag scan (orphaned curated comments)' => ['scripts/locale-curation-flag-scan.php', false],
             'glossary scan (settled terms and banned variants)' => ['scripts/locale-glossary-scan.php', true],
         ];
     }
@@ -93,6 +96,58 @@ class LocaleGuardTest extends TestCase
             $process->getExitCode(),
             $script.' reported a finding:'.PHP_EOL.$process->getOutput().$process->getErrorOutput()
         );
+    }
+
+    /**
+     * The scan must not be vacuously green, and the shape it has to catch is the one
+     * the first version of it deliberately ignored: a flag stacked on another flag.
+     *
+     * A stack is what a deleted key leaves behind. The flags sit above the next key
+     * that survived, so the "is there a key line below me?" test — which skips blank
+     * lines and stacked flags — judged the whole stack by its last member and passed.
+     * Twenty-five flags outlived the 2026-10-07 product-domain sunset that way, in
+     * seven files, while every gate stayed green.
+     */
+    public function test_curation_flag_scan_reports_a_stacked_flag(): void
+    {
+        $fixture = base_path('lang/en/_guard-flag-fixture.php');
+
+        file_put_contents($fixture, implode(PHP_EOL, [
+            '<?php',
+            '',
+            'return [',
+            '    // curated at 2026-09-21T00:00:00+07:00 — fixture',
+            '    // curated at 2026-09-22T00:00:00+07:00 — fixture',
+            "    'stacked' => 'value',",
+            '    // curated at 2026-09-23T00:00:00+07:00 — fixture',
+            "    'owned' => 'value',",
+            '];',
+            '',
+        ]));
+
+        try {
+            $process = $this->runGuard('scripts/locale-curation-flag-scan.php', 'en', '--verbose');
+
+            $this->assertSame(
+                1,
+                $process->getExitCode(),
+                'A curation flag stacked on another flag must fail the scan, not pass silently.'
+            );
+            $this->assertStringContainsString(
+                'stacked flag',
+                $process->getOutput(),
+                'The scan must say why the flag is a finding.'
+            );
+            // Exactly one of the two flags above `stacked` is orphaned; the flag above
+            // `owned` is the one that owns it. Precision matters as much as the exit code.
+            $this->assertStringContainsString(
+                'total orphaned curation flags: 1',
+                $process->getOutput(),
+                'The scan must report the surplus flag alone, not the whole stack.'
+            );
+        } finally {
+            @unlink($fixture);
+        }
     }
 
     public function test_sibling_repo_detection_matches_the_guard_helper(): void

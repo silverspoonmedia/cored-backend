@@ -147,33 +147,6 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => 'Konkurensi thinking solo',
         'microstock.ai.upstream.release_after_seconds' => 'Lepas slot upstream setelah (detik)',
         'microstock.csv_disk' => 'Disk ekspor CSV',
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
     ],
     'hints' => [
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
@@ -207,9 +180,6 @@ return [
         'microstock.ai.stage.thinking_grace_after' => 'Detik sebelum tahap thinking masuk mode tenggang.',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'microstock.ai.stage.thinking_backlog_after' => 'Detik sebelum job thinking berpindah ke antrean backlog.',
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — id curation wave
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => 'Berapa lama snapshot koneksi Discord tersimpan dipercaya sebelum kegagalan verifikasi memicu penyegaran langsung melalui Discord API.',
     ],

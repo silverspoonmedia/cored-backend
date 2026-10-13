@@ -140,13 +140,6 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => 'تزامن التفكير الفردي',
         'microstock.ai.upstream.release_after_seconds' => 'تحرير خانة المزود الخارجي بعد (بالثواني)',
         'microstock.csv_disk' => 'قرص تصدير CSV',
-        // curated at 2026-09-22T20:51:39+07:00 — wave 2 follow-up: enabled label consistency + hint punctuation
-        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
-        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — ar curation wave
     ],
     'hints' => [
         'platform.mail.from_address' => 'عنوان المرسل العام للبريد الصادر (تبقى بيانات اعتماد النقل في .env).',

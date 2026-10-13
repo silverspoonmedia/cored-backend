@@ -6,7 +6,8 @@ return [
     'discord_heading' => 'Discord',
     // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
     'discord_connected' => 'Ваш аккаунт Discord связан.',
-    'discord_not_connected' => 'Подключите Discord, чтобы связать аккаунты YouTube и Twitch из вашего профиля Discord.',
+    // curated at 2026-10-12T12:56:26+07:00 — ru curation wave: settled terms
+    'discord_not_connected' => 'Подключите Discord, чтобы связать аккаунты из вашего профиля Discord.',
     'discord_connect' => 'Подключить Discord',
     'discord_disconnect' => 'Отключить Discord',
     'discord_disconnected' => 'Discord отключён.',
@@ -17,8 +18,8 @@ return [
     'discord_not_configured' => 'Discord OAuth не настроен на этом сервере.',
     // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
     'linked_accounts_heading' => 'Связанные платформы в Discord',
-    // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
-    'linked_accounts_empty' => 'В вашем профиле Discord пока не связаны аккаунты YouTube или Twitch.',
+    // curated at 2026-10-12T12:56:26+07:00 — ru curation wave: settled terms
+    'linked_accounts_empty' => 'В вашем профиле Discord пока не связаны аккаунты.',
     'linked_verified' => 'Подтверждён',
     'linked_unverified' => 'Не подтверждён',
     'linked_revoked' => 'Отозван',

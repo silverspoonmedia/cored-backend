@@ -21,8 +21,6 @@ return [
         'service_subscription_expired' => ':service 구독 유예 기간이 종료되었습니다. 무료 티어 저장 용량이 적용됩니다(파일 :deleted개 삭제됨).',
         // curated at 2026-09-23T13:18:49+07:00 — ko curation wave: register normalized to 해요체
         'inference_unregistered_model' => ':provider_slug의 미등록 모델 :resolved_model에 임시 요금이 적용되었습니다(1M당 입력 $:input_per_million_usd / 출력 $:output_per_million_usd). 최종 과금을 위해 모델 카탈로그에서 분류하세요.',
-        // curated at 2026-09-23T11:22:13+07:00 — ko curation wave
-        // curated at 2026-09-23T11:22:13+07:00 — ko curation wave
     ],
     'audiences' => [
         'list_success' => '알림 대상 목록을 불러왔습니다.',

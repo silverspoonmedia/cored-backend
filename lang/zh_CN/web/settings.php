@@ -147,14 +147,6 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => '单项思考并发数',
         'microstock.ai.upstream.release_after_seconds' => '上游槽位释放时间（秒）',
         'microstock.csv_disk' => 'CSV 导出磁盘',
-        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
-        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
     ],
     'hints' => [
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
@@ -169,7 +161,6 @@ return [
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'microstock.ai.thinking.connection' => '思考阶段使用的 AI 连接标识（设置 → AI 连接）；留空则使用默认连接。',
         'microstock.ai.upstream.window_seconds' => '上游 token 预算的参考窗口（实际限制通过并发上限执行）。',
-        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
         // curated at 2026-09-22T13:09:56+07:00 — zh_CN curation wave
         'platform.jwt.refresh_skew' => '在访问令牌过期前的这几分钟刷新令牌。',
         // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
@@ -184,8 +175,6 @@ return [
         'microstock.ai.stage.vision_grace_after' => '视觉阶段进入宽限模式前的等待秒数。',
         'microstock.ai.stage.thinking_grace_after' => '思考阶段进入宽限模式前的等待秒数。',
         'microstock.ai.stage.thinking_backlog_after' => '思考任务移入积压队列前的等待秒数。',
-        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
-        // curated at 2026-09-27T19:30:00+07:00 — zh_CN curation wave
         // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => '存储的 Discord 连接快照的有效期；超过该时长后，若验证未命中就会触发实时 Discord API 刷新。',
     ],

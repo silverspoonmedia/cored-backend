@@ -26,6 +26,21 @@ The platform keeps the nine core domains and the Archivd product with its Micros
 
 `app/Domain/Vtual/uninstall.json` was the driver for most of it: `domain:remove Vtual --purge-data --force` executed the manifest, and the manifest's `ignore` list was the reviewed worklist for the hand edits the closed op vocabulary cannot express. The manifest died with the tree, which is why this file and the tag carry the record instead.
 
+## Residue sweep (2026-10-12)
+
+The manifest-driven removal was complete, but four classes of residue outlived it. None of them was visible to a test or a guard at the time:
+
+| Residue | Where | Why nothing caught it |
+|---------|-------|----------------------|
+| Dead ownership-verify helpers | `DiscordConnectionsClient::ownershipEligible()` and `externalLinkCandidates()`, `UserOAuthAccountService::connectionsForOwnershipVerify()` and `hasDiscordConnection()`, plus their five unit tests | vTual was the only caller. The methods were public, typed, and still green — no coverage or static check had a reason to look at them. |
+| Orphaned curation flags | 132 `// curated at` lines in `lang/{id,ja,ko,zh_CN,ar,ru}/web/settings.php` and `lang/{ar,id,ja,ko,zh_CN}/api/notifications.php` | The flag is a comment, not a key. Parity compares keys, the usage test walks call sites, and the prose scan strips comments before it reads values, so all three skipped it. |
+| Stacked curation flags | 25 more `// curated at` lines in `lang/{id,ja,ko,ru}/web/settings.php`, `lang/zh_CN/web/settings.php`, `lang/zh_CN/list_actions.php`, and `lang/id/api/microstock.php` | The first version of the flag guard skipped a run of flags and judged the run by its last member, which did still sit above a key. A stack is only ever left behind by a deleted key, so that tolerance was itself the hole. |
+| Allowlist tokens only vTual needed | `Kick`, `WebSub`, `Helix`, `YouTube`, `Twitch` in `scripts/lib/locale-latin-allowlist.php` | The prose scan reports a token it is *not* told to accept, so a stale acceptance is silent by construction. `YouTube`/`Twitch` had zero occurrences left to accept — the domain mirrored them, so they were its vocabulary, not the platform's. |
+
+Two guards came out of this: `scripts/locale-curation-flag-scan.php` — a flag whose next line is not the key it belongs to is a finding, whether that next line is another flag or the end of the file — and the stack-collapsing writer in `scripts/apply-locale-translations.php`, which now replaces the whole run of flags above a key instead of only the line directly above it. The scan is sibling-free, so it is gated in CI rather than only on a machine with both checkouts. The allowlist tokens were dropped from `scripts/lib/locale-latin-allowlist.php`; the dead helpers needed nothing new, because asking "who else calls this?" was the whole fix.
+
+The stacked flags were found by the **second** pass, after the first had already reported `0`. That is the shape of this residue in general: the guard was built from the same removal that produced the leftovers, so it inherited one of that removal's blind spots, and re-reading the files was never going to show it. Widening the guard is what found them, and the corpus change it then needed was comment-only. When a removal writes its own detector, ask which of the removal's own assumptions the detector just adopted.
+
 ## Restore point
 
 An annotated tag was cut **before** anything was deleted, in all three repos:
@@ -58,6 +73,7 @@ The SPA and `docs` halves restore the same way in their own repos. Re-lock the d
 - **A closed vocabulary hides copy.** `log_name: vtual` in the activity-log rule, `MenuLayout::VTUAL`, `vtual.*` route names, `settings.vtual` - every one was a string in a fixed set that no scanner can distinguish from a value. They surfaced only by reading each owning rule against the surviving code.
 - **Deleting locale files moves the glossary floors.** `locale-glossary-scan.php`'s `MIN_OCCURRENCES` is calibrated to the corpus, and `lang/*/api/vtual.php` carried the bulk of several `ru`, `id`, `ja`, `zh_CN` and `ar` terms. Removing the domain without re-measuring turned the guard red for reasons unrelated to translation quality. Re-measure and lower in the same change - see [reference-localization.md - Curation tooling](../platform/reference-localization.md#curation-tooling).
 - **Sweep the archive last, and reword rather than delete.** The archived assessments carried prose that linked into `domains/vtual/**`; `docs-guard.php` resolves link paths, so an archive file that links a deleted tree fails the build even though the prose is fine. Reword the survivors, and delete the entries that are nothing but that dead link - their history lives in the tag.
+- **The manifest's residue is not the whole residue.** The `ignore` list covers the *files* the manifest knows about; what survives a removal is the code the domain was the last caller of, the comments that outlive their keys, and the entries that taught a guard to accept its brand names. The three questions that find them are not manifest questions: who else calls this, what did its keys leave behind, and what did we teach a guard to accept for it? The residue sweep a week later found all four classes — and the fourth only after the guard written for the second was widened, which is the reminder that a detector authored by the removal can inherit the removal's assumptions.
 - **A domain that mirrors an external platform carries a permanent cost.** Ingestion, freshness, quota, retries, webhook leases, credential failover: none of it ends when the feature ships. Price that before the second platform is added, not after.
 
 ## Related

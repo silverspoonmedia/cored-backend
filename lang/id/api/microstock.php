@@ -57,7 +57,6 @@ return [
     'collection_processing' => 'Analisis koleksi dimulai.',
     // curated at 2026-09-21T17:08:42+07:00 — id curation wave
     'collection_status' => 'Status koleksi berhasil dimuat.',
-    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
     // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave
     'upload_disabled' => 'Unggah ke marketplace dimatikan di platform ini.',
     // curated at 2026-09-27T20:30:00+07:00 — microstock marketplace upload wave

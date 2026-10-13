@@ -44,31 +44,4 @@ class DiscordConnectionsClientTest extends TestCase
         $this->assertArrayNotHasKey('access_token', $normalized[0]);
         $this->assertTrue($normalized[0]['friend_sync']);
     }
-
-    #[Test]
-    public function ownership_eligible_filters_yt_twitch_verified_not_revoked(): void
-    {
-        $eligible = $this->client->ownershipEligible([
-            ['type' => 'youtube', 'id' => 'UC1', 'verified' => true],
-            ['type' => 'twitch', 'id' => '999', 'verified' => false],
-            ['type' => 'youtube', 'id' => 'UC2', 'verified' => true, 'revoked' => true],
-            ['type' => 'github', 'id' => 'gh', 'verified' => true],
-        ]);
-
-        $this->assertCount(1, $eligible);
-        $this->assertSame('UC1', $eligible[0]['id']);
-    }
-
-    #[Test]
-    public function external_link_candidates_excludes_yt_twitch(): void
-    {
-        $candidates = $this->client->externalLinkCandidates([
-            ['type' => 'youtube', 'id' => 'UC1', 'verified' => true],
-            ['type' => 'github', 'id' => 'gh', 'name' => 'octocat', 'verified' => true],
-            ['type' => 'twitter', 'id' => 'tw', 'name' => 'handle', 'verified' => true, 'revoked' => true],
-        ]);
-
-        $this->assertCount(1, $candidates);
-        $this->assertSame('github', $candidates[0]['type']);
-    }
 }

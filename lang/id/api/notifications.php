@@ -28,8 +28,6 @@ return [
         'service_subscription_expired' => 'Masa tenggang langganan :service Anda berakhir. Batas penyimpanan paket gratis kini berlaku (:deleted berkas dihapus).',
         // curated at 2026-09-21T17:00:09+07:00 — id curation wave
         'inference_unregistered_model' => 'Model :resolved_model yang belum terdaftar pada :provider_slug ditagih dengan tarif sementara ($:input_per_million_usd / $:output_per_million_usd per 1 juta token). Klasifikasikan di katalog model untuk menyelesaikan penagihan.',
-        // curated at 2026-09-21T17:00:09+07:00 — id curation wave
-        // curated at 2026-09-21T17:00:09+07:00 — id curation wave
     ],
     'audiences' => [
         // curated at 2026-09-21T17:00:09+07:00 — id curation wave

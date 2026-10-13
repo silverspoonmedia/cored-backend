@@ -52,11 +52,11 @@ $machinePatterns = [
 
 $machine = [
     // Product and platform brands — never translated, per the glossary preamble.
-    'Archivd', 'Microstock', 'Discord', 'YouTube', 'Twitch', 'Kick',
+    'Archivd', 'Microstock', 'Discord',
     'QRIS', 'iPaymu', 'Midtrans', 'Xendit', 'Doku', 'GoPay', 'OVO', 'Dana', 'ShopeePay',
     'LinkAja', 'Stripe', 'Snap', 'hCaptcha', 'reCAPTCHA', 'Railgun', 'FFmpeg', 'Monolith',
     'Shutterstock', 'Adobe', 'Getty', 'iStock', 'Dreamstime', 'Vecteezy', 'Freepik',
-    'Depositphotos', 'Frankfurter', 'Pusher', 'WebSub', 'Laravel', 'Redis', 'Slack', 'Sentry',
+    'Depositphotos', 'Frankfurter', 'Pusher', 'Laravel', 'Redis', 'Slack', 'Sentry',
     'Vault', 'Bootstrap', 'Icons', 'Router',
     // Example IDs a user has to replace with their own value.
     'abc123', 'def456',
@@ -72,7 +72,7 @@ $machine = [
     'CDN', 'DNS', 'IP', 'IPv4', 'IPv6', 'MAC', 'USD', 'IDR', 'IANA', 'UTC', 'GMT', 'ISO',
     'RFC', 'WWW', 'FAQ', 'KYC', 'AML', 'VAT', 'NIB', 'PDF', 'CSV', 'XLSX', 'ZIP', 'PNG',
     'JPEG', 'WebP', 'GIF', 'SVG', 'ICO', 'AVIF', 'MP4', 'WebM', 'HLS', 'RTMP', 'HMAC', 'AES',
-    'RSA', 'TLS', 'SSL', 'TTL', 'DMCA', 'S3', 'R2', 'OAuth', 'Bearer', 'Helix', 'PHP', 'Vue',
+    'RSA', 'TLS', 'SSL', 'TTL', 'DMCA', 'S3', 'R2', 'OAuth', 'Bearer', 'PHP', 'Vue',
     'SPA', 'QR', 'PG', 'VA', 'TOTP', 'MVP', 'HEX', 'SHA', 'YAML', 'yaml',
     'sha256', 'SIGNATURE', 'env', 'regex', 'enum', 'cron', 'webhook', 'Webhook', 'px',
     'Data', 'OpenAI',
@@ -127,7 +127,10 @@ $glossary = [
     'wallet' => ['id' => 'dompet', 'ja' => 'ウォレット', 'ko' => '지갑', 'zh_CN' => '钱包', 'ar' => 'محفظة', 'ru' => 'кошелёк'],
     'checkout' => ['id' => 'checkout', 'ja' => 'チェックアウト', 'ko' => '체크아웃', 'zh_CN' => '结账', 'ar' => 'إتمام الشراء', 'ru' => 'оформление заказа'],
     'billing' => ['id' => 'penagihan', 'ja' => '課金', 'ko' => '과금', 'zh_CN' => '计费', 'ar' => 'الفوترة', 'ru' => 'оплата'],
-    'probe' => ['id' => 'probe', 'ja' => 'プローブ', 'ko' => '점검', 'zh_CN' => '探测', 'ar' => 'فحص', 'ru' => 'проверка'],
+    // `probe` is the platform-API check. The `ja` rendering is `検査` in the one
+    // surviving sentence (`api/ai.connection.test_model_required`); the earlier
+    // `プローブ` was vTual vocabulary and left with that domain on 2026-10-07.
+    'probe' => ['id' => 'probe', 'ja' => '検査', 'ko' => '점검', 'zh_CN' => '探测', 'ar' => 'فحص', 'ru' => 'проверка'],
     'management' => ['id' => 'manajemen', 'ja' => 'マネジメント', 'ko' => '매니지먼트', 'zh_CN' => '管理机构', 'ar' => 'الإدارات', 'ru' => 'организация'],
     'session' => ['id' => 'sesi', 'ja' => 'セッション', 'ko' => '세션', 'zh_CN' => '会话', 'ar' => 'الجلسة', 'ru' => 'сессия'],
     'asset' => ['id' => 'aset', 'ja' => 'アセット', 'ko' => '에셋', 'zh_CN' => '素材', 'ar' => 'أصل', 'ru' => 'актив'],

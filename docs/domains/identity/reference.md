@@ -195,7 +195,7 @@ Scopes: `identify` + `connections`. Table `identity_oauth_accounts` stores envel
 
 Post-OAuth browser return: encrypted state may carry `return_to`. Allowlisted origins are `APP_URL` and `SPA_URL`. Paths must start with `/apps/`. SPA passes `return_path` only; the API prefixes `SPA_URL`. Empty `SPA_URL` → authorize-url 503.
 
-The snapshot is read by consumers through the connections API: `ownershipEligible()` answers whether a verified YouTube/Twitch connection exists, and other connection types map to external links via `DiscordConnectionExternalLinkMapper`.
+The snapshot is read back through the connections API (`GET /api/v1/profile/connections`): `connections[]` carries every connection type with the documented safe fields, and the SPA decides what to render — there is no server-side eligibility filter or external-link mapper.
 
 Env: non-empty `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` required; `DISCORD_REDIRECT_URI` defaults to `{APP_URL}/apps/auth/discord/callback` when unset. `SPA_URL` is the Vue-Workers public origin (OAuth return allowlist). The connected-accounts Discord UI stays hidden until Discord credentials are configured.
 
