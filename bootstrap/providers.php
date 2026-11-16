@@ -8,8 +8,6 @@ use App\Providers\Domain\ArchivdServiceProvider;
 use App\Providers\Domain\InferenceServiceProvider;
 use App\Providers\Domain\IdentityServiceProvider;
 use App\Providers\Domain\MicrostockServiceProvider;
-use App\Providers\Domain\NavigationServiceProvider;
-use App\Providers\Domain\NotificationServiceProvider;
 use App\Providers\Domain\PaymentGatewayServiceProvider;
 use App\Providers\Domain\ServiceServiceProvider;
 use App\Providers\DomainAccessServiceProvider;
@@ -26,9 +24,9 @@ return [
     SettingsServiceProvider::class,
 
     // Core domains (config/domains.php kind=core)
+    // Navigation + Notification are Composer packages: their providers are
+    // auto-discovered from packages/*/composer.json extra.laravel.providers.
     IdentityServiceProvider::class,
-    NavigationServiceProvider::class,
-    NotificationServiceProvider::class,
     ActivityLogServiceProvider::class,
     ErrorLogServiceProvider::class,
     PaymentGatewayServiceProvider::class,

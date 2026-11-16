@@ -45,7 +45,6 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withEvents(discover: [
         __DIR__.'/../app/Domain/Identity/Listeners',
-        __DIR__.'/../app/Domain/Notification/Listeners',
     ])
     ->withCommands([
         __DIR__.'/../app/Console/Commands',
@@ -53,7 +52,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
         __DIR__.'/../app/Domain/ErrorLog/Console/Commands',
         __DIR__.'/../app/Domain/Archivd/Console/Commands',
         __DIR__.'/../app/Domain/Microstock/Console/Commands',
-        __DIR__.'/../app/Domain/Navigation/Console/Commands',
         __DIR__.'/../app/Domain/PaymentGateway/Console/Commands',
         __DIR__.'/../app/Domain/Service/Console/Commands',
     ])

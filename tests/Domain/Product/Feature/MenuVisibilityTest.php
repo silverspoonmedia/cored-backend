@@ -6,7 +6,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Support\Product\Services\ProductActivationService;
 use Database\Seeders\ArchivdRoleSeeder;
-use Database\Seeders\MenuSeeder;
+use App\Domain\Navigation\Database\Seeders\MenuSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;

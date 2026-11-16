@@ -36,6 +36,10 @@
 /storage/*.key
 /storage/pail
 /vendor
+# Composer path packages (packages/*) are source, not dependencies: their own
+# vendor/ and lock file never ship. The host lock file pins them.
+/packages/*/vendor
+/packages/*/composer.lock
 _ide_helper.php
 Homestead.json
 Homestead.yaml

@@ -14,10 +14,15 @@
         <testsuite name="Domain">
             <directory>tests/Domain</directory>
         </testsuite>
+        <testsuite name="Packages">
+            <directory>packages/navigation/tests</directory>
+            <directory>packages/notification/tests</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
             <directory>app</directory>
+            <directory>packages</directory>
         </include>
     </source>
     <php>

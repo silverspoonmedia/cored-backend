@@ -165,8 +165,8 @@ foreach ($locales as $locale) {
 // the blind spot this guard exists to close, so its arrival must fail the build.
 $knownSites = [
     'app/Domain/ActivityLog/Http/Resources/ActivityLogResource.php',
-    'app/Domain/Notification/Services/NotificationAudienceService.php',
-    'app/Domain/Notification/Http/Resources/NotificationResource.php',
+    'packages/notification/src/Services/NotificationAudienceService.php',
+    'packages/notification/src/Http/Resources/NotificationResource.php',
     'app/Domain/ErrorLog/Http/Resources/ErrorLogResource.php',
     'app/Domain/PaymentGateway/Http/Controllers/API/V1/Payments/Midtrans/MidtransPaymentController.php',
     'app/Domain/PaymentGateway/Http/Controllers/API/V1/Payments/Ipaymu/IpaymuPaymentController.php',
@@ -175,7 +175,7 @@ $knownSites = [
 
 $unknownSites = [];
 
-foreach (['app', 'routes', 'config'] as $directory) {
+foreach (['app', 'routes', 'config', 'packages'] as $directory) {
     $base = $root.'/'.$directory;
 
     if (! is_dir($base)) {

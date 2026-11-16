@@ -28,6 +28,29 @@ function locale_scan_root(): string
 }
 
 /**
+ * Every directory that holds shipped translations, host first.
+ *
+ * Core domains shipped as Composer path packages keep their own
+ * `resources/lang/{locale}/**` tree, but the keys stay un-namespaced
+ * (`api/navigation.created`), so the guards must read them as if they still
+ * lived in `lang/`. A guard that only walked `lang/` would silently stop
+ * checking every packaged domain's copy.
+ *
+ * @return list<string>
+ */
+function locale_scan_lang_roots(): array
+{
+    $root = locale_scan_root();
+    $roots = [$root.'/lang'];
+
+    foreach (glob($root.'/packages/*/resources/lang', GLOB_ONLYDIR) ?: [] as $packageLang) {
+        $roots[] = $packageLang;
+    }
+
+    return array_values(array_filter($roots, static fn (string $path): bool => is_dir($path)));
+}
+
+/**
  * Absolute path to the sibling SPA repo, whether or not it exists.
  */
 function locale_scan_spa_root(): string
@@ -139,30 +162,47 @@ function locale_scan_flatten_file(string $path): array
 }
 
 /**
- * Every `lang/{locale}/**` PHP file, as `lang/{locale}/relative/name.php` => path.
+ * Every `lang/{locale}/**` PHP file, keyed by a root-relative label.
+ *
+ * Scans the host `lang/` tree plus every packaged domain's
+ * `resources/lang/` tree (see locale_scan_lang_roots()). A packaged domain
+ * keeps the same `{locale}/{group}.php` shape, so its files are labelled
+ * `lang/{locale}/...` regardless of where they physically live — that is what
+ * keeps the namespaced parity comparison pairing the right files.
+ *
+ * When two roots define the same label the host wins, which is the same
+ * precedence Laravel's FileLoader applies.
  *
  * @return array<string, string>
  */
 function locale_scan_php_files(string $root, string $locale): array
 {
-    $base = $root.'/lang/'.$locale;
     $files = [];
 
-    if (! is_dir($base)) {
-        return $files;
-    }
+    foreach (locale_scan_lang_roots() as $langRoot) {
+        $base = $langRoot.'/'.$locale;
 
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
-    );
-
-    foreach ($iterator as $file) {
-        if ($file->getExtension() !== 'php') {
+        if (! is_dir($base)) {
             continue;
         }
 
-        $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
-        $files[$relative] = $file->getPathname();
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = 'lang/'.$locale.'/'.str_replace(
+                '\\',
+                '/',
+                substr($file->getPathname(), strlen($base) + 1)
+            );
+
+            $files[$relative] ??= $file->getPathname();
+        }
     }
 
     ksort($files);

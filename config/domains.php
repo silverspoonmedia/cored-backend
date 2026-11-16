@@ -39,10 +39,24 @@
  */
 
 return [
-    // Core
+    // Core — packaged domains declare where their source, routes, config and
+    // translations live. The namespace stays App\Domain\{Name}\, so only the
+    // location moved; a host may still override a class in app/Domain/{Name}/.
     'Identity' => ['kind' => 'core'],
-    'Navigation' => ['kind' => 'core'],
-    'Notification' => ['kind' => 'core'],
+    'Navigation' => [
+        'kind' => 'core',
+        'package' => 'silverspoon/navigation',
+        'path' => 'packages/navigation/src',
+        'routes' => 'packages/navigation/routes/api.php',
+        'provider' => 'packages/navigation/src/NavigationServiceProvider.php',
+    ],
+    'Notification' => [
+        'kind' => 'core',
+        'package' => 'silverspoon/notification',
+        'path' => 'packages/notification/src',
+        'routes' => 'packages/notification/routes/api.php',
+        'provider' => 'packages/notification/src/NotificationServiceProvider.php',
+    ],
     'ActivityLog' => ['kind' => 'core'],
     'ErrorLog' => ['kind' => 'core'],
     'PaymentGateway' => ['kind' => 'core'],

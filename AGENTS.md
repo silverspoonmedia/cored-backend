@@ -8,6 +8,7 @@
 - Open **one side by default**: [Monolith-Backend.code-workspace](Monolith-Backend.code-workspace) or the sibling SPA workspace. [Monolith-Fullstack.code-workspace](Monolith-Fullstack.code-workspace) only when the API↔SPA contract moves. All three workspaces load the `docs` repo as a peer root, so its rules inject on every turn.
 - A **customer-visible** capability is not shipped until its page in `docs` says so; that page ships in the same task (see the `docs-sync` rule in that repo).
 - Never create Blade views here. Integration summary: [docs/integration/project-overview.md](docs/integration/project-overview.md); contract: [docs/integration/vue-workers-spa.md](docs/integration/vue-workers-spa.md) (open only when endpoints, headers, cookies/CSRF, envelopes, or route names change).
+- A **core domain** may live in a Composer path package under `packages/` (`silverspoon/navigation`, `silverspoon/notification`) while keeping the `App\Domain\{Domain}\` namespace. Check `php artisan domain:list` (`Package` column) before assuming `app/Domain/{Name}/` exists; the contract is [docs/integration/core-packages.md](docs/integration/core-packages.md).
 
 ## Protocol
 
@@ -25,7 +26,7 @@
 | `context-budget.mdc` *(always-on)* | Choosing a workspace / what to open |
 | `i18n-guardrail.mdc` *(always-on)* | Adding or editing user-facing copy |
 | `working-branch.mdc` *(always-on)* | Before the first edit — never work on a protected branch |
-| `architecture.mdc` | `app/Domain/**`, `app/Support/Domain/**`, `app/Console/Commands/Domain/**`, `config/domains.php` — domain kind/lifecycle/composition (`parent`), uninstall manifest, namespaces, dependency direction |
+| `architecture.mdc` | `app/Domain/**`, `app/Support/Domain/**`, `app/Console/Commands/Domain/**`, `config/domains.php`, `packages/**` — domain kind/lifecycle/composition (`parent`), path packages (layout, override precedence, kernel contracts), uninstall manifest, namespaces, dependency direction |
 | `api-routing.mdc` | `routes/api/**`, `bootstrap/app.php` — global vs versioned layer, `v{N}` loader, route names |
 | `api-resources.mdc` | `app/**/Http/**`, `routes/api/**` — envelope, list `display_mode`/`actions[]`, standalone-first `/batch`, response minimization |
 | `crud.mdc` | `app/Repositories/**`, `**/Http/Controllers/**`, `**/Http/Requests/**` — shared repository, FormRequest DRY |

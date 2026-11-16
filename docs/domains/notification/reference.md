@@ -134,9 +134,9 @@ Bell UI, inbox (`/apps/notifications`), and audience admin live in Monolith-Vue-
 
 | Layer | File | Responsibility |
 |-------|------|----------------|
-| Type catalogue | `app/Domain/Notification/Notifications/NotificationType.php` | Type value, icon, role fallback, listing registry key |
-| Emit service | `app/Domain/Notification/Services/NotificationService.php` | Persist audience, calculate per-recipient unread count, dispatch realtime event |
-| Realtime event | `app/Domain/Notification/Events/UserActivityNotificationReceived.php` | Private channel/name and `type`/`table_id`/`unread_count` payload |
+| Type catalogue | `packages/notification/src/Notifications/NotificationType.php` | Type value, icon, role fallback, listing registry key |
+| Emit service | `packages/notification/src/Services/NotificationService.php` | Persist audience, calculate per-recipient unread count, dispatch realtime event |
+| Realtime event | `packages/notification/src/Events/UserActivityNotificationReceived.php` | Private channel/name and `type`/`table_id`/`unread_count` payload |
 | Audience settings | `NotificationTypeSettingRepository` + seeder | Resolve role/user/subject audience; primitive cached snapshot |
 | SPA bell / inbox | `monolith-vue-workers` (`useNotificationsHydrate`, Echo) | Badge, list, WS, mark-read |
 | Users list live reload | SPA `UsersView` | Register `users-table` via Pattern A |
@@ -202,7 +202,7 @@ Deep link: `inference.model-cards.show`. Listing registry reload: `inference-mod
 Run focused backend coverage after changing notification delivery:
 
 ```bash
-php artisan test tests/Domain/Notification
+php artisan test packages/notification/tests
 php artisan test tests/Unit/Support/Broadcasting/BroadcastConnectionTest.php
 ```
 

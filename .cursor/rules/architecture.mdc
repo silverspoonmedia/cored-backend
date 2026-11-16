@@ -1,12 +1,27 @@
 ---
-description: Domain module registry — kind core|product, locked lifecycle, parent subproduct, namespaces
-globs: app/Domain/**,app/Support/Domain/**,app/Console/Commands/Domain/**,config/domains.php
+description: Domain module registry — kind core|product, path packages, locked lifecycle, parent subproduct, namespaces
+globs: app/Domain/**,app/Support/Domain/**,app/Console/Commands/Domain/**,config/domains.php,packages/**
 alwaysApply: false
 ---
 
 # Domain modules
 
-Domain code lives under `app/Domain/{Domain}/`; `config/domains.php` is the registry.
+A domain's **source location is declared, not assumed**: `config/domains.php` is the registry, and `DomainManager` resolves every path (`domainPath`, `providerPath`, `apiRoutePath`, `testsPath`) through it. A domain either lives under `app/Domain/{Domain}/` or, when its entry carries `package`, inside a Composer path package under `packages/{slug}/`.
+
+## Path packages (core domains)
+
+- **Why:** a downstream project must be able to consume a core domain without forking this repo. A path package keeps the code in place while Composer installs it as a real dependency (`silverspoon/navigation`, `silverspoon/notification`).
+- **Namespace never changes.** A packaged domain keeps `App\Domain\{Domain}\*` mapping to `packages/{slug}/src/`. Callers do not learn a vendor namespace, and translation keys do not move.
+- **Host overrides win.** Root `composer.json` declares `"App\\Domain\\Navigation\\": "app/Domain/Navigation/"` explicitly so Laravel's own autoloader entry precedes the package entry in the generated PSR-4 map. Dropping that line makes `app/Domain/Navigation/...` dead code that silently loses to the package.
+- **Package contents:** `src/`, `routes/api.php` (no prefix or name — the host applies those), `config/`, `database/{migrations,seeders,factories}/`, `resources/lang/{locale}/**`, `tests/`. The provider is auto-discovered via `extra.laravel.providers`; it calls `mergeConfigFrom`, `loadMigrationsFrom`, `translator->getLoader()->addPath(...)`, binds contracts, and registers listeners/commands explicitly. Never re-register any of that in `bootstrap/*`.
+- **Registry entry:** `'package' => 'silverspoon/{slug}'`, `'path' => 'packages/{slug}/src'`, `'routes' => 'packages/{slug}/routes/api.php'`, optional `'provider'`. `kind`/`locked`/`parent` are unaffected.
+- **Routes** load through `DomainManager::packageApiRoutePaths()` in `routes/api/v1.php`; `config/*.php` stays in the package, so deleting it from the host is correct, not a regression (`setting_config('notifications.delivery')` is Tier B and unaffected).
+- **Dependency direction:** a core package may import `App\Support\*` and `App\Domain\Identity\Models\{User,Role,Permission}`; the kernel imports a package only through a kernel-owned contract (`App\Support\Navigation\PresentedTreeEpoch`), never a package interface, and only behind `app()->bound(...)` so a host without the package still boots. A core package never imports a product domain.
+- **Version pinning:** path repositories infer the version from the current git branch, so each package declares `"version"` explicitly and the host requires `"*"`. Without it `composer update` fails against `minimum-stability: stable` on any non-main branch.
+- Windows: `"symlink": true` produces a junction and works; if it ever fails, set `"symlink": false` and run `composer update silverspoon/*` after every change under `packages/`.
+- Packaged domains are still **platform core**: `domain:remove` refuses them, and their code leaves by editing the package, not by scaffolding.
+
+## Registry axes (all domains)
 
 - Three axes, never collapsed into one label: `kind` (`core` = foundation, `product` = sold surface), products only `locked` (whether `domain:remove` refuses), and the composition axis `parent` below. Core is additionally pinned by `DomainManager::PLATFORM_CORE` — flipping `kind` in config cannot make a core domain removable.
 - **Composition axis `parent` (product only):** a **subproduct** declares the product domain it extends (`'parent' => 'Archivd'`; Microstock is the only one). It is a full product — own key, activation, RBAC, SKU, namespace, `uninstall.json` — **never** a third `kind` value. `DomainManager::parentOf()` / `childrenOf()` expose it; `domain:list` prints the `Parent` column; `domain:make --parent={Product}` registers one (the parent must already be a registered product); `domain:remove` refuses a parent while a registered child points at it, so a subproduct never outlives its base.

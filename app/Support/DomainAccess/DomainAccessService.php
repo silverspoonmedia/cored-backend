@@ -7,7 +7,7 @@ use App\Support\Domain\DomainManager;
 use App\Support\DomainAccess\Enums\DomainVisibility;
 use App\Support\DomainAccess\Models\ProductDomainVisibility;
 use App\Support\DomainAccess\Support\DomainAccessRealtime;
-use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
+use App\Support\Navigation\PresentedTreeEpoch;
 
 /**
  * Runtime access gate for product domains.
@@ -64,8 +64,10 @@ class DomainAccessService
         $this->cache = null;
 
         // Presented trees encode Domain Access outcomes — bump epoch globally.
-        if (app()->bound(MenuRepositoryInterface::class)) {
-            app(MenuRepositoryInterface::class)->bumpPresentedTreeEpoch();
+        // The kernel only knows the contract; a host without the Navigation
+        // package never binds it, so the bound() check stays load-bearing.
+        if (app()->bound(PresentedTreeEpoch::class)) {
+            app(PresentedTreeEpoch::class)->bumpPresentedTreeEpoch();
         }
 
         $this->realtime->visibilityChanged($productKey, $visibility->value);

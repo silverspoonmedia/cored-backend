@@ -244,12 +244,101 @@ class DomainManager
 
     public function domainPath(string $name): string
     {
-        return app_path('Domain/'.$this->normalizeName($name));
+        $name = $this->normalizeName($name);
+        $configured = $this->configuredPath($name);
+
+        return $configured !== null ? base_path($configured) : app_path('Domain/'.$name);
     }
 
     public function providerPath(string $name): string
     {
-        return app_path('Providers/Domain/'.$this->normalizeName($name).'ServiceProvider.php');
+        $name = $this->normalizeName($name);
+        $configured = $this->configuredProviderPath($name);
+
+        if ($configured !== null) {
+            return base_path($configured);
+        }
+
+        return app_path('Providers/Domain/'.$name.'ServiceProvider.php');
+    }
+
+    /**
+     * Package manifest of a core domain shipped as a Composer path package.
+     *
+     * A packaged core domain keeps its `App\Domain\{Name}\` namespace, so the code
+     * that consumes it does not change; only where the source lives moves. That
+     * path is declared in config/domains.php — one source of truth for
+     * domain:list, domain:make, domain:remove and the route loader.
+     *
+     * @return array{package: string, path: string, routes: string, lang: string|null}|null
+     */
+    public function packageOf(string $name): ?array
+    {
+        $meta = (array) config('domains.'.$this->normalizeName($name), []);
+
+        if (! isset($meta['package']) || ! is_string($meta['package']) || $meta['package'] === '') {
+            return null;
+        }
+
+        return [
+            'package' => $meta['package'],
+            'path' => (string) ($meta['path'] ?? ''),
+            'routes' => (string) ($meta['routes'] ?? ''),
+            'lang' => isset($meta['lang']) && is_string($meta['lang']) ? $meta['lang'] : null,
+        ];
+    }
+
+    public function isPackaged(string $name): bool
+    {
+        return $this->packageOf($name) !== null;
+    }
+
+    /**
+     * Route files owned by packaged core domains, in core-first registry order.
+     *
+     * The loader in routes/api/v1.php requires these instead of hardcoding a path
+     * that only exists in this checkout.
+     *
+     * @return list<string>
+     */
+    public function packageApiRoutePaths(): array
+    {
+        $paths = [];
+
+        foreach ($this->all() as $name => $meta) {
+            if ($meta['kind'] !== 'core') {
+                continue;
+            }
+
+            $package = $this->packageOf($name);
+
+            if ($package === null || $package['routes'] === '') {
+                continue;
+            }
+
+            $paths[] = base_path($package['routes']);
+        }
+
+        return $paths;
+    }
+
+    private function configuredPath(string $name): ?string
+    {
+        $package = $this->packageOf($name);
+
+        if ($package === null || $package['path'] === '') {
+            return null;
+        }
+
+        return $package['path'];
+    }
+
+    private function configuredProviderPath(string $name): ?string
+    {
+        $meta = (array) config('domains.'.$name, []);
+        $provider = $meta['provider'] ?? null;
+
+        return is_string($provider) && $provider !== '' ? $provider : null;
     }
 
     public function providerShortClass(string $name): string
@@ -259,6 +348,12 @@ class DomainManager
 
     public function apiRoutePath(string $name): string
     {
+        $package = $this->packageOf($name);
+
+        if ($package !== null && $package['routes'] !== '') {
+            return base_path($package['routes']);
+        }
+
         return base_path('routes/api/v1/'.$this->slug($name).'.php');
     }
 
@@ -269,6 +364,13 @@ class DomainManager
 
     public function testsPath(string $name): string
     {
+        $package = $this->packageOf($name);
+
+        if ($package !== null && $package['path'] !== '') {
+            // packages/{slug}/src -> packages/{slug}/tests
+            return dirname(base_path($package['path'])).'/tests';
+        }
+
         return base_path('tests/Domain/'.$this->normalizeName($name));
     }
 

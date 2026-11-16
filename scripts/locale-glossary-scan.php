@@ -382,6 +382,37 @@ function collect(string $root, string $spaRoot, string $locale): array
         }
     }
 
+    // Packaged core domains keep their translations in
+    // packages/*/resources/lang/{locale} with the same un-namespaced keys.
+    // Occurrence floors count the backend blob, so skipping these trees would
+    // report a settled term as "reverted" the moment its file moved.
+    foreach (glob($root.'/packages/*/resources/lang/'.$locale, GLOB_ONLYDIR) ?: [] as $packageLocale) {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($packageLocale, FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($packageLocale) + 1));
+            $namespace = str_replace('/', '.', substr($relative, 0, -4));
+            $data = include $file->getPathname();
+
+            if (! is_array($data)) {
+                continue;
+            }
+
+            $owner = str_replace($root.'/', '', str_replace('\\', '/', $packageLocale));
+
+            foreach (flatten($data) as $key => $value) {
+                $rows[] = [$owner.'/'.$relative, $namespace.'.'.$key, $value];
+                $blobs['backend'] .= $value."\n";
+            }
+        }
+    }
+
     $pack = $root.'/lang/'.$locale.'.json';
 
     if (is_file($pack)) {

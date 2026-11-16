@@ -9,6 +9,7 @@ The **Status** column exists because five entries are not purely historical: the
 | File | What it was | Status |
 |------|-------------|--------|
 | [internal-monorepo-assessment.md](internal-monorepo-assessment.md) | Pre/post logical monorepo assessment | Historical |
+| [core-domain-packages-poc.md](core-domain-packages-poc.md) | Navigation + Notification extracted to Composer path packages (2026-11-16): what was proven, what was decided, what was left in `app/` | **Live reference** — the reasoning behind [integration/core-packages.md](../integration/core-packages.md) |
 | [internal-monorepo-porting.md](internal-monorepo-porting.md) | Porting checklist / gotchas | Historical |
 | [security-audit-2026-06-16.md](security-audit-2026-06-16.md) | Blade-era OWASP audit snapshot (living posture in [platform/security.md](../platform/security.md)) | Historical — all 20 findings resolved; the 2026-09-27 addendum re-verifies FINDING-007 (pinned) and FINDING-008 (was stale: 18 transitive advisories found and fixed) |
 | [auth-activity-assessment.md](auth-activity-assessment.md) | Auth event → activity log matrix (living summary in [platform/security.md](../platform/security.md)) | Historical |

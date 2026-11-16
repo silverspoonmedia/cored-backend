@@ -222,12 +222,12 @@
                     "match": "microstock\\."
                 },
                 {
-                    "file": "database/seeders/MenuSeeder.php",
+                    "file": "packages/navigation/database/seeders/MenuSeeder.php",
                     "op": "remove_block",
                     "begin": "'route' => 'settings.microstock'"
                 },
                 {
-                    "file": "database/seeders/MenuSeeder.php",
+                    "file": "packages/navigation/database/seeders/MenuSeeder.php",
                     "op": "remove_block",
                     "begin": "'Microstock' => ["
                 },
@@ -464,7 +464,7 @@
                     "reason": "test: drop the `use App\\Domain\\Microstock\\…` import and the code that consumes it (line 7)"
                 },
                 {
-                    "path": "tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php",
+                    "path": "packages/navigation/tests/Feature/Database/Seeders/MenuSeederTest.php",
                     "reason": "test: drop the `microstock.*` keys (line 144, 220, 244, 335)"
                 },
                 {

@@ -14,6 +14,6 @@ It is a separate axis, distinct from module taxonomy (`config/domains.php`), the
 | Seeding | `DomainAccessSeeder` + `Database\Seeders\Concerns\SeedsBetaTesterRole` |
 | Realtime | `domain-access` private channel — `.domain.visibility.changed` |
 | Translations | `lang/*/domain-access.php` |
-| Tests | `tests/Domain/DomainAccess/` · `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` |
+| Tests | `tests/Domain/DomainAccess/` · `packages/navigation/tests/Feature/PrivateDomainMenuVisibilityTest.php` |
 | Pakem | [.cursor/rules/domain-access.mdc](../../../.cursor/rules/domain-access.mdc) |
 | Related | [navigation](../navigation/README.md) (menu visibility) · [product-activations](../product-activations/README.md) (activation axis) · [platform/cache-policy.md](../../platform/cache-policy.md) (presented-tree epoch) |

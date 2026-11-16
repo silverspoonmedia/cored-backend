@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Database\Seeders\MenuSeeder;
+use App\Domain\Notification\Database\Seeders\NotificationTypeSettingSeeder;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
