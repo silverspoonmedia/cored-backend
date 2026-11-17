@@ -21,7 +21,7 @@ use App\Domain\Microstock\Services\MicrostockService;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
-use App\Domain\Service\Support\MicrostockCatalog;
+use App\Domain\Microstock\Support\MicrostockCatalog;
 use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

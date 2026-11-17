@@ -52,7 +52,7 @@ Resource: event, labels, causer, attribute_changes, properties. **Properties and
 
 | Piece | Path | Role |
 |-------|------|------|
-| Write | `SensitiveActivityProperties::encryptInPlace()` | Called from `LogActivityAction::beforeLogging()` (registered in `ActivityLogServiceProvider::boot()`) — single choke point for every recorder plus the `activity()` helper |
+| Write | `SensitiveActivityProperties::encryptInPlace()` | Called from `LogActivityAction::beforeLogging()` (registered in `AuditServiceProvider::boot()`) — single choke point for every recorder plus the `activity()` helper |
 | Read | `SensitiveActivityPropertyPresenter::forApi()` | Decrypts for `ActivityLogResource` + `WorkspaceController::activity()`; `[unavailable]` sentinel when an envelope cannot be decrypted (never leaks ciphertext) |
 | Config | `config/activitylog.php` `sensitive_properties` | `enabled` + `keys`; no env var — switch off in config only |
 | Cache | `config/encryption.php` `decrypted_cache_ttl_by_resource_type.activity_log` | 900s plaintext cache cap (rows are immutable, so bounded retention is enough) |

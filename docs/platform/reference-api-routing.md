@@ -27,10 +27,8 @@ routes/
 ├── api/
 │   └── v1.php          # loader — // Core requires, then // Product
 │       ├── identity.php          # core
-│       ├── navigation.php        # core
-│       ├── notification.php      # core
-│       ├── activity-log.php      # core
-│       ├── error-log.php         # core
+│       ├── inference.php         # core
+│       ├── ai.php                # core
 │       ├── payment-gateway.php   # core
 │       ├── service.php           # core
 │       ├── broadcasting.php      # core — broadcast auth for JWT clients (api middleware)
@@ -40,6 +38,8 @@ routes/
     ├── payment-ipaymu-return.php # provider return
     └── identity-oauth-callback.php # Discord OAuth callback
 ```
+
+Packaged core domains load from their own tree — `packages/navigation/routes/api.php`, `packages/notification/routes/api.php`, and `packages/audit/routes/{activity-log,error-log}.php` — through `DomainManager::packageApiRoutePaths()`, so they have no entry under `routes/`.
 
 Paths inside version files are relative to the version prefix.
 

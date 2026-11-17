@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Support\Notifications\Contracts;
+
+/**
+ * Kernel-owned seam for emitting an activity notification by type name.
+ *
+ * `silverspoon/billing` knows *when* to notify (`service_subscription_grace`,
+ * `service_subscription_expired`) but must not import the notification domain
+ * that owns the catalog, the audience rules and the persistence. The kernel
+ * declares the contract; `silverspoon/notification` binds the adapter that maps
+ * the string back to its own enum.
+ *
+ * A host without the notification package simply has no binding — call sites
+ * wrap the emit in `app()->bound()` or a try/catch, and the money path never
+ * fails because a bell is missing.
+ */
+interface NotificationDispatcher
+{
+    /**
+     * @param  string  $type  Notification type value (`NotificationType` case value).
+     * @param  array<string, mixed>  $data  Message replacements + render context.
+     * @param  list<string>  $users  Target user ids (personal audience).
+     * @param  list<string>|null  $roles  Target role names; null = the type's defaults.
+     * @param  array<string, mixed>  $actionParams
+     */
+    public function emit(
+        string $type,
+        array $data = [],
+        array $users = [],
+        ?array $roles = null,
+        ?string $actionRoute = null,
+        array $actionParams = [],
+    ): void;
+}

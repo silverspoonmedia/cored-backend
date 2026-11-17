@@ -12,7 +12,7 @@ use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Services\ServiceEntitlementService;
-use App\Domain\Service\Support\ArchivdCatalog;
+use App\Domain\Archivd\Support\ArchivdCatalog;
 use App\Support\Presentation\BytePresenter;
 use App\Support\Product\Models\ProductActivation;
 
@@ -180,11 +180,11 @@ class QuotaService
      */
     private function resolveStorageState(string $userId): string
     {
-        if ($this->entitlements->hasGraceArchivd($userId)) {
+        if ($this->entitlements->hasGraceFor($userId, ArchivdCatalog::FULFILLMENT_TARGET)) {
             return 'grace';
         }
 
-        if ($this->entitlements->hasActivePaidArchivd($userId)) {
+        if ($this->entitlements->hasActivePaidFor($userId, ArchivdCatalog::FULFILLMENT_TARGET)) {
             return 'paid';
         }
 

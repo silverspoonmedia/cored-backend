@@ -1,6 +1,6 @@
 ---
 description: ErrorLog capture, fingerprinting, redaction and retention invariants
-globs: app/Domain/ErrorLog/**,app/Providers/Domain/ErrorLogServiceProvider.php,routes/api/v1/error-log.php,config/errorlog.php,docs/domains/error-log/**
+globs: packages/audit/src/ErrorLog/**,packages/audit/src/ActivityLog/AuditServiceProvider.php,packages/audit/routes/error-log.php,packages/audit/config/errorlog.php,docs/domains/error-log/**
 alwaysApply: false
 ---
 
@@ -8,17 +8,18 @@ alwaysApply: false
 
 Grouped runtime failures in `error_logs`. It is **not** the audit trail ([activity-log.mdc](activity-log.mdc)) and not the bell.
 
-- **One capture choke point, two entries:** `bootstrap/app.php` `reportable` → `ErrorLogRecorder::recordException()`, and the `MessageLogged` listener in `ErrorLogServiceProvider` → `recordLog()` for levels ≥ `error`. Never add a third path or a custom Monolog handler.
+- **One capture choke point, two entries:** `bootstrap/app.php` `reportable` → `ExceptionRecorder` (bound to `ErrorLogRecorder`), and the `MessageLogged` listener in `AuditServiceProvider` → `recordLog()` for levels ≥ `error`. Never add a third path or a custom Monolog handler.
 - **Never store** non-reportable 4xx, `BusinessRuleException` (intentional API errors are not bugs), anything while `platform.errorlog.enabled` is off, or a nested write while the recorder is already active (recursion guard, cleared in `finally`).
 - A log record whose context carries a `Throwable` is skipped — Laravel's default report also writes `Log::error` with the exception, and double-counting the same bug is a defect.
 - **Fingerprint stability is a contract:** `sha1(type|level|exception_class|normalized_message|file|line)`. Message normalization strips UUIDs, emails, long hex hashes and standalone numbers, so one bug with different ids collapses into one row. Changing the normalization splits every existing group — treat it as a migration, not a tweak.
 - A new hit increments `occurrence_count`, refreshes the latest sample (`message`, `trace`, `context`, `last_seen_at`) and **reopens** `resolved`/`ignored` back to `open`. Never leave a reopened row resolved.
-- `context` is **redacted** with `config/errorlog.php` `redact_keys`, the same list activity-log redacts with. Adding a sensitive key means updating both; a key present in one list and missing in the other leaks.
+- `context` is **redacted** with `packages/audit/config/errorlog.php` `redact_keys`, the same list activity-log redacts with. Adding a sensitive key means updating both; a key present in one list and missing in the other leaks.
 - `redact_keys` and `dont_store` are bootstrap config literals read through `config()` — never promote them to Tier B settings. The operational knobs (`enabled`, `clean_after_days`, `max_message_length`, `max_trace_length`, `max_context_json_length`) are `platform.errorlog.*` registry keys.
 - Domains that need an **intentional ops signal** (not a thrown bug) call `ErrorLogRecorder::recordLog()` — e.g. an upstream HTTP failure or a credential Test that the domain classifies as a business-rule error (`BusinessRuleException`), which `recordException()` would skip.
 - **The writer never throws into the request or log pipeline**, and never keeps request-scoped state in a static (Octane).
 - Retention: `php artisan errorlog:clean [--days=30]`, default `clean_after_days = 90`.
 - API is `auth:api` + `permission:view error log` (Root/Admin). Realtime: `logs.errors` private channel, `.log.error.recorded` with `{level, type}` only — never the message.
-- Tests: `composer test -- --filter=ErrorLog` — fingerprint stability, redaction, grouping, `Log::error`, kill-switch, API RBAC, status update, `errorlog:clean`.
+- Tests: `php artisan test packages/audit/tests/ErrorLog` — fingerprint stability, redaction, grouping, `Log::error`, kill-switch, API RBAC, status update, `errorlog:clean`.
+- **Packaged with ActivityLog.** Both domains ship as `silverspoon/audit` under `packages/audit/` (one provider, two namespaces, two route files). The kernel reports through `App\Support\ErrorLogging\ExceptionRecorder`, which this package binds — `bootstrap/app.php` never names `ErrorLogRecorder`.
 
 Detail: [docs/domains/error-log/reference.md](../../docs/domains/error-log/reference.md).

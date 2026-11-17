@@ -248,7 +248,7 @@ class HashBlocklistTest extends TestCase
     private function grantPaidMain(User $user): void
     {
         $service = Service::query()->where('code', 'archivd.plan.1tb.monthly')->first()
-            ?? Service::factory()->ArchivdMain1Tb()->create();
+            ?? Service::factory()->archivdMain1Tb()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [

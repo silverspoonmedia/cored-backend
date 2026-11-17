@@ -56,8 +56,10 @@ function dynamicKeySets(string $root): array
     $sets = [];
 
     // Activity-log events: the resource builds `api/activity-log.events.'.$event`, so
-    // every event name the audit trail can record needs a label.
-    $events = array_keys((include $root.'/lang/en/api/activity-log.php')['events'] ?? []);
+    // every event name the audit trail can record needs a label. The group ships
+    // from `packages/audit/resources/lang` now, so resolve it through the lang
+    // roots instead of assuming it still lives in the host `lang/` tree.
+    $events = array_keys((include locale_scan_lang_group_path('en', 'api/activity-log.php'))['events'] ?? []);
     $sets['api/activity-log.events.*'] = [
         'source' => 'ActivityLogResource::resolveEventLabel()',
         'keys' => array_map(static fn (string $e): string => 'api/activity-log.events.'.$e, $events),
@@ -164,13 +166,13 @@ foreach ($locales as $locale) {
 // New dynamic call sites: a `__($var)` the check above does not know about is exactly
 // the blind spot this guard exists to close, so its arrival must fail the build.
 $knownSites = [
-    'app/Domain/ActivityLog/Http/Resources/ActivityLogResource.php',
+    'packages/audit/src/ActivityLog/Http/Resources/ActivityLogResource.php',
     'packages/notification/src/Services/NotificationAudienceService.php',
     'packages/notification/src/Http/Resources/NotificationResource.php',
-    'app/Domain/ErrorLog/Http/Resources/ErrorLogResource.php',
-    'app/Domain/PaymentGateway/Http/Controllers/API/V1/Payments/Midtrans/MidtransPaymentController.php',
-    'app/Domain/PaymentGateway/Http/Controllers/API/V1/Payments/Ipaymu/IpaymuPaymentController.php',
-    'app/Domain/PaymentGateway/Http/Controllers/API/V1/InvoiceChannelCheckoutController.php',
+    'packages/audit/src/ErrorLog/Http/Resources/ErrorLogResource.php',
+    'packages/billing/src/PaymentGateway/Http/Controllers/API/V1/Payments/Midtrans/MidtransPaymentController.php',
+    'packages/billing/src/PaymentGateway/Http/Controllers/API/V1/Payments/Ipaymu/IpaymuPaymentController.php',
+    'packages/billing/src/PaymentGateway/Http/Controllers/API/V1/InvoiceChannelCheckoutController.php',
 ];
 
 $unknownSites = [];

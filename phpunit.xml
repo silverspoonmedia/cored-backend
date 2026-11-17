@@ -15,6 +15,9 @@
             <directory>tests/Domain</directory>
         </testsuite>
         <testsuite name="Packages">
+            <directory>packages/audit/tests</directory>
+            <directory>packages/ai/tests</directory>
+            <directory>packages/billing/tests</directory>
             <directory>packages/navigation/tests</directory>
             <directory>packages/notification/tests</directory>
         </testsuite>

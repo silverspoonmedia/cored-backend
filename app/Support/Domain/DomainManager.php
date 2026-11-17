@@ -36,6 +36,7 @@ class DomainManager
         'ActivityLog',
         'ErrorLog',
         'PaymentGateway',
+        'Currency',
         'Service',
         'Inference',
         'Ai',
@@ -317,6 +318,36 @@ class DomainManager
             }
 
             $paths[] = base_path($package['routes']);
+        }
+
+        return $paths;
+    }
+
+    /**
+     * Web (server-side, non-SPA) route files owned by packaged core domains.
+     *
+     * `routes/web.php` requires these instead of hardcoding a provider-return
+     * path that only exists in this checkout. A package entry declares it with
+     * the `web` key; entries without one contribute nothing.
+     *
+     * @return list<string>
+     */
+    public function packageWebRoutePaths(): array
+    {
+        $paths = [];
+
+        foreach ($this->all() as $name => $meta) {
+            if ($meta['kind'] !== 'core') {
+                continue;
+            }
+
+            $web = config('domains.'.$name.'.web');
+
+            if (! is_string($web) || $web === '') {
+                continue;
+            }
+
+            $paths[] = base_path($web);
         }
 
         return $paths;

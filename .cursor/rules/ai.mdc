@@ -1,6 +1,6 @@
 ---
 description: Ai connection transport, slug binding, Test gate invariants
-globs: app/Domain/Ai/**,routes/api/v1/ai.php,config/ai.php,database/seeders/AiConnectionSeeder.php,docs/domains/ai/**
+globs: packages/ai/src/Ai/**,packages/ai/routes/ai.php,packages/ai/config/ai.php,packages/ai/src/Ai/Database/Seeders/AiConnectionSeeder.php,docs/domains/ai/**
 alwaysApply: false
 ---
 
@@ -20,7 +20,7 @@ Core domain for **where** we call AI, with which key and which timeout/retry. It
 - PATCH semantics: blank text field = keep stored value; blank `api_key` = keep stored key; explicit `null` on `timeout_seconds` / `connect_timeout_seconds` / `max_retries` / `extra_headers` = clear the override (those keys are exempt from the null filter in `UpdateAiConnectionRequest::connectionPayload()`).
 - `test_model` and the consumer's `*.model` are endpoint-owned alias strings, **not validated at write time**. A rename upstream only surfaces as a failed Test — use `php scripts/ai/list_models.php [slug]` and `php scripts/ai/probe_models.php [slug] [alias …]` (both read-only, both never print the key, both read `pending` rows on purpose).
 - **`max_tokens` sizing:** a reasoning-style alias burns the budget on reasoning tokens before emitting JSON, so a tight budget returns `finish_reason: length` with empty `content` (measured: 600 failed on 4 of 5 real videos, 4000 worked). Keep consumer budgets around 4000 with a 256 floor, and prefer a shorter `timeout` over a smaller budget.
-- **Local seeding:** `AiConnectionSeeder` (local only, `APP_ENV=local`) reads the gitignored `database/seeders/data/ai-connections.local.php`. That file is the only place a plaintext AI key may live on disk besides the encrypted column — never `.env`, `config/*.php`, or a doc. Only `.example.php` is tracked; the glob `/database/seeders/data/*.local.php` stays in `.gitignore`. Staging/production wire connections by hand at Administration → AI connections.
+- **Local seeding:** `AiConnectionSeeder` (local only, `APP_ENV=local`) reads the gitignored `database/seeders/data/ai-connections.local.php`. That file is the only place a plaintext AI key may live on disk besides the encrypted column — never `.env`, `config/*.php`, or a doc. Only `.example.php` is tracked; the glob `/database/seeders/data/*.local.php` stays in `.gitignore`. Staging/production wire connections by hand at Administration → AI connections. The data-file directory stays in the host: it is deployment input, not package source.
 - Seeder contract: idempotent by slug; an unchanged endpoint + key does **not** demote (so re-seeding keeps `active` + `verified_at`), a rotated key does demote and re-probe; `binds` typos and unknown keys warn and are ignored; renaming a slug leaves the old row behind (delete it in the UI).
 - A failed probe still creates and binds the row but leaves it `pending`, so consumers keep resolving the default. Fix the alias (Tier B) or the entry's `test_model`, then re-seed or re-Test from the SPA.
 - API is `auth:api` with `view ai connections` / `manage ai connections`. Realtime: `ai.connections` private channel → `.ai.connection.changed`.

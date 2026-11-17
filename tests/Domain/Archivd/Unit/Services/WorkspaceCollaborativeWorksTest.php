@@ -301,7 +301,7 @@ class WorkspaceCollaborativeWorksTest extends TestCase
         $this->assertContains($wsB->id, $ids);
         $this->assertCount(2, $list);
 
-        // In A: editor caps â€” can mutate
+        // In A: editor caps — can mutate
         app(FolderService::class)->create($this->editor, 'In A', null, null, $wsA->id);
 
         // In B: owner caps
@@ -578,7 +578,7 @@ class WorkspaceCollaborativeWorksTest extends TestCase
     public function test_invited_free_member_can_upload_to_team_workspace(): void
     {
         // Paid owner shares a team workspace; the invited member is FREE.
-        // Content collaboration (upload) only needs mutate access â€” no paid gate.
+        // Content collaboration (upload) only needs mutate access — no paid gate.
         $this->grantPaidMain($this->owner);
         $ws = app(WorkspaceService::class)->create($this->owner, 'Collab');
 
@@ -613,7 +613,7 @@ class WorkspaceCollaborativeWorksTest extends TestCase
     private function grantPaidMain(User $user): void
     {
         $service = Service::query()->where('code', 'archivd.plan.1tb.monthly')->first()
-            ?? Service::factory()->ArchivdMain1Tb()->create();
+            ?? Service::factory()->archivdMain1Tb()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [
@@ -632,7 +632,7 @@ class WorkspaceCollaborativeWorksTest extends TestCase
     private function grantWorkspaceSlots(User $user, int $quantity = 1): void
     {
         $service = Service::query()->where('code', 'archivd.addon.workspace-slot.monthly')->first()
-            ?? Service::factory()->ArchivdAddonWorkspaceSlot()->create();
+            ?? Service::factory()->archivdAddonWorkspaceSlot()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [

@@ -26,7 +26,7 @@ use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Services\ServiceEntitlementService;
-use App\Domain\Service\Support\MicrostockCatalog;
+use App\Domain\Microstock\Support\MicrostockCatalog;
 use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -395,7 +395,7 @@ class MicrostockTest extends TestCase
     private function grantPaidMain(User $user): void
     {
         $service = Service::query()->where('code', 'archivd.plan.1tb.monthly')->first()
-            ?? Service::factory()->ArchivdMain1Tb()->create();
+            ?? Service::factory()->archivdMain1Tb()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [

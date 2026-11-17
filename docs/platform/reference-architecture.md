@@ -174,8 +174,6 @@ app/
 │   ├── ErrorLog/       # Grouped persistent app errors (core)
 │   ├── Archivd/        # Nested files, chunk S3 upload, Drive-lite share (product, locked)
 │   ├── Microstock/     # Microstock asset mgmt on Archivd system workspace (product, locked; subproduct of Archivd)
-│   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
-│   ├── Service/        # Catalog, entitlements, DB FX→IDR, Archivd grace/purge (core)
 │   ├── Inference/      # AI model catalog + provider model rates + snapshots (core)
 │   └── Ai/             # Central AI transport: ai_connections (core; not pricing)
 ├── Http/Middleware/    # Kernel
@@ -188,7 +186,14 @@ app/
 
 packages/                  # Core domains shipped as Composer path packages
 ├── navigation/            # Menu tree (core) — src, routes, config, database, resources/lang, tests
-└── notification/          # Activity notifications (core) — same shape
+├── notification/          # Activity notifications (core) — same shape
+├── audit/                 # ActivityLog + ErrorLog (core) — two namespaces, one provider,
+│                          #   routes/{activity-log,error-log}.php, config/errorlog.php,
+│                          #   database/migrations, resources/lang, tests/{ActivityLog,ErrorLog}
+└── billing/               # PaymentGateway + Currency + Service (core) — three namespaces, one provider,
+                           #   routes/{payment-gateway,currency,service}.php + web-ipaymu-return.php (registry `web` key),
+                           #   config/{payment,payment-routing,service}.php, resources/routing/price.yaml,
+                           #   database/{migrations,seeders,factories}, resources/lang, tests/{PaymentGateway,Currency,Service}
 ```
 
 A packaged domain keeps namespace `App\Domain\{Domain}\*`; see [core-packages.md](../integration/core-packages.md). The host `app/` prefix resolves first, so an override at `app/Domain/Navigation/...` shadows the package.
@@ -199,7 +204,7 @@ Tests: `tests/Domain/{Domain}/` (PHPUnit suite `Domain`) and `packages/*/tests/`
 
 ## Routes
 
-API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainManager::packageApiRoutePaths()` for packaged domains (`packages/*/routes/api.php`). Web: `routes/web.php` → `routes/web/{domain}.php`.
+API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainManager::packageApiRoutePaths()` for packaged domains (`packages/*/routes/{domain}.php`, one file per domain even when two share a package). Web: `routes/web.php` → `routes/web/{domain}.php`, plus `DomainManager::packageWebRoutePaths()` for a packaged domain's registry `web` key (`packages/billing/routes/web-ipaymu-return.php`), so the `web` middleware group still wraps it.
 
 **Web URI layout:** The Blade admin is removed. Authenticated UI lives in the SPA under `/apps/*` paths (Vue Router symbolic names like `dashboard`, `archivd.index` — stored in menu rows, validated via `config/spa-routes.php`). Monolith `web` routes are **server endpoints only**: `GET /` → SPA redirect; public share `/s/*`; iPaymu return; Discord OAuth callback. API paths (`/api/v1/*`) are unchanged. See [blade-admin.md](../web/blade-admin.md) and [vue-workers-spa.md](../integration/vue-workers-spa.md).
 
@@ -210,12 +215,13 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainM
 | `identity.php` | Auth, users, lookups, admin | core |
 | `packages/navigation/routes/api.php` | Menus | core (package) |
 | `packages/notification/routes/api.php` | Notifications | core (package) |
-| `activity-log.php` | Activity logs | core |
-| `error-log.php` | Grouped persistent app errors | core |
-| `inference.php` | AI model catalog, provider rates, usage | core |
-| `ai.php` | AI connections (Tier C transport) | core |
-| `payment-gateway.php` | Gateways, invoices, subscriptions | core |
-| `service.php` | Service catalog, checkout, service purchases | core |
+| `packages/audit/routes/activity-log.php` | Activity logs | core (package `silverspoon/audit`) |
+| `packages/audit/routes/error-log.php` | Grouped persistent app errors | core (package `silverspoon/audit`) |
+| `packages/ai/routes/inference.php` | AI model catalog, provider rates, usage | core (package `silverspoon/ai`) |
+| `packages/ai/routes/ai.php` | AI connections (Tier C transport) | core (package `silverspoon/ai`) |
+| `packages/billing/routes/payment-gateway.php` | Gateways, invoices, subscriptions | core (package `silverspoon/billing`) |
+| `packages/billing/routes/service.php` | Service catalog, checkout, service purchases | core (package `silverspoon/billing`) |
+| `packages/billing/routes/web-ipaymu-return.php` | iPaymu hosted return/cancel (public web) | core (package `silverspoon/billing`) |
 | `archivd.php` | Archivd (auth + public share) folders/files/uploads | product |
 | `microstock.php` | Microstock (API + thin web entry; Archivd mounts most UI) | product — subproduct of Archivd |
 

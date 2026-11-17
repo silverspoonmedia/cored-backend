@@ -1,8 +1,8 @@
 <?php
 
-use App\Domain\ErrorLog\Support\ErrorLogRecorder;
 use App\Domain\Identity\Models\User;
 use App\Exceptions\BusinessRuleException;
+use App\Support\ErrorLogging\ExceptionRecorder;
 use App\Http\Kernel;
 use App\Http\Middleware\AuthenticateWithSpaCookie;
 use App\Http\Middleware\OptionalJwtAuthenticate;
@@ -49,11 +49,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         __DIR__.'/../app/Console/Commands',
         __DIR__.'/../app/Domain/Ai/Console/Commands',
-        __DIR__.'/../app/Domain/ErrorLog/Console/Commands',
         __DIR__.'/../app/Domain/Archivd/Console/Commands',
         __DIR__.'/../app/Domain/Microstock/Console/Commands',
-        __DIR__.'/../app/Domain/PaymentGateway/Console/Commands',
-        __DIR__.'/../app/Domain/Service/Console/Commands',
     ])
     ->withRouting(
         api: __DIR__.'/../routes/api.php',
@@ -167,7 +164,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $exceptions->reportable(function (Throwable $e): void {
-            app(ErrorLogRecorder::class)->recordException($e);
+            // Kernel-owned contract: the error-log domain binds it when the
+            // `silverspoon/audit` package is installed. Without it, the report
+            // still goes to the file log through the default handler.
+            if (app()->bound(ExceptionRecorder::class)) {
+                app(ExceptionRecorder::class)->recordException($e);
+            }
         });
 
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {

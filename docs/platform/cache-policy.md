@@ -31,7 +31,7 @@ Write → forget / bump epoch → next read rebuilds
 
 ## FX freshness (not Cache TTL)
 
-`platform.frankfurter.cache_ttl` is a **freshness window** (Settings → Platform), not a Laravel Cache expiration. L1 entries are forever. On read, if `fetched_at` is older than the window, forget the key and rebuild from a fresh DB snapshot or Frankfurter. See [Service — Multi-currency / FX](../domains/service/reference.md#multi-currency--fx).
+`platform.frankfurter.cache_ttl` is a **freshness window** (Settings → Platform), not a Laravel Cache expiration. L1 entries are forever. On read, if `fetched_at` is older than the window, forget the key and rebuild from a fresh DB snapshot or Frankfurter. See [Currency](../domains/currency/README.md).
 
 ## Explicit exceptions (short TTL allowed)
 
@@ -67,7 +67,7 @@ These are leases, security expiries, or rate limits — **not** source-of-truth 
 - [navigation README](../domains/navigation/reference.md#caching) — two-tier menu cache; Domain Access upsert → presented epoch bump
 - [domain-access README](../domains/navigation/reference.md#visibility-navigation-tree) — Public/Private gate + epoch invalidation
 - [product-activations README](../domains/product-activations/README.md) — insights forever aggregate + activation → per-user presented forget
-- [service README — FX](../domains/service/reference.md#multi-currency--fx) — forever L1 + freshness
+- [currency README](../domains/currency/README.md) — forever L1 + freshness
 - [identity README](../domains/identity/README.md) — Spatie century-scale permission cache
 - [notification README](../domains/notification/README.md) — audience snapshot; inference unregistered-model forever dedup
 - [inference README](../domains/inference/README.md) — unregistered-model notify dedup key

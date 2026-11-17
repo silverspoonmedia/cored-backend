@@ -10,7 +10,7 @@ use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AiBillingService;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
-use Database\Seeders\InferenceCatalogSeeder;
+use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\Concerns\GrantsMicrostockAiCredits;

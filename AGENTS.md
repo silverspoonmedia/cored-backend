@@ -43,13 +43,14 @@
 | `identity.mdc` | `app/Domain/Identity/**`, auth/JWT/RBAC config |
 | `notification.mdc` | `app/Domain/Notification/**`, bell config/seeder |
 | `domain-access.mdc` | `app/Support/DomainAccess/**`, Domain Access routes/config |
-| `activity-log.mdc` | `app/Domain/ActivityLog/**`, audit trail config/API |
-| `error-log.mdc` | `app/Domain/ErrorLog/**`, error-log config/API |
+| `activity-log.mdc` | `packages/audit/src/ActivityLog/**`, audit trail config/API |
+| `error-log.mdc` | `packages/audit/src/ErrorLog/**`, error-log config/API |
 | `inference.mdc` | `app/Domain/Inference/**`, catalog seeder, rate config |
 | `ai.mdc` | `app/Domain/Ai/**`, AI connection config/seeder |
-| `service.mdc` | `app/Domain/Service/**`, catalog seeder, FX/service config |
+| `service.mdc` | `packages/billing/src/Service/**`, catalog seeder, FX/service config |
 | `product-activations.mdc` | `app/Support/Product/**`, product registry config |
-| `payment-gateway.mdc` | `app/Domain/PaymentGateway/**`, payment config/routing |
+| `payment-gateway.mdc` | `packages/billing/src/PaymentGateway/**`, payment config/routing YAML |
+| `currency.mdc` | `packages/billing/src/Currency/**`, currency route, Frankfurter config |
 | `archivd.mdc` / `microstock.mdc` | `app/Domain/Archivd/**`, `app/Domain/Microstock/**`, their routes/config |
 
 Doc map: [docs/README.md](docs/README.md). History and audits: [docs/archive/](docs/archive/). Backend work stays here; SPA work stays in the sibling.

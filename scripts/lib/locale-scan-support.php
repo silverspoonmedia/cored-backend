@@ -162,6 +162,26 @@ function locale_scan_flatten_file(string $path): array
 }
 
 /**
+ * Absolute path to a `{locale}/{group}.php` file in the first lang root that has it.
+ *
+ * Packaged core domains keep their translations under
+ * `packages/<name>/resources/lang`, so a guard that needs to *include* a group
+ * must not hardcode `lang/{locale}/...`. Host wins, same precedence as the loader.
+ */
+function locale_scan_lang_group_path(string $locale, string $group): string
+{
+    foreach (locale_scan_lang_roots() as $langRoot) {
+        $path = $langRoot.'/'.$locale.'/'.$group;
+
+        if (is_file($path)) {
+            return $path;
+        }
+    }
+
+    return locale_scan_root().'/lang/'.$locale.'/'.$group;
+}
+
+/**
  * Every `lang/{locale}/**` PHP file, keyed by a root-relative label.
  *
  * Scans the host `lang/` tree plus every packaged domain's

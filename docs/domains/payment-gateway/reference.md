@@ -27,7 +27,7 @@ Registry: **`kind => core`** in [`config/domains.php`](../../../config/domains.p
 
 ### Channel sync (API)
 
-`POST /api/v1/payment-channels/sync-policy` — materializes routing policy from `Routing_Price.yaml` into `payment_channels` + `payment_channel_routes` rows. API equivalent of the web sync button (`POST /apps/payment-channels/sync-routing-policy`) and `php artisan payments:sync-routing-policy`. Permission: `manage payment gateway`. Returns `{ channels: int, routes: int, skipped: int }`.
+`POST /api/v1/payment-channels/sync-policy` — materializes the routing policy YAML (`packages/billing/resources/routing/price.yaml`) into `payment_channels` + `payment_channel_routes` rows. API equivalent of the web sync button (`POST /apps/payment-channels/sync-routing-policy`) and `php artisan payments:sync-routing-policy`. Permission: `manage payment gateway`. Returns `{ channels: int, routes: int, skipped: int }`.
 
 ### PaymentChannelResource checkout quote flattening
 
@@ -39,7 +39,7 @@ Provider notify URLs should hit Monolith public webhook routes (or a trusted rev
 
 ## Routing policy (the YAML contract)
 
-The YAML in `Routing_Price.yaml` is the **source of truth**. Code loads it via `App\Domain\PaymentGateway\Support\Routing\RoutingPolicyLoader`, validates it with `RoutingPolicyValidator`, then writes it to the DB via `PaymentRouteMaterializer` (`php artisan payments:sync-routing-policy`). Checkout resolver: `PaymentChannelResolver` + `PaymentChannelFeeCalculator`.
+The YAML in `packages/billing/resources/routing/price.yaml` (registry path in `packages/billing/config/payment-routing.php`) is the **source of truth**. Code loads it via `App\Domain\PaymentGateway\Support\Routing\RoutingPolicyLoader`, validates it with `RoutingPolicyValidator`, then writes it to the DB via `PaymentRouteMaterializer` (`php artisan payments:sync-routing-policy`). Checkout resolver: `PaymentChannelResolver` + `PaymentChannelFeeCalculator`.
 
 The routing config is a **declarative contract**. An operator edits the YAML, then `payments:sync-routing-policy` rewrites the `payment_channels` / `payment_channel_routes` rows; the checkout resolver never reads the YAML directly — it reads the synced DB ordered by `route_role` then `priority`.
 
@@ -97,7 +97,7 @@ Shared sort helper: `PaymentRouteSort` (resolver, `PaymentChannelService::listAl
 
 Primary sell path: [Service](../service/README.md) checkout → `ServicePurchase` → pending invoice (**currency IDR**, FX snapshot on purchase when catalog price is non-IDR) with **`payment_gateway_id` null** until channel charge or hosted fallback assigns gateway.
 
-**IDR amounts:** Service FX settlement rounds to **whole rupiah** (`ExchangeRateService`). Invoice `subtotal` / initial `customer_gross_total` are whole IDR before channel fee.
+**IDR amounts:** Service FX settlement rounds to **whole rupiah** ([Currency](../../domains/currency/README.md) `ExchangeRateService`). Invoice `subtotal` / initial `customer_gross_total` are whole IDR before channel fee.
 
 **API display companions:** `InvoiceResource` / `SubscriptionResource` keep raw money + ISO timestamps and add `*_formatted` (money with currency code) and `*_formatted` / `*_human` (dates). Clients bind companions only, never reformat raw values — see [platform/crud presentation](../../platform/reference-crud.md#api-resource-presentation-dual-fields).
 
@@ -151,13 +151,13 @@ Checkout UI shows subtotal / payment fee / total due. `GET /api/v1/payment-chann
 
 ### Channel checkout
 
-Logical channels (`qris`, `va_*`, e-wallets) are **materialized from** `Routing_Price.yaml` into `payment_channels` + `payment_channel_routes` (fee, settlement tier, route role). Sync: `php artisan payments:sync-routing-policy` (also runs via `PaymentChannelSeeder` after gateways).
+Logical channels (`qris`, `va_*`, e-wallets) are **materialized from** the routing policy YAML (`packages/billing/resources/routing/price.yaml`) into `payment_channels` + `payment_channel_routes` (fee, settlement tier, route role). Sync: `php artisan payments:sync-routing-policy` (also runs via `PaymentChannelSeeder` after gateways).
 
 `PaymentChannelResolver` orders viable routes by `route_role` (primary/only before fallback) then `priority`, skips `avoid` tags, and checks gateway credentials. Successful checkout stores `payment_channel_route_id` and an immutable **`payment_channel_route_snapshot_id`** on the invoice.
 
 ### Route policy snapshot
 
-Parallels [Service FX snapshots](../service/reference.md) (`exchange_rate_snapshots` + `fx_rate_snapshot_id`). YAML sync and admin edits mutate `payment_channel_routes`; without a snapshot, invoice fee **amounts** stay locked but fee **basis** (flat/percent, settlement tier, labels) could drift on display.
+Parallels the [Currency](../currency/README.md) FX snapshots (`exchange_rate_snapshots` + `fx_rate_snapshot_id`). YAML sync and admin edits mutate `payment_channel_routes`; without a snapshot, invoice fee **amounts** stay locked but fee **basis** (flat/percent, settlement tier, labels) could drift on display.
 
 | When | What is captured |
 |------|------------------|
@@ -238,7 +238,7 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 The SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA-side realtime wiring is documented in [vue-workers-spa.md — realtime](../../integration/reference-vue-workers-spa.md#realtime); the backend broadcast contract is below.
 
-iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `defaultCancelUrl`) use `SpaPublicUrl`: `{SPA_URL}/payment/return` and `/payment/cancel` when `SPA_URL` is set; otherwise the server endpoints `/payment/ipaymu/return|cancel` ([`routes/web/payment-ipaymu-return.php`](../../../routes/web/payment-ipaymu-return.php)), which redirect onward. Channel checkout still sends empty `ureturn` (on-page QR/VA). SPA bounce views stay authenticated at the site root — [vue-workers-spa — payment return URLs](../../integration/reference-vue-workers-spa.md#payment-return-urls).
+iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `defaultCancelUrl`) use `SpaPublicUrl`: `{SPA_URL}/payment/return` and `/payment/cancel` when `SPA_URL` is set; otherwise the server endpoints `/payment/ipaymu/return|cancel` ([`packages/billing/routes/web-ipaymu-return.php`](../../../packages/billing/routes/web-ipaymu-return.php), loaded through the registry `web` key), which redirect onward. Channel checkout still sends empty `ureturn` (on-page QR/VA). SPA bounce views stay authenticated at the site root — [vue-workers-spa — payment return URLs](../../integration/reference-vue-workers-spa.md#payment-return-urls).
 
 ## UI surfaces (SPA)
 
@@ -310,7 +310,7 @@ Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment g
 
 ## Config
 
-`config/payment.php` — Midtrans/iPaymu credentials from env (Tier A); `default_buyer_phone` is Tier B (`platform.payment.default_buyer_phone` via Settings → Platform) for iPaymu when profile has no phone. `config/payment-routing.php` — path to `Routing_Price.yaml`. After secret edits: `php artisan config:rebuild`.
+`packages/billing/config/payment.php` — Midtrans/iPaymu credentials from env (Tier A); `default_buyer_phone` is Tier B (`platform.payment.default_buyer_phone` via Settings → Platform) for iPaymu when profile has no phone. `packages/billing/config/payment-routing.php` — `policy_path` → `packages/billing/resources/routing/price.yaml`. After secret edits: `php artisan config:rebuild`.
 
 ## Tests
 

@@ -14,6 +14,7 @@ use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Jobs\AnalyzeAssetVision;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AnalysisStageService;
+use App\Domain\Microstock\Support\MicrostockCatalog;
 use App\Domain\Service\Services\ServiceEntitlementService;
 use Illuminate\Support\Str;
 
@@ -40,7 +41,11 @@ class MicrostockService
      */
     public function workspaceFor(User $owner): Workspace
     {
-        if (! $this->entitlements->hasActiveMicrostockWorkspaceSlot($owner->id)) {
+        if (! $this->entitlements->hasSlotEntitlement(
+            $owner->id,
+            MicrostockCatalog::FULFILLMENT_TARGET,
+            MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+        )) {
             throw new MicrostockException(__('api/microstock.workspace_not_activated'), 403);
         }
 
@@ -53,7 +58,11 @@ class MicrostockService
      */
     public function createWorkspace(User $owner, ?string $name = null): Workspace
     {
-        if (! $this->entitlements->hasActiveMicrostockWorkspaceSlot($owner->id)) {
+        if (! $this->entitlements->hasSlotEntitlement(
+            $owner->id,
+            MicrostockCatalog::FULFILLMENT_TARGET,
+            MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+        )) {
             throw new MicrostockException(__('api/microstock.workspace_not_activated'), 403);
         }
 
@@ -67,7 +76,11 @@ class MicrostockService
      */
     public function slotStatus(User $owner): array
     {
-        $activated = $this->entitlements->hasActiveMicrostockWorkspaceSlot($owner->id);
+        $activated = $this->entitlements->hasSlotEntitlement(
+            $owner->id,
+            MicrostockCatalog::FULFILLMENT_TARGET,
+            MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+        );
         $limit = $this->workspaceAccess->microstockSlotLimit($owner->id);
         $used = $this->workspaceAccess->countActiveOwnedMicrostock($owner->id);
 
