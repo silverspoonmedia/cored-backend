@@ -3,8 +3,6 @@
 namespace App\Domain\ActivityLog\Support;
 
 use App\Support\Encryption\DecryptionAuditRecorder;
-use App\Support\Encryption\EnvelopeEncryptionService;
-use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 

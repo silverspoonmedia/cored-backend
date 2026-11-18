@@ -2,13 +2,12 @@
 
 namespace App\Domain\ActivityLog;
 
+use App\Domain\ActivityLog\Console\Commands\EncryptionMigrateActivityLogCommand;
 use App\Domain\ActivityLog\Repositories\Contracts\ActivityLogRepositoryInterface;
 use App\Domain\ActivityLog\Repositories\Eloquent\ActivityLogRepository;
-use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Domain\ActivityLog\Support\SensitiveActivityProperties;
 use App\Domain\ActivityLog\Support\SubjectTypeResolver;
-use App\Domain\ActivityLog\Console\Commands\EncryptionMigrateActivityLogCommand;
 use App\Domain\ErrorLog\Console\Commands\CleanErrorLogsCommand;
 use App\Domain\ErrorLog\Repositories\Contracts\ErrorLogRepositoryInterface;
 use App\Domain\ErrorLog\Repositories\Eloquent\ErrorLogRepository;

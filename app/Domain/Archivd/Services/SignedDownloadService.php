@@ -2,6 +2,7 @@
 
 namespace App\Domain\Archivd\Services;
 
+use App\Domain\Archivd\Enums\FileVariantKind;
 use App\Domain\Archivd\Exceptions\ArchivdException;
 use App\Domain\Archivd\Models\FileVariant;
 use App\Domain\Archivd\Models\HostedFile;
@@ -142,7 +143,7 @@ class SignedDownloadService
 
     private function variantDownloadName(string $parentName, FileVariant $variant): string
     {
-        $kind = $variant->kind instanceof \App\Domain\Archivd\Enums\FileVariantKind
+        $kind = $variant->kind instanceof FileVariantKind
             ? $variant->kind->value
             : (string) $variant->kind;
         $base = pathinfo($parentName, PATHINFO_FILENAME) ?: 'asset';

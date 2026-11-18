@@ -11,6 +11,7 @@ use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
@@ -20,6 +21,7 @@ class ProductAnalyticsServiceTest extends TestCase
     use SeedsRolesAndPermissions;
 
     private ProductAnalyticsService $analytics;
+
     private ProductActivationService $activations;
 
     protected function setUp(): void
@@ -151,8 +153,8 @@ class ProductAnalyticsServiceTest extends TestCase
         $this->activations->activateImplicit($user, 'Archivd');
 
         HostedFile::query()->insert([
-            ['id' => (string) \Illuminate\Support\Str::uuid7(), 'user_id' => $user->id, 'name' => 'a.txt', 'disk' => 'local', 'path' => '/a', 'size' => 150, 'mime' => 'text/plain', 'created_at' => now(), 'updated_at' => now()],
-            ['id' => (string) \Illuminate\Support\Str::uuid7(), 'user_id' => $user->id, 'name' => 'b.txt', 'disk' => 'local', 'path' => '/b', 'size' => 250, 'mime' => 'text/plain', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => (string) Str::uuid7(), 'user_id' => $user->id, 'name' => 'a.txt', 'disk' => 'local', 'path' => '/a', 'size' => 150, 'mime' => 'text/plain', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => (string) Str::uuid7(), 'user_id' => $user->id, 'name' => 'b.txt', 'disk' => 'local', 'path' => '/b', 'size' => 250, 'mime' => 'text/plain', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // Recompute the free tier — the user has no entitlement.

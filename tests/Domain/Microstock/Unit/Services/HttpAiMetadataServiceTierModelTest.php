@@ -3,11 +3,11 @@
 namespace Tests\Domain\Microstock\Unit\Services;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Services\HttpAiMetadataService;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
-use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;

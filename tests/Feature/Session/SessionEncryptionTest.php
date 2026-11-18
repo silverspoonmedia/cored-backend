@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Session;
 
+use App\Support\Encryption\Session\EncryptedDatabaseSessionHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Session\EncryptedStore;
 use Tests\TestCase;
@@ -26,7 +27,7 @@ class SessionEncryptionTest extends TestCase
 
         $this->assertInstanceOf(EncryptedStore::class, $store);
         $this->assertNotInstanceOf(
-            \App\Support\Encryption\Session\EncryptedDatabaseSessionHandler::class,
+            EncryptedDatabaseSessionHandler::class,
             $store->getHandler(),
         );
     }

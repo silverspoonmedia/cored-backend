@@ -2,6 +2,7 @@
 
 namespace App\Domain\Ai\Console\Commands;
 
+use App\Domain\Ai\Models\AiConnection;
 use App\Domain\Ai\Services\AiConnectionResolver;
 use App\Domain\Ai\Services\AiConnectionService;
 use App\Domain\Identity\Models\User;
@@ -110,7 +111,7 @@ class ImportLegacyEnvCommand extends Command
 
         // First active connection becomes the default so unbound consumers keep working.
         foreach ($createdSlugs as $slug) {
-            $model = \App\Domain\Ai\Models\AiConnection::query()->where('slug', $slug)->first();
+            $model = AiConnection::query()->where('slug', $slug)->first();
             if ($model !== null && $model->isActive()) {
                 $connections->setDefault($model);
                 $this->info("Default AI connection: {$slug}");
@@ -138,9 +139,9 @@ class ImportLegacyEnvCommand extends Command
     /**
      * @param  array{label: string, slug: string, endpoint: string, api_key: string, test_model: string, setting: string}  $source
      */
-    private function upsert(AiConnectionService $connections, array $source, User $actor): \App\Domain\Ai\Models\AiConnection
+    private function upsert(AiConnectionService $connections, array $source, User $actor): AiConnection
     {
-        $existing = \App\Domain\Ai\Models\AiConnection::query()->where('slug', $source['slug'])->first();
+        $existing = AiConnection::query()->where('slug', $source['slug'])->first();
 
         $payload = [
             'slug' => $source['slug'],

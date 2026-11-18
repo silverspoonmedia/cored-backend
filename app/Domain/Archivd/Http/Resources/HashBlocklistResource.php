@@ -2,12 +2,12 @@
 
 namespace App\Domain\Archivd\Http\Resources;
 
-use App\Domain\Identity\Models\User;
+use App\Domain\Archivd\Models\ArchivdHashBlocklist;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Archivd\Models\ArchivdHashBlocklist */
+/** @mixin ArchivdHashBlocklist */
 class HashBlocklistResource extends JsonResource
 {
     use FormatsPresentation;

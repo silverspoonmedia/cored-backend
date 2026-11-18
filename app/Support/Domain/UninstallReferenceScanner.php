@@ -48,6 +48,7 @@ class UninstallReferenceScanner
         '.vite',
         '.wrangler',
         '.tmp-i18n',
+        '.phpstan.cache',
         'node_modules',
         'vendor',
         'dist',

@@ -11,6 +11,7 @@ use App\Domain\PaymentGateway\Services\Payment\InvoiceCustomerDetailsResolver;
 use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -112,7 +113,7 @@ class InvoiceCustomerDetailsResolverTest extends TestCase
         Auth::login($user);
 
         $invoice = Invoice::query()->create([
-            'invoiceable_id' => (string) \Illuminate\Support\Str::uuid(),
+            'invoiceable_id' => (string) Str::uuid(),
             'invoiceable_type' => 'service_purchase',
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'payment_method' => 'pending',
@@ -132,7 +133,7 @@ class InvoiceCustomerDetailsResolverTest extends TestCase
     public function test_throws_when_email_cannot_be_resolved(): void
     {
         $invoice = Invoice::query()->create([
-            'invoiceable_id' => (string) \Illuminate\Support\Str::uuid(),
+            'invoiceable_id' => (string) Str::uuid(),
             'invoiceable_type' => 'service_purchase',
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'payment_method' => 'pending',

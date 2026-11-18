@@ -4,7 +4,7 @@ The parts of the toolchain that only matter when a run misbehaves: what each CI 
 
 ## CI (GitHub Actions)
 
-`.github/workflows/ci.yml` — two jobs, `locale` (`Localization guards (sibling-free)`) and `backend` (`Backend suite (sqlite in-memory)`), on `push` to `main` / `master` / `main-sandbox` / `main-staging` and on every `pull_request`.
+`.github/workflows/ci.yml` — two jobs, `locale` (`Localization guards (sibling-free)`) and `backend` (`Backend suite (sqlite in-memory)`, which now starts with Pint and PHPStan), on `push` to `main` / `master` / `main-sandbox` / `main-staging` and on every `pull_request`.
 
 Both jobs are deliberately narrow in the same way: they run only checks that need **one** repo, so the workflow carries no credentials. Which defect classes the `locale` job covers, and which four guards need the sibling checkout, is the table in [reference-localization.md — CI coverage vs manual runs](reference-localization.md#ci-coverage-vs-manual-runs). An earlier version of this workflow checked out `monolith-vue-workers` as a sibling so all the cross-repo guards could run; it failed at the checkout step on every run, because both repos are private and `GITHUB_TOKEN` is scoped to the repo running the workflow. It was narrowed rather than patched with a personal access token.
 
@@ -28,6 +28,13 @@ Runs `php artisan test` — the whole suite (`tests/Unit`, `tests/Feature`, `tes
 
 The job reuses the `locale` job's environment through a YAML alias (`env: &test-env` / `env: *test-env`), so the two cannot drift into different database settings. It repeats the PHP pin, the Composer cache, the install, and the empty `.env` step for the same reasons as `locale`.
 
+Two steps before the suite are the quality gates, both added 2026-11-19:
+
+| Step | Why it is a job step |
+|---|---|
+| `vendor/bin/pint --test` | The whole tree was formatted once, by hand, before this step existed. From then on `--test` fails only on drift a diff introduced — the check is cheap and the failure names the file. |
+| `vendor/bin/phpstan analyse` | Level 5 over `app/`, the packages' `src/`, `database/`, `routes/`, `config/`; `phpstan-baseline.neon` names the debt adopted at the same time. `JWT_SECRET` is in the job `env:` because Larastan boots the app: without a secret the JWT guard extension is absent and `JWTAuth::parser()` analyses as an undefined static method — three findings that do not exist locally, so the committed baseline would stop matching on the runner. |
+
 Two properties make a full-suite run possible on a bare runner, and both are pinned in `phpunit.xml` rather than in the workflow:
 
 | Setting | Why the suite needs it |
@@ -39,18 +46,18 @@ The job is the slow half of the workflow (the `locale` job is seconds). That is 
 
 ## A green run is `failed: 0`
 
-**A green run is `failed: 0`, not `passed == tests`.** The suite is `1698` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. The local row is quoted exactly as that environment prints it. The runner row is the same run with those seven cases moved from `passed` to `skipped`, so it is derived, not quoted:
+**A green run is `failed: 0`, not `passed == tests`.** The suite is `1711` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. The local row is quoted exactly as that environment prints it. The runner row is the same run with those seven cases moved from `passed` to `skipped`, so it is derived, not quoted:
 
 | Source | Result |
 |---|---|
-| Local `php artisan test`, both siblings present (re-measured 2026-10-13) | JSON report: `"tests":1698, "passed":1697, "skipped":1, "risky":1, "assertions":18347` (~8 min) |
-| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 1690 passed` — derived: the same `1698` total with the seven cross-repo cases skipped |
+| Local `php artisan test`, both siblings present (re-measured 2026-11-19) | JSON report: `"tests":1711, "passed":1710, "skipped":1, "risky":1, "assertions":18095` (~7 min) |
+| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 1703 passed` — derived: the same `1711` total with the seven cross-repo cases skipped |
 
-Both are green: `failed: 0` is the contract, and the total is `1698` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
+Both are green: `failed: 0` is the contract, and the total is `1711` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
 
-The `1698` is the post-sunset corpus: the pre-removal figure was `2454`, and the 2026-10-07 product-domain removal plus the migration squash are what took the difference. Re-measure this pair whenever a product domain is removed, a testsuite is added, or a `config/*.php` file appears or disappears — a stale total here reads as a corpus failure in the next session that touches it.
+The `1711` is the current corpus. It moved from `1698` when the five packaged core domains' suites (`tests/Packages`, 496 cases) were added to the runner — the pre-removal figure was `2454`, and the 2026-10-07 product-domain removal plus the migration squash are what took that difference. Re-measure this pair whenever a product domain is removed, a testsuite is added, or a `config/*.php` file appears or disappears — a stale total here reads as a corpus failure in the next session that touches it.
 
-The `assertions` field is the one number here that moves while the corpus does not. `SettingRegistryEnvPolicyTest::test_operational_env_keys_are_not_used_in_config_files` asserts once per (config file × the `45` keys in `removedOperationalEnvKeys()`), so deleting `config/purifier.php` on 2026-10-12 took exactly `45` off the total — `18392` → `18347` — with `tests` unchanged at `1698`. `tests`, `skipped` and `risky` are the fields that track the corpus; `assertions` tracks the corpus plus the config surface.
+The `assertions` field is the one number here that moves while the corpus does not. `SettingRegistryEnvPolicyTest::test_operational_env_keys_are_not_used_in_config_files` asserts once per (config file × the `45` keys in `removedOperationalEnvKeys()`), so deleting `config/purifier.php` on 2026-10-12 took exactly `45` off the total — `18392` → `18347`, and the packaged suites brought it to `18095` — with `tests` unchanged at `1711`. `tests`, `skipped` and `risky` are the fields that track the corpus; `assertions` tracks the corpus plus the config surface.
 
 | Count | Source | Why it is expected |
 |---|---|---|

@@ -5,7 +5,6 @@ namespace App\Support\Product\Http\Middleware;
 use App\Support\ApiResponder;
 use App\Support\Product\Enums\ProductActivationState;
 use App\Support\Product\Exceptions\ProductNotFoundException;
-use App\Support\Product\Models\ProductActivation;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
 use Closure;

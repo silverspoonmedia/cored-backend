@@ -2,12 +2,10 @@
 
 namespace App\Domain\PaymentGateway\Tests\Unit;
 
-use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransChargeParameterBuilder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class MidtransChargeParameterBuilderTest extends TestCase

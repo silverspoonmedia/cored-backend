@@ -6,7 +6,6 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\Auth\AuthService;
 use App\Support\Product\Enums\ProductActivationState;
 use Database\Seeders\ArchivdRoleSeeder;
-use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;

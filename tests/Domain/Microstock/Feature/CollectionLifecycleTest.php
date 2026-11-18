@@ -14,16 +14,16 @@ use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Jobs\AnalyzeAssetMetadata;
 use App\Domain\Microstock\Jobs\ProcessCollection;
 use App\Domain\Microstock\Models\AssetMetadata;
-use App\Domain\Microstock\Services\VisionImageResolver;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Microstock\Services\CollectionService;
 use App\Domain\Microstock\Services\CsvExportService;
-use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Microstock\Services\MicrostockService;
+use App\Domain\Microstock\Services\VisionImageResolver;
+use App\Domain\Microstock\Support\MicrostockCatalog;
 use App\Domain\Microstock\Support\Prompts;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
-use App\Domain\Microstock\Support\MicrostockCatalog;
 use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -188,7 +188,7 @@ class CollectionLifecycleTest extends TestCase
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
         // Seed pending rows the way ProcessCollection does, then run the batch.
-        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));
+        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) Str::uuid()))->handle(app(AnalysisStageService::class));
 
         $this->assertSame('Curated title', AssetMetadata::query()->where('file_id', $a->id)->value('title'));
         $this->assertSame('Curated title', AssetMetadata::query()->where('file_id', $b->id)->value('title'));
@@ -215,7 +215,7 @@ class CollectionLifecycleTest extends TestCase
         app(CollectionService::class)->lock($this->owner, $folder->id, 'hint', 'free');
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
-        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));
+        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) Str::uuid()))->handle(app(AnalysisStageService::class));
 
         foreach ($files as $f) {
             $this->assertSame(
@@ -376,7 +376,7 @@ class CollectionLifecycleTest extends TestCase
         app(CollectionService::class)->lock($this->owner, $folder->id, 'kitchen hint', 'free');
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
-        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));
+        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) Str::uuid()))->handle(app(AnalysisStageService::class));
 
         // A batch was created for the root file only; sub-folder file untouched.
         $this->assertDatabaseHas('microstock_asset_metadata', ['file_id' => $inRoot->id]);
@@ -389,7 +389,7 @@ class CollectionLifecycleTest extends TestCase
         $folder = $this->makeFolder($this->owner, $ws->id);
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
-        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));
+        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) Str::uuid()))->handle(app(AnalysisStageService::class));
 
         $this->assertSame(CollectionStatus::Failed, $folder->refresh()->collection_status);
     }

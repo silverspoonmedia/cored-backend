@@ -3,13 +3,13 @@
 namespace Tests\Domain\Archivd\Unit\Billing;
 
 use App\Domain\Archivd\Services\QuotaService;
+use App\Domain\Archivd\Support\ArchivdCatalog;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceFulfillmentService;
-use App\Domain\Archivd\Support\ArchivdCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

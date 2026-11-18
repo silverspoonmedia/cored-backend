@@ -48,3 +48,7 @@ Thumbs.db
 
 # i18n curation scratch (pair dumps, apply batches)
 /.tmp-i18n/
+
+# PHPStan result cache
+/.phpstan.cache/
+

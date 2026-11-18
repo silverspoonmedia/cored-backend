@@ -3,7 +3,6 @@
 namespace Tests\Unit\Providers;
 
 use App\Support\Encryption\Session\EncryptedDatabaseSessionHandler;
-use Illuminate\Session\EncryptedStore;
 use Tests\TestCase;
 
 class EncryptionServiceProviderTest extends TestCase

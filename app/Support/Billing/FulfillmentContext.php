@@ -2,6 +2,8 @@
 
 namespace App\Support\Billing;
 
+use App\Domain\Service\Models\ServiceEntitlement;
+use App\Domain\Service\Models\ServicePurchase;
 use Carbon\CarbonInterface;
 
 /**
@@ -54,8 +56,8 @@ final class FulfillmentContext
      * model, so a handler cannot mutate ledger state by accident.
      */
     public static function fromEntitlement(
-        \App\Domain\Service\Models\ServiceEntitlement $entitlement,
-        ?\App\Domain\Service\Models\ServicePurchase $purchase = null,
+        ServiceEntitlement $entitlement,
+        ?ServicePurchase $purchase = null,
         string $phase = self::PHASE_ACTIVATED,
     ): self {
         $entitlement->loadMissing('service');

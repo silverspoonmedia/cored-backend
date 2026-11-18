@@ -3,13 +3,15 @@
 require __DIR__.'/../../vendor/autoload.php';
 
 $app = require_once __DIR__.'/../../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
+use App\Domain\FileHosting\Models\FileVariant;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\Microstock\Services\AiBillingService;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Microstock\Services\AiDailyFreeService;
+use Illuminate\Contracts\Console\Kernel;
 
 $freeId = '019fbc21-eff1-72af-b14c-494ecbe14328';
 $paidId = '019fbc22-1585-72f4-86d5-ac33faf984d5';
@@ -21,6 +23,7 @@ foreach (['free' => $freeId, 'paid' => $paidId] as $label => $fid) {
     $f = Folder::query()->find($fid);
     if ($f === null) {
         echo "{$label}: NOT FOUND\n";
+
         continue;
     }
 
@@ -39,7 +42,7 @@ foreach (['free' => $freeId, 'paid' => $paidId] as $label => $fid) {
     $fileIds = HostedFile::query()->where('folder_id', $fid)->pluck('id');
     $variantMissing = 0;
     foreach ($fileIds as $fileId) {
-        $has = \App\Domain\FileHosting\Models\FileVariant::query()
+        $has = FileVariant::query()
             ->where('file_id', $fileId)
             ->where('kind', setting_config('microstock.ai.vision_image.variant_kind', 'ai_1024'))
             ->exists();

@@ -6,6 +6,7 @@ use Aws\Exception\AwsException;
 use Aws\S3\S3Client;
 use Illuminate\Filesystem\AwsS3V3Adapter;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -269,7 +270,7 @@ class S3DirectUploadEngine
                 }
             }
 
-            \Illuminate\Support\Facades\Log::channel('single')->warning('archivd upstream_failed', $context);
+            Log::channel('single')->warning('archivd upstream_failed', $context);
         }
 
         $message = $e instanceof AwsException

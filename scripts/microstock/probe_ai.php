@@ -6,18 +6,19 @@
  * Usage: php scripts/microstock/probe_ai.php [--timeout=300] [--only=T0,T0t,T3,T6] [--label=sonnet5-gpt56] [--folder=uuid] [--file=uuid] [--delivery=base64|url] [--variant=ai_512|ai_1024] [--matrix]
  */
 
-use App\Domain\FileHosting\Models\FileVariant;
+use App\Domain\Ai\Services\AiConnectionResolver;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\Microstock\Models\AssetMetadata;
-use App\Domain\Microstock\Services\VisionImageResolver;
 use App\Domain\Microstock\Services\HttpAiMetadataService;
+use App\Domain\Microstock\Services\VisionImageResolver;
 use App\Domain\Microstock\Support\Prompts;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Http;
 
 require __DIR__.'/../../vendor/autoload.php';
 
 $app = require_once __DIR__.'/../../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 $timeout = 300;
 $only = null;
@@ -54,7 +55,7 @@ foreach ($argv as $arg) {
     }
 }
 
-$resolver = app(App\Domain\Ai\Services\AiConnectionResolver::class);
+$resolver = app(AiConnectionResolver::class);
 $visionCfg = (array) setting_config('microstock.ai.vision');
 $thinkingCfg = (array) setting_config('microstock.ai.thinking');
 $visionConn = $resolver->resolve(trim((string) ($visionCfg['connection'] ?? '')) ?: null);

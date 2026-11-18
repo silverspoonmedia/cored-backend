@@ -4,10 +4,8 @@ namespace Tests\Domain\Product\Feature;
 
 use App\Domain\Identity\Models\User;
 use App\Support\Product\Enums\ProductActivationState;
-use App\Support\Product\Models\ProductActivation;
 use App\Support\Product\Services\ProductActivationService;
 use Database\Seeders\ArchivdRoleSeeder;
-use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;

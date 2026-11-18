@@ -4,9 +4,11 @@ namespace Tests\Domain\Microstock\Unit\Services;
 
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\MetadataStatus;
+use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Jobs\AnalyzeAssetVision;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Models\DailyFreeUsage;
@@ -14,7 +16,6 @@ use App\Domain\Microstock\Services\AiBillingService;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Microstock\Services\AiDailyFreeService;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
-use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -84,7 +85,7 @@ class AiDailyFreeServiceTest extends TestCase
     {
         config(['microstock.daily_free.limit_per_user' => 1]);
 
-        $this->expectException(\App\Domain\Microstock\Exceptions\MicrostockException::class);
+        $this->expectException(MicrostockException::class);
 
         app(AiBillingService::class)->planAnalyze($this->user, 2);
     }

@@ -11,10 +11,10 @@ use App\Domain\Archivd\Models\Folder;
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Models\Workspace;
 use App\Domain\Archivd\Models\WorkspaceMember;
-use App\Domain\Identity\Models\User;
-use App\Domain\Service\Services\ServiceEntitlementService;
 use App\Domain\Archivd\Support\ArchivdCatalog;
+use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Support\MicrostockCatalog;
+use App\Domain\Service\Services\ServiceEntitlementService;
 use Illuminate\Http\Request;
 
 /**

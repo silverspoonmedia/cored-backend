@@ -3,7 +3,6 @@
 namespace Tests\Domain\Archivd\Qualification;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\Domain\Archivd\Qualification\Concerns\QualificationHarness;

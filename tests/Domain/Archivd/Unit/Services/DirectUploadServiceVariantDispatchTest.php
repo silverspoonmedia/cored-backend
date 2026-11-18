@@ -14,6 +14,7 @@ use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
@@ -72,8 +73,8 @@ class DirectUploadServiceVariantDispatchTest extends TestCase
             'expires_at' => Carbon::now()->addHour(),
         ]);
 
-        \Illuminate\Support\Facades\Storage::fake('local');
-        \Illuminate\Support\Facades\Storage::disk('local')->put($objectKey, str_repeat('x', 2048));
+        Storage::fake('local');
+        Storage::disk('local')->put($objectKey, str_repeat('x', 2048));
 
         $result = app(DirectUploadService::class)->complete($user, $upload->id, null);
 

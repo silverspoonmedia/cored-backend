@@ -4,8 +4,8 @@ namespace App\Domain\Microstock\Jobs;
 
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\AnalysisPipeline;
-use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Jobs\Middleware\LimitAnalysisConcurrency;
 use App\Domain\Microstock\Models\AssetMetadata;

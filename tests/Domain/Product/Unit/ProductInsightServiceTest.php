@@ -12,8 +12,10 @@ use App\Support\Product\Services\ProductAnalyticsService;
 use App\Support\Product\Services\ProductInsightService;
 use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
@@ -23,6 +25,7 @@ class ProductInsightServiceTest extends TestCase
     use SeedsRolesAndPermissions;
 
     private ProductInsightService $insights;
+
     private ProductActivationService $activations;
 
     protected function setUp(): void
@@ -112,8 +115,8 @@ class ProductInsightServiceTest extends TestCase
         HostedFile::query()->create(['user_id' => $user->id, 'name' => 'c.txt', 'disk' => 'local', 'path' => '/c', 'size' => 100, 'mime' => 'text/plain']);
         // Workspace has no model-level hook; insert directly then recompute the tier.
         Workspace::query()->insert([
-            ['id' => (string) \Illuminate\Support\Str::uuid7(), 'owner_user_id' => $user->id, 'name' => 'ws1', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
-            ['id' => (string) \Illuminate\Support\Str::uuid7(), 'owner_user_id' => $user->id, 'name' => 'ws2', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => (string) Str::uuid7(), 'owner_user_id' => $user->id, 'name' => 'ws1', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => (string) Str::uuid7(), 'owner_user_id' => $user->id, 'name' => 'ws2', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
         ]);
         app(ProductAnalyticsService::class)->recomputeArchivdTier('free');
 
@@ -132,7 +135,7 @@ class ProductInsightServiceTest extends TestCase
         HostedFile::query()->create(['user_id' => $user->id, 'name' => 'a.txt', 'disk' => 'local', 'path' => '/a', 'size' => 50, 'mime' => 'text/plain']);
         HostedFile::query()->create(['user_id' => $user->id, 'name' => 'b.txt', 'disk' => 'local', 'path' => '/b', 'size' => 50, 'mime' => 'text/plain']);
         Workspace::query()->insert([
-            ['id' => (string) \Illuminate\Support\Str::uuid7(), 'owner_user_id' => $user->id, 'name' => 'ws1', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => (string) Str::uuid7(), 'owner_user_id' => $user->id, 'name' => 'ws1', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // Drill-down reads source tables directly — no analytics recompute needed.
@@ -167,12 +170,12 @@ class ProductInsightServiceTest extends TestCase
 
     public function test_archivd_metrics_cache_survives_past_former_ttl_until_forget(): void
     {
-        \Illuminate\Support\Carbon::setTestNow('2026-01-01 00:00:00');
+        Carbon::setTestNow('2026-01-01 00:00:00');
 
         $first = $this->insights->productMetrics('Archivd');
         $this->assertTrue(Cache::has('product_insights.Archivd.metrics'));
 
-        \Illuminate\Support\Carbon::setTestNow('2026-01-01 01:00:00'); // past former 300s TTL
+        Carbon::setTestNow('2026-01-01 01:00:00'); // past former 300s TTL
 
         $second = $this->insights->productMetrics('Archivd');
         $this->assertSame($first, $second);
@@ -181,7 +184,7 @@ class ProductInsightServiceTest extends TestCase
         Cache::forget('product_insights.Archivd.metrics');
         $this->assertFalse(Cache::has('product_insights.Archivd.metrics'));
 
-        \Illuminate\Support\Carbon::setTestNow();
+        Carbon::setTestNow();
     }
 
     private function userWithRole(string $role, string $email = 'user@example.com'): User

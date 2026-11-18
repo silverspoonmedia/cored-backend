@@ -297,7 +297,7 @@ foreach ($report['locales'] as $locale => $entry) {
     }
 
     echo str_pad($locale, 8), str_pad((string) $entry['scalars'], 9), str_pad((string) $entry['owned'], 7),
-        str_pad((string) $entry['unowned'], 9), (string) $entry['divergent'], PHP_EOL;
+    str_pad((string) $entry['unowned'], 9), (string) $entry['divergent'], PHP_EOL;
 }
 
 if ($verbose) {

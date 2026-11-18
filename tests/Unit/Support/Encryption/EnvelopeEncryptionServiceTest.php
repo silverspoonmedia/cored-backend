@@ -12,7 +12,9 @@ use App\Support\Encryption\InvoicePayloadDecryptLogger;
 use App\Support\Oci\Kms\Contracts\KmsDekClientInterface;
 use App\Support\Oci\Kms\LocalKmsDekClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
 class EnvelopeEncryptionServiceTest extends TestCase
@@ -70,7 +72,7 @@ class EnvelopeEncryptionServiceTest extends TestCase
 
         $this->service->decrypt($envelope, $context);
 
-        $activity = \Spatie\Activitylog\Models\Activity::query()->where('log_name', 'crypto')->firstOrFail();
+        $activity = Activity::query()->where('log_name', 'crypto')->firstOrFail();
 
         $this->assertFalse($activity->properties->get('cache_hit'));
         $this->assertSame(1, $activity->properties->get('envelope_version'));
@@ -81,7 +83,7 @@ class EnvelopeEncryptionServiceTest extends TestCase
     {
         config(['encryption.audit_decrypts' => 'always']);
 
-        \Illuminate\Support\Facades\Cache::flush();
+        Cache::flush();
 
         $context = new DecryptionContext('users', 'user-2', 'two_factor_secret', 'test');
         $envelope = $this->service->encrypt('cached-secret', $context);
@@ -89,7 +91,7 @@ class EnvelopeEncryptionServiceTest extends TestCase
         $this->service->decrypt($envelope, $context);
         $this->service->decrypt($envelope, $context);
 
-        $activities = \Spatie\Activitylog\Models\Activity::query()->where('log_name', 'crypto')->get();
+        $activities = Activity::query()->where('log_name', 'crypto')->get();
 
         $this->assertCount(2, $activities);
         $this->assertFalse($activities[0]->properties->get('cache_hit'));

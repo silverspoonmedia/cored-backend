@@ -2,10 +2,10 @@
 
 namespace App\Domain\Identity\Http\Controllers\API\V1\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Domain\Identity\Http\Requests\Auth\LoginRequest;
 use App\Domain\Identity\Http\Requests\Auth\RegisterRequest;
 use App\Domain\Identity\Services\Auth\AuthService;
+use App\Http\Controllers\Controller;
 use App\Support\Auth\SpaAuthCookie;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;

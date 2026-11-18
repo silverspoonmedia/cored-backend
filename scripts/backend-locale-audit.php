@@ -208,6 +208,7 @@ foreach ($files as $relative) {
         if (! is_file($path)) {
             $entry['missing_file'] ??= [];
             $entry['missing_file'][] = $locale;
+
             continue;
         }
 
@@ -216,6 +217,7 @@ foreach ($files as $relative) {
         foreach (array_keys($referenceValues) as $key) {
             if (! array_key_exists($key, $values)) {
                 $entry['missing_keys'][] = ['locale' => $locale, 'key' => $key];
+
                 continue;
             }
 

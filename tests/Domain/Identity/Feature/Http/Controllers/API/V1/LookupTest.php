@@ -2,10 +2,10 @@
 
 namespace Tests\Domain\Identity\Feature\Http\Controllers\API\V1;
 
-use App\Domain\Navigation\Enums\MenuAudience;
-use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Enums\MenuAudience;
+use App\Domain\Navigation\Models\Menu;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\SeedsRolesAndPermissions;

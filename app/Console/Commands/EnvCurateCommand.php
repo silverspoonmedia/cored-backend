@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Support\EnvironmentCurator;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'env:curate')]

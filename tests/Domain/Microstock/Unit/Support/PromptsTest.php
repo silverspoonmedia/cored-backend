@@ -24,6 +24,7 @@ class PromptsTest extends TestCase
             'thinkingSystem() must stay compact — long prompts + images can 524 on the gateway',
         );
     }
+
     public function test_marketplace_rules_include_ban_list(): void
     {
         $reflection = new \ReflectionClass(Prompts::class);

@@ -4,7 +4,6 @@ namespace App\Domain\PaymentGateway\Services\Payment\Midtrans;
 
 // Model
 use App\Domain\PaymentGateway\Models\PaymentGateway;
-
 // External
 use Midtrans\Config;
 

@@ -3,6 +3,7 @@
 namespace Tests\Domain\Ai\Unit\Services;
 
 use App\Domain\Ai\Enums\AiConnectionStatus;
+use App\Domain\Ai\Exceptions\AiException;
 use App\Domain\Ai\Models\AiConnection;
 use App\Domain\Ai\Services\AiConnectionService;
 use App\Domain\Identity\Models\User;
@@ -133,7 +134,7 @@ class AiConnectionServiceTest extends TestCase
 
         $this->active($service, $actor, 'taken');
 
-        $this->expectException(\App\Domain\Ai\Exceptions\AiException::class);
+        $this->expectException(AiException::class);
 
         $service->create($actor, [
             'slug' => 'taken',
@@ -149,7 +150,7 @@ class AiConnectionServiceTest extends TestCase
     {
         $actor = $this->userWithRole('Admin');
 
-        $this->expectException(\App\Domain\Ai\Exceptions\AiException::class);
+        $this->expectException(AiException::class);
 
         app(AiConnectionService::class)->create($actor, [
             'slug' => 'bad-endpoint',
@@ -169,7 +170,7 @@ class AiConnectionServiceTest extends TestCase
         $connection = $this->active($service, $actor, 'default-del');
         $service->setDefault($connection);
 
-        $this->expectException(\App\Domain\Ai\Exceptions\AiException::class);
+        $this->expectException(AiException::class);
 
         $service->delete($connection->fresh());
     }

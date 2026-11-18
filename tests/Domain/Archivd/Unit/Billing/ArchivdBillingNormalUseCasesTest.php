@@ -2,16 +2,15 @@
 
 namespace Tests\Domain\Archivd\Unit\Billing;
 
+use App\Domain\Archivd\Support\ArchivdCatalog;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PurchaseChangeType;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Services\ServiceEntitlementLifecycleService;
-use App\Domain\Archivd\Support\ArchivdCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\SeedsCurrencies;
-use Tests\Domain\Archivd\Unit\Billing\ArchivdBillingScenarioHarness;
 use Tests\TestCase;
 
 /**
@@ -37,7 +36,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_N01_jan_journey_1tb_plus_addons(): void
+    public function test_n01_jan_journey_1tb_plus_addons(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -53,7 +52,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertSame($this->expectedQuota($this->main1, 2, 1), $this->quotaBytes());
     }
 
-    public function test_N02_mid_cycle_addon_units_freeze_anniversary(): void
+    public function test_n02_mid_cycle_addon_units_freeze_anniversary(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -69,7 +68,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertSame(1, (int) $this->entitlementFor($this->addon500)->quantity);
     }
 
-    public function test_N03_main_renew_independent_of_addon_clock(): void
+    public function test_n03_main_renew_independent_of_addon_clock(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -84,7 +83,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertTrue($this->entitlementFor($this->addon100)->ends_at->equalTo($addonEnds));
     }
 
-    public function test_N04_stack_renew_includes_mid_cycle_qty(): void
+    public function test_n04_stack_renew_includes_mid_cycle_qty(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -101,7 +100,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertSame(2, (int) $this->entitlementFor($this->addon500)->quantity);
     }
 
-    public function test_N05_upgrade_does_not_alter_addon_stack(): void
+    public function test_n05_upgrade_does_not_alter_addon_stack(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -118,7 +117,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertTrue($this->sharedAddonEndsAt()->equalTo($addonEnds));
     }
 
-    public function test_N06_downgrade_after_discounted_upgrade_uses_list_base(): void
+    public function test_n06_downgrade_after_discounted_upgrade_uses_list_base(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -140,7 +139,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertGreaterThan($upgradeCharge * ($remainingDays / 30.0) - 0.01, $down['quote']['credit_amount']);
     }
 
-    public function test_N07_two_consecutive_main_renews(): void
+    public function test_n07_two_consecutive_main_renews(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -153,7 +152,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertTrue($this->activeMain()->ends_at->equalTo(Carbon::parse('2026-04-18 12:00:00')));
     }
 
-    public function test_N08_addon_only_two_anniversaries(): void
+    public function test_n08_addon_only_two_anniversaries(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -170,7 +169,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertTrue($this->sharedAddonEndsAt()->equalTo(Carbon::parse('2026-04-27 12:00:00')));
     }
 
-    public function test_N09_main_renew_leaves_addon_ends_untouched(): void
+    public function test_n09_main_renew_leaves_addon_ends_untouched(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -184,7 +183,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertTrue($this->entitlementFor($this->addon500)->ends_at->equalTo($addonEnds));
     }
 
-    public function test_N10_grace_main_still_counts_for_upgrade_credit(): void
+    public function test_n10_grace_main_still_counts_for_upgrade_credit(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -211,7 +210,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertGreaterThan(0.0, $r['quote']['credit_amount']);
     }
 
-    public function test_N11_expire_grace_main_recompute_free_plus_addons(): void
+    public function test_n11_expire_grace_main_recompute_free_plus_addons(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -231,7 +230,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertSame($this->expectedQuota(null, 1, 0), $this->quotaBytes());
     }
 
-    public function test_N12_shared_anniversary_later_sku_inherits(): void
+    public function test_n12_shared_anniversary_later_sku_inherits(): void
     {
         $this->at('2026-01-05 12:00:00');
         $this->checkout($this->addon100);
@@ -246,7 +245,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertTrue($this->sharedAddonEndsAt()->equalTo(Carbon::parse('2026-02-04 12:00:00')));
     }
 
-    public function test_N13_double_scheduler_same_day(): void
+    public function test_n13_double_scheduler_same_day(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -264,7 +263,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertNull($third, 'after pay ends_at moved; not due same day');
     }
 
-    public function test_N14_full_stack_math_6x100_plus_2x500(): void
+    public function test_n14_full_stack_math_6x100_plus_2x500(): void
     {
         $this->at('2026-01-01 12:00:00');
         for ($i = 0; $i < 6; $i++) {
@@ -279,7 +278,7 @@ class ArchivdBillingNormalUseCasesTest extends TestCase
         $this->assertEqualsWithDelta(46.70, (float) $renewal->display_amount, 0.01);
     }
 
-    public function test_N15_quota_matrix_free_1tb_3x100_2x500(): void
+    public function test_n15_quota_matrix_free_1tb_3x100_2x500(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);

@@ -4,11 +4,12 @@ name: CI
 # `monolith-vue-workers`:
 #
 #   `locale`  — the localization guards.
-#   `backend` — the backend test suite (`php artisan test`), which is where the
-#               domain suites live. Before this job existed, `ci.yml` ran only
-#               `--filter=Locale`, so a change that broke `tests/Domain/**` could
-#               merge green: a single product domain alone is 60+ feature test files
-#               that never executed on the runner.
+#   `backend` — Pint, PHPStan level 5, and the backend test suite (`php artisan test`),
+#               which is where the domain suites live. Before these steps existed,
+#               `ci.yml` ran only `--filter=Locale`, so a change that broke
+#               `tests/Domain/**` could merge green: a single product domain alone is
+#               60+ feature test files that never executed on the runner. Style and
+#               types had no gate at all — a drift landed in the next commit.
 #
 # An earlier version of `locale` checked out `monolith-vue-workers` as a sibling so
 # the four cross-repo guards (`locale-prose-scan`, `locale-rawkey-scan`,
@@ -66,6 +67,11 @@ jobs:
       CACHE_STORE: array
       QUEUE_CONNECTION: sync
       MAIL_MAILER: array
+      # PHPStan boots the app through Larastan. Without a JWT secret the guard
+      # extension is absent and `JWTAuth::parser()` analyses as an undefined static
+      # method — three findings that do not exist locally, so the committed
+      # baseline stops matching. PHPUnit sets its own value; analysis does not.
+      JWT_SECRET: 'ci-static-analysis-secret-with-enough-length'
       # Collision truncates test names and finding messages to the terminal width, and
       # the runner's default is 80 columns — the log then reads `file_get_contents(/ho…`
       # instead of the path that failed. This gate exists to produce readable findings.
@@ -154,6 +160,18 @@ jobs:
       # immutable, so a real `.env` could not override them anyway.
       - name: Create empty .env
         run: php -r "file_put_contents('.env', '');"
+
+      # Formatting is now a gate, not a courtesy: the whole tree was Pint-clean on
+      # 2026-11-19, so `--test` fails only on a diff that introduced drift. Runs before
+      # PHPStan so a style failure is reported first.
+      - name: Pint (formatting)
+        run: vendor/bin/pint --test
+
+      # Larastan boots the app, so the same environment the suite uses is what makes a
+      # local baseline match the runner's. `--memory-limit` is above the CLI default;
+      # level 5 over the whole analysed surface needs it.
+      - name: PHPStan (level 5)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
       # The whole suite, not a testsuite subset: `tests/Unit`, `tests/Feature`, and
       # `tests/Domain` all boot the same app, and `--testsuite=Domain` alone would leave

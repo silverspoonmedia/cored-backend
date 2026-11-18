@@ -2,6 +2,7 @@
 
 namespace App\Domain\Identity\Listeners;
 
+use App\Domain\ActivityLog\Support\AuthActivityRecorder;
 use App\Domain\Identity\Events\LoginFailed;
 use App\Domain\Identity\Events\LoginSuccessful;
 use App\Domain\Identity\Events\PasswordChanged;
@@ -10,7 +11,6 @@ use App\Domain\Identity\Events\TwoFactorDisabled;
 use App\Domain\Identity\Events\TwoFactorEnabled;
 use App\Domain\Identity\Events\TwoFactorLoginFailed;
 use App\Domain\Identity\Events\UserLoggedOut;
-use App\Domain\ActivityLog\Support\AuthActivityRecorder;
 
 /**
  * Persists authentication lifecycle events to Spatie activitylog (`auth` log).

@@ -2,14 +2,11 @@
 
 namespace App\Domain\PaymentGateway\Tests\Unit;
 
-use App\Domain\PaymentGateway\Enums\PaymentChannelKind;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
-use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\PaymentChannelResolver;
-use App\Domain\PaymentGateway\Services\Payment\PaymentGatewayCredentialChecker;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PaymentChannelResolverTest extends TestCase

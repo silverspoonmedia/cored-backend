@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Support\EnvironmentBackupManager;
+use App\Support\PendingBackup;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Attribute\AsCommand;
 
@@ -77,7 +78,7 @@ class EnvRestoreCommand extends Command
         return self::SUCCESS;
     }
 
-    private function resolveBackup(): ?\App\Support\PendingBackup
+    private function resolveBackup(): ?PendingBackup
     {
         $id = $this->argument('id');
 

@@ -14,6 +14,7 @@ use Tests\TestCase;
 class SettingRegistryEnvPolicyTest extends TestCase
 {
     use RefreshDatabase;
+
     /**
      * Env keys removed when operational settings moved to system_settings + config literals.
      *

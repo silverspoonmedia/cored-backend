@@ -5,10 +5,10 @@ namespace App\Domain\PaymentGateway\Tests\Unit;
 use App\Domain\PaymentGateway\Events\PaymentRoutingCatalogChanged;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Services\PaymentChannelService;
+use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\Concerns\SeedsRolesAndPermissions;
-use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Tests\TestCase;
 
 class PaymentChannelServiceRoutingRealtimeTest extends TestCase

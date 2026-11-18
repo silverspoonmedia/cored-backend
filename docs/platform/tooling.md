@@ -1,10 +1,10 @@
 # Tooling
 
-Developer tooling that is not a test: formatting, and the two-job GitHub Actions workflow that gates a pull request. Both are deliberately narrow — Pint never runs on the runner, and each CI job needs exactly one repo, so the workflow carries no credentials.
+Developer tooling that is not a test: formatting, static analysis, and the two-job GitHub Actions workflow that gates a pull request. Each CI job needs exactly one repo, so the workflow carries no credentials.
 
 | Need | Open |
 |------|------|
-| Pint usage | below |
+| Pint and PHPStan usage, `composer check` | below |
 | CI job steps, why each one exists, expected skip/risky counts | [reference-tooling.md](reference-tooling.md) |
 | Which docs gates CI runs, and which need both checkouts | [reference-tooling.md — the docs gates](reference-tooling.md#the-docs-gates) |
 | Which defect class each `locale` job step covers | [reference-localization.md — CI coverage vs manual runs](reference-localization.md#ci-coverage-vs-manual-runs) |
@@ -25,14 +25,41 @@ php artisan pint app/Domain/Identity/Models/User.php
 
 Implementation: `app/Console/Commands/PintCommand.php` — Symfony Process, `ignoreValidationErrors()` so Pint flags pass through.
 
-**Limits:** `-h`/`--help`/`-q`/`-v` are Artisan-owned; for full Pint help: `php vendor/bin/pint --help`. No project `pint.json` yet (Pint defaults).
+**Limits:** `-h`/`--help`/`-q`/`-v` are Artisan-owned; for full Pint help: `php vendor/bin/pint --help`. Preset `laravel` and the excludes live in `pint.json` (`lang/` is excluded: its `binary_operator_spaces` and `line_ending` fixes would rewrite every locale file and fight the localization guards).
 
-**Workflow:** `pint --dirty` before commit; `pint --test` before opening the pull request. Pint is a **local** step — neither CI job invokes it, so a formatting difference is not caught on the runner and lands in the next commit. Do not describe `pint --test` as a CI check until a job actually runs it.
+**Workflow:** `pint --dirty` before commit; `composer check:style` before opening the pull request.
+
+## PHPStan (Larastan)
+
+Level 5 over `app/`, the five packages' `src/`, `database/`, `routes/`, and `config/` — `tests/` is out of scope on purpose (a suite is a scaffold, not shipped code). Config: `phpstan.neon`; the adopted debt: `phpstan-baseline.neon`.
+
+```bash
+php artisan phpstan                 # wrapper, forwards args
+composer check:types                # what the gate runs
+vendor/bin/phpstan analyse --generate-baseline   # only to burn down an entry
+```
+
+Three settings are load-bearing, each with its reason in the config:
+
+| Setting | Why |
+|---|---|
+| `databaseMigrationsPath` lists every migration dir, including the five under `packages/*/database/migrations` | Without a package's migrations Larastan cannot read its model columns and every `$model->column` in that package reports `property.notFound`. A new package with migrations must be added in the same task. |
+| `treatPhpDocTypesAsCertain: false` | PHPDoc here documents payloads that arrive over HTTP, so treating it as proven turns every defensive `??` and `is_array()` into a false positive. |
+| `ignoreErrors: property.notFound` under `*/Http/Resources/*` | `JsonResource::$this->field` is `__get` on the wrapped model. |
+
+`tmpDir` is `.phpstan.cache`, which is gitignored **and** in `UninstallReferenceScanner::SKIP_DIRS` — the scanner reads the working tree, so a cache of generated PHP would otherwise appear as product-domain references and fail `DomainUninstallManifestTest`.
+
+**The baseline is a burn-down list, not an allowlist.** `composer check:types` fails on anything it does not already name, so new code is held to level 5 while the 299 findings adopted on 2026-11-19 (`assign.propertyType` 42, `method.nonObject` 34, `property.notFound` 30) get fixed by deleting an entry and re-running. Never add one.
+
+## `composer check`
+
+`composer check` = `check:style` (Pint `--test`) → `check:types` (PHPStan) → `test` (the whole suite). Run it before opening a pull request; CI runs the same suite plus the localization and docs guards.
 
 ## Gates
 
 ```bash
-php artisan pint --test          # formatting (local only)
+php artisan pint --test          # formatting — also a `backend` CI job step
+php artisan phpstan              # static analysis — also a `backend` CI job step
 php artisan test                 # whole backend suite — what the `backend` CI job runs
 php artisan test --filter=Documentation
 php artisan test --filter=Locale
@@ -47,7 +74,7 @@ The last four are the **docs** gates. Their normative statement, and the SPA hal
 Reproduce the `backend` job locally before pushing — same command, same in-memory database:
 
 ```bash
-php artisan test                 # whole suite; ~8 min on the dev machine, longer on a runner
+php artisan test                 # whole suite; ~7 min on the dev machine, longer on a runner
 ```
 
 A green run is `failed: 0`, **not** `passed == tests`: the suite ends with one skipped OCI KMS integration test, seven more cross-repo skips when the sibling checkout is absent, and one risky stdout report — all by design. The exact counts and why they must stay are in [reference-tooling.md](reference-tooling.md#a-green-run-is-failed-0).

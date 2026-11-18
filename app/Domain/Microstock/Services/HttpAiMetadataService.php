@@ -25,6 +25,7 @@ class HttpAiMetadataService implements AiMetadataService
     public function __construct(
         private readonly AiConnectionResolver $connections,
     ) {}
+
     /** @var list<array<string, mixed>> */
     private array $stageMetrics = [];
 

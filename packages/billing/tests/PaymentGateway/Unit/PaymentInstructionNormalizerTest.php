@@ -2,12 +2,11 @@
 
 namespace App\Domain\PaymentGateway\Tests\Unit;
 
-use App\Domain\PaymentGateway\Enums\PaymentChannelKind;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\PaymentInstructionNormalizer;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PaymentInstructionNormalizerTest extends TestCase

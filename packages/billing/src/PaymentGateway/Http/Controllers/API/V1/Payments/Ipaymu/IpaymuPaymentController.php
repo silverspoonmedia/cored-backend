@@ -2,11 +2,11 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\API\V1\Payments\Ipaymu;
 
-use App\Http\Controllers\Controller;
 use App\Domain\PaymentGateway\Http\Requests\Payments\Ipaymu\IpaymuDirectPaymentRequest;
 use App\Domain\PaymentGateway\Http\Requests\Payments\Ipaymu\IpaymuSnapTokenRequest;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
+use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 

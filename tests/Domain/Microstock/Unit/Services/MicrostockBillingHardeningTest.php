@@ -4,6 +4,7 @@ namespace Tests\Domain\Microstock\Unit\Services;
 
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
+use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Jobs\AnalyzeAssetVision;
@@ -12,6 +13,7 @@ use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AiBillingService;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Microstock\Services\AnalysisStageService;
+use App\Domain\Microstock\Services\VisionImageResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Mockery;
@@ -224,14 +226,14 @@ class MicrostockBillingHardeningTest extends TestCase
             ],
         ])->save();
 
-        $ai = Mockery::mock(\App\Domain\Microstock\Contracts\AiMetadataService::class);
+        $ai = Mockery::mock(AiMetadataService::class);
         $ai->shouldNotReceive('analyzeVision');
-        $this->app->instance(\App\Domain\Microstock\Contracts\AiMetadataService::class, $ai);
+        $this->app->instance(AiMetadataService::class, $ai);
 
         $job = new AnalyzeAssetVision((string) $metadata->id, 'hint', null);
         $job->handle(
             $ai,
-            app(\App\Domain\Microstock\Services\VisionImageResolver::class),
+            app(VisionImageResolver::class),
             app(AnalysisStageService::class),
         );
 

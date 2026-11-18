@@ -10,6 +10,7 @@ function flattenLocaleValue(mixed $value, string $prefix = '', array &$out = [])
         foreach ($value as $key => $child) {
             flattenLocaleValue($child, $prefix === '' ? (string) $key : $prefix.'.'.$key, $out);
         }
+
         return;
     }
 

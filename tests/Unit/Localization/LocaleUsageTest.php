@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Localization;
 
+use App\Support\Localization\LocalePreference;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -123,7 +124,7 @@ class LocaleUsageTest extends TestCase
      */
     public function test_locale_json_packs_contain_no_nested_groups(): void
     {
-        foreach (\App\Support\Localization\LocalePreference::supported() as $locale) {
+        foreach (LocalePreference::supported() as $locale) {
             $path = lang_path($locale.'.json');
 
             $this->assertFileExists($path);

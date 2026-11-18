@@ -8,19 +8,22 @@ use App\Domain\Archivd\Models\Folder;
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Models\Workspace;
 use App\Domain\Identity\Models\User;
+use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\AnalysisPipeline;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
+use App\Domain\Microstock\Jobs\AnalysisWatchdog;
 use App\Domain\Microstock\Jobs\AnalyzeAssetThinking;
 use App\Domain\Microstock\Jobs\AnalyzeAssetVision;
-use App\Domain\Microstock\Jobs\AnalysisWatchdog;
 use App\Domain\Microstock\Jobs\ProcessCollection;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Microstock\Services\MicrostockService;
+use App\Domain\Microstock\Services\VisionImageResolver;
+use App\Domain\Microstock\Support\MicrostockCatalog;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
-use App\Domain\Microstock\Support\MicrostockCatalog;
 use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,7 +75,7 @@ class CollectionPipelineTest extends TestCase
 
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
-        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(\App\Domain\Microstock\Services\AnalysisStageService::class));
+        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) Str::uuid()))->handle(app(AnalysisStageService::class));
 
         Queue::assertPushed(AnalyzeAssetVision::class, 3);
         Queue::assertPushedOn('microstock-collection-vision', AnalyzeAssetVision::class);
@@ -134,9 +137,9 @@ class CollectionPipelineTest extends TestCase
         ]);
 
         (new AnalyzeAssetThinking((string) $metadata->id, 'hint', null, AnalysisPipeline::Solo))->handle(
-            app(\App\Domain\Microstock\Contracts\AiMetadataService::class),
-            app(\App\Domain\Microstock\Services\VisionImageResolver::class),
-            app(\App\Domain\Microstock\Services\AnalysisStageService::class),
+            app(AiMetadataService::class),
+            app(VisionImageResolver::class),
+            app(AnalysisStageService::class),
         );
 
         $this->assertSame('Existing', $metadata->refresh()->title);
@@ -173,7 +176,7 @@ class CollectionPipelineTest extends TestCase
             ],
         ]);
 
-        (new AnalysisWatchdog)->handle(app(\App\Domain\Microstock\Services\AnalysisStageService::class));
+        (new AnalysisWatchdog)->handle(app(AnalysisStageService::class));
 
         Queue::assertPushed(AnalyzeAssetThinking::class);
         Queue::assertPushedOn('microstock-collection-thinking', AnalyzeAssetThinking::class);

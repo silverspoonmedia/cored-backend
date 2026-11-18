@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -56,6 +57,7 @@ class BatchController extends Controller
             if ((microtime(true) - $startedAt) >= self::WALL_CLOCK_SECONDS) {
                 // Budget exhausted: fail this and every remaining entry fast.
                 $responses[] = $this->subError(504, __('api/common.batch_timeout'));
+
                 continue;
             }
 
@@ -87,7 +89,7 @@ class BatchController extends Controller
         $key = 'api:'.($request->user()?->getAuthIdentifier() ?: $request->ip());
 
         for ($i = 0; $i < $subRequests; $i++) {
-            \Illuminate\Support\Facades\RateLimiter::hit($key, 60);
+            RateLimiter::hit($key, 60);
         }
     }
 

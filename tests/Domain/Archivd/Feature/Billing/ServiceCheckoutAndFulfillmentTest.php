@@ -3,6 +3,7 @@
 namespace Tests\Domain\Archivd\Feature\Billing;
 
 use App\Domain\Archivd\Services\QuotaService;
+use App\Domain\Archivd\Support\ArchivdCatalog;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchronizer;
@@ -10,7 +11,6 @@ use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePrice;
 use App\Domain\Service\Models\ServicePurchase;
-use App\Domain\Archivd\Support\ArchivdCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;

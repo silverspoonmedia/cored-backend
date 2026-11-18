@@ -13,6 +13,7 @@ use App\Domain\Archivd\Services\DirectUploadService;
 use App\Domain\Archivd\Services\FileService;
 use App\Domain\Archivd\Services\FolderService;
 use App\Domain\Archivd\Services\WorkspaceService;
+use App\Domain\Archivd\Support\ArchivdRealtime;
 use App\Domain\Archivd\Support\ObjectKeyResolver;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\EntitlementStatus;
@@ -21,6 +22,7 @@ use App\Domain\Service\Models\ServiceEntitlement;
 use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -209,7 +211,7 @@ class ArchivdRealtimeEmitTest extends TestCase
             'mime' => 'application/pdf',
         ]);
 
-        $realtime = app(\App\Domain\Archivd\Support\ArchivdRealtime::class);
+        $realtime = app(ArchivdRealtime::class);
 
         // Three rapid downloads: only the first may broadcast within the window.
         $realtime->fileStatsThrottled($file);
@@ -235,13 +237,13 @@ class ArchivdRealtimeEmitTest extends TestCase
             'mime' => 'application/pdf',
         ]);
 
-        $realtime = app(\App\Domain\Archivd\Support\ArchivdRealtime::class);
+        $realtime = app(ArchivdRealtime::class);
 
         $realtime->fileStatsThrottled($file);
 
         // Move past the throttle window and clear the cache key so the next
         // download in a new window broadcasts again.
-        \Illuminate\Support\Facades\Cache::flush();
+        Cache::flush();
         $realtime->fileStatsThrottled($file);
 
         Event::assertDispatched(FileStatsChanged::class, 2);

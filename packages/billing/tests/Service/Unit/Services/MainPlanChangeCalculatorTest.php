@@ -2,8 +2,6 @@
 
 namespace App\Domain\Service\Tests\Unit\Services;
 
-use App\Domain\Service\Tests\Support\TestPlans;
-
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PurchaseChangeType;
@@ -12,6 +10,7 @@ use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\MainPlanChangeCalculator;
+use App\Domain\Service\Tests\Support\TestPlans;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;

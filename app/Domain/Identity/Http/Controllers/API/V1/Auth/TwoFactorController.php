@@ -2,11 +2,11 @@
 
 namespace App\Domain\Identity\Http\Controllers\API\V1\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Domain\Identity\Http\Requests\Auth\TwoFactorCodeRequest;
 use App\Domain\Identity\Http\Requests\Auth\TwoFactorLoginRequest;
 use App\Domain\Identity\Services\Auth\AuthService;
 use App\Domain\Identity\Services\Auth\TwoFactorService;
+use App\Http\Controllers\Controller;
 use App\Support\Auth\SpaAuthCookie;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;

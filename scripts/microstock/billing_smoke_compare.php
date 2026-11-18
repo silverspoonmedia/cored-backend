@@ -7,13 +7,14 @@
 require __DIR__.'/../../vendor/autoload.php';
 
 $app = require_once __DIR__.'/../../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Microstock\Services\BillingLedgerService;
+use Illuminate\Contracts\Console\Kernel;
 
 $freeFolderId = '019fbc21-eff1-72af-b14c-494ecbe14328';
 $paidFolderId = '019fbc22-1585-72f4-86d5-ac33faf984d5';

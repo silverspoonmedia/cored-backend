@@ -2,11 +2,11 @@
 
 namespace Tests\Unit\Support;
 
+use App\Support\EnvironmentBackupManager;
 use App\Support\EnvironmentCurator;
 use App\Support\EnvironmentKeyWriter;
 use App\Support\EnvironmentMutationGuard;
 use App\Support\EnvironmentProfileManager;
-use App\Support\EnvironmentBackupManager;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -28,7 +28,7 @@ class EnvironmentCuratorTest extends TestCase
 
         $backups = new EnvironmentBackupManager($storage, $this->sandbox);
         $guard = new EnvironmentMutationGuard($backups);
-        $profiles = new EnvironmentProfileManager(new EnvironmentKeyWriter(), $guard, $this->sandbox);
+        $profiles = new EnvironmentProfileManager(new EnvironmentKeyWriter, $guard, $this->sandbox);
         $this->curator = new EnvironmentCurator($profiles, $guard);
 
         File::copy(base_path('.env.local.example'), $profiles->templatePath('local'));
@@ -47,7 +47,7 @@ class EnvironmentCuratorTest extends TestCase
     public function test_it_preserves_values_and_adds_missing_template_keys(): void
     {
         $profiles = new EnvironmentProfileManager(
-            new EnvironmentKeyWriter(),
+            new EnvironmentKeyWriter,
             new EnvironmentMutationGuard(new EnvironmentBackupManager(
                 $this->sandbox.DIRECTORY_SEPARATOR.'storage',
                 $this->sandbox,
@@ -86,7 +86,7 @@ class EnvironmentCuratorTest extends TestCase
     public function test_dry_run_does_not_write_files(): void
     {
         $profiles = new EnvironmentProfileManager(
-            new EnvironmentKeyWriter(),
+            new EnvironmentKeyWriter,
             new EnvironmentMutationGuard(new EnvironmentBackupManager(
                 $this->sandbox.DIRECTORY_SEPARATOR.'storage',
                 $this->sandbox,

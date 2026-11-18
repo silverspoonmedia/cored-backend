@@ -2,8 +2,8 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\API\V1\Payments\Ipaymu;
 
-use App\Http\Controllers\Controller;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentWebhookService;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

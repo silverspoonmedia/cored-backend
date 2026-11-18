@@ -5,6 +5,7 @@ namespace Tests\Domain\Identity\Feature\Http\Controllers\API\V1\Auth;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Notifications\ResetPasswordNotification;
 use App\Domain\Identity\Services\Auth\TwoFactorService;
+use App\Support\Auth\SpaAuthCookie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -143,7 +144,7 @@ class AuthFlowTest extends TestCase
             'password' => 'password123',
         ])->assertOk();
 
-        $response->assertCookie(\App\Support\Auth\SpaAuthCookie::NAME);
+        $response->assertCookie(SpaAuthCookie::NAME);
     }
 
     public function test_logout_clears_spa_auth_cookie(): void
@@ -156,7 +157,7 @@ class AuthFlowTest extends TestCase
             'Authorization' => 'Bearer '.$token,
         ])->assertOk();
 
-        $response->assertCookieExpired(\App\Support\Auth\SpaAuthCookie::NAME);
+        $response->assertCookieExpired(SpaAuthCookie::NAME);
     }
 
     public function test_logout_blacklists_the_bearer_token_for_follow_up_requests(): void
@@ -186,12 +187,12 @@ class AuthFlowTest extends TestCase
         $user->assignRole('User');
         $token = auth('api')->login($user);
 
-        $this->withCookie(\App\Support\Auth\SpaAuthCookie::NAME, $token)
+        $this->withCookie(SpaAuthCookie::NAME, $token)
             ->postJson('/api/v1/auth/logout')
             ->assertOk()
-            ->assertCookieExpired(\App\Support\Auth\SpaAuthCookie::NAME);
+            ->assertCookieExpired(SpaAuthCookie::NAME);
 
-        $this->withCookie(\App\Support\Auth\SpaAuthCookie::NAME, $token)
+        $this->withCookie(SpaAuthCookie::NAME, $token)
             ->getJson('/api/v1/auth/me')
             ->assertUnauthorized();
     }
@@ -379,7 +380,7 @@ class AuthFlowTest extends TestCase
         ])->assertOk()
             ->assertJsonStructure(['data' => ['token_type', 'expires_in']])
             ->assertJsonMissingPath('data.token')
-            ->assertCookie(\App\Support\Auth\SpaAuthCookie::NAME);
+            ->assertCookie(SpaAuthCookie::NAME);
     }
 
     public function test_two_factor_login_rejects_invalid_code(): void

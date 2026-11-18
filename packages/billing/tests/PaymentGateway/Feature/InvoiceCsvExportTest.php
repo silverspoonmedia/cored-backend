@@ -3,10 +3,9 @@
 namespace App\Domain\PaymentGateway\Tests\Feature;
 
 use App\Domain\Identity\Models\User;
-use App\Domain\PaymentGateway\Services\InvoiceCsvExportService;
+use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
-use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Tests\TestCase;
 
 class InvoiceCsvExportTest extends TestCase

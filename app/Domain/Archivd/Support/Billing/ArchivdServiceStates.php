@@ -7,6 +7,7 @@ use App\Domain\Service\Database\Factories\ServiceFactory;
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
+use App\Providers\Domain\ArchivdServiceProvider;
 
 /**
  * Archivd's Service factory states, registered as macros on the package factory.
@@ -15,7 +16,7 @@ use App\Domain\Service\Enums\ServiceStatus;
  * plan size are Archivd knowledge, so the states live here and the package stays
  * sellable without this product installed.
  *
- * Registered from {@see \App\Providers\Domain\ArchivdServiceProvider::boot()}.
+ * Registered from {@see ArchivdServiceProvider::boot()}.
  */
 final class ArchivdServiceStates
 {

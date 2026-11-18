@@ -2,6 +2,8 @@
 
 namespace App\Support\ActivityLog;
 
+use Illuminate\Database\Eloquent\Model;
+
 /**
  * Kernel-owned seam for the activity trail's subject-filter aliases.
  *
@@ -17,7 +19,7 @@ interface SubjectAliasRegistrar
     /**
      * Declare a short filter alias for an Eloquent model.
      *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $modelClass
+     * @param  class-string<Model>  $modelClass
      */
     public function register(string $alias, string $modelClass): void;
 }
