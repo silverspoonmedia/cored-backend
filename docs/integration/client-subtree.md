@@ -34,7 +34,7 @@ Core classes are available with no import changes; an override is a file at the 
 
 **Config merging.** `git subtree pull` updates `core/config/` only — it never touches the client's `config/`. New core keys must be merged into the client's copies by hand after each pull.
 
-**Path packages take part of the load.** Extracted core domains install as `silverspoonmedia/*` path packages, namespace `App\Domain\{Domain}\*` unchanged, so the overlay still wins — [core-packages.md](core-packages.md). The subtree model is unchanged; it no longer carries all of the core code itself.
+**Path packages take part of the load.** Extracted core domains install as `silverspoonmedia/*` path packages, namespace `App\Domain\{Domain}\*` unchanged, so the overlay still wins — [core-packages.md](core-packages.md). A client that has no access to this repo can install the same packages from their read-only mirrors by VCS + tag ([Distribution](core-packages.md#distribution)); the monolith stays the source, so a fix is still made here and reaches clients through the next tag. The subtree model is unchanged; it no longer carries all of the core code itself.
 
 **Routes and middleware** are registered in the client's `bootstrap/app.php`: load `core/routes/*.php`, then the client's own route files, and register core middleware groups before client additions.
 

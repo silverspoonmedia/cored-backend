@@ -58,6 +58,29 @@ The AI seam is the one place a **config key** stands in for a contract: a JSON r
 
 An EMPTY registry is a legal state: with no product installed the package runs the same code and every hook is a no-op — `PackageOverrideTest::test_kernel_boots_without_the_audit_package()` is the pattern. A registry of **class strings**, not instances, keeps a long-lived Octane worker from pinning a product service.
 
+## Distribution
+
+The monolith stays the **only source**. `packages/{slug}/` is edited here, required here through the `path` repository, and installed here as a junction — nothing about day-to-day work changes because a mirror exists.
+
+Each package also has a **read-only mirror repo** in the `silverspoonmedia` org, so a consumer can `composer require` it without access to this repo:
+
+| Package | Mirror |
+|---|---|
+| `silverspoonmedia/navigation` | `github.com/silverspoonmedia/navigation` |
+| `silverspoonmedia/notification` | `github.com/silverspoonmedia/notification` |
+| `silverspoonmedia/audit` | `github.com/silverspoonmedia/audit` |
+| `silverspoonmedia/billing` | `github.com/silverspoonmedia/billing` |
+| `silverspoonmedia/ai` | `github.com/silverspoonmedia/ai` |
+
+Rules:
+
+1. **Never push to a mirror by hand.** A mirror is a one-way derivative produced by `scripts/publish-packages.ps1`; a manual commit there is lost on the next publish.
+2. **Release is a tag, not a branch.** Publish with `scripts/publish-packages.ps1 -Version vX.Y.Z` from `main`; the script creates the repo if missing, runs `git subtree split --prefix=packages/{slug}`, pushes the split to the mirror's `main`, strips the `version` field, then tags that commit.
+3. **`version` exists only in the monolith.** A path repository needs it ([invariant 5](#invariants)); a tagged VCS repository must not have it, or every tag reports `1.0.0` and `^1.0` cannot tell releases apart.
+4. **`tests/` never ships.** Each package carries a `.gitattributes` with `export-ignore` for `tests/` and `.github/`, so the tag a host downloads is source only.
+5. **A consumer installs by VCS**, because the mirrors are private: `{"type": "vcs", "url": "https://github.com/silverspoonmedia/billing.git"}` plus `"silverspoonmedia/billing": "^1.0"`. Composer needs a token that can read the org.
+6. **A mirror is not a PR target.** Two-way contribution would need a different model (the package repo as source of truth); this repo deliberately keeps the source, so a change starts here.
+
 ## Adding one
 
 `git mv` each piece (never copy: history follows), rewrite only the `Database\*` and `Tests\*` namespaces, write `composer.json`, fold the old provider body into the package provider, add the registry entry + `require` + PSR-4 prefix, then delete the host copies and `bootstrap/*` references. Verify with `composer update silverspoonmedia/*`, `composer dump-autoload`, `php artisan domain:list`, `php artisan route:list --path=api/v1`, `php artisan test packages`, and the locale parity scripts — the route count must equal the pre-move baseline.
