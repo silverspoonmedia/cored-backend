@@ -7,12 +7,14 @@ use App\Domain\ActivityLog\Repositories\Contracts\ActivityLogRepositoryInterface
 use App\Domain\ActivityLog\Repositories\Eloquent\ActivityLogRepository;
 use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Domain\ActivityLog\Support\SensitiveActivityProperties;
+use App\Domain\ActivityLog\Support\SubjectLabelRegistry;
 use App\Domain\ActivityLog\Support\SubjectTypeResolver;
 use App\Domain\ErrorLog\Console\Commands\CleanErrorLogsCommand;
 use App\Domain\ErrorLog\Repositories\Contracts\ErrorLogRepositoryInterface;
 use App\Domain\ErrorLog\Repositories\Eloquent\ErrorLogRepository;
 use App\Domain\ErrorLog\Support\ErrorLogRecorder;
 use App\Support\ActivityLog\SubjectAliasRegistrar;
+use App\Support\ActivityLog\SubjectLabelRegistrar;
 use App\Support\Encryption\DecryptionAuditRecorder;
 use App\Support\ErrorLogging\ExceptionRecorder;
 use Illuminate\Log\Events\MessageLogged;
@@ -45,6 +47,9 @@ class AuditServiceProvider extends ServiceProvider
 
         $this->app->singleton(SubjectTypeResolver::class);
         $this->app->bind(SubjectAliasRegistrar::class, SubjectTypeResolver::class);
+
+        $this->app->singleton(SubjectLabelRegistry::class);
+        $this->app->bind(SubjectLabelRegistrar::class, SubjectLabelRegistry::class);
     }
 
     public function boot(): void

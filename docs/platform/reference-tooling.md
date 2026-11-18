@@ -46,18 +46,18 @@ The job is the slow half of the workflow (the `locale` job is seconds). That is 
 
 ## A green run is `failed: 0`
 
-**A green run is `failed: 0`, not `passed == tests`.** The suite is `1711` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. The local row is quoted exactly as that environment prints it. The runner row is the same run with those seven cases moved from `passed` to `skipped`, so it is derived, not quoted:
+**A green run is `failed: 0`, not `passed == tests`.** The suite is `1718` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. The local row is quoted exactly as that environment prints it. The runner row is the same run with those seven cases moved from `passed` to `skipped`, so it is derived, not quoted:
 
 | Source | Result |
 |---|---|
-| Local `php artisan test`, both siblings present (re-measured 2026-11-19) | JSON report: `"tests":1711, "passed":1710, "skipped":1, "risky":1, "assertions":18095` (~7 min) |
-| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 1703 passed` — derived: the same `1711` total with the seven cross-repo cases skipped |
+| Local `php artisan test`, both siblings present (re-measured 2026-11-19) | JSON report: `"tests":1718, "passed":1717, "skipped":1, "risky":1, "assertions":18108` (~7 min) |
+| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 1710 passed` — derived: the same `1718` total with the seven cross-repo cases skipped |
 
-Both are green: `failed: 0` is the contract, and the total is `1711` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
+Both are green: `failed: 0` is the contract, and the total is `1718` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
 
-The `1711` is the current corpus. It moved from `1698` when the five packaged core domains' suites (`tests/Packages`, 496 cases) were added to the runner — the pre-removal figure was `2454`, and the 2026-10-07 product-domain removal plus the migration squash are what took that difference. Re-measure this pair whenever a product domain is removed, a testsuite is added, or a `config/*.php` file appears or disappears — a stale total here reads as a corpus failure in the next session that touches it.
+The `1718` is the current corpus. It moved from `1698` when the five packaged core domains' suites (`tests/Packages`, 496 cases) were added to the runner, then to `1711` with the quality-gate and dependency-direction tests, and to `1718` with the subject-label seam tests — the pre-removal figure was `2454`, and the 2026-10-07 product-domain removal plus the migration squash are what took that difference. Re-measure this pair whenever a product domain is removed, a testsuite is added, or a `config/*.php` file appears or disappears — a stale total here reads as a corpus failure in the next session that touches it.
 
-The `assertions` field is the one number here that moves while the corpus does not. `SettingRegistryEnvPolicyTest::test_operational_env_keys_are_not_used_in_config_files` asserts once per (config file × the `45` keys in `removedOperationalEnvKeys()`), so deleting `config/purifier.php` on 2026-10-12 took exactly `45` off the total — `18392` → `18347`, and the packaged suites brought it to `18095` — with `tests` unchanged at `1711`. `tests`, `skipped` and `risky` are the fields that track the corpus; `assertions` tracks the corpus plus the config surface.
+The `assertions` field is the one number here that moves while the corpus does not. `SettingRegistryEnvPolicyTest::test_operational_env_keys_are_not_used_in_config_files` asserts once per (config file × the `45` keys in `removedOperationalEnvKeys()`), so deleting `config/purifier.php` on 2026-10-12 took exactly `45` off the total — `18392` → `18347`, and the packaged suites brought it to `18095`, the quality gates to `18108` — with `tests` unchanged at `1718`. `tests`, `skipped` and `risky` are the fields that track the corpus; `assertions` tracks the corpus plus the config surface.
 
 | Count | Source | Why it is expected |
 |---|---|---|
