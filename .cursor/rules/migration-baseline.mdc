@@ -18,7 +18,7 @@ Any schema change — add/drop/rename a column, change a type or nullability, ad
 
 ## Table order is the FK contract
 
-Migrations run in filename order. When table B needs an FK to table A and B's create runs first, the FK is declared in **A's** migration via `Schema::table('b', …)->foreign(…)` — the pattern in [2026_08_01_120001_create_inference_pricing_tables.php](../../database/migrations/2026_08_01_120001_create_inference_pricing_tables.php) adding the FKs on `microstock_ai_usage_events`. Never renumber an existing file to fix order.
+Migrations run in filename order. When table B needs an FK to table A and B's create runs first, the FK is declared in **A's** migration via `Schema::table('b', …)->foreign(…)` — the pattern in [2026_08_01_120001_create_inference_pricing_tables.php](../../packages/ai/database/migrations/2026_08_01_120001_create_inference_pricing_tables.php) adding the FKs on `microstock_ai_usage_events`. Never renumber an existing file to fix order.
 
 ## Shape of a baseline migration
 

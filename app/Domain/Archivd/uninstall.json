@@ -239,47 +239,43 @@
                     "reason": "owned by the Microstock domain: this file leaves with Microstock's own uninstall, nothing to do here (line 5, 6, 19)"
                 },
                 {
-                    "path": "app/Domain/Service/Models/Service.php",
+                    "path": "packages/billing/src/Service/Models/Service.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 8, 111, 113, 121, 123, 125)"
                 },
                 {
-                    "path": "app/Domain/Service/Models/ServiceEntitlement.php",
+                    "path": "packages/billing/src/Service/Models/ServiceEntitlement.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 87)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/MainPlanChangeCalculator.php",
+                    "path": "packages/billing/src/Service/Services/MainPlanChangeCalculator.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 12, 13, 22, 26, 81, 83)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/ServiceAddonRenewalService.php",
+                    "path": "packages/billing/src/Service/Services/ServiceAddonRenewalService.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 12, 41)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/ServiceCheckoutService.php",
+                    "path": "packages/billing/src/Service/Services/ServiceCheckoutService.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 15, 49)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/ServiceEntitlementLifecycleService.php",
+                    "path": "packages/billing/src/Service/Services/ServiceEntitlementLifecycleService.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 5, 6, 11, 18, 72, 73)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/ServiceEntitlementService.php",
+                    "path": "packages/billing/src/Service/Services/ServiceEntitlementService.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 5, 13, 14, 65, 67, 69)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/ServiceFulfillmentService.php",
+                    "path": "packages/billing/src/Service/Services/ServiceFulfillmentService.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 5, 11, 22, 38, 64, 178)"
                 },
                 {
-                    "path": "app/Domain/Service/Support/ArchivdBillingPeriod.php",
+                    "path": "packages/billing/src/Service/Support/BillingPeriod.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 8, 11)"
                 },
                 {
-                    "path": "app/Domain/Service/Support/ArchivdCatalog.php",
-                    "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 6, 8, 10, 12, 14, 16)"
-                },
-                {
-                    "path": "app/Domain/Service/Support/MicrostockCatalog.php",
+                    "path": "app/Domain/Microstock/Support/MicrostockCatalog.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 9, 10)"
                 },
                 {
@@ -335,7 +331,7 @@
                     "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 132)"
                 },
                 {
-                    "path": "config/service.php",
+                    "path": "packages/billing/config/service.php",
                     "reason": "hand edit: review the Archivd reference and drop it (line 8)"
                 },
                 {
@@ -343,7 +339,7 @@
                     "reason": "hand edit: review the Archivd reference and drop it (line 62)"
                 },
                 {
-                    "path": "database/factories/ServiceFactory.php",
+                    "path": "packages/billing/src/Service/Database/Factories/ServiceFactory.php",
                     "reason": "hand edit: review the Archivd reference and drop it (line 9, 39, 42, 46, 49, 54)"
                 },
                 {
@@ -351,7 +347,7 @@
                     "reason": "owned by the Microstock domain: this migration leaves with Microstock's own uninstall, nothing to do here (line 58, 61, 64, 71, 109)"
                 },
                 {
-                    "path": "database/seeders/MenuSeeder.php",
+                    "path": "packages/navigation/database/seeders/MenuSeeder.php",
                     "reason": "hand edit: drop the `archivd.*` keys (line 94, 143, 145, 151, 157, 163)"
                 },
                 {
@@ -359,7 +355,7 @@
                     "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 13)"
                 },
                 {
-                    "path": "database/seeders/ServiceCatalogSeeder.php",
+                    "path": "packages/billing/src/Service/Database/Seeders/ServiceCatalogSeeder.php",
                     "reason": "hand edit: review the Archivd reference and drop it (line 10, 15, 26, 28, 30, 35)"
                 },
                 {
@@ -483,19 +479,19 @@
                     "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 76)"
                 },
                 {
-                    "path": "tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederConformanceTest.php",
+                    "path": "packages/navigation/tests/Feature/Database/Seeders/MenuSeederConformanceTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 11, 32)"
                 },
                 {
-                    "path": "tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php",
+                    "path": "packages/navigation/tests/Feature/Database/Seeders/MenuSeederTest.php",
                     "reason": "test: drop the `archivd.*` keys (line 11, 27, 51, 52, 55, 56)"
                 },
                 {
-                    "path": "tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php",
+                    "path": "packages/navigation/tests/Feature/PrivateDomainMenuVisibilityTest.php",
                     "reason": "test: drop the `archivd.*` keys (line 22, 29, 31)"
                 },
                 {
-                    "path": "tests/Domain/PaymentGateway/Feature/Http/Controllers/API/V1/ServicePurchaseChannelCheckoutQuantityTest.php",
+                    "path": "packages/billing/tests/PaymentGateway/Feature/Http/Controllers/API/V1/ServicePurchaseChannelCheckoutQuantityTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 53)"
                 },
                 {
@@ -547,71 +543,31 @@
                     "reason": "test: drop the `Archivd` entry (line 16, 18, 19, 30, 37, 43)"
                 },
                 {
-                    "path": "tests/Domain/Service/Feature/Http/Controllers/API/V1/ServiceCheckoutAndFulfillmentTest.php",
-                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 13, 37, 38, 39, 51)"
-                },
-                {
-                    "path": "tests/Domain/Service/Feature/Http/Controllers/API/V1/ServiceCrudTest.php",
+                    "path": "packages/billing/tests/Service/Feature/Http/Controllers/API/V1/ServiceCrudTest.php",
                     "reason": "test: drop the `archivd.*` keys (line 34, 38, 48, 77)"
                 },
                 {
-                    "path": "tests/Domain/Service/Feature/Http/Controllers/API/V1/ServicePurchaseQuantityApiTest.php",
+                    "path": "packages/billing/tests/Service/Feature/Http/Controllers/API/V1/ServicePurchaseQuantityApiTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 41, 92, 120, 141)"
                 },
                 {
-                    "path": "tests/Domain/Service/Support/ArchivdBillingScenarioHarness.php",
-                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 20, 24, 26, 48)"
-                },
-                {
-                    "path": "tests/Domain/Service/Unit/Services/AddonAnniversaryTest.php",
-                    "reason": "test: drop the `archivd.*` keys (line 16, 32, 40, 83, 84, 109)"
-                },
-                {
-                    "path": "tests/Domain/Service/Unit/Services/ArchivdAdminJourneyScenarioTest.php",
-                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 20, 42, 72, 83, 84)"
-                },
-                {
-                    "path": "tests/Domain/Service/Unit/Services/ArchivdBillingAnomalyUseCasesTest.php",
-                    "reason": "test: drop the `archivd.*` keys (line 16, 21, 28, 30, 202, 205)"
-                },
-                {
-                    "path": "tests/Domain/Service/Unit/Services/ArchivdBillingNormalUseCasesTest.php",
-                    "reason": "test: review the Archivd reference and drop it (line 9, 14, 20, 22, 293, 294)"
-                },
-                {
-                    "path": "tests/Domain/Service/Unit/Services/ArchivdBillingTameUseCasesTest.php",
-                    "reason": "test: review the Archivd reference and drop it (line 9, 14, 20, 22, 230)"
-                },
-                {
-                    "path": "tests/Domain/Service/Unit/Services/ArchivdPlanQuotaMatrixTest.php",
-                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 12, 19, 28, 29, 35)"
-                },
-                {
-                    "path": "tests/Domain/Service/Unit/Services/MainPlanChangeCalculatorTest.php",
+                    "path": "packages/billing/tests/Service/Unit/Services/MainPlanChangeCalculatorTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 32, 46, 61, 62, 83, 84)"
                 },
                 {
-                    "path": "tests/Domain/Service/Unit/Services/MainPlanFairnessFulfillmentTest.php",
-                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 14, 26, 34, 35, 81)"
-                },
-                {
-                    "path": "tests/Domain/Service/Unit/Services/ServiceCheckoutServiceTest.php",
+                    "path": "packages/billing/tests/Service/Unit/Services/ServiceCheckoutServiceTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 36, 74, 92, 117)"
                 },
                 {
-                    "path": "tests/Domain/Service/Unit/Services/ServiceCheckoutZeroChargeTest.php",
+                    "path": "packages/billing/tests/Service/Unit/Services/ServiceCheckoutZeroChargeTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 36, 37)"
                 },
                 {
-                    "path": "tests/Domain/Service/Unit/Services/ServiceEntitlementLifecycleTest.php",
-                    "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 16, 32, 33)"
-                },
-                {
-                    "path": "tests/Domain/Service/Unit/Services/ServiceEntitlementQuantityFromPurchaseTest.php",
+                    "path": "packages/billing/tests/Service/Unit/Services/ServiceEntitlementQuantityFromPurchaseTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 21)"
                 },
                 {
-                    "path": "tests/Domain/Service/Unit/Services/ServiceEntitlementServiceTest.php",
+                    "path": "packages/billing/tests/Service/Unit/Services/ServiceEntitlementServiceTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 33, 55, 80, 112)"
                 },
                 {
@@ -665,6 +621,18 @@
                 {
                     "path": "tests/Unit/Support/Storage/S3DirectUploadEngineTest.php",
                     "reason": "test: drop the `archivd.*` config reads (line 125, 126, 133, 134, 135, 136)"
+                },
+                {
+                    "path": "app/Support/Billing/Contracts/FulfillmentHandler.php",
+                    "reason": "docblock: Archivd named in prose as the seam example, not in code — keep"
+                },
+                {
+                    "path": "app/Support/Billing/FulfillmentRegistry.php",
+                    "reason": "docblock: Archivd named in prose as a registering product, not in code — keep"
+                },
+                {
+                    "path": "app/Domain/Microstock/Database/Seeders/MicrostockCatalogSeeder.php",
+                    "reason": "owned by the Microstock domain: the only hit is a product description string; it leaves with Microstock's own uninstall, nothing to do here"
                 }
             ]
         },
@@ -1031,16 +999,8 @@
             ]
         },
         "docs": {
-            "delete": [
-                "docs/archivd"
-            ],
-            "edits": [
-                {
-                    "file": "docs-coverage.json",
-                    "op": "remove_lines_matching",
-                    "match": "^\\s*\"(?:product\\.archivd|archivd\\.files\\-and\\-folders|archivd\\.sharing|archivd\\.storage\\-and\\-plans|archivd\\.workspaces)\"\\s*:"
-                }
-            ],
+            "delete": [],
+            "edits": [],
             "unresolved": [],
             "ignore": [
                 {

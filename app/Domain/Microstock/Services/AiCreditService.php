@@ -7,7 +7,7 @@ use App\Domain\Microstock\Models\AiBalance;
 use App\Domain\Microstock\Models\AiCreditTransaction;
 use App\Domain\Microstock\Support\MicrostockRealtime;
 use App\Domain\Service\Models\ServicePurchase;
-use App\Domain\Service\Support\MicrostockCatalog;
+use App\Domain\Microstock\Support\MicrostockCatalog;
 use Illuminate\Support\Facades\DB;
 
 class AiCreditService
@@ -38,16 +38,41 @@ class AiCreditService
             return;
         }
 
+        $this->creditPurchaseRow(
+            (string) $purchase->id,
+            (string) $purchase->user_id,
+            (float) ($purchase->charge_amount ?? $purchase->list_amount ?? $purchase->display_amount ?? 0),
+        );
+    }
+
+    /**
+     * Same credit, addressed by id.
+     *
+     * The billing package hands over an id (kernel `FulfillmentContext`) instead
+     * of a model, so the package never imports one.
+     */
+    public function creditFromPurchaseId(string $purchaseId): void
+    {
+        $purchase = ServicePurchase::query()->with('service')->find($purchaseId);
+
+        if ($purchase === null) {
+            return;
+        }
+
+        $this->creditFromPurchase($purchase);
+    }
+
+    private function creditPurchaseRow(string $purchaseId, string $userId, float $usd): void
+    {
         if (AiCreditTransaction::query()
             ->where('reference_type', 'service_purchase')
-            ->where('reference_id', $purchase->id)
+            ->where('reference_id', $purchaseId)
             ->where('type', AiCreditTransactionType::Purchase)
             ->exists()
         ) {
             return;
         }
 
-        $usd = (float) ($purchase->charge_amount ?? $purchase->list_amount ?? $purchase->display_amount ?? 0);
         $microUsd = (int) round($usd * 1_000_000);
 
         if ($microUsd <= 0) {
@@ -55,11 +80,11 @@ class AiCreditService
         }
 
         $this->addCredit(
-            (string) $purchase->user_id,
+            $userId,
             $microUsd,
             AiCreditTransactionType::Purchase,
             'service_purchase',
-            (string) $purchase->id,
+            $purchaseId,
         );
     }
 

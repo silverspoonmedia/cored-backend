@@ -46,6 +46,42 @@ class LocaleParityTest extends TestCase
         }
     }
 
+    /**
+     * Absolute path of a locale file, host tree first.
+     */
+    private function langFile(string $locale, string $relative): ?string
+    {
+        foreach ($this->langRoots() as $root) {
+            $path = $root.'/'.$locale.'/'.$relative;
+
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Every directory that ships application-owned translations, host first.
+     *
+     * Core domains extracted into Composer path packages keep their own
+     * `resources/lang/{locale}/**` tree while the keys stay un-namespaced, so a
+     * parity guard that only walked `lang/` would stop covering them entirely.
+     *
+     * @return array<int, string>
+     */
+    private function langRoots(): array
+    {
+        $roots = [lang_path()];
+
+        foreach (glob(base_path('packages/*/resources/lang'), GLOB_ONLYDIR) ?: [] as $packageLang) {
+            $roots[] = $packageLang;
+        }
+
+        return $roots;
+    }
+
     public function test_application_owned_files_exist_in_every_locale(): void
     {
         $reference = $this->supportedLocales()[0];
@@ -73,14 +109,14 @@ class LocaleParityTest extends TestCase
         $reference = $locales[0];
 
         foreach ($this->applicationOwnedFiles($reference) as $relative) {
-            $referenceKeys = $this->flattenKeys(lang_path($reference.'/'.$relative));
+            $referenceKeys = $this->flattenKeys($this->langFile($reference, $relative) ?? lang_path($reference.'/'.$relative));
 
             foreach ($locales as $locale) {
                 if ($locale === $reference) {
                     continue;
                 }
 
-                $path = lang_path($locale.'/'.$relative);
+                $path = $this->langFile($locale, $relative);
 
                 if (! is_file($path)) {
                     // Covered by the file-existence test; skip to avoid noise.
@@ -104,14 +140,14 @@ class LocaleParityTest extends TestCase
         $reference = $locales[0];
 
         foreach ($this->applicationOwnedFiles($reference) as $relative) {
-            $referenceValues = $this->flattenValues(lang_path($reference.'/'.$relative));
+            $referenceValues = $this->flattenValues($this->langFile($reference, $relative) ?? lang_path($reference.'/'.$relative));
 
             foreach ($locales as $locale) {
                 if ($locale === $reference) {
                     continue;
                 }
 
-                $path = lang_path($locale.'/'.$relative);
+                $path = $this->langFile($locale, $relative);
                 if (! is_file($path)) {
                     continue;
                 }
@@ -153,25 +189,27 @@ class LocaleParityTest extends TestCase
         $duplicates = [];
 
         foreach ($this->supportedLocales() as $locale) {
-            $base = lang_path($locale);
+            foreach ($this->langRoots() as $langRoot) {
+                $base = $langRoot.'/'.$locale;
 
-            if (! is_dir($base)) {
-                continue;
-            }
-
-            $iterator = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
-            );
-
-            foreach ($iterator as $file) {
-                if ($file->getExtension() !== 'php') {
+                if (! is_dir($base)) {
                     continue;
                 }
 
-                foreach ($this->duplicateLiteralKeys($file->getPathname()) as $duplicate) {
-                    $duplicates[] = "{$locale}/"
-                        .str_replace('\\', '/', substr($file->getPathname(), strlen($base) + 1))
-                        .'  '.$duplicate;
+                $iterator = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
+                );
+
+                foreach ($iterator as $file) {
+                    if ($file->getExtension() !== 'php') {
+                        continue;
+                    }
+
+                    foreach ($this->duplicateLiteralKeys($file->getPathname()) as $duplicate) {
+                        $duplicates[] = "{$locale}/"
+                            .str_replace('\\', '/', substr($file->getPathname(), strlen($base) + 1))
+                            .'  '.$duplicate;
+                    }
                 }
             }
         }
@@ -262,31 +300,35 @@ class LocaleParityTest extends TestCase
      */
     private function applicationOwnedFiles(string $locale): array
     {
-        $base = lang_path($locale);
-
-        if (! is_dir($base)) {
-            return [];
-        }
-
         $out = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
-        );
 
-        foreach ($iterator as $file) {
-            if ($file->getExtension() !== 'php') {
+        foreach ($this->langRoots() as $langRoot) {
+            $base = $langRoot.'/'.$locale;
+
+            if (! is_dir($base)) {
                 continue;
             }
 
-            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($base) + 1));
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
+            );
 
-            if (! str_contains($relative, '/') && in_array($relative, self::MANAGED_FILES, true)) {
-                continue;
+            foreach ($iterator as $file) {
+                if ($file->getExtension() !== 'php') {
+                    continue;
+                }
+
+                $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($base) + 1));
+
+                if (! str_contains($relative, '/') && in_array($relative, self::MANAGED_FILES, true)) {
+                    continue;
+                }
+
+                $out[$relative] = true;
             }
-
-            $out[] = $relative;
         }
 
+        $out = array_keys($out);
         sort($out);
 
         return $out;

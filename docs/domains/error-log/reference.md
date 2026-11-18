@@ -19,8 +19,8 @@ flowchart LR
   REC --> DB[(error_logs)]
 ```
 
-1. **Exceptions** — `bootstrap/app.php` `reportable` → `ErrorLogRecorder::recordException()`.
-2. **Log facade** — `Illuminate\Log\Events\MessageLogged` listener in `ErrorLogServiceProvider` → `recordLog()` for levels ≥ `error` (works under PHPUnit; no custom Monolog handler required).
+1. **Exceptions** — `bootstrap/app.php` `reportable` → `ExceptionRecorder` (bound to `ErrorLogRecorder`).
+2. **Log facade** — `Illuminate\Log\Events\MessageLogged` listener in `AuditServiceProvider` → `recordLog()` for levels ≥ `error` (works under PHPUnit; no custom Monolog handler required).
 3. **Double-count guard** — log records whose context contains a `Throwable` are skipped (Laravel's default exception report also writes `Log::error` with the exception).
 
 ### Not stored
@@ -86,7 +86,7 @@ Requires `auth:api` + `permission:view error log` (Root / Admin via `RoleSeeder`
 
 Resource fields: fingerprint, type, level, exception_class, message, file, line, trace, context, occurrence_count, first/last_seen, status, status_label, resolved_by, timestamps.
 
-i18n: `lang/{en,id,ja,ko,zh_CN,ar,ru}/api/error-log.php`.
+i18n: `packages/audit/resources/lang/{en,id,ja,ko,zh_CN,ar,ru}/api/error-log.php`.
 
 ## SPA UI
 

@@ -2,7 +2,7 @@
 
 namespace Tests\Concerns;
 
-use Database\Seeders\NotificationTypeSettingSeeder;
+use App\Domain\Notification\Database\Seeders\NotificationTypeSettingSeeder;
 use Database\Seeders\RoleSeeder;
 
 trait SeedsRolesAndPermissions

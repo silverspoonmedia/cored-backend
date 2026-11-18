@@ -1,0 +1,21 @@
+---
+description: Currency catalogue and Frankfurter FX invariants — snapshot chain, cache freshness, settlement flag
+globs: packages/billing/src/Currency/**,packages/billing/routes/currency.php,database/seeders/DatabaseSeeder.php,config/services.php,docs/domains/currency/**
+alwaysApply: false
+---
+
+# Currency
+
+Currency catalogue (`currencies`) plus ECB reference rates from Frankfurter (`exchange_rate_snapshots`). One settlement currency, many display currencies. Core domain of `silverspoonmedia/billing`; code is `packages/billing/src/Currency/`, namespace `App\Domain\Currency\`. It ships beside [service.mdc](service.mdc) and [payment-gateway.mdc](payment-gateway.mdc) — three namespaces, three route files, one provider.
+
+- **Settlement is singular.** `currencies.is_settlement` marks exactly one row; `CurrencyAdminService::update` clears the flag on every other row before setting a new one. Never let two rows carry it.
+- **Settlement currency is IDR** (`ExchangeRateService::SETTLEMENT_CURRENCY`). `convert()` defaults `$to` to it; a `$from === $to` conversion short-circuits to `rate = 1.0` and writes no snapshot.
+- **Snapshot before cache.** `resolveRate()` reads L1 `Cache` first, then the newest row inside `platform.frankfurter.cache_ttl`, then fetches. A DB hit re-warms the cache; a fetch always persists an `exchange_rate_snapshots` row. Never return a rate that has no row behind it.
+- **Cache is forever with logical freshness** — `Cache::forever("fx.frankfurter.{from}.{to}")` and the TTL is evaluated against `fetched_at`. Expiry means `Cache::forget` + refetch, not a shortened TTL. Detail: [cache-policy.mdc](cache-policy.mdc).
+- **Rounding is currency-driven.** `decimal_places` from the catalogue decides the settlement amount; an unknown code falls back to 0 for IDR and 2 otherwise. Never hardcode 2.
+- **Provider failure is a business error**, not a 500: `ExchangeRateException` with `api/currencies.fx_unavailable`, translated in every locale. Never leak the upstream body. The key lives in `api/currencies.*`, not `api/services.*` — Service consumes the domain, it does not own the message.
+- `FRANKFURTER_BASE_URL` is Tier A env; `platform.frankfurter.timeout` and `platform.frankfurter.cache_ttl` are Tier B settings. No API key — Frankfurter is keyless.
+- API is `auth:api` + `permission:view settings` (read) / `permission:manage settings` (write), owned by `packages/billing/routes/currency.php` and loaded **before** `service.php` (registry order keeps the `/currencies` URIs where they sat when the file was shared).
+- Mutations broadcast `CurrencyChanged` on the private `settings.currencies` channel as `.service.currency.changed` with `{action, currency_code}`, gated by `BroadcastConnection::isConfigured()`. The event's wire name keeps its historical `service.` prefix because the SPA already subscribes to it — the namespace moved, the client contract did not.
+- Migration order inside the package: `create_currencies_table` (`_100000`) → `create_exchange_rate_snapshots_table` (`_100002`) → `create_service_purchases_table` (`_100003`, FK `fx_rate_snapshot_id`). Migration filenames are the load order; never renumber around these.
+- Tests: `composer test -- --filter=Currency` — conversion short-circuit, cache warm/expiry, snapshot persistence, upstream failure, single-settlement invariant, realtime gate.

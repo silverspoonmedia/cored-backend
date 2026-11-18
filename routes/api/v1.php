@@ -1,15 +1,22 @@
 <?php
 
+use App\Support\Domain\DomainManager;
+
 // Core domains (config/domains.php kind=core). Order matches PLATFORM_CORE + Service.
+//
+// Packaged core domains (Navigation, Notification, Audit, Billing, AI) keep their
+// routes inside their Composer package, so the path comes from the registry
+// rather than a literal this checkout happens to have. Domains still living in
+// app/Domain/* keep their require line: the loader stays the single place a
+// version's endpoint set is assembled.
+
 require __DIR__.'/v1/identity.php';
-require __DIR__.'/v1/navigation.php';
-require __DIR__.'/v1/notification.php';
-require __DIR__.'/v1/activity-log.php';
-require __DIR__.'/v1/error-log.php';
-require __DIR__.'/v1/inference.php';
-require __DIR__.'/v1/ai.php';
-require __DIR__.'/v1/payment-gateway.php';
-require __DIR__.'/v1/service.php';
+
+// Core packages, in registry order (packages/*/routes/api.php).
+foreach (app(DomainManager::class)->packageApiRoutePaths() as $packageRouteFile) {
+    require $packageRouteFile;
+}
+
 // Kernel product registry (App\Support\Product) — cross-domain access layer.
 require __DIR__.'/v1/product-activations.php';
 
@@ -29,4 +36,3 @@ require __DIR__.'/v1/batch.php';
 require __DIR__.'/v1/archivd.php';
 require __DIR__.'/v1/microstock.php';
 require __DIR__.'/v1/admin-microstock.php';
-

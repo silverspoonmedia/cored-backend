@@ -14,7 +14,7 @@ Every living brief is listed in this index; narrative, audits and progress track
 | Agent pakem map | [AGENTS.md](../AGENTS.md) · rules in [.cursor/rules/](../.cursor/rules/) |
 | User-facing docs site | [help.silverspoon.me](https://help.silverspoon.me) — sibling `docs` repo (Docusaurus, customer manual); agent pakem in that repo's `AGENTS.md` + `.cursor/rules/` |
 | IDE workspace | [Monolith-Backend.code-workspace](../Monolith-Backend.code-workspace) · sibling `Monolith-SPA.code-workspace` · [Monolith-Fullstack.code-workspace](../Monolith-Fullstack.code-workspace) for contract work; all three load the `docs` repo as a peer root |
-| Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
+| Domain layout, `domain:*`, namespaces, path packages | [platform/architecture.md](platform/architecture.md) · [integration/core-packages.md](integration/core-packages.md) |
 | Removing a product domain (ordered procedure) | [.cursor/skills/domain-remove/SKILL.md](../.cursor/skills/domain-remove/SKILL.md) |
 | Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [platform/configuration-policy.md](platform/configuration-policy.md) |
 | Project overview (Monolith + Vue-Workers) | [integration/project-overview.md](integration/project-overview.md) |
@@ -27,7 +27,7 @@ Every living brief is listed in this index; narrative, audits and progress track
 
 | Document | Topic |
 |----------|-------|
-| [architecture.md](platform/architecture.md) | Logical monorepo, kind core\|product + locked lifecycle + parent composition, routes, namespaces |
+| [architecture.md](platform/architecture.md) | Logical monorepo + Composer path packages, kind core\|product + locked lifecycle + parent composition, routes, namespaces |
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
 | [api-envelope.md](platform/api-envelope.md) | Canonical JSON envelope, error mapping, `/batch` partial-failure contract |
 | [commands.md](platform/commands.md) | Artisan command index |
@@ -58,8 +58,9 @@ Every living brief is listed in this index; narrative, audits and progress track
 | Notification | [domains/notification/README.md](domains/notification/README.md) — bell, role vs user; deep dive [reference.md](domains/notification/reference.md) |
 | ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail, PII envelopes; deep dive [reference.md](domains/activity-log/reference.md) |
 | ErrorLog | [domains/error-log/README.md](domains/error-log/README.md) — grouped persistent app errors; deep dive [reference.md](domains/error-log/reference.md) |
-| PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) — Midtrans/iPaymu, invoices, channels; deep dive [reference.md](domains/payment-gateway/reference.md) · credentials [platform/envelope-encryption.md](platform/envelope-encryption.md) |
-| Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, FX→IDR, Archivd grace/purge; deep dive [reference.md](domains/service/reference.md) |
+| PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) — Midtrans/iPaymu, invoices, channels (`silverspoonmedia/billing`); deep dive [reference.md](domains/payment-gateway/reference.md) · credentials [platform/envelope-encryption.md](platform/envelope-encryption.md) |
+| Currency | [domains/currency/README.md](domains/currency/README.md) — ISO catalogue, one settlement flag, Frankfurter FX snapshots (`silverspoonmedia/billing`) |
+| Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, FX→IDR, product fulfillment (`silverspoonmedia/billing`); deep dive [reference.md](domains/service/reference.md) |
 | Inference | [domains/inference/README.md](domains/inference/README.md) — model catalog, provider rates, rate snapshots; deep dive [reference.md](domains/inference/reference.md) |
 | Ai | [domains/ai/README.md](domains/ai/README.md) — central AI transport, connections, slug binding; deep dive [reference.md](domains/ai/reference.md) |
 | Archivd | [domains/archivd/README.md](domains/archivd/README.md) — nested folders, multi-disk S3, Gateway upload, paid share, workspaces; base of the Microstock subproduct; deep dive [reference.md](domains/archivd/reference.md) · [reference-upload.md](domains/archivd/reference-upload.md) · [reference-realtime.md](domains/archivd/reference-realtime.md) |
@@ -83,6 +84,7 @@ The browser UI lives in the sibling SPA. These are historical only; the live lis
 | [project-overview.md](integration/project-overview.md) | Monolith and Monolith-Vue-Workers — architecture and relationship |
 | [vue-workers-spa.md](integration/vue-workers-spa.md) | SPA contract: API shapes, `SPA_URL` minting, i18n runtime, batch hydration, realtime registry, CI; deep dive [reference-vue-workers-spa.md](integration/reference-vue-workers-spa.md) |
 | [client-subtree.md](integration/client-subtree.md) | Consuming this repo as a `core/` git subtree in a client project |
+| [core-packages.md](integration/core-packages.md) | Core domains shipped as Composer path packages: layout, host wiring, override precedence, kernel contracts, how to add one |
 
 ## Archive (not daily reading)
 

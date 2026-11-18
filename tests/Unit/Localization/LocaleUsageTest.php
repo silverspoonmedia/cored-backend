@@ -24,7 +24,7 @@ use Tests\TestCase;
 class LocaleUsageTest extends TestCase
 {
     /** Directories that may hold translatable call sites. */
-    private const SCAN_DIRECTORIES = ['app', 'routes', 'config'];
+    private const SCAN_DIRECTORIES = ['app', 'routes', 'config', 'packages'];
 
     public function test_every_literal_translation_key_resolves_in_reference_locale(): void
     {
@@ -150,7 +150,15 @@ class LocaleUsageTest extends TestCase
     {
         $keys = [];
 
+        // English namespaces ship from the host `lang/en` tree AND from every
+        // packaged core domain's `resources/lang/en`; a key that moved into a
+        // package is still a key the app can resolve.
         $this->collectPhpKeys(lang_path('en'), '', $keys);
+
+        foreach (glob(base_path('packages/*/resources/lang/en'), GLOB_ONLYDIR) ?: [] as $packageEnglish) {
+            $this->collectPhpKeys($packageEnglish, '', $keys);
+        }
+
         $this->collectJsonKeys(lang_path('en.json'), $keys);
 
         return $keys;

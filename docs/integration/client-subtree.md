@@ -34,16 +34,11 @@ Core classes are available with no import changes; an override is a file at the 
 
 **Config merging.** `git subtree pull` updates `core/config/` only — it never touches the client's `config/`. New core keys must be merged into the client's copies by hand after each pull.
 
+**Path packages take part of the load.** Extracted core domains install as `silverspoonmedia/*` path packages, namespace `App\Domain\{Domain}\*` unchanged, so the overlay still wins — [core-packages.md](core-packages.md). A client that has no access to this repo can install the same packages from their read-only mirrors by VCS + tag ([Distribution](core-packages.md#distribution)); the monolith stays the source, so a fix is still made here and reaches clients through the next tag. The subtree model is unchanged; it no longer carries all of the core code itself.
+
 **Routes and middleware** are registered in the client's `bootstrap/app.php`: load `core/routes/*.php`, then the client's own route files, and register core middleware groups before client additions.
 
-**When to override vs contribute:**
-
-| Scenario | Action |
-|----------|--------|
-| Bug in core code | Fix in `core/`, test, `push-core.sh`, then pull into every client |
-| Feature useful to all clients | Develop in `core/`, push, pull |
-| Client-specific behavior | Implement in `app/` (outside `core/`) |
-| Config or route customization | Client's `config/` / `routes/` |
+**When to override vs contribute:** bug in core → fix in `core/`, test, `push-core.sh`, pull into every client · feature useful to all clients → develop in `core/`, push, pull · client-specific behavior (code, config, route) → implement in the client, outside `core/`.
 
 ## 4. Setup (new client project)
 
@@ -77,7 +72,7 @@ php artisan migrate              # core migrations
 ./push-core.sh                   # contribute core changes upstream (intentional only)
 ```
 
-`push-core.sh` refuses to run on a dirty tree and pushes **every** commit that touched `core/` — treat it as an upstream release, not a sync.
+`push-core.sh` refuses a dirty tree and pushes **every** commit that touched `core/` — treat it as an upstream release, not a sync.
 
 ## 6. Quick reference
 
@@ -87,4 +82,4 @@ php artisan migrate              # core migrations
 | Push core | `git subtree push --prefix=core/ monolith main` |
 | Check drift | `git fetch monolith && git diff --stat core/` |
 
-Automated checks: [`ClientSubtreeIntegrationDocTest`](../../tests/Unit/Documentation/ClientSubtreeIntegrationDocTest.php) and [`CoreScriptTest`](../../tests/Unit/Documentation/CoreScriptTest.php).
+Automated checks: [`ClientSubtreeIntegrationDocTest`](../../tests/Unit/Documentation/ClientSubtreeIntegrationDocTest.php), [`CoreScriptTest`](../../tests/Unit/Documentation/CoreScriptTest.php).

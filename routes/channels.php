@@ -2,9 +2,7 @@
 
 use App\Domain\Archivd\Services\WorkspaceAccessService;
 use App\Domain\Identity\Models\User;
-use App\Domain\PaymentGateway\Models\Invoice;
-use App\Domain\PaymentGateway\Support\InvoiceChannelAuthorizer;
-use App\Domain\Service\Models\ServicePurchase;
+use App\Support\Broadcasting\ChannelRegistrarRegistry;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function (User $user, string $id): bool {
@@ -26,37 +24,8 @@ Broadcast::channel('archivd.workspace.{workspaceId}', function (User $user, stri
     }
 });
 
-Broadcast::channel('payments.invoice.{invoiceId}', function (User $user, string $invoiceId): bool {
-    try {
-        $invoice = Invoice::query()->find($invoiceId);
-
-        if ($invoice === null) {
-            return false;
-        }
-
-        return app(InvoiceChannelAuthorizer::class)->canSubscribe($user, $invoice);
-    } catch (Throwable) {
-        return false;
-    }
-});
-
-Broadcast::channel('payments.routing', function (User $user): bool {
-    return $user->can('initiate payment') || $user->can('view invoice');
-});
-
 Broadcast::channel('navigation.menus', function (User $user): bool {
     return $user->can('view menu');
-});
-
-Broadcast::channel('services.catalog', function (User $user): bool {
-    return $user->can('view service');
-});
-
-Broadcast::channel('services.purchase.{purchaseId}', function (User $user, string $purchaseId): bool {
-    return ServicePurchase::query()
-        ->whereKey($purchaseId)
-        ->where('user_id', $user->id)
-        ->exists();
 });
 
 Broadcast::channel('inference.catalog', function (User $user): bool {
@@ -105,6 +74,14 @@ Broadcast::channel('rbac', function (User $user): bool {
     return $user->can('view user');
 });
 
-Broadcast::channel('payments.admin', function (User $user): bool {
-    return $user->can('view invoice');
-});
+/*
+|--------------------------------------------------------------------------
+| Packaged domains
+|--------------------------------------------------------------------------
+| A packaged core domain answers for its own channels (`payments.*`,
+| `services.*`) through this kernel registry, so this file never imports a
+| package model just to authorize a socket. Unregistered = no channels.
+*/
+foreach (app(ChannelRegistrarRegistry::class)->all() as $registrar) {
+    $registrar->register();
+}

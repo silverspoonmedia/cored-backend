@@ -103,7 +103,7 @@ Platform settings page shows **read-only secret status** via `php artisan config
 | `platform.inference.default_output_per_million_usd` | `inference.default_rates.output_per_million_usd` | |
 | `platform.inference.unknown_input_per_million_usd` | `inference.unknown_model_rates.input_per_million_usd` | |
 | `platform.inference.unknown_output_per_million_usd` | `inference.unknown_model_rates.output_per_million_usd` | |
-| `platform.frankfurter.cache_ttl` | `services.frankfurter.cache_ttl` | Freshness window (seconds) for FX L1/DB — not Laravel Cache TTL; see [Service FX](../domains/service/reference.md#multi-currency--fx) + [cache-policy](cache-policy.md) |
+| `platform.frankfurter.cache_ttl` | `services.frankfurter.cache_ttl` | Freshness window (seconds) for FX L1/DB — not Laravel Cache TTL; see [Currency](../domains/currency/README.md) + [cache-policy](cache-policy.md) |
 | `platform.frankfurter.timeout` | `services.frankfurter.timeout` | |
 
 **Not in hub:** `APP_DEBUG`, `APP_ENV`, `LOG_LEVEL`, cache/queue/session drivers — profile switch via `env:switch`.

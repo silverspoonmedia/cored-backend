@@ -19,7 +19,7 @@ Query-paging lists: users, invoices, payment-gateways, subscriptions, services, 
 
 **Source of truth for which row buttons exist.** Query and flat list rows carry `actions[]`. The SPA maps and executes; views must not invent keys.
 
-DTO: `App\Support\ListActions\QueryRowAction`. Builders live under `App\Support\ListActions\Builders\`. Attach with `QueryRowActionAttacher` on resolved Resource arrays (zip with models).
+DTO: `App\Support\ListActions\QueryRowAction`. Builders live under `App\Support\ListActions\Builders\` for host domains, or `App\Domain\{Domain}\Support\ListActions\` when the domain ships as a package (a kernel that renders domain rows is a domain dependency in disguise). Attach with `QueryRowActionAttacher` on resolved Resource arrays (zip with models).
 
 Each item: `key`, `label` (`__()` `en`/`id`/`ja` via `lang/*/list_actions.php` plus existing `ui.*` / `web/*` confirms), `icon` (Bootstrap Icons, no `bi-` prefix), `variant`, plus **exactly one** of:
 

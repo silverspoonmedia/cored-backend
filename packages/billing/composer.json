@@ -1,0 +1,38 @@
+{
+    "name": "silverspoonmedia/billing",
+    "description": "Silverspoon core domain package: currency catalog + FX rates (Currency), service catalog + entitlement ledger (Service) and invoice collection (PaymentGateway).",
+    "type": "library",
+    "license": "proprietary",
+    "version": "1.0.0",
+    "homepage": "https://github.com/silverspoonmedia/billing",
+    "support": {
+        "source": "https://github.com/silverspoonmedia/billing"
+    },
+    "require": {
+        "php": "^8.4",
+        "illuminate/support": "^13.0",
+        "symfony/yaml": "^8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\Domain\\Currency\\": "src/Currency/",
+            "App\\Domain\\PaymentGateway\\": "src/PaymentGateway/",
+            "App\\Domain\\Service\\": "src/Service/",
+            "App\\Domain\\Currency\\Tests\\": "tests/Currency/",
+            "App\\Domain\\PaymentGateway\\Tests\\": "tests/PaymentGateway/",
+            "App\\Domain\\Service\\Tests\\": "tests/Service/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "App\\Domain\\PaymentGateway\\BillingServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

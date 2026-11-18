@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Domain\DomainManager;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,7 +23,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => redirect()->to(config('services.spa.url') ?: '/'));
 
 // Public / provider return (no auth) - server endpoints, not UI.
-require __DIR__.'/web/payment-ipaymu-return.php';
+// Packaged core domains (e.g. `silverspoonmedia/billing`) contribute their server
+// endpoints through the registry, in core-first order.
+foreach (app(App\Support\Domain\DomainManager::class)->packageWebRoutePaths() as $packageWebRouteFile) {
+    require $packageWebRouteFile;
+}
+
 require __DIR__.'/web/identity-oauth-callback.php';
 require __DIR__.'/web/archivd-public.php';
 

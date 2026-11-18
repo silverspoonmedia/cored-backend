@@ -17,7 +17,7 @@ use App\Domain\Microstock\Services\UnknownModelBillingConsolidationService;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
 use App\Domain\Notification\Models\ActivityNotification;
 use App\Domain\Notification\Notifications\NotificationType;
-use Database\Seeders\InferenceCatalogSeeder;
+use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\Concerns\SeedsRolesAndPermissions;

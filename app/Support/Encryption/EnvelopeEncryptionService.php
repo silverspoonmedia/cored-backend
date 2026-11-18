@@ -2,7 +2,6 @@
 
 namespace App\Support\Encryption;
 
-use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Support\Oci\Kms\Contracts\KmsDekClientInterface;
 use Illuminate\Support\Facades\Crypt;
 use RuntimeException;
@@ -14,8 +13,8 @@ class EnvelopeEncryptionService
     public function __construct(
         private readonly KmsDekClientInterface $kmsClient,
         private readonly DecryptedValueCache $decryptedValueCache,
-        private readonly CryptoActivityRecorder $cryptoActivityRecorder,
-        private readonly InvoicePayloadDecryptLogger $invoicePayloadDecryptLogger,
+        private readonly ?DecryptionAuditRecorder $cryptoActivityRecorder = null,
+        private readonly InvoicePayloadDecryptLogger $invoicePayloadDecryptLogger = new InvoicePayloadDecryptLogger,
     ) {}
 
     public function encrypt(string $plaintext, ?DecryptionContext $context = null): string
@@ -72,7 +71,7 @@ class EnvelopeEncryptionService
 
         $this->invoicePayloadDecryptLogger->log($context, $cacheHit, $operation);
 
-        if ($this->shouldAuditDecrypt($cacheHit, $context)) {
+        if ($this->shouldAuditDecrypt($cacheHit, $context) && $this->cryptoActivityRecorder !== null) {
             $metadata = $this->resolveAuditMetadata($storedValue);
 
             $this->cryptoActivityRecorder->recordFieldDecrypted(

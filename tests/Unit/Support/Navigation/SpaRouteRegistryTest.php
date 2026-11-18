@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Support\Navigation;
 
+use App\Support\Domain\DomainManager;
 use App\Support\Navigation\SpaRouteRegistry;
 use Tests\TestCase;
 
@@ -9,7 +10,14 @@ class SpaRouteRegistryTest extends TestCase
 {
     public function test_menu_seeder_routes_are_registered(): void
     {
-        $contents = (string) file_get_contents(database_path('seeders/MenuSeeder.php'));
+        // MenuSeeder ships inside the Navigation core package. Resolve it through
+        // the registry instead of database_path() so moving the package (or a
+        // host overriding the seeder) does not silently skip this guard.
+        $seeder = dirname(app(DomainManager::class)->domainPath('Navigation')).'/database/seeders/MenuSeeder.php';
+
+        $this->assertFileExists($seeder, 'MenuSeeder is not where the Navigation package declares it.');
+
+        $contents = (string) file_get_contents($seeder);
         preg_match_all("/'route'\\s*=>\\s*'([^']+)'/", $contents, $matches);
 
         $this->assertNotEmpty($matches[1]);

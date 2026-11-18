@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\Service\Support\ArchivdCatalog;
+use App\Domain\Archivd\Support\ArchivdCatalog;
 
 return [
 

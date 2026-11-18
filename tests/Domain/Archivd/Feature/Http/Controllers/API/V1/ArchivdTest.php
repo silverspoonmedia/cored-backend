@@ -1021,7 +1021,7 @@ class ArchivdTest extends TestCase
     private function grantPaidMain(User $user): void
     {
         $service = Service::query()->where('code', 'archivd.plan.1tb.monthly')->first()
-            ?? Service::factory()->ArchivdMain1Tb()->create();
+            ?? Service::factory()->archivdMain1Tb()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [
@@ -1040,7 +1040,7 @@ class ArchivdTest extends TestCase
     private function grantGraceMain(User $user): void
     {
         $service = Service::query()->where('code', 'archivd.plan.1tb.monthly')->first()
-            ?? Service::factory()->ArchivdMain1Tb()->create();
+            ?? Service::factory()->archivdMain1Tb()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [
@@ -1259,7 +1259,7 @@ class ArchivdTest extends TestCase
             ])
             ->assertOk();
 
-        // Alice's file untouched â€” bulk is owner-scoped.
+        // Alice's file untouched — bulk is owner-scoped.
         $this->assertSame('private', $aliceFile->fresh()->visibility);
     }
 

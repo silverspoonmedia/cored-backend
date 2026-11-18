@@ -8,6 +8,7 @@
 - Open **one side by default**: [Monolith-Backend.code-workspace](Monolith-Backend.code-workspace) or the sibling SPA workspace. [Monolith-Fullstack.code-workspace](Monolith-Fullstack.code-workspace) only when the API↔SPA contract moves. All three workspaces load the `docs` repo as a peer root, so its rules inject on every turn.
 - A **customer-visible** capability is not shipped until its page in `docs` says so; that page ships in the same task (see the `docs-sync` rule in that repo).
 - Never create Blade views here. Integration summary: [docs/integration/project-overview.md](docs/integration/project-overview.md); contract: [docs/integration/vue-workers-spa.md](docs/integration/vue-workers-spa.md) (open only when endpoints, headers, cookies/CSRF, envelopes, or route names change).
+- A **core domain** may live in a Composer path package under `packages/` (`silverspoonmedia/navigation`, `silverspoonmedia/notification`) while keeping the `App\Domain\{Domain}\` namespace. Check `php artisan domain:list` (`Package` column) before assuming `app/Domain/{Name}/` exists; the contract is [docs/integration/core-packages.md](docs/integration/core-packages.md).
 
 ## Protocol
 
@@ -25,7 +26,7 @@
 | `context-budget.mdc` *(always-on)* | Choosing a workspace / what to open |
 | `i18n-guardrail.mdc` *(always-on)* | Adding or editing user-facing copy |
 | `working-branch.mdc` *(always-on)* | Before the first edit — never work on a protected branch |
-| `architecture.mdc` | `app/Domain/**`, `app/Support/Domain/**`, `app/Console/Commands/Domain/**`, `config/domains.php` — domain kind/lifecycle/composition (`parent`), uninstall manifest, namespaces, dependency direction |
+| `architecture.mdc` | `app/Domain/**`, `app/Support/Domain/**`, `app/Console/Commands/Domain/**`, `config/domains.php`, `packages/**` — domain kind/lifecycle/composition (`parent`), path packages (layout, override precedence, kernel contracts), uninstall manifest, namespaces, dependency direction |
 | `api-routing.mdc` | `routes/api/**`, `bootstrap/app.php` — global vs versioned layer, `v{N}` loader, route names |
 | `api-resources.mdc` | `app/**/Http/**`, `routes/api/**` — envelope, list `display_mode`/`actions[]`, standalone-first `/batch`, response minimization |
 | `crud.mdc` | `app/Repositories/**`, `**/Http/Controllers/**`, `**/Http/Requests/**` — shared repository, FormRequest DRY |
@@ -42,13 +43,14 @@
 | `identity.mdc` | `app/Domain/Identity/**`, auth/JWT/RBAC config |
 | `notification.mdc` | `app/Domain/Notification/**`, bell config/seeder |
 | `domain-access.mdc` | `app/Support/DomainAccess/**`, Domain Access routes/config |
-| `activity-log.mdc` | `app/Domain/ActivityLog/**`, audit trail config/API |
-| `error-log.mdc` | `app/Domain/ErrorLog/**`, error-log config/API |
+| `activity-log.mdc` | `packages/audit/src/ActivityLog/**`, audit trail config/API |
+| `error-log.mdc` | `packages/audit/src/ErrorLog/**`, error-log config/API |
 | `inference.mdc` | `app/Domain/Inference/**`, catalog seeder, rate config |
 | `ai.mdc` | `app/Domain/Ai/**`, AI connection config/seeder |
-| `service.mdc` | `app/Domain/Service/**`, catalog seeder, FX/service config |
+| `service.mdc` | `packages/billing/src/Service/**`, catalog seeder, FX/service config |
 | `product-activations.mdc` | `app/Support/Product/**`, product registry config |
-| `payment-gateway.mdc` | `app/Domain/PaymentGateway/**`, payment config/routing |
+| `payment-gateway.mdc` | `packages/billing/src/PaymentGateway/**`, payment config/routing YAML |
+| `currency.mdc` | `packages/billing/src/Currency/**`, currency route, Frankfurter config |
 | `archivd.mdc` / `microstock.mdc` | `app/Domain/Archivd/**`, `app/Domain/Microstock/**`, their routes/config |
 
 Doc map: [docs/README.md](docs/README.md). History and audits: [docs/archive/](docs/archive/). Backend work stays here; SPA work stays in the sibling.

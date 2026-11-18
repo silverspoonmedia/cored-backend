@@ -14,7 +14,6 @@
                 "lang/*/api/microstock.php",
                 "scripts/microstock",
                 "docs/domains/microstock",
-                "app/Domain/Service/Support/MicrostockCatalog.php",
                 "app/Support/ListActions/Builders/MicrostockCredentialQueryRowActions.php",
                 "tests/Concerns/GrantsMicrostockAiCredits.php",
                 "tests/Domain/Archivd/Feature/Http/Controllers/API/V1/FileShowMicrostockGatingTest.php"
@@ -207,7 +206,7 @@
                     ]
                 },
                 {
-                    "file": "config/ai.php",
+                    "file": "packages/ai/config/ai.php",
                     "op": "remove_lines_matching",
                     "match": "(microstock\\.|Settings → Microstock)"
                 },
@@ -222,12 +221,12 @@
                     "match": "microstock\\."
                 },
                 {
-                    "file": "database/seeders/MenuSeeder.php",
+                    "file": "packages/navigation/database/seeders/MenuSeeder.php",
                     "op": "remove_block",
                     "begin": "'route' => 'settings.microstock'"
                 },
                 {
-                    "file": "database/seeders/MenuSeeder.php",
+                    "file": "packages/navigation/database/seeders/MenuSeeder.php",
                     "op": "remove_block",
                     "begin": "'Microstock' => ["
                 },
@@ -288,16 +287,16 @@
             "unresolved": [],
             "ignore": [
                 {
-                    "path": "app/Domain/Ai/Console/Commands/ImportLegacyEnvCommand.php",
-                    "reason": "owned by the Ai domain: this file leaves with Ai's own uninstall, nothing to do here (line 169, 170, 173, 174, 177, 178)"
+                    "path": "packages/ai/src/Ai/Console/Commands/ImportLegacyEnvCommand.php",
+                    "reason": "owned by the Ai package: the legacy microstock env keys it imports are dropped with Microstock and the file leaves with silverspoonmedia/ai (line 169, 170, 173, 174, 177, 178)"
                 },
                 {
-                    "path": "app/Domain/Ai/Enums/AiConnectionDriver.php",
-                    "reason": "owned by the Ai domain: this file leaves with Ai's own uninstall, nothing to do here (line 7)"
+                    "path": "packages/ai/src/Ai/Enums/AiConnectionDriver.php",
+                    "reason": "owned by the Ai package: this file leaves with silverspoonmedia/ai, nothing to do here (line 7)"
                 },
                 {
-                    "path": "app/Domain/Ai/Services/AiConnectionResolver.php",
-                    "reason": "owned by the Ai domain: this file leaves with Ai's own uninstall, nothing to do here (line 15)"
+                    "path": "packages/ai/src/Ai/Services/AiConnectionResolver.php",
+                    "reason": "owned by the Ai package: this file leaves with silverspoonmedia/ai, nothing to do here (line 15)"
                 },
                 {
                     "path": "app/Domain/Archivd/Enums/CollectionStatus.php",
@@ -352,35 +351,79 @@
                     "reason": "owned by the Archivd domain: this file leaves with Archivd's own uninstall, nothing to do here (line 100, 114, 146, 147, 169)"
                 },
                 {
-                    "path": "app/Domain/Inference/Http/Controllers/API/V1/InferenceUsageController.php",
-                    "reason": "owned by the Inference domain: this file leaves with Inference's own uninstall, nothing to do here (line 8)"
+                    "path": "packages/ai/src/Inference/Http/Controllers/API/V1/InferenceUsageController.php",
+                    "reason": "owned by the Inference package: the usage resource it renders is published by Microstock and the controller leaves with silverspoonmedia/ai (line 8)"
                 },
                 {
-                    "path": "app/Domain/Inference/Services/InferenceCatalogService.php",
-                    "reason": "owned by the Inference domain: this file leaves with Inference's own uninstall, nothing to do here (line 10)"
+                    "path": "packages/ai/src/Inference/Services/InferenceCatalogService.php",
+                    "reason": "owned by the Inference package: the consolidator it resolves is registered by Microstock and the service leaves with silverspoonmedia/ai (line 10)"
                 },
                 {
-                    "path": "app/Domain/Inference/Services/InferenceUsageAnalyticsService.php",
-                    "reason": "owned by the Inference domain: this file leaves with Inference's own uninstall, nothing to do here (line 7, 8)"
+                    "path": "packages/ai/src/Inference/Services/InferenceUsageAnalyticsService.php",
+                    "reason": "owned by the Inference package: the ledger it reads is bound by Microstock and the service leaves with silverspoonmedia/ai (line 7, 8)"
                 },
                 {
-                    "path": "app/Domain/Service/Models/Service.php",
+                    "path": "app/Support/Ai/AiUsageConsolidatorRegistry.php",
+                    "reason": "kernel seam: Microstock only registers itself here and drops that line when it is removed; the registry itself leaves with silverspoonmedia/ai (line 10)"
+                },
+                {
+                    "path": "app/Support/Ai/Contracts/AiUsageLedger.php",
+                    "reason": "kernel seam: Microstock binds an adapter and drops that line when it is removed; the contract itself leaves with silverspoonmedia/ai (line 12)"
+                },
+                {
+                    "path": "packages/ai/config/ai.php",
+                    "reason": "owned by the Ai package: the consumer bindings it documents leave with Microstock and this file leaves with silverspoonmedia/ai (line 25, 26, 27, 44, 45)"
+                },
+                {
+                    "path": "packages/ai/database/migrations/2026_08_01_120001_create_inference_pricing_tables.php",
+                    "reason": "owned by the Inference package: the usage-event columns it attaches leave with Microstock and the migration leaves with silverspoonmedia/ai (line 73, 75, 89)"
+                },
+                {
+                    "path": "packages/ai/src/Ai/Console/Commands/ImportLegacyEnvCommand.php",
+                    "reason": "owned by the Ai package: the legacy microstock entries it imports are purged by data.rows and the file leaves with silverspoonmedia/ai (line 29, 43, 126, 127, 128, 129, 167, 168)"
+                },
+                {
+                    "path": "packages/ai/src/Ai/Database/Seeders/AiConnectionSeeder.php",
+                    "reason": "owned by the Ai package: the microstock bindings it seeds are dropped with Microstock and the seeder leaves with silverspoonmedia/ai (line 20, 39, 126)"
+                },
+                {
+                    "path": "packages/ai/src/Inference/Database/Seeders/InferenceCatalogSeeder.php",
+                    "reason": "owned by the Inference package: the legacy rate card it mirrors leaves with Microstock and the seeder leaves with silverspoonmedia/ai (line 13)"
+                },
+                {
+                    "path": "packages/ai/tests/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 29, 30, 48, 69, 73, 75)"
+                },
+                {
+                    "path": "packages/ai/tests/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 41, 42, 109, 117, 127, 128)"
+                },
+                {
+                    "path": "packages/ai/tests/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 37, 38, 47)"
+                },
+                {
+                    "path": "packages/ai/tests/Inference/Feature/Http/Controllers/API/V1/InferenceUsageApiTest.php",
+                    "reason": "owned by the Inference package: the usage row it seeds comes from Microstock's ledger emulation and the test leaves with silverspoonmedia/ai (line 7, 33)"
+                },
+                {
+                    "path": "packages/billing/src/Service/Models/Service.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 9, 139, 141, 143, 158, 163)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/MainPlanChangeCalculator.php",
+                    "path": "packages/billing/src/Service/Services/MainPlanChangeCalculator.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 14, 101, 105, 127)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/ServiceCheckoutService.php",
+                    "path": "packages/billing/src/Service/Services/ServiceCheckoutService.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 16, 53, 54, 55)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/ServiceEntitlementService.php",
+                    "path": "packages/billing/src/Service/Services/ServiceEntitlementService.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 15, 227, 231, 362, 363, 365)"
                 },
                 {
-                    "path": "app/Domain/Service/Services/ServiceFulfillmentService.php",
+                    "path": "packages/billing/src/Service/Services/ServiceFulfillmentService.php",
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 7, 12, 52)"
                 },
                 {
@@ -392,7 +435,7 @@
                     "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 40)"
                 },
                 {
-                    "path": "database/factories/ServiceFactory.php",
+                    "path": "packages/billing/src/Service/Database/Factories/ServiceFactory.php",
                     "reason": "hand edit: review the Microstock reference and drop it (line 10, 114, 117, 118, 119, 121)"
                 },
                 {
@@ -400,19 +443,7 @@
                     "reason": "owned by the Archivd domain: this migration leaves with Archivd's own uninstall, nothing to do here (line 12, 30, 85)"
                 },
                 {
-                    "path": "database/migrations/2026_08_01_120001_create_inference_pricing_tables.php",
-                    "reason": "shipped migration: the Microstock value it writes is purged by data.rows; migrations are never edited (line 62, 78)"
-                },
-                {
-                    "path": "database/seeders/AiConnectionSeeder.php",
-                    "reason": "hand edit: drop the `microstock.*` keys (line 20, 39, 126)"
-                },
-                {
-                    "path": "database/seeders/InferenceCatalogSeeder.php",
-                    "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 13)"
-                },
-                {
-                    "path": "database/seeders/ServiceCatalogSeeder.php",
+                    "path": "packages/billing/src/Service/Database/Seeders/ServiceCatalogSeeder.php",
                     "reason": "hand edit: review the Microstock reference and drop it (line 11, 72, 73, 74, 78, 79)"
                 },
                 {
@@ -440,16 +471,16 @@
                     "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 12, 13)"
                 },
                 {
-                    "path": "tests/Domain/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
-                    "reason": "test: drop the `microstock.*` keys (line 29, 30, 48, 69, 73, 75)"
+                    "path": "packages/ai/tests/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 29, 30, 48, 69, 73, 75)"
                 },
                 {
-                    "path": "tests/Domain/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
-                    "reason": "test: drop the `microstock.*` keys (line 41, 42, 109, 117, 127, 128)"
+                    "path": "packages/ai/tests/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 41, 42, 109, 117, 127, 128)"
                 },
                 {
-                    "path": "tests/Domain/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
-                    "reason": "test: review the Microstock reference and drop it (line 37, 38, 47)"
+                    "path": "packages/ai/tests/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 37, 38, 47)"
                 },
                 {
                     "path": "tests/Domain/Archivd/Feature/Http/Controllers/API/V1/ArchivdTest.php",
@@ -460,15 +491,11 @@
                     "reason": "test: drop the `WorkspaceKind::Microstock` branch and its callers (line 44, 51, 52)"
                 },
                 {
-                    "path": "tests/Domain/Inference/Feature/Http/Controllers/API/V1/InferenceUsageApiTest.php",
-                    "reason": "test: drop the `use App\\Domain\\Microstock\\…` import and the code that consumes it (line 7)"
-                },
-                {
-                    "path": "tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php",
+                    "path": "packages/navigation/tests/Feature/Database/Seeders/MenuSeederTest.php",
                     "reason": "test: drop the `microstock.*` keys (line 144, 220, 244, 335)"
                 },
                 {
-                    "path": "tests/Domain/Service/Unit/Services/ServiceCheckoutZeroChargeTest.php",
+                    "path": "packages/billing/tests/Service/Unit/Services/ServiceCheckoutZeroChargeTest.php",
                     "reason": "test: review the Microstock reference and drop it (line 69, 72, 91, 94, 99, 102)"
                 },
                 {
@@ -490,6 +517,14 @@
                 {
                     "path": "tests/Unit/Support/Settings/SettingsReaderTest.php",
                     "reason": "test: drop the `microstock.*` setting reads (line 59, 60, 65, 66, 73)"
+                },
+                {
+                    "path": "app/Support/Billing/Contracts/FulfillmentHandler.php",
+                    "reason": "docblock: Microstock named in prose as the seam example, not in code — keep"
+                },
+                {
+                    "path": "app/Support/Billing/FulfillmentRegistry.php",
+                    "reason": "docblock: Microstock named in prose as a registering product, not in code — keep"
                 }
             ]
         },
@@ -1205,21 +1240,8 @@
             ]
         },
         "docs": {
-            "delete": [
-                "docs/microstock"
-            ],
-            "edits": [
-                {
-                    "file": "docs-coverage.json",
-                    "op": "remove_lines_matching",
-                    "match": "^\\s*\"(?:product\\.microstock|microstock\\.collections|microstock\\.credits\\-and\\-usage|microstock\\.export\\-and\\-upload)\"\\s*:"
-                },
-                {
-                    "file": "sidebars.ts",
-                    "op": "remove_block",
-                    "begin": "label: 'Microstock'"
-                }
-            ],
+            "delete": [],
+            "edits": [],
             "unresolved": [],
             "ignore": [
                 {

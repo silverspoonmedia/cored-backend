@@ -73,7 +73,7 @@ trait QualificationHarness
     protected function grantPaidMain(User $user): void
     {
         $service = Service::query()->where('code', 'archivd.plan.1tb.monthly')->first()
-            ?? Service::factory()->ArchivdMain1Tb()->create();
+            ?? Service::factory()->archivdMain1Tb()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [
@@ -92,7 +92,7 @@ trait QualificationHarness
     protected function grantGraceMain(User $user): void
     {
         $service = Service::query()->where('code', 'archivd.plan.1tb.monthly')->first()
-            ?? Service::factory()->ArchivdMain1Tb()->create();
+            ?? Service::factory()->archivdMain1Tb()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [
@@ -111,7 +111,7 @@ trait QualificationHarness
     protected function grantWorkspaceSlots(User $user, int $quantity = 1): void
     {
         $service = Service::query()->where('code', 'archivd.addon.workspace-slot.monthly')->first()
-            ?? Service::factory()->ArchivdAddonWorkspaceSlot()->create();
+            ?? Service::factory()->archivdAddonWorkspaceSlot()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [

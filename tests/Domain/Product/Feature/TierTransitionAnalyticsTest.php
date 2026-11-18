@@ -10,7 +10,7 @@ use App\Domain\Service\Services\ServiceEntitlementService;
 use App\Domain\Service\Services\ServiceFulfillmentService;
 use App\Support\Product\Models\ProductAnalytic;
 use App\Support\Product\Services\ProductActivationService;
-use Database\Factories\ServiceFactory;
+use App\Domain\Service\Database\Factories\ServiceFactory;
 use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -65,7 +65,7 @@ class TierTransitionAnalyticsTest extends TestCase
         $this->assertSame(1, $this->bucket('free', 'file_count'));
         $this->assertNull($this->bucketRow('paid', 'storage_used_bytes'));
 
-        $service = ServiceFactory::new()->ArchivdMain1Tb()->create();
+        $service = ServiceFactory::new()->archivdMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $service->id,
@@ -93,7 +93,7 @@ class TierTransitionAnalyticsTest extends TestCase
             'mime' => 'text/plain',
         ]);
 
-        $service = ServiceFactory::new()->ArchivdMain1Tb()->create();
+        $service = ServiceFactory::new()->archivdMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $service->id,
@@ -125,7 +125,7 @@ class TierTransitionAnalyticsTest extends TestCase
             'mime' => 'text/plain',
         ]);
 
-        $service = ServiceFactory::new()->ArchivdMain1Tb()->create();
+        $service = ServiceFactory::new()->archivdMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $service->id,

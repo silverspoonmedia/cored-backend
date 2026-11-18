@@ -204,12 +204,12 @@ The data file must stay out of git: `/database/seeders/data/*.local.php` is in `
 
 | Suite | Covers |
 |-------|--------|
-| `tests/Domain/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php` | CRUD, mask-only payload, test gate, demotion, single default, RBAC |
-| `tests/Domain/Ai/Unit/Services/AiConnectionServiceTest.php` | lifecycle, slug uniqueness, encryption at rest |
-| `tests/Domain/Ai/Unit/Services/AiConnectionResolverTest.php` | default fallback, inactive rows, cache invalidation |
-| `tests/Domain/Ai/Unit/Support/AiConnectionSecretsTest.php` | normalization, fingerprint, hint |
-| `tests/Domain/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php` | import + dry-run + skip invalid |
-| `tests/Domain/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php` | local-only guard, skip rules, probe gate, `defaults` inheritance, hoisted variables, scope isolation, no-demotion re-seed, key rotation, binding typos |
+| `packages/ai/tests/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php` | CRUD, mask-only payload, test gate, demotion, single default, RBAC |
+| `packages/ai/tests/Ai/Unit/Services/AiConnectionServiceTest.php` | lifecycle, slug uniqueness, encryption at rest |
+| `packages/ai/tests/Ai/Unit/Services/AiConnectionResolverTest.php` | default fallback, inactive rows, cache invalidation |
+| `packages/ai/tests/Ai/Unit/Support/AiConnectionSecretsTest.php` | normalization, fingerprint, hint |
+| `packages/ai/tests/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php` | import + dry-run + skip invalid |
+| `packages/ai/tests/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php` | local-only guard, skip rules, probe gate, `defaults` inheritance, hoisted variables, scope isolation, no-demotion re-seed, key rotation, binding typos |
 | `tests/Feature/Broadcasting/AiConnectionsChannelTest.php` | channel authorization |
 | `tests/Concerns/BindsAiConnection.php` | consumer-test stub (no DB, no encryption) |
 

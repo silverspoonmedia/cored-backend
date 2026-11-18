@@ -66,13 +66,13 @@ Staging and production **never** run `LocalSettingsSeeder` or `AiConnectionSeede
 
 ### Local Tier C seeding
 
-Tier C secrets (AI endpoints + API keys) have no `.env` home by design — they live envelope-encrypted in their credential tables. To keep a fresh local checkout usable, [`AiConnectionSeeder`](../../database/seeders/AiConnectionSeeder.php) reads a **gitignored** PHP data file and writes the rows through the domain service (`create` / `update` / `test` / `setDefault`).
+Tier C secrets (AI endpoints + API keys) have no `.env` home by design — they live envelope-encrypted in their credential tables. To keep a fresh local checkout usable, [`AiConnectionSeeder`](../../packages/ai/src/Ai/Database/Seeders/AiConnectionSeeder.php) reads a **gitignored** PHP data file and writes the rows through the domain service (`create` / `update` / `test` / `setDefault`).
 
 | | |
 |--|--|
 | Trigger | `APP_ENV=local` only |
 | Data file | `database/seeders/data/ai-connections.local.php` (gitignored; `.example.php` is tracked) |
-| Template/config | [`config/ai.php`](../../config/ai.php) → `ai.seed.path` + `ai.seed.binding_models` |
+| Template/config | [`packages/ai/config/ai.php`](../../packages/ai/config/ai.php) → `ai.seed.path` + `ai.seed.binding_models` |
 | Command | `php artisan db:seed --class=AiConnectionSeeder` (also runs last in local `DatabaseSeeder`) |
 | Never in git | the data file. Secrets reach the repo only via the encrypted `secret_payload` column |
 

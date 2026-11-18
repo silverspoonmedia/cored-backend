@@ -3,6 +3,7 @@
 namespace App\Domain\Archivd\Services;
 
 use App\Domain\Archivd\Models\UserQuota;
+use App\Domain\Archivd\Support\ArchivdCatalog;
 use App\Domain\Archivd\Support\ArchivdRealtime;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
@@ -34,7 +35,7 @@ class ArchivdQuotaRecomputeService
         foreach ($rows as $entitlement) {
             $service = $entitlement->service;
 
-            if ($service === null || ! $service->isArchivdStoragePlan()) {
+            if ($service === null || $service->fulfillment_target !== ArchivdCatalog::FULFILLMENT_TARGET || (int) $service->storage_bytes <= 0) {
                 continue;
             }
 

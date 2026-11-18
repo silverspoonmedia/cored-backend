@@ -108,34 +108,47 @@ function flattenPack(array $data, string $prefix = ''): array
 /**
  * Every `lang/{locale}/**` .php file as `relative/name` => flattened values.
  *
+ * Reads the host tree plus every packaged domain's lang tree, so a packaged
+ * domain's keys keep taking part in the flat-pack ownership comparison.
+ *
  * @return array<string, array<string, string>>
  */
 function namespaceValues(string $root, string $locale): array
 {
-    $base = $root.'/lang/'.$locale;
     $files = [];
 
-    if (! is_dir($base)) {
-        return $files;
-    }
+    foreach (locale_scan_lang_roots() as $langRoot) {
+        $base = $langRoot.'/'.$locale;
 
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
-    );
-
-    foreach ($iterator as $file) {
-        if ($file->getExtension() !== 'php') {
+        if (! is_dir($base)) {
             continue;
         }
 
-        $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($base) + 1));
-        $relative = substr($relative, 0, -4);
-        $data = include $file->getPathname();
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
+        );
 
-        if (is_array($data)) {
-            $files[$relative] = flattenPack($data);
+        foreach ($iterator as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($base) + 1));
+            $relative = substr($relative, 0, -4);
+
+            if (array_key_exists($relative, $files)) {
+                continue;
+            }
+
+            $data = include $file->getPathname();
+
+            if (is_array($data)) {
+                $files[$relative] = flattenPack($data);
+            }
         }
     }
+
+    ksort($files);
 
     return $files;
 }

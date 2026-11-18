@@ -16,7 +16,7 @@
  * Fill a shared value once: `defaults` is inherited by every entry, and an entry
  * value always wins over it.
  *
- * @see database/seeders/AiConnectionSeeder.php
+ * @see packages/ai/src/Ai/Database/Seeders/AiConnectionSeeder.php
  * @see docs/domains/ai/README.md
  */
 return [

@@ -8,7 +8,7 @@ use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePurchase;
-use App\Domain\Service\Support\MicrostockCatalog;
+use App\Domain\Microstock\Support\MicrostockCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;

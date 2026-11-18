@@ -3,10 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Domain\Identity\Models\User;
-use App\Domain\PaymentGateway\Models\Invoice;
 use App\Support\Encryption\DecryptionContext;
 use App\Support\Encryption\EncryptedEnvelope;
 use App\Support\Encryption\EnvelopeEncryptionService;
+use App\Support\Encryption\LegacyColumnMigratorRegistry;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -20,6 +20,7 @@ class EncryptionMigrateP0Command extends Command
 
     public function __construct(
         private readonly EnvelopeEncryptionService $encryption,
+        private readonly LegacyColumnMigratorRegistry $packageMigrators,
     ) {
         parent::__construct();
     }
@@ -28,10 +29,15 @@ class EncryptionMigrateP0Command extends Command
     {
         $counts = [
             'users.two_factor_secret' => $this->migrateUsers(),
-            'invoices.gateway_request_payload' => $this->migrateInvoiceColumn('gateway_request_payload'),
-            'invoices.gateway_response_payload' => $this->migrateInvoiceColumn('gateway_response_payload'),
-            'cache.value' => $this->migrateSensitiveCacheRows(),
         ];
+
+        // Package-owned P0 columns (e.g. `invoices.*` from `silverspoonmedia/billing`)
+        // register themselves; the kernel command never imports a package model.
+        foreach ($this->packageMigrators->all() as $migrator) {
+            $counts[$migrator->key()] = $migrator->migrate($this->encryption);
+        }
+
+        $counts['cache.value'] = $this->migrateSensitiveCacheRows();
 
         foreach ($counts as $target => $count) {
             $this->line(sprintf('%s: %d row(s) migrated', $target, $count));
@@ -57,37 +63,6 @@ class EncryptionMigrateP0Command extends Command
 
                     $user->forceFill([
                         'two_factor_secret' => $this->encryption->migrateLegacyValue($raw),
-                    ])->saveQuietly();
-
-                    $migrated++;
-                }
-            });
-
-        return $migrated;
-    }
-
-    private function migrateInvoiceColumn(string $column): int
-    {
-        $migrated = 0;
-
-        Invoice::query()
-            ->whereNotNull($column)
-            ->orderBy('id')
-            ->chunkById(100, function ($invoices) use ($column, &$migrated): void {
-                foreach ($invoices as $invoice) {
-                    $raw = $invoice->getRawOriginal($column);
-
-                    if ($raw === null || $raw === '' || EncryptedEnvelope::isEnvelopeJson((string) $raw)) {
-                        continue;
-                    }
-
-                    $plaintext = is_string($raw) ? $raw : json_encode($raw, JSON_THROW_ON_ERROR);
-
-                    $invoice->forceFill([
-                        $column => $this->encryption->encrypt(
-                            $plaintext,
-                            new DecryptionContext('invoices', (string) $invoice->id, $column, 'migration'),
-                        ),
                     ])->saveQuietly();
 
                     $migrated++;

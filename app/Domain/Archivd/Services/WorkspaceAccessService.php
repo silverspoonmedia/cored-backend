@@ -13,8 +13,8 @@ use App\Domain\Archivd\Models\Workspace;
 use App\Domain\Archivd\Models\WorkspaceMember;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Services\ServiceEntitlementService;
-use App\Domain\Service\Support\ArchivdCatalog;
-use App\Domain\Service\Support\MicrostockCatalog;
+use App\Domain\Archivd\Support\ArchivdCatalog;
+use App\Domain\Microstock\Support\MicrostockCatalog;
 use Illuminate\Http\Request;
 
 /**
@@ -70,11 +70,19 @@ class WorkspaceAccessService
      */
     public function microstockSlotLimit(string $ownerUserId): int
     {
-        $base = $this->entitlements->hasActiveMicrostockWorkspaceSlot($ownerUserId)
+        $base = $this->entitlements->hasSlotEntitlement(
+            $ownerUserId,
+            MicrostockCatalog::FULFILLMENT_TARGET,
+            MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+        )
             ? max(0, (int) MicrostockCatalog::BASE_WORKSPACE_SLOTS)
             : 0;
 
-        return $base + $this->entitlements->microstockWorkspaceSlotExtraQuantity($ownerUserId);
+        return $base + $this->entitlements->addonSlotQuantity(
+            $ownerUserId,
+            MicrostockCatalog::FULFILLMENT_TARGET,
+            MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+        );
     }
 
     public function canProvisionMicrostockWorkspace(string $ownerUserId): bool
@@ -119,7 +127,11 @@ class WorkspaceAccessService
             ));
         }
 
-        return $base + $this->entitlements->workspaceSlotExtraQuantity($ownerUserId);
+        return $base + $this->entitlements->addonSlotQuantity(
+            $ownerUserId,
+            ArchivdCatalog::FULFILLMENT_TARGET,
+            ArchivdCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+        );
     }
 
     public function canCreateOwnedWorkspace(string $ownerUserId): bool

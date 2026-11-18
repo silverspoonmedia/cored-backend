@@ -23,7 +23,7 @@ One envelope for every `/api/*` response, produced centrally by `App\Support\Api
 Index lists speak **one** mode. `display_mode` is optional and, when present, must be `query`; `display_mode=datatable` is **422** — validate through `App\Http\Requests\Concerns\InteractsWithListDisplayMode` (`listDisplayModeRules()`), never by hand.
 
 - No paging params → `data` is a flat `T[]`. With `page` / `per_page` / `search` → `data: {items, pagination}` (`{current_page, last_page, per_page, total, has_more}`, default `per_page` 10, max 100).
-- Query-mode rows carry **`actions[]`** built by a `QueryRowAction` builder under `App\Support\ListActions\Builders\`, attached with `QueryRowActionAttacher`. The SPA maps and executes them; **views must not invent keys**, and a key is a suggestion to the client, never a grant — every mutate path re-checks authorization server-side.
+- Query-mode rows carry **`actions[]`** built by a `QueryRowAction` builder — `App\Support\ListActions\Builders\` for a host domain, `App\Domain\{Domain}\Support\ListActions\` inside a package — attached with `QueryRowActionAttacher`. The SPA maps and executes them; **views must not invent keys**, and a key is a suggestion to the client, never a grant — every mutate path re-checks authorization server-side.
 - Contract + lookups: [docs/platform/list-display-modes.md](../../docs/platform/list-display-modes.md).
 
 ## Aggregation (standalone-first)

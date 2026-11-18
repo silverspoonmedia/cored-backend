@@ -1,12 +1,14 @@
 ---
 description: Notification engine — type/audience contract, realtime payload, read state
-globs: app/Domain/Notification/**,routes/api/v1/notification.php,config/notifications.php,lang/*/notifications.php,database/seeders/NotificationTypeSettingSeeder.php,docs/domains/notification/**
+globs: packages/notification/**,docs/domains/notification/**
 alwaysApply: false
 ---
 
 # Notification (activity bell)
 
 Hybrid engine: **types and triggers live in code** (`NotificationType`), **audience lives in the DB** (`notification_type_settings` + pivots). It is not Laravel's `notifications` table, and it is not [activity-log.mdc](activity-log.mdc).
+
+This domain is a **Composer path package** (`packages/notification`): src, routes, config, migrations, seeders, factories, lang and tests all live there. The `App\Domain\Notification\` namespace does not change, and a host may override any class by placing the same namespace path under `app/Domain/Notification/`.
 
 - One row + role/user pivots; per-user read state in `activity_notification_reads`. A viewer sees a notification if a role matches **OR** they are a targeted user.
 - **Never hardcode an audience in code and never dispatch from a controller.** The owning **service** dispatches `ActivityNotificationEvent`; `NotificationService::emit()` resolves the audience from settings. The listener is auto-discovered — never register it twice.
@@ -21,6 +23,6 @@ Hybrid engine: **types and triggers live in code** (`NotificationType`), **audie
 - Mark-all / single-read are in-place API mutations (`POST notifications/read-all`, `…/{id}/read`) returning `{marked, unread: 0}` — the SPA updates badge and list locally with no redirect. Cross-tab sync rides `BroadcastChannel('activity-notifications.{userId}')`; without it the acting tab still updates and siblings reconcile on the next WS event.
 - API requires `view notification`. The **Workspace → Notifications** page (`notifications.index`) carries no menu-role pivot — it is available to authenticated viewers that pass the navigation audience rules, and is distinct from the navbar bell.
 - New type = one PR: enum case (+ `icon()` / `defaultRoles()` / `tableId()`), all-locale translations under `types.{value}`, `NotificationTypeSettingSeeder` row + roles, dispatch from the owning service, tests, optional `tableId` + SPA listing registry entry.
-- Tests: `php artisan test tests/Domain/Notification` + `tests/Unit/Support/Broadcasting/BroadcastConnectionTest.php`; SPA `npm test`.
+- Tests: `php artisan test packages/notification/tests` + `tests/Unit/Support/Broadcasting/BroadcastConnectionTest.php`; SPA `npm test`.
 
 Detail: [docs/domains/notification/reference.md](../../docs/domains/notification/reference.md).

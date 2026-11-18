@@ -2,7 +2,7 @@
 
 namespace Tests\Concerns;
 
-use Database\Seeders\CurrencySeeder;
+use App\Domain\Currency\Database\Seeders\CurrencySeeder;
 
 trait SeedsCurrencies
 {

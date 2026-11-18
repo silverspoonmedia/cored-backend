@@ -275,7 +275,9 @@ class DomainCommandsTest extends TestCase
                 '--force' => true,
             ])->assertFailed();
 
-            $this->assertDirectoryExists(app_path('Domain/'.$core));
+            // Packaged core domains (Navigation, Notification) report their source
+            // through the registry, not app_path().
+            $this->assertDirectoryExists(app(DomainManager::class)->domainPath($core));
         }
     }
 
