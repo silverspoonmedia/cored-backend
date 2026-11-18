@@ -1,9 +1,13 @@
 {
-    "name": "silverspoon/ai",
+    "name": "silverspoonmedia/ai",
     "description": "Silverspoon core domain package: model catalog and per-provider rates (Inference) and the endpoint/key connections that reach them (Ai).",
     "type": "library",
     "license": "proprietary",
     "version": "1.0.0",
+    "homepage": "https://github.com/silverspoonmedia/ai",
+    "support": {
+        "source": "https://github.com/silverspoonmedia/ai"
+    },
     "require": {
         "php": "^8.4",
         "illuminate/support": "^13.0"

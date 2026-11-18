@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * One provider for `silverspoon/ai` — two core domains, one package.
+ * One provider for `silverspoonmedia/ai` — two core domains, one package.
  *
  * `Inference` owns the model catalog and the per-provider rates; `Ai` owns the
  * endpoints and keys that reach a provider. A rate is meaningless without the

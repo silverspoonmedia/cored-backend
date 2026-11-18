@@ -1,6 +1,6 @@
 # ActivityLog — Spatie audit trail
 
-Immutable forensic log of domain mutations, so a change to a user, menu or service can be traced back to a causer. It is **not** the notification bell and **not** [error-log](../error-log/README.md): this records what someone did, error-log records what broke. Code: `packages/audit/src/ActivityLog/` (`silverspoon/audit`, bundled with ErrorLog). Invariants: [.cursor/rules/activity-log.mdc](../../../.cursor/rules/activity-log.mdc).
+Immutable forensic log of domain mutations, so a change to a user, menu or service can be traced back to a causer. It is **not** the notification bell and **not** [error-log](../error-log/README.md): this records what someone did, error-log records what broke. Code: `packages/audit/src/ActivityLog/` (`silverspoonmedia/audit`, bundled with ErrorLog). Invariants: [.cursor/rules/activity-log.mdc](../../../.cursor/rules/activity-log.mdc).
 
 | System | Table | Purpose |
 |--------|-------|---------|

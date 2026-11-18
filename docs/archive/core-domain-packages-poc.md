@@ -4,7 +4,7 @@
 
 ## Decision
 
-`Navigation` and `Notification` — the two core domains with the fewest cross-domain imports — moved out of `app/Domain/*` into `packages/navigation` and `packages/notification`, required from the root manifest as `silverspoon/*` path packages. The `App\Domain\{Domain}\*` namespace, route names, config keys, migration timestamps and un-namespaced translation keys are unchanged. Product domains stay where they are.
+`Navigation` and `Notification` — the two core domains with the fewest cross-domain imports — moved out of `app/Domain/*` into `packages/navigation` and `packages/notification`, required from the root manifest as `silverspoonmedia/*` path packages. The `App\Domain\{Domain}\*` namespace, route names, config keys, migration timestamps and un-namespaced translation keys are unchanged. Product domains stay where they are.
 
 The alternative — a second repository per domain, or a Composer registry — was rejected for this stage: a path package proves the consumption model (PSR-4 overlay, auto-discovered providers, own migrations/lang/tests) with no publishing pipeline, no versioning ceremony, and a one-line rollback.
 
@@ -30,7 +30,7 @@ All four hold. `tests/Domain/Core/PackageOverrideTest.php` locks #2 and #3 so a 
 ## Gotchas hit during the move
 
 - `composer update` runs `@php artisan lang:update` (post-update hook), which rewrote every `lang/*` file. Those are not part of this change and were reverted; a future extraction on a branch that touches language files must re-check after any Composer run.
-- Windows symlinks work (directory junction). If they ever fail, `"symlink": false` plus `composer update silverspoon/*` after each change under `packages/` is the fallback.
+- Windows symlinks work (directory junction). If they ever fail, `"symlink": false` plus `composer update silverspoonmedia/*` after each change under `packages/` is the fallback.
 - `DomainUninstallManifestTest` currently fails on `docs:docs/archivd` because the sibling `docs` checkout is on `chore/drop-product-domains`, which already deleted that page. Pre-existing, unrelated, and reported rather than papered over.
 
 ## Not done (deliberately)

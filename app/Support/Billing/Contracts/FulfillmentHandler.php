@@ -7,7 +7,7 @@ use App\Support\Billing\FulfillmentContext;
 /**
  * Kernel-owned seam between the billing package and a product domain.
  *
- * `silverspoon/billing` activates/extends/expires an entitlement and then asks
+ * `silverspoonmedia/billing` activates/extends/expires an entitlement and then asks
  * this registry what the *product* should do about it: recompute a quota,
  * credit an AI balance, guard a one-time free registration. The package never
  * imports `App\Domain\Archivd\*` or `App\Domain\Microstock\*`; the product

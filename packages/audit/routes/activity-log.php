@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| ActivityLog API routes — owned by `silverspoon/audit`.
+| ActivityLog API routes — owned by `silverspoonmedia/audit`.
 |--------------------------------------------------------------------------
 |
 | No prefix/name wrapper here: the host applies the versioned layer, so route

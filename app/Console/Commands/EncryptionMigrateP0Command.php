@@ -31,7 +31,7 @@ class EncryptionMigrateP0Command extends Command
             'users.two_factor_secret' => $this->migrateUsers(),
         ];
 
-        // Package-owned P0 columns (e.g. `invoices.*` from `silverspoon/billing`)
+        // Package-owned P0 columns (e.g. `invoices.*` from `silverspoonmedia/billing`)
         // register themselves; the kernel command never imports a package model.
         foreach ($this->packageMigrators->all() as $migrator) {
             $counts[$migrator->key()] = $migrator->migrate($this->encryption);

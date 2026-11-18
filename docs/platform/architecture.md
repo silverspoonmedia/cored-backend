@@ -1,6 +1,6 @@
 # Domain modules (internal monorepo + Composer path packages)
 
-Domain code lives under `app/Domain/{Domain}/` inside one Laravel app and one git repo. This is a **logical monorepo** at the repo level, and — for extracted core domains — **real Composer path packages** under `packages/{slug}/`, required from the root `composer.json` as `silverspoon/{slug}`. The namespace is `App\Domain\{Domain}\*` in both cases, so extraction never changes an import, a translation key, or a route name. The host repository (`app/`) is still resolved first, which is what makes an override in `app/Domain/Navigation/...` shadow the packaged class.
+Domain code lives under `app/Domain/{Domain}/` inside one Laravel app and one git repo. This is a **logical monorepo** at the repo level, and — for extracted core domains — **real Composer path packages** under `packages/{slug}/`, required from the root `composer.json` as `silverspoonmedia/{slug}`. The namespace is `App\Domain\{Domain}\*` in both cases, so extraction never changes an import, a translation key, or a route name. The host repository (`app/`) is still resolved first, which is what makes an override in `app/Domain/Navigation/...` shadow the packaged class.
 
 Three layers, in dependency order: **kernel/host** (`app/Support/**`, routes, bootstrap — imports a package only through a kernel-owned contract), **core package** (`packages/*` — may import `App\Support\*` and the Identity hub, never a product domain), **product domain** (`app/Domain/{Product}/` — the sellable surface, never a Composer package).
 
@@ -11,25 +11,25 @@ A packaged domain declares where its parts live, and `DomainManager` reads it �
 ```php
 'Navigation' => [
     'kind' => 'core',
-    'package' => 'silverspoon/navigation',
+    'package' => 'silverspoonmedia/navigation',
     'path' => 'packages/navigation/src',
     'routes' => 'packages/navigation/routes/api.php',
     'provider' => 'packages/navigation/src/NavigationServiceProvider.php',
 ],
 'ActivityLog' => [
     'kind' => 'core',
-    'package' => 'silverspoon/audit',
+    'package' => 'silverspoonmedia/audit',
     'path' => 'packages/audit/src',
     'routes' => 'packages/audit/routes/activity-log.php',
     'provider' => 'packages/audit/src/ActivityLog/AuditServiceProvider.php',
 ],
 // ErrorLog: same package/path/provider, its own route file.
 // PaymentGateway + Currency + Service: same package/path/provider
-// (`silverspoon/billing`), each with its own `routes` file; PaymentGateway also
+// (`silverspoonmedia/billing`), each with its own `routes` file; PaymentGateway also
 // carries a `web` key for its server-side payment-return route. Registry order
 // is the file load order, so `currency.php` before `service.php` keeps the
 // `/currencies` URIs where they sat before the split.
-// Inference + Ai: same package/path/provider (`silverspoon/ai`), each with its
+// Inference + Ai: same package/path/provider (`silverspoonmedia/ai`), each with its
 // own `routes` file (catalog/rates vs connections/keys).
 ```
 

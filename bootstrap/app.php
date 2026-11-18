@@ -165,7 +165,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->reportable(function (Throwable $e): void {
             // Kernel-owned contract: the error-log domain binds it when the
-            // `silverspoon/audit` package is installed. Without it, the report
+            // `silverspoonmedia/audit` package is installed. Without it, the report
             // still goes to the file log through the default handler.
             if (app()->bound(ExceptionRecorder::class)) {
                 app(ExceptionRecorder::class)->recordException($e);

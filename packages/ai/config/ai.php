@@ -16,7 +16,7 @@ return [
     // the model it knows how to reach.
     'default_test_model' => '',
 
-    // Admin usage-event JSON resource. `silverspoon/ai` renders the dashboard but
+    // Admin usage-event JSON resource. `silverspoonmedia/ai` renders the dashboard but
     // the rows come from whichever product owns the AI ledger — that product
     // publishes its resource class here in its provider. Empty = no ledger
     // installed, and the dashboard endpoint has no rows to render.

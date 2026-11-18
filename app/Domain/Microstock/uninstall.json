@@ -288,15 +288,15 @@
             "ignore": [
                 {
                     "path": "packages/ai/src/Ai/Console/Commands/ImportLegacyEnvCommand.php",
-                    "reason": "owned by the Ai package: the legacy microstock env keys it imports are dropped with Microstock and the file leaves with silverspoon/ai (line 169, 170, 173, 174, 177, 178)"
+                    "reason": "owned by the Ai package: the legacy microstock env keys it imports are dropped with Microstock and the file leaves with silverspoonmedia/ai (line 169, 170, 173, 174, 177, 178)"
                 },
                 {
                     "path": "packages/ai/src/Ai/Enums/AiConnectionDriver.php",
-                    "reason": "owned by the Ai package: this file leaves with silverspoon/ai, nothing to do here (line 7)"
+                    "reason": "owned by the Ai package: this file leaves with silverspoonmedia/ai, nothing to do here (line 7)"
                 },
                 {
                     "path": "packages/ai/src/Ai/Services/AiConnectionResolver.php",
-                    "reason": "owned by the Ai package: this file leaves with silverspoon/ai, nothing to do here (line 15)"
+                    "reason": "owned by the Ai package: this file leaves with silverspoonmedia/ai, nothing to do here (line 15)"
                 },
                 {
                     "path": "app/Domain/Archivd/Enums/CollectionStatus.php",
@@ -352,59 +352,59 @@
                 },
                 {
                     "path": "packages/ai/src/Inference/Http/Controllers/API/V1/InferenceUsageController.php",
-                    "reason": "owned by the Inference package: the usage resource it renders is published by Microstock and the controller leaves with silverspoon/ai (line 8)"
+                    "reason": "owned by the Inference package: the usage resource it renders is published by Microstock and the controller leaves with silverspoonmedia/ai (line 8)"
                 },
                 {
                     "path": "packages/ai/src/Inference/Services/InferenceCatalogService.php",
-                    "reason": "owned by the Inference package: the consolidator it resolves is registered by Microstock and the service leaves with silverspoon/ai (line 10)"
+                    "reason": "owned by the Inference package: the consolidator it resolves is registered by Microstock and the service leaves with silverspoonmedia/ai (line 10)"
                 },
                 {
                     "path": "packages/ai/src/Inference/Services/InferenceUsageAnalyticsService.php",
-                    "reason": "owned by the Inference package: the ledger it reads is bound by Microstock and the service leaves with silverspoon/ai (line 7, 8)"
+                    "reason": "owned by the Inference package: the ledger it reads is bound by Microstock and the service leaves with silverspoonmedia/ai (line 7, 8)"
                 },
                 {
                     "path": "app/Support/Ai/AiUsageConsolidatorRegistry.php",
-                    "reason": "kernel seam: Microstock only registers itself here and drops that line when it is removed; the registry itself leaves with silverspoon/ai (line 10)"
+                    "reason": "kernel seam: Microstock only registers itself here and drops that line when it is removed; the registry itself leaves with silverspoonmedia/ai (line 10)"
                 },
                 {
                     "path": "app/Support/Ai/Contracts/AiUsageLedger.php",
-                    "reason": "kernel seam: Microstock binds an adapter and drops that line when it is removed; the contract itself leaves with silverspoon/ai (line 12)"
+                    "reason": "kernel seam: Microstock binds an adapter and drops that line when it is removed; the contract itself leaves with silverspoonmedia/ai (line 12)"
                 },
                 {
                     "path": "packages/ai/config/ai.php",
-                    "reason": "owned by the Ai package: the consumer bindings it documents leave with Microstock and this file leaves with silverspoon/ai (line 25, 26, 27, 44, 45)"
+                    "reason": "owned by the Ai package: the consumer bindings it documents leave with Microstock and this file leaves with silverspoonmedia/ai (line 25, 26, 27, 44, 45)"
                 },
                 {
                     "path": "packages/ai/database/migrations/2026_08_01_120001_create_inference_pricing_tables.php",
-                    "reason": "owned by the Inference package: the usage-event columns it attaches leave with Microstock and the migration leaves with silverspoon/ai (line 73, 75, 89)"
+                    "reason": "owned by the Inference package: the usage-event columns it attaches leave with Microstock and the migration leaves with silverspoonmedia/ai (line 73, 75, 89)"
                 },
                 {
                     "path": "packages/ai/src/Ai/Console/Commands/ImportLegacyEnvCommand.php",
-                    "reason": "owned by the Ai package: the legacy microstock entries it imports are purged by data.rows and the file leaves with silverspoon/ai (line 29, 43, 126, 127, 128, 129, 167, 168)"
+                    "reason": "owned by the Ai package: the legacy microstock entries it imports are purged by data.rows and the file leaves with silverspoonmedia/ai (line 29, 43, 126, 127, 128, 129, 167, 168)"
                 },
                 {
                     "path": "packages/ai/src/Ai/Database/Seeders/AiConnectionSeeder.php",
-                    "reason": "owned by the Ai package: the microstock bindings it seeds are dropped with Microstock and the seeder leaves with silverspoon/ai (line 20, 39, 126)"
+                    "reason": "owned by the Ai package: the microstock bindings it seeds are dropped with Microstock and the seeder leaves with silverspoonmedia/ai (line 20, 39, 126)"
                 },
                 {
                     "path": "packages/ai/src/Inference/Database/Seeders/InferenceCatalogSeeder.php",
-                    "reason": "owned by the Inference package: the legacy rate card it mirrors leaves with Microstock and the seeder leaves with silverspoon/ai (line 13)"
+                    "reason": "owned by the Inference package: the legacy rate card it mirrors leaves with Microstock and the seeder leaves with silverspoonmedia/ai (line 13)"
                 },
                 {
                     "path": "packages/ai/tests/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
-                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoon/ai (line 29, 30, 48, 69, 73, 75)"
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 29, 30, 48, 69, 73, 75)"
                 },
                 {
                     "path": "packages/ai/tests/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
-                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoon/ai (line 41, 42, 109, 117, 127, 128)"
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 41, 42, 109, 117, 127, 128)"
                 },
                 {
                     "path": "packages/ai/tests/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
-                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoon/ai (line 37, 38, 47)"
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 37, 38, 47)"
                 },
                 {
                     "path": "packages/ai/tests/Inference/Feature/Http/Controllers/API/V1/InferenceUsageApiTest.php",
-                    "reason": "owned by the Inference package: the usage row it seeds comes from Microstock's ledger emulation and the test leaves with silverspoon/ai (line 7, 33)"
+                    "reason": "owned by the Inference package: the usage row it seeds comes from Microstock's ledger emulation and the test leaves with silverspoonmedia/ai (line 7, 33)"
                 },
                 {
                     "path": "packages/billing/src/Service/Models/Service.php",
@@ -472,15 +472,15 @@
                 },
                 {
                     "path": "packages/ai/tests/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
-                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoon/ai (line 29, 30, 48, 69, 73, 75)"
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 29, 30, 48, 69, 73, 75)"
                 },
                 {
                     "path": "packages/ai/tests/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
-                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoon/ai (line 41, 42, 109, 117, 127, 128)"
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 41, 42, 109, 117, 127, 128)"
                 },
                 {
                     "path": "packages/ai/tests/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
-                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoon/ai (line 37, 38, 47)"
+                    "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 37, 38, 47)"
                 },
                 {
                     "path": "tests/Domain/Archivd/Feature/Http/Controllers/API/V1/ArchivdTest.php",

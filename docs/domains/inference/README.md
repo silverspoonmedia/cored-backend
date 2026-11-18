@@ -1,6 +1,6 @@
 # Inference — AI model catalog and token pricing
 
-Core domain that owns the AI model catalog and the token rates billed for using it: which model slug exists, what each provider charges, and what a settled usage row was charged at the moment it happened. Product domains consume rates through `InferenceRateService`; markup and the prepaid gate stay product-specific. Code: `packages/ai/src/Inference/` (package `silverspoon/ai`, bundled with Ai). Invariants: [.cursor/rules/inference.mdc](../../../.cursor/rules/inference.mdc).
+Core domain that owns the AI model catalog and the token rates billed for using it: which model slug exists, what each provider charges, and what a settled usage row was charged at the moment it happened. Product domains consume rates through `InferenceRateService`; markup and the prepaid gate stay product-specific. Code: `packages/ai/src/Inference/` (package `silverspoonmedia/ai`, bundled with Ai). Invariants: [.cursor/rules/inference.mdc](../../../.cursor/rules/inference.mdc).
 
 Pricing is **provider-first**: the customer pays provider cost × markup from the provider actually used, and every billed HTTP call freezes an immutable snapshot so a later catalog edit never rewrites history.
 

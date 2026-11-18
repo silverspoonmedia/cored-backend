@@ -1,10 +1,10 @@
-# AI is one package, not two — `silverspoon/ai`
+# AI is one package, not two — `silverspoonmedia/ai`
 
 **Date:** 2026-11-17 · **Branch:** `refactor/core-domain-packages` · **Status:** accepted, third bundle shipped
 
 ## Decision
 
-> `Inference` + `Ai` ship as **one** package, `silverspoon/ai`, with two namespaces, two API route files, one provider.
+> `Inference` + `Ai` ship as **one** package, `silverspoonmedia/ai`, with two namespaces, two API route files, one provider.
 
 The bundling rule from [core-packages-bundling-decision.md](core-packages-bundling-decision.md) named this pair as the next candidate. This is the proof.
 
@@ -32,7 +32,7 @@ InferenceCatalogService         → Microstock\UnknownModelBillingConsolidationS
 InferenceUsageController        → Microstock\AdminBillingUsageEventResource
 ```
 
-The fix is the same shape as `silverspoon/billing`'s `FulfillmentRegistry`: **kernel declares, product implements, package consumes** — behind `app()->bound()`, with an empty registry as a legal state.
+The fix is the same shape as `silverspoonmedia/billing`'s `FulfillmentRegistry`: **kernel declares, product implements, package consumes** — behind `app()->bound()`, with an empty registry as a legal state.
 
 | Kernel contract | Product implementation |
 |---|---|
@@ -46,16 +46,16 @@ The resource is the one seam that is a config key rather than an interface: a JS
 
 ## What else had to move
 
-- **The admin usage dashboard stayed in the package; its rows did not.** Analytics, filters and the paginated endpoint are catalog concerns and ship with `silverspoon/ai`. The event table, its relations, the money formatting and the refund/debit arithmetic stay with the product that owns the balance.
+- **The admin usage dashboard stayed in the package; its rows did not.** Analytics, filters and the paginated endpoint are catalog concerns and ship with `silverspoonmedia/ai`. The event table, its relations, the money formatting and the refund/debit arithmetic stay with the product that owns the balance.
 - **Seeders moved with their domains into `App\Domain\{Domain}\Database\Seeders`** — `AiConnectionSeeder` (Ai) and `InferenceCatalogSeeder` (Inference). A domain seeder keeps its domain namespace; only `DatabaseSeeder` changed its `use` lines. The gitignored data file (`database/seeders/data/ai-connections.local.php`) stays in the host — it is deployment input, addressed through `ai.seed.path`, not package source.
-- **List-action builders moved into the package's own namespace** (`App\Domain\Ai\Support\ListActions`, `App\Domain\Inference\Support\ListActions`), matching `silverspoon/audit` / `silverspoon/billing`, instead of staying in the host's `App\Support\ListActions\Builders`.
+- **List-action builders moved into the package's own namespace** (`App\Domain\Ai\Support\ListActions`, `App\Domain\Inference\Support\ListActions`), matching `silverspoonmedia/audit` / `silverspoonmedia/billing`, instead of staying in the host's `App\Support\ListActions\Builders`.
 - **Migrations moved with their tables** (`create_ai_connections_table`, `create_inference_pricing_tables`). The latter still attaches billing columns to `microstock_ai_usage_events`; that is a column the product's table must have for the ledger seam to work, and the manifest records it as package-owned.
 - **Route binds moved into the package provider** — `{connection}`, `{model_card}` and `{provider}` are package routes, so the binding lives beside them.
 
 ## Invariants this locks
 
 1. Two PSR-4 prefixes (`App\Domain\Ai\`, `App\Domain\Inference\`) and two test prefixes; bundling never merges namespaces.
-2. `PackageOverrideTest` proves both resolve from `packages/ai`, both name `silverspoon/ai`, both route files load, both host prefixes win the PSR-4 race, and the kernel seams resolve after product providers boot **without the test naming any product**.
+2. `PackageOverrideTest` proves both resolve from `packages/ai`, both name `silverspoonmedia/ai`, both route files load, both host prefixes win the PSR-4 race, and the kernel seams resolve after product providers boot **without the test naming any product**.
 3. Locale keys did not change: `api/ai.*` and `api/inference.*` now resolve from `packages/ai/resources/lang/{locale}/api/`. The seven-locale parity, prose, raw-key, glossary, dynamic-key and curation-flag guards stay green — moving a file is not a translation change.
 4. `DomainUninstallManifestTest` stays green: the Microstock manifest cites `packages/ai/**` for files that used to sit under `app/Domain/{Ai,Inference}/`, `database/seeders/`, `config/` and `tests/Domain/{Ai,Inference}/`.
 5. Route set and names are identical before and after. The registry loads AI after billing, so the usage and catalog URIs still land in the same order.

@@ -5,10 +5,10 @@ namespace App\Support\Notifications\Contracts;
 /**
  * Kernel-owned seam for emitting an activity notification by type name.
  *
- * `silverspoon/billing` knows *when* to notify (`service_subscription_grace`,
+ * `silverspoonmedia/billing` knows *when* to notify (`service_subscription_grace`,
  * `service_subscription_expired`) but must not import the notification domain
  * that owns the catalog, the audience rules and the persistence. The kernel
- * declares the contract; `silverspoon/notification` binds the adapter that maps
+ * declares the contract; `silverspoonmedia/notification` binds the adapter that maps
  * the string back to its own enum.
  *
  * A host without the notification package simply has no binding — call sites

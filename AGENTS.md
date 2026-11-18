@@ -8,7 +8,7 @@
 - Open **one side by default**: [Monolith-Backend.code-workspace](Monolith-Backend.code-workspace) or the sibling SPA workspace. [Monolith-Fullstack.code-workspace](Monolith-Fullstack.code-workspace) only when the API↔SPA contract moves. All three workspaces load the `docs` repo as a peer root, so its rules inject on every turn.
 - A **customer-visible** capability is not shipped until its page in `docs` says so; that page ships in the same task (see the `docs-sync` rule in that repo).
 - Never create Blade views here. Integration summary: [docs/integration/project-overview.md](docs/integration/project-overview.md); contract: [docs/integration/vue-workers-spa.md](docs/integration/vue-workers-spa.md) (open only when endpoints, headers, cookies/CSRF, envelopes, or route names change).
-- A **core domain** may live in a Composer path package under `packages/` (`silverspoon/navigation`, `silverspoon/notification`) while keeping the `App\Domain\{Domain}\` namespace. Check `php artisan domain:list` (`Package` column) before assuming `app/Domain/{Name}/` exists; the contract is [docs/integration/core-packages.md](docs/integration/core-packages.md).
+- A **core domain** may live in a Composer path package under `packages/` (`silverspoonmedia/navigation`, `silverspoonmedia/notification`) while keeping the `App\Domain\{Domain}\` namespace. Check `php artisan domain:list` (`Package` column) before assuming `app/Domain/{Name}/` exists; the contract is [docs/integration/core-packages.md](docs/integration/core-packages.md).
 
 ## Protocol
 

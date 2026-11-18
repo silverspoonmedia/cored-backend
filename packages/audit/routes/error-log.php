@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| ErrorLog API routes — owned by `silverspoon/audit`.
+| ErrorLog API routes — owned by `silverspoonmedia/audit`.
 |--------------------------------------------------------------------------
 |
 | Route names stay `error-logs.*`; the host applies the versioned layer.

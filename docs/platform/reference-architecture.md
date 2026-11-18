@@ -215,13 +215,13 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainM
 | `identity.php` | Auth, users, lookups, admin | core |
 | `packages/navigation/routes/api.php` | Menus | core (package) |
 | `packages/notification/routes/api.php` | Notifications | core (package) |
-| `packages/audit/routes/activity-log.php` | Activity logs | core (package `silverspoon/audit`) |
-| `packages/audit/routes/error-log.php` | Grouped persistent app errors | core (package `silverspoon/audit`) |
-| `packages/ai/routes/inference.php` | AI model catalog, provider rates, usage | core (package `silverspoon/ai`) |
-| `packages/ai/routes/ai.php` | AI connections (Tier C transport) | core (package `silverspoon/ai`) |
-| `packages/billing/routes/payment-gateway.php` | Gateways, invoices, subscriptions | core (package `silverspoon/billing`) |
-| `packages/billing/routes/service.php` | Service catalog, checkout, service purchases | core (package `silverspoon/billing`) |
-| `packages/billing/routes/web-ipaymu-return.php` | iPaymu hosted return/cancel (public web) | core (package `silverspoon/billing`) |
+| `packages/audit/routes/activity-log.php` | Activity logs | core (package `silverspoonmedia/audit`) |
+| `packages/audit/routes/error-log.php` | Grouped persistent app errors | core (package `silverspoonmedia/audit`) |
+| `packages/ai/routes/inference.php` | AI model catalog, provider rates, usage | core (package `silverspoonmedia/ai`) |
+| `packages/ai/routes/ai.php` | AI connections (Tier C transport) | core (package `silverspoonmedia/ai`) |
+| `packages/billing/routes/payment-gateway.php` | Gateways, invoices, subscriptions | core (package `silverspoonmedia/billing`) |
+| `packages/billing/routes/service.php` | Service catalog, checkout, service purchases | core (package `silverspoonmedia/billing`) |
+| `packages/billing/routes/web-ipaymu-return.php` | iPaymu hosted return/cancel (public web) | core (package `silverspoonmedia/billing`) |
 | `archivd.php` | Archivd (auth + public share) folders/files/uploads | product |
 | `microstock.php` | Microstock (API + thin web entry; Archivd mounts most UI) | product — subproduct of Archivd |
 

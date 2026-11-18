@@ -77,8 +77,8 @@ class PackageOverrideTest extends TestCase
     {
         $manager = app(DomainManager::class);
 
-        $this->assertSame('silverspoon/audit', $manager->packageOf('ActivityLog')['package'] ?? null);
-        $this->assertSame('silverspoon/audit', $manager->packageOf('ErrorLog')['package'] ?? null);
+        $this->assertSame('silverspoonmedia/audit', $manager->packageOf('ActivityLog')['package'] ?? null);
+        $this->assertSame('silverspoonmedia/audit', $manager->packageOf('ErrorLog')['package'] ?? null);
 
         $this->assertStringContainsString(
             'packages/audit',
@@ -112,9 +112,9 @@ class PackageOverrideTest extends TestCase
     {
         $manager = app(DomainManager::class);
 
-        $this->assertSame('silverspoon/billing', $manager->packageOf('PaymentGateway')['package'] ?? null);
-        $this->assertSame('silverspoon/billing', $manager->packageOf('Currency')['package'] ?? null);
-        $this->assertSame('silverspoon/billing', $manager->packageOf('Service')['package'] ?? null);
+        $this->assertSame('silverspoonmedia/billing', $manager->packageOf('PaymentGateway')['package'] ?? null);
+        $this->assertSame('silverspoonmedia/billing', $manager->packageOf('Currency')['package'] ?? null);
+        $this->assertSame('silverspoonmedia/billing', $manager->packageOf('Service')['package'] ?? null);
 
         foreach (['PaymentGateway', 'Currency', 'Service'] as $domain) {
             $this->assertStringContainsString(
@@ -170,8 +170,8 @@ class PackageOverrideTest extends TestCase
     {
         $manager = app(DomainManager::class);
 
-        $this->assertSame('silverspoon/ai', $manager->packageOf('Inference')['package'] ?? null);
-        $this->assertSame('silverspoon/ai', $manager->packageOf('Ai')['package'] ?? null);
+        $this->assertSame('silverspoonmedia/ai', $manager->packageOf('Inference')['package'] ?? null);
+        $this->assertSame('silverspoonmedia/ai', $manager->packageOf('Ai')['package'] ?? null);
 
         foreach (['Inference', 'Ai'] as $domain) {
             $this->assertStringContainsString(
@@ -357,7 +357,7 @@ class PackageOverrideTest extends TestCase
         // The acceptance clause behind the two new kernel contracts: with the
         // audit implementations unbound, the decrypt choke point still builds
         // and simply stops auditing. A bare container is the honest simulation —
-        // a host that never installed `silverspoon/audit`.
+        // a host that never installed `silverspoonmedia/audit`.
         $container = new \Illuminate\Container\Container;
         $container->instance(\App\Support\Oci\Kms\Contracts\KmsDekClientInterface::class, new \App\Support\Oci\Kms\LocalKmsDekClient);
         $container->instance(\App\Support\Encryption\DecryptedValueCache::class, new \App\Support\Encryption\DecryptedValueCache);

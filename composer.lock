@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e6d29d61a2da9c1a70258550efd1ce61",
+    "content-hash": "dd0c412094d4b7f15555f96fedbc2dc7",
     "packages": [
         {
             "name": "archtechx/enums",
@@ -6711,12 +6711,12 @@
             "time": "2026-06-11T10:37:24+00:00"
         },
         {
-            "name": "silverspoon/ai",
+            "name": "silverspoonmedia/ai",
             "version": "1.0.0",
             "dist": {
                 "type": "path",
                 "url": "packages/ai",
-                "reference": "f77c992b62e5afc464e083836dc5ad2609f8267d"
+                "reference": "4525aea02908c1393911bc06da78106720e71f93"
             },
             "require": {
                 "illuminate/support": "^13.0",
@@ -6742,18 +6742,22 @@
                 "proprietary"
             ],
             "description": "Silverspoon core domain package: model catalog and per-provider rates (Inference) and the endpoint/key connections that reach them (Ai).",
+            "homepage": "https://github.com/silverspoonmedia/ai",
+            "support": {
+                "source": "https://github.com/silverspoonmedia/ai"
+            },
             "transport-options": {
                 "symlink": true,
                 "relative": true
             }
         },
         {
-            "name": "silverspoon/audit",
+            "name": "silverspoonmedia/audit",
             "version": "1.0.0",
             "dist": {
                 "type": "path",
                 "url": "packages/audit",
-                "reference": "bd15f6a860862e851d965371d5358ea41a1bf04b"
+                "reference": "d931b7300b7d8ecd48ffaa180b9f0c8a4722a666"
             },
             "require": {
                 "illuminate/support": "^13.0",
@@ -6780,18 +6784,22 @@
                 "proprietary"
             ],
             "description": "Silverspoon core domain package: forensic activity trail + grouped persistent error log.",
+            "homepage": "https://github.com/silverspoonmedia/audit",
+            "support": {
+                "source": "https://github.com/silverspoonmedia/audit"
+            },
             "transport-options": {
                 "symlink": true,
                 "relative": true
             }
         },
         {
-            "name": "silverspoon/billing",
+            "name": "silverspoonmedia/billing",
             "version": "1.0.0",
             "dist": {
                 "type": "path",
                 "url": "packages/billing",
-                "reference": "5b198d39db6cc63a2b446eac76ee27126ceb9876"
+                "reference": "0e7f6c92f727ec1d50fd795711660cf202d49312"
             },
             "require": {
                 "illuminate/support": "^13.0",
@@ -6820,18 +6828,22 @@
                 "proprietary"
             ],
             "description": "Silverspoon core domain package: currency catalog + FX rates (Currency), service catalog + entitlement ledger (Service) and invoice collection (PaymentGateway).",
+            "homepage": "https://github.com/silverspoonmedia/billing",
+            "support": {
+                "source": "https://github.com/silverspoonmedia/billing"
+            },
             "transport-options": {
                 "symlink": true,
                 "relative": true
             }
         },
         {
-            "name": "silverspoon/navigation",
+            "name": "silverspoonmedia/navigation",
             "version": "1.0.0",
             "dist": {
                 "type": "path",
                 "url": "packages/navigation",
-                "reference": "22c65b845e7d5e93b2221ee31d3592fc1b9c7988"
+                "reference": "710c8eb48f32b356a6d6fcde7664815bf030dd33"
             },
             "require": {
                 "illuminate/support": "^13.0",
@@ -6857,18 +6869,22 @@
                 "proprietary"
             ],
             "description": "Silverspoon core domain package: RBAC + domain-access aware navigation menus.",
+            "homepage": "https://github.com/silverspoonmedia/navigation",
+            "support": {
+                "source": "https://github.com/silverspoonmedia/navigation"
+            },
             "transport-options": {
                 "symlink": true,
                 "relative": true
             }
         },
         {
-            "name": "silverspoon/notification",
+            "name": "silverspoonmedia/notification",
             "version": "1.0.0",
             "dist": {
                 "type": "path",
                 "url": "packages/notification",
-                "reference": "27d4291f7bbc2637b51104bce897dd078cc876af"
+                "reference": "57c14c31b369778bcd3e7b54e0a5d192c779518b"
             },
             "require": {
                 "illuminate/support": "^13.0",
@@ -6894,6 +6910,10 @@
                 "proprietary"
             ],
             "description": "Silverspoon core domain package: in-app notification engine (bell + history).",
+            "homepage": "https://github.com/silverspoonmedia/notification",
+            "support": {
+                "source": "https://github.com/silverspoonmedia/notification"
+            },
             "transport-options": {
                 "symlink": true,
                 "relative": true

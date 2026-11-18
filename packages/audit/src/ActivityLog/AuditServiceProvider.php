@@ -23,7 +23,7 @@ use Spatie\Activitylog\Actions\LogActivityAction;
 use Throwable;
 
 /**
- * One provider for `silverspoon/audit` — two core domains, one package.
+ * One provider for `silverspoonmedia/audit` — two core domains, one package.
  *
  * ActivityLog and ErrorLog are the same operational surface (what happened vs
  * what broke) and are consumed together, so they ship as one Composer package

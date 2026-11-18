@@ -45,42 +45,42 @@ return [
     'Identity' => ['kind' => 'core'],
     'Navigation' => [
         'kind' => 'core',
-        'package' => 'silverspoon/navigation',
+        'package' => 'silverspoonmedia/navigation',
         'path' => 'packages/navigation/src',
         'routes' => 'packages/navigation/routes/api.php',
         'provider' => 'packages/navigation/src/NavigationServiceProvider.php',
     ],
     'Notification' => [
         'kind' => 'core',
-        'package' => 'silverspoon/notification',
+        'package' => 'silverspoonmedia/notification',
         'path' => 'packages/notification/src',
         'routes' => 'packages/notification/routes/api.php',
         'provider' => 'packages/notification/src/NotificationServiceProvider.php',
     ],
     // One package, two core domains: ActivityLog + ErrorLog are one operational
     // surface (what happened vs what broke) and are consumed together, so they
-    // share `silverspoon/audit` while keeping separate namespaces and route files.
+    // share `silverspoonmedia/audit` while keeping separate namespaces and route files.
     'ActivityLog' => [
         'kind' => 'core',
-        'package' => 'silverspoon/audit',
+        'package' => 'silverspoonmedia/audit',
         'path' => 'packages/audit/src',
         'routes' => 'packages/audit/routes/activity-log.php',
         'provider' => 'packages/audit/src/ActivityLog/AuditServiceProvider.php',
     ],
     'ErrorLog' => [
         'kind' => 'core',
-        'package' => 'silverspoon/audit',
+        'package' => 'silverspoonmedia/audit',
         'path' => 'packages/audit/src',
         'routes' => 'packages/audit/routes/error-log.php',
         'provider' => 'packages/audit/src/ActivityLog/AuditServiceProvider.php',
     ],
     // One package, three core domains: Currency is the money vocabulary, Service
     // prices in it and settles through it, PaymentGateway collects the invoice —
-    // one money surface, so they share `silverspoon/billing` while keeping
+    // one money surface, so they share `silverspoonmedia/billing` while keeping
     // separate namespaces and route files.
     'PaymentGateway' => [
         'kind' => 'core',
-        'package' => 'silverspoon/billing',
+        'package' => 'silverspoonmedia/billing',
         'path' => 'packages/billing/src',
         'routes' => 'packages/billing/routes/payment-gateway.php',
         'web' => 'packages/billing/routes/web-ipaymu-return.php',
@@ -90,32 +90,32 @@ return [
     // URI order they had when they shared that file.
     'Currency' => [
         'kind' => 'core',
-        'package' => 'silverspoon/billing',
+        'package' => 'silverspoonmedia/billing',
         'path' => 'packages/billing/src',
         'routes' => 'packages/billing/routes/currency.php',
         'provider' => 'packages/billing/src/PaymentGateway/BillingServiceProvider.php',
     ],
     'Service' => [
         'kind' => 'core',
-        'package' => 'silverspoon/billing',
+        'package' => 'silverspoonmedia/billing',
         'path' => 'packages/billing/src',
         'routes' => 'packages/billing/routes/service.php',
         'provider' => 'packages/billing/src/PaymentGateway/BillingServiceProvider.php',
     ],
     // One package, two core domains: Inference owns the catalog and the rates,
     // Ai owns the endpoints and keys that reach them; a rate is meaningless
-    // without the connection that bills it, so they share `silverspoon/ai`
+    // without the connection that bills it, so they share `silverspoonmedia/ai`
     // while keeping separate namespaces and route files.
     'Inference' => [
         'kind' => 'core',
-        'package' => 'silverspoon/ai',
+        'package' => 'silverspoonmedia/ai',
         'path' => 'packages/ai/src',
         'routes' => 'packages/ai/routes/inference.php',
         'provider' => 'packages/ai/src/Ai/AiServiceProvider.php',
     ],
     'Ai' => [
         'kind' => 'core',
-        'package' => 'silverspoon/ai',
+        'package' => 'silverspoonmedia/ai',
         'path' => 'packages/ai/src',
         'routes' => 'packages/ai/routes/ai.php',
         'provider' => 'packages/ai/src/Ai/AiServiceProvider.php',

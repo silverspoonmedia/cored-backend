@@ -9,7 +9,7 @@ use App\Support\Billing\Contracts\TierObserver;
  * Kernel-owned registry of fulfillment handlers and tier observers.
  *
  * Registered by product providers (`Archivd`, `Microstock`, …) and consumed by
- * `silverspoon/billing`. An empty registry is a legal state: a host with no
+ * `silverspoonmedia/billing`. An empty registry is a legal state: a host with no
  * product installed runs the same billing code and every hook is a no-op.
  *
  * Handlers are stored as class strings, not instances, so a long-lived worker

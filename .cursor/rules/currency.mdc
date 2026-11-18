@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Currency
 
-Currency catalogue (`currencies`) plus ECB reference rates from Frankfurter (`exchange_rate_snapshots`). One settlement currency, many display currencies. Core domain of `silverspoon/billing`; code is `packages/billing/src/Currency/`, namespace `App\Domain\Currency\`. It ships beside [service.mdc](service.mdc) and [payment-gateway.mdc](payment-gateway.mdc) — three namespaces, three route files, one provider.
+Currency catalogue (`currencies`) plus ECB reference rates from Frankfurter (`exchange_rate_snapshots`). One settlement currency, many display currencies. Core domain of `silverspoonmedia/billing`; code is `packages/billing/src/Currency/`, namespace `App\Domain\Currency\`. It ships beside [service.mdc](service.mdc) and [payment-gateway.mdc](payment-gateway.mdc) — three namespaces, three route files, one provider.
 
 - **Settlement is singular.** `currencies.is_settlement` marks exactly one row; `CurrencyAdminService::update` clears the flag on every other row before setting a new one. Never let two rows carry it.
 - **Settlement currency is IDR** (`ExchangeRateService::SETTLEMENT_CURRENCY`). `convert()` defaults `$to` to it; a `$from === $to` conversion short-circuits to `rate = 1.0` and writes no snapshot.

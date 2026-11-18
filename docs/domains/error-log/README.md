@@ -1,6 +1,6 @@
 # ErrorLog — persistent grouped application errors
 
-Browsable error surface for administrators: reportable exceptions and `Log::error`+ records, stored in `error_logs` and grouped by fingerprint. It exists so a failure is diagnosed from the admin UI (and by an agent) without reading one giant `laravel.log`; the audit trail lives in [activity-log](../activity-log/README.md) instead. Code: `packages/audit/src/ErrorLog/` (`silverspoon/audit`, bundled with ActivityLog). Invariants: [.cursor/rules/error-log.mdc](../../../.cursor/rules/error-log.mdc).
+Browsable error surface for administrators: reportable exceptions and `Log::error`+ records, stored in `error_logs` and grouped by fingerprint. It exists so a failure is diagnosed from the admin UI (and by an agent) without reading one giant `laravel.log`; the audit trail lives in [activity-log](../activity-log/README.md) instead. Code: `packages/audit/src/ErrorLog/` (`silverspoonmedia/audit`, bundled with ActivityLog). Invariants: [.cursor/rules/error-log.mdc](../../../.cursor/rules/error-log.mdc).
 
 | System | Table / store | Purpose |
 |--------|---------------|---------|
@@ -14,7 +14,7 @@ Browsable error surface for administrators: reportable exceptions and `Log::erro
 | Code | `packages/audit/src/ErrorLog/` |
 | Provider | [`packages/audit/src/ActivityLog/AuditServiceProvider.php`](../../../packages/audit/src/ActivityLog/AuditServiceProvider.php) — one provider for both audit domains |
 | Config | [`packages/audit/config/errorlog.php`](../../../packages/audit/config/errorlog.php) · Settings → Platform (`platform.errorlog.*`) |
-| Registry | `kind => core`, `package => silverspoon/audit` in [`config/domains.php`](../../../config/domains.php); `DomainManager::PLATFORM_CORE` |
+| Registry | `kind => core`, `package => silverspoonmedia/audit` in [`config/domains.php`](../../../config/domains.php); `DomainManager::PLATFORM_CORE` |
 | API | [`packages/audit/routes/error-log.php`](../../../packages/audit/routes/error-log.php) |
 | SPA | Vue Router `error-logs.index` / `error-logs.show` under `/apps/error-logs` |
 | Realtime | `logs.errors` private channel — `.log.error.recorded` |

@@ -8,7 +8,7 @@ use App\Support\Ai\Contracts\AiUsageConsolidator;
  * Kernel-owned registry of consolidation hooks for AI usage ledgers.
  *
  * Registered by the product provider that owns a ledger (`Microstock`) and
- * consumed by `silverspoon/ai`. Keyed by provider slug — the same identifier the
+ * consumed by `silverspoonmedia/ai`. Keyed by provider slug — the same identifier the
  * product uses when it records usage — so the catalog sync consolidates against
  * the ledger that billed it and nothing else.
  */

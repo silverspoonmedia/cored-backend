@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => redirect()->to(config('services.spa.url') ?: '/'));
 
 // Public / provider return (no auth) - server endpoints, not UI.
-// Packaged core domains (e.g. `silverspoon/billing`) contribute their server
+// Packaged core domains (e.g. `silverspoonmedia/billing`) contribute their server
 // endpoints through the registry, in core-first order.
 foreach (app(App\Support\Domain\DomainManager::class)->packageWebRoutePaths() as $packageWebRouteFile) {
     require $packageWebRouteFile;

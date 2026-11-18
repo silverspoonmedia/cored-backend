@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Kernel-owned seam for the AI usage ledger a product domain owns.
  *
- * `silverspoon/ai` (Inference) renders the admin usage dashboard — totals,
+ * `silverspoonmedia/ai` (Inference) renders the admin usage dashboard — totals,
  * per-stage and per-provider breakdowns — but the ledger table belongs to the
  * product that actually bills the tokens (`microstock_ai_usage_events`). The
  * kernel declares the shape; the product binds the adapter.

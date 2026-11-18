@@ -9,7 +9,7 @@ use App\Support\Ai\Contracts\AiUsageConsolidator;
 /**
  * Microstock's consolidation hook, published to the kernel.
  *
- * Curating a model rate in `silverspoon/ai` must recalculate the prepaid usage
+ * Curating a model rate in `silverspoonmedia/ai` must recalculate the prepaid usage
  * Microstock billed provisionally. The arithmetic, the credit balance and the
  * ledger adjustment rows stay in Microstock; the catalog only asks for them.
  */

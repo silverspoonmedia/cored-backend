@@ -38,7 +38,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * One provider for `silverspoon/billing` — three core domains, one package.
+ * One provider for `silverspoonmedia/billing` — three core domains, one package.
  *
  * `Currency` owns the money vocabulary (catalog + FX snapshots), `Service` owns
  * the catalog and the entitlement ledger, `PaymentGateway` owns the invoice that

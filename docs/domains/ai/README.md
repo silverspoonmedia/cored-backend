@@ -1,6 +1,6 @@
 # Ai — central AI transport
 
-Core domain that answers *where* we call AI, *with which key*, and *with which timeout and retry*. It owns the connection and never the price — token rates and the model catalog stay in [inference](../inference/README.md). It exists because Microstock (vision + thinking) and other consumers all speak the same `openai_compatible` chat-completions shape, and per-consumer env keys made a key rotation a five-file redeploy. Code: `packages/ai/src/Ai/` (package `silverspoon/ai`, bundled with Inference). Invariants: [.cursor/rules/ai.mdc](../../../.cursor/rules/ai.mdc).
+Core domain that answers *where* we call AI, *with which key*, and *with which timeout and retry*. It owns the connection and never the price — token rates and the model catalog stay in [inference](../inference/README.md). It exists because Microstock (vision + thinking) and other consumers all speak the same `openai_compatible` chat-completions shape, and per-consumer env keys made a key rotation a five-file redeploy. Code: `packages/ai/src/Ai/` (package `silverspoonmedia/ai`, bundled with Inference). Invariants: [.cursor/rules/ai.mdc](../../../.cursor/rules/ai.mdc).
 
 | Need | Path |
 |------|------|

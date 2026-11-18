@@ -9,7 +9,7 @@ use App\Support\Ai\Contracts\AiUsageLedger;
 /**
  * Microstock's AI usage ledger, published to the kernel.
  *
- * `silverspoon/ai` renders the admin usage dashboard from this seam instead of
+ * `silverspoonmedia/ai` renders the admin usage dashboard from this seam instead of
  * importing `microstock_ai_usage_events`; the table, its relations and the money
  * formatting stay owned here.
  */

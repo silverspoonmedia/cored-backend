@@ -23,7 +23,7 @@ Immutable forensic log of domain mutations (`activity_log`). It is **not** the n
 - Retention: `php artisan activitylog:clean` (default 365 days).
 - Realtime pings `logs.activity` (permission `view activity log`) as `.log.activity.appended` with `{log_name, event}` — never entry content. A `POST /api/v1/broadcasting/auth` "CORS error" is a transport problem (missing `/api/v1`, or the authorize racing the `__Host-spa_csrf` write), not a channel-permission problem; invariant test `tests/Feature/Http/CorsBroadcastAuthTest.php`.
 - API is `auth:api` + `permission:view activity log` (Root/Admin).
-- **Packaged with ErrorLog.** Both domains ship as `silverspoon/audit` under `packages/audit/` (one provider, two namespaces, two route files). The decrypt-audit hook reaches the kernel through `App\Support\Encryption\DecryptionAuditRecorder`; never import a package class from `app/Support/**`.
+- **Packaged with ErrorLog.** Both domains ship as `silverspoonmedia/audit` under `packages/audit/` (one provider, two namespaces, two route files). The decrypt-audit hook reaches the kernel through `App\Support\Encryption\DecryptionAuditRecorder`; never import a package class from `app/Support/**`.
 - Subject filter aliases are a **registry** behind the kernel contract `App\Support\ActivityLog\SubjectAliasRegistrar` (seeded only with `user`) — a domain that owns a new subject type registers its alias from its own provider (`NavigationServiceProvider` owns `menu`); never edit this package to add one.
 
 Detail: [docs/domains/activity-log/reference.md](../../docs/domains/activity-log/reference.md).

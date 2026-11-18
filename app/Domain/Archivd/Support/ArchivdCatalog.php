@@ -5,7 +5,7 @@ namespace App\Domain\Archivd\Support;
 /**
  * Archivd catalog codes and size constants for the Service × Archivd integration.
  *
- * Owned by the product, never by `silverspoon/billing`: a SKU code and a size
+ * Owned by the product, never by `silverspoonmedia/billing`: a SKU code and a size
  * constant are product knowledge, and the billing package must stay sellable
  * without dragging Archivd's catalog into a downstream project.
  */

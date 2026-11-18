@@ -5,7 +5,7 @@ namespace App\Support\Ai\Contracts;
 /**
  * Kernel-owned seam for recalculating provisional AI usage after rates change.
  *
- * `silverspoon/ai` owns the catalog and the act of curating a rate; the product
+ * `silverspoonmedia/ai` owns the catalog and the act of curating a rate; the product
  * that billed the tokens owns the ledger, the credit balance and the refund /
  * debit posting. The kernel declares the hook; the product binds an
  * implementation that recalculates settled usage in its own ledger.

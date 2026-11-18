@@ -36,7 +36,7 @@ class MicrostockServiceProvider extends ServiceProvider
         // so it is registered here rather than in the billing package.
         MicrostockServiceStates::register();
 
-        // AI seams: `silverspoon/ai` renders the admin usage dashboard but the
+        // AI seams: `silverspoonmedia/ai` renders the admin usage dashboard but the
         // ledger — table, relations, consolidation arithmetic — is Microstock's.
         // Boot, not register: auto-discovered package providers boot before the
         // host binds kernel singletons, but this is a host provider so either
@@ -49,7 +49,7 @@ class MicrostockServiceProvider extends ServiceProvider
                 ->register((string) config('microstock.ai.inference_provider_slug'), MicrostockAiUsageConsolidator::class);
         }
 
-        // The admin usage dashboard ships in `silverspoon/ai`; the rows come from
+        // The admin usage dashboard ships in `silverspoonmedia/ai`; the rows come from
         // this product's ledger, so the resource class is published, not imported.
         config(['ai.usage_event_resource' => MicrostockAdminUsageEventResource::class]);
     }

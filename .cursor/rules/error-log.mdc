@@ -20,6 +20,6 @@ Grouped runtime failures in `error_logs`. It is **not** the audit trail ([activi
 - Retention: `php artisan errorlog:clean [--days=30]`, default `clean_after_days = 90`.
 - API is `auth:api` + `permission:view error log` (Root/Admin). Realtime: `logs.errors` private channel, `.log.error.recorded` with `{level, type}` only — never the message.
 - Tests: `php artisan test packages/audit/tests/ErrorLog` — fingerprint stability, redaction, grouping, `Log::error`, kill-switch, API RBAC, status update, `errorlog:clean`.
-- **Packaged with ActivityLog.** Both domains ship as `silverspoon/audit` under `packages/audit/` (one provider, two namespaces, two route files). The kernel reports through `App\Support\ErrorLogging\ExceptionRecorder`, which this package binds — `bootstrap/app.php` never names `ErrorLogRecorder`.
+- **Packaged with ActivityLog.** Both domains ship as `silverspoonmedia/audit` under `packages/audit/` (one provider, two namespaces, two route files). The kernel reports through `App\Support\ErrorLogging\ExceptionRecorder`, which this package binds — `bootstrap/app.php` never names `ErrorLogRecorder`.
 
 Detail: [docs/domains/error-log/reference.md](../../docs/domains/error-log/reference.md).

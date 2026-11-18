@@ -7,7 +7,7 @@ namespace App\Support\Encryption;
  *
  * `EnvelopeEncryptionService` is the sole decrypt choke point and must not
  * import the audit domain that stores the `crypto` trail — the kernel declares
- * what it needs, `silverspoon/audit` binds the implementation. A host without
+ * what it needs, `silverspoonmedia/audit` binds the implementation. A host without
  * that package still boots: the dependency is optional, so the container
  * resolves the `null` default instead of failing.
  */

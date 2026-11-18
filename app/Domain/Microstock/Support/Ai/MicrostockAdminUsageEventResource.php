@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * The admin usage-event row `silverspoon/ai` renders.
+ * The admin usage-event row `silverspoonmedia/ai` renders.
  *
  * The dashboard ships in the AI package but the ledger rows it lists belong to
  * Microstock, so the package resolves this class through
