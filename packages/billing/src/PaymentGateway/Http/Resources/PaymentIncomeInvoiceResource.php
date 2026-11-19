@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Http\Resources;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Models\PaymentChannelRouteSnapshot;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
 use App\Domain\PaymentGateway\Support\InvoiceWebDestination;
 use App\Http\Resources\Concerns\FormatsPresentation;
@@ -21,7 +22,9 @@ class PaymentIncomeInvoiceResource extends JsonResource
     {
         $currency = $this->currency;
         $this->loadMissing('paymentChannelRouteSnapshot');
-        $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($this->paymentChannelRouteSnapshot);
+        /** @var PaymentChannelRouteSnapshot|null $routeSnapshot */
+        $routeSnapshot = $this->paymentChannelRouteSnapshot;
+        $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($routeSnapshot);
 
         return [
             'id' => $this->id,
@@ -39,7 +42,7 @@ class PaymentIncomeInvoiceResource extends JsonResource
             ...$this->moneyFields('customer_gross_total', $this->customer_gross_total, $currency),
             ...$this->dateFields('paid_at', $this->paid_at),
             ...$this->dateFields('withdrawable_at', $this->withdrawable_at),
-            'disbursement_status' => $this->disbursement_status?->value ?? $this->disbursement_status,
+            'disbursement_status' => $this->disbursement_status->value ?? $this->disbursement_status,
             'show_url' => InvoiceWebDestination::showUrl($this->resource),
         ];
     }

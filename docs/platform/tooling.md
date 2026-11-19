@@ -39,17 +39,18 @@ composer check:types                # what the gate runs
 vendor/bin/phpstan analyse --generate-baseline   # only to burn down an entry
 ```
 
-Three settings are load-bearing, each with its reason in the config:
+Four settings are load-bearing, each with its reason in the config:
 
 | Setting | Why |
 |---|---|
 | `databaseMigrationsPath` lists every migration dir, including the five under `packages/*/database/migrations` | Without a package's migrations Larastan cannot read its model columns and every `$model->column` in that package reports `property.notFound`. A new package with migrations must be added in the same task. |
 | `treatPhpDocTypesAsCertain: false` | PHPDoc here documents payloads that arrive over HTTP, so treating it as proven turns every defensive `??` and `is_array()` into a false positive. |
 | `ignoreErrors: property.notFound` under `*/Http/Resources/*` | `JsonResource::$this->field` is `__get` on the wrapped model. |
+| `parseModelCastsMethod: true` | Every model here declares `casts()` as a method, not a `$casts` property. With Larastan's default (`false`) the returned array is not read, so an enum-cast column keeps the migration's `string` type and `$model->status->isX()` reports `method.nonObject` — 136 findings that were artifacts, not defects. Turning it on makes the analysed type the type Eloquent actually returns. |
 
 `tmpDir` is `.phpstan.cache`, which is gitignored **and** in `UninstallReferenceScanner::SKIP_DIRS` — the scanner reads the working tree, so a cache of generated PHP would otherwise appear as product-domain references and fail `DomainUninstallManifestTest`.
 
-**The baseline is a burn-down list, not an allowlist.** `composer check:types` fails on anything it does not already name, so new code is held to level 5 while the 299 findings adopted on 2026-11-19 (`assign.propertyType` 42, `method.nonObject` 34, `property.notFound` 30) get fixed by deleting an entry and re-running. Never add one.
+**The baseline is a burn-down list, not an allowlist.** `composer check:types` fails on anything it does not already name, so new code is held to level 5, and each entry is deleted by fixing the finding it names. It opened on 2026-11-19 at `299` findings; the same day's `parseModelCastsMethod: true` (below) and a pass over the nullsafe/enum-read sites took it to `111` (`property.notFound` 37, `method.notFound` 14, `argument.type` 11), with `nullsafe.neverNull` fully gone. Never add one.
 
 ## `composer check`
 

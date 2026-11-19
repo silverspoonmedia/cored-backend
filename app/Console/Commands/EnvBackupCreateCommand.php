@@ -27,7 +27,7 @@ class EnvBackupCreateCommand extends Command
     {
         if ($this->backups->hasPending()) {
             $pending = $this->backups->latestPending();
-            $this->error('A pending env backup already exists ['.($pending?->id ?? 'unknown').'].');
+            $this->error('A pending env backup already exists ['.$pending->id.'].');
             $this->line('Run `php artisan env:restore --discard` first.');
 
             return self::FAILURE;

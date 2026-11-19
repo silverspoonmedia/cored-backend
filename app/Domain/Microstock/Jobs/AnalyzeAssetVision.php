@@ -55,7 +55,7 @@ class AnalyzeAssetVision implements ShouldQueue
     public static function dispatchForCollection(string $metadataId, ?string $hint, string $folderId): void
     {
         $metadata = AssetMetadata::query()->find($metadataId);
-        $freeTier = BillingSource::tryFrom((string) ($metadata?->billing_source ?? '')) === BillingSource::DailyFree;
+        $freeTier = BillingSource::tryFrom((string) ($metadata?->billing_source)) === BillingSource::DailyFree;
 
         static::dispatch($metadataId, $hint, $folderId, AnalysisPipeline::Collection)
             ->onQueue(AnalysisPipeline::Collection->visionQueue($freeTier));
@@ -64,7 +64,7 @@ class AnalyzeAssetVision implements ShouldQueue
     public static function dispatchForSolo(string $metadataId, ?string $hint, ?string $folderId = null): void
     {
         $metadata = AssetMetadata::query()->find($metadataId);
-        $freeTier = BillingSource::tryFrom((string) ($metadata?->billing_source ?? '')) === BillingSource::DailyFree;
+        $freeTier = BillingSource::tryFrom((string) ($metadata?->billing_source)) === BillingSource::DailyFree;
 
         static::dispatch($metadataId, $hint, $folderId, AnalysisPipeline::Solo)
             ->onQueue(AnalysisPipeline::Solo->visionQueue($freeTier));

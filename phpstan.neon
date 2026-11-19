@@ -38,6 +38,13 @@ parameters:
     # and `is_array()` into a false positive.
     treatPhpDocTypesAsCertain: false
 
+    # Larastan reads cast types from the return type of `casts()`. Every model
+    # here uses the method form, not the `$casts` property, so with the default
+    # (`false`) every enum-cast column reads as the migration's `string` and
+    # `$model->status->isX()` reports `method.nonObject`. With it on, the cast is
+    # what the model actually returns at runtime.
+    parseModelCastsMethod: true
+
     tmpDir: .phpstan.cache
 
     ignoreErrors:

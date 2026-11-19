@@ -47,11 +47,17 @@ class PaymentChannelRoute extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<PaymentChannel, $this>
+     */
     public function paymentChannel(): BelongsTo
     {
         return $this->belongsTo(PaymentChannel::class);
     }
 
+    /**
+     * @return BelongsTo<PaymentGateway, $this>
+     */
     public function paymentGateway(): BelongsTo
     {
         return $this->belongsTo(PaymentGateway::class);

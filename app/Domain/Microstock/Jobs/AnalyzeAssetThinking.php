@@ -65,7 +65,7 @@ class AnalyzeAssetThinking implements ShouldQueue
         AnalysisPipeline $pipeline,
     ): void {
         $metadata = AssetMetadata::query()->find($metadataId);
-        $freeTier = BillingSource::tryFrom((string) ($metadata?->billing_source ?? '')) === BillingSource::DailyFree;
+        $freeTier = BillingSource::tryFrom((string) ($metadata?->billing_source)) === BillingSource::DailyFree;
 
         static::dispatch($metadataId, $hint, $folderId, $pipeline)
             ->onQueue($pipeline->thinkingQueue($freeTier));

@@ -81,7 +81,7 @@ class CsvExportService
     {
         return array_map(static function (string $col) use ($row, $separator): string {
             return match ($col) {
-                'filename' => (string) ($row->file?->name ?? ''),
+                'filename' => (string) ($row->file->name ?? ''),
                 'title' => (string) ($row->title ?? ''),
                 'description' => (string) ($row->description ?? ''),
                 'category' => (string) ($row->category ?? ''),

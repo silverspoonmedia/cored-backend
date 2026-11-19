@@ -44,7 +44,8 @@ class PaymentChannelRouteSnapshot extends Model
 
     public static function fromRoute(PaymentChannelRoute $route, string $channelCode): self
     {
-        return static::query()->create([
+        /** @var self $snapshot */
+        $snapshot = static::query()->create([
             'payment_channel_code' => $channelCode,
             'payment_gateway_id' => $route->payment_gateway_id,
             'provider_payment_type' => $route->provider_payment_type,
@@ -57,8 +58,13 @@ class PaymentChannelRouteSnapshot extends Model
             'policy_tag' => $route->policy_tag,
             'captured_at' => now(),
         ]);
+
+        return $snapshot;
     }
 
+    /**
+     * @return BelongsTo<PaymentGateway, $this>
+     */
     public function paymentGateway(): BelongsTo
     {
         return $this->belongsTo(PaymentGateway::class);

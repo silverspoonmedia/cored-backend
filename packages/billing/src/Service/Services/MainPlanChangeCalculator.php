@@ -44,7 +44,7 @@ class MainPlanChangeCalculator
             return PlanChangeQuote::fullPrice(PurchaseChangeType::Renew, $listAmount, $current);
         }
 
-        $currentStorage = (int) ($current->service?->storage_bytes ?? 0);
+        $currentStorage = (int) ($current->service->storage_bytes ?? 0);
         $targetStorage = (int) $target->storage_bytes;
         $changeType = $targetStorage > $currentStorage
             ? PurchaseChangeType::Upgrade
@@ -136,7 +136,7 @@ class MainPlanChangeCalculator
             return 0.0;
         }
 
-        $remainingDays = max(0.0, $now->floatDiffInDays($current->ends_at));
+        $remainingDays = max(0.0, $now->diffInDays($current->ends_at));
         $periodValue = $this->lastPaidPeriodValue($current);
 
         if ($periodValue <= 0) {

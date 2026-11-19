@@ -117,7 +117,7 @@ class ServiceEntitlementLifecycleService
         }
 
         $graceDays = (int) setting_config('service.grace_days', 7);
-        $serviceName = $entitlement->service?->name ?? 'Service';
+        $serviceName = $entitlement->service->name ?? 'Service';
 
         try {
             app(NotificationDispatcher::class)->emit(
@@ -150,7 +150,7 @@ class ServiceEntitlementLifecycleService
             return;
         }
 
-        $serviceName = $entitlement->service?->name ?? 'Service';
+        $serviceName = $entitlement->service->name ?? 'Service';
 
         try {
             app(NotificationDispatcher::class)->emit(

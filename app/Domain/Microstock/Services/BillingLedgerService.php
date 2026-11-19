@@ -6,6 +6,7 @@ use App\Domain\Microstock\Enums\AiCreditTransactionType;
 use App\Domain\Microstock\Models\AiCreditTransaction;
 use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -158,10 +159,13 @@ class BillingLedgerService
      */
     private function describePurchase(AiCreditTransaction $transaction, Collection $purchasesById): string
     {
+        /** @var ServicePurchase|null $purchase */
         $purchase = $transaction->reference_id !== null
             ? $purchasesById->get($transaction->reference_id)
             : null;
-        $serviceName = $purchase?->service?->name ?? $purchase?->service?->code;
+        /** @var Service|null $service */
+        $service = $purchase?->service;
+        $serviceName = $service->name ?? $service->code;
 
         return __('api/microstock.ledger.purchase', [
             'service' => $serviceName ?: __('api/microstock.ledger.purchase_fallback'),

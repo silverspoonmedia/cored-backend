@@ -27,7 +27,7 @@ class EnvironmentMutationGuard
             $pending = $this->backups->latestPending();
 
             throw new RuntimeException(
-                'A pending env backup exists ['.($pending?->id ?? 'unknown').']. '
+                'A pending env backup exists ['.$pending->id.']. '
                 .'Run `php artisan env:restore` or `php artisan env:restore --discard` before continuing.',
             );
         }
