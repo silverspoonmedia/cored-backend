@@ -12,6 +12,7 @@ parameters:
         - packages/billing/src
         - packages/navigation/src
         - packages/notification/src
+        - packages/platform/src
         - database
         - routes
         - config

@@ -1,6 +1,6 @@
 ---
 description: API envelope, list contract, aggregation policy, per-viewer data minimization
-globs: app/**/Http/**,routes/api/**,app/Support/ApiResponder.php
+globs: app/**/Http/**,routes/api/**,packages/platform/src/Support/ApiResponder.php
 alwaysApply: false
 ---
 

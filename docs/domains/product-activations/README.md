@@ -1,10 +1,10 @@
 # Product Activations — runtime product access registry
 
-Kernel registry (`app/Support/Product/`) that answers one question per request: **may this user use this product at all?** It stores a per-user `product_activations` row (`pending` / `active` / `suspended` / `expired`) per product and exposes the `product.active` middleware, an admin surface, and per-product analytics. It exists because the module registry is static config, the RBAC `domain_kind` is a catalog tag, and paid entitlements only covered paid SKUs — a free Archivd user had no row anywhere, so "logged in = can use" was an accident of config fallback. Code: `app/Support/Product/`. Invariants: [.cursor/rules/product-activations.mdc](../../../.cursor/rules/product-activations.mdc).
+Kernel registry (`packages/platform/src/Support/Product/`) that answers one question per request: **may this user use this product at all?** It stores a per-user `product_activations` row (`pending` / `active` / `suspended` / `expired`) per product and exposes the `product.active` middleware, an admin surface, and per-product analytics. It exists because the module registry is static config, the RBAC `domain_kind` is a catalog tag, and paid entitlements only covered paid SKUs — a free Archivd user had no row anywhere, so "logged in = can use" was an accident of config fallback. Code: `packages/platform/src/Support/Product/` (the two analytics services stay host-side in `app/Support/Product/Services/`). Invariants: [.cursor/rules/product-activations.mdc](../../../.cursor/rules/product-activations.mdc).
 
 | Need | Path |
 |------|------|
-| Code | `app/Support/Product/` — `ProductActivationService`, `ProductRegistry`, `ProductAnalyticsService`, `ProductInsightService` |
+| Code | `packages/platform/src/Support/Product/` + host `app/Support/Product/Services/` — `ProductActivationService`, `ProductRegistry`, `ProductAnalyticsService`, `ProductInsightService` |
 | Config | [`config/products.php`](../../../config/products.php) (`activation_type`, `fulfillment_target`, `menu_routes`) |
 | Table | `product_activations` · `product_analytics` (bucketed aggregates) |
 | Middleware | `product.active:{Product}` |

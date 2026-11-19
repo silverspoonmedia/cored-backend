@@ -88,7 +88,6 @@ Route::middleware('auth:api')->group(function (): void {
 
     Route::prefix('lookups')->name('lookups.')->group(function (): void {
         Route::get('users', [LookupController::class, 'users'])->name('users');
-        Route::get('menus', [LookupController::class, 'menus'])->name('menus');
         Route::get('roles', [LookupController::class, 'roles'])->name('roles');
     });
 });

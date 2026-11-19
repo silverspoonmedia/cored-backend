@@ -34,6 +34,9 @@
         <testsuite name="Package:notification">
             <directory>packages/notification/tests</directory>
         </testsuite>
+        <testsuite name="Package:platform">
+            <directory>packages/platform/tests</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

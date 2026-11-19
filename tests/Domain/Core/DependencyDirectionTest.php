@@ -13,32 +13,33 @@ use Tests\TestCase;
  * that product — and nothing else in the suite would notice, because the
  * product is always present in this checkout.
  *
- * The rule has three halves, checked one method at a time:
+ * The rule has four halves, checked one method at a time:
  *
  * 1. A core package never imports a product domain.
  * 2. A core package never imports a sibling core package — the seam to a
  *    sibling is a kernel contract the owning package implements.
- * 3. The kernel (`app/Support/**`) reaches a package only through a
- *    kernel-owned contract, so a host without that package still boots.
+ * 3. The kernel (`packages/platform/src/Support/**`) reaches a package only
+ *    through a kernel-owned contract, so a host without that package still boots.
+ * 4. Every non-kernel package requires `silverspoonmedia/platform`, because the
+ *    seams it consumes live there — a manifest without it is a runtime fatal
+ *    downstream, not here.
  *
- * `App\Domain\Identity\*` is the documented exception: Identity is the host's
- * authentication hub, not a package, and every package may read `User`.
+ * `App\Domain\Identity\*` ships inside the kernel package
+ * (`silverspoonmedia/platform`), so every package may read `User` the same way
+ * it reads a kernel contract.
  */
 class DependencyDirectionTest extends TestCase
 {
     /**
-     * Kernel files that still import a packaged core domain, with the reason.
-     *
-     * This is a burn-down list, not a permission: it may only shrink. Each entry
-     * is a documented violation of the third half of the rule, kept because the
-     * fix is a refactor (a kernel-owned interval contract) rather than a rename.
-     *
-     * @var array<string, string>
+     * Root of kernel source inside its package.
      */
-    private const KERNEL_KNOWN_EXCEPTIONS = [
-        'app/Support/Billing/BillingClock.php' => 'reads BillingInterval to compute a period end; wants a kernel-owned interval contract',
-        'app/Support/Billing/FulfillmentContext.php' => 'snapshots ServiceEntitlement/ServicePurchase into a data-only context; wants a kernel-owned entitlement snapshot',
-    ];
+    private const KERNEL_SUPPORT = 'packages/platform/src/Support';
+
+    /**
+     * The kernel package itself: it carries the seams, so it does not require
+     * a platform seam from itself.
+     */
+    private const KERNEL_PACKAGE = 'platform';
 
     public function test_no_core_package_imports_a_product_domain(): void
     {
@@ -78,38 +79,49 @@ class DependencyDirectionTest extends TestCase
         $this->assertSame([], $violations, implode("\n", $violations));
     }
 
+    /**
+     * The burn-down list is empty and stays empty: the kernel reaches a packaged
+     * core domain through a kernel-owned contract (`SubscriptionInterval`,
+     * `AuthActivityRecorder`, `NavigationTreeFlusher`,
+     * `NotificationDispatcher`), never through a package class.
+     */
     public function test_kernel_reaches_a_package_only_through_a_kernel_contract(): void
     {
         $violations = [];
 
-        foreach ($this->filesUnder('app/Support') as $path => $source) {
+        foreach ($this->filesUnder(self::KERNEL_SUPPORT) as $path => $source) {
             foreach ($this->importsOf($source) as $domain) {
                 if ($domain === 'Identity' || $this->domainKind($domain) !== 'core') {
                     continue;
                 }
 
-                if (! array_key_exists($path, self::KERNEL_KNOWN_EXCEPTIONS)) {
-                    $violations[] = $path.' imports packaged domain '.$domain;
-                }
+                $violations[] = $path.' imports packaged domain '.$domain;
             }
         }
 
         $this->assertSame([], $violations, implode("\n", $violations));
     }
 
-    public function test_the_kernel_exception_list_records_a_real_violation(): void
+    public function test_every_non_kernel_package_requires_the_platform_package(): void
     {
-        foreach (self::KERNEL_KNOWN_EXCEPTIONS as $path => $reason) {
-            $source = $this->readIfFile($path);
+        $violations = [];
 
-            $this->assertNotNull($source, $path.' is listed as a kernel exception but no longer exists — delete the entry.');
+        foreach (array_keys($this->packages()) as $slug) {
+            if ($slug === self::KERNEL_PACKAGE) {
+                continue;
+            }
 
-            $this->assertNotSame(
-                [],
-                $this->importsOf($source),
-                $path.' is listed as a kernel exception but imports no packaged domain — delete the entry.',
-            );
+            $manifest = json_decode((string) file_get_contents(base_path('packages/'.$slug.'/composer.json')), true);
+            $this->assertIsArray($manifest, 'packages/'.$slug.'/composer.json is not valid JSON.');
+
+            $require = array_keys((array) ($manifest['require'] ?? []));
+
+            if (! in_array('silverspoonmedia/platform', $require, true)) {
+                $violations[] = 'packages/'.$slug.'/composer.json does not require silverspoonmedia/platform';
+            }
         }
+
+        $this->assertSame([], $violations, implode("\n", $violations));
     }
 
     /**
@@ -136,6 +148,10 @@ class DependencyDirectionTest extends TestCase
         $root = base_path($directory);
         $files = [];
 
+        if (! is_dir($root)) {
+            return $files;
+        }
+
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
         );
@@ -150,13 +166,6 @@ class DependencyDirectionTest extends TestCase
         }
 
         return $files;
-    }
-
-    private function readIfFile(string $relative): ?string
-    {
-        $path = base_path($relative);
-
-        return is_file($path) ? (string) file_get_contents($path) : null;
     }
 
     /**

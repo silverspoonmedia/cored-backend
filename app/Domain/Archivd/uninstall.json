@@ -279,15 +279,15 @@
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 9, 10)"
                 },
                 {
-                    "path": "app/Support/Broadcasting/BroadcastConnection.php",
+                    "path": "packages/platform/src/Support/Broadcasting/BroadcastConnection.php",
                     "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 65)"
                 },
                 {
-                    "path": "app/Support/DomainAccess/Http/Middleware/DomainAccessGate.php",
+                    "path": "packages/platform/src/Support/DomainAccess/Http/Middleware/DomainAccessGate.php",
                     "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 16)"
                 },
                 {
-                    "path": "app/Support/DomainAccess/ProductNames.php",
+                    "path": "packages/platform/src/Support/DomainAccess/ProductNames.php",
                     "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 10, 11, 12, 13)"
                 },
                 {
@@ -295,11 +295,11 @@
                     "reason": "hand edit: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 17, 28)"
                 },
                 {
-                    "path": "app/Support/Product/Http/Middleware/ProductActive.php",
+                    "path": "packages/platform/src/Support/Product/Http/Middleware/ProductActive.php",
                     "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 17)"
                 },
                 {
-                    "path": "app/Support/Product/Models/ProductAnalytic.php",
+                    "path": "packages/platform/src/Support/Product/Models/ProductAnalytic.php",
                     "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 11)"
                 },
                 {
@@ -311,15 +311,15 @@
                     "reason": "hand edit: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 73)"
                 },
                 {
-                    "path": "app/Support/Settings/SettingRegistry.php",
+                    "path": "packages/platform/src/Support/Settings/SettingRegistry.php",
                     "reason": "hand edit: drop the `archivd.*` keys (line 86, 87, 88, 89, 90, 91)"
                 },
                 {
-                    "path": "app/Support/SpaPublicUrl.php",
+                    "path": "packages/platform/src/Support/SpaPublicUrl.php",
                     "reason": "hand edit: drop the `archivd.*` keys (line 66, 75)"
                 },
                 {
-                    "path": "app/Support/Storage/S3DirectUploadEngine.php",
+                    "path": "packages/platform/src/Support/Storage/S3DirectUploadEngine.php",
                     "reason": "hand edit: drop the `archivd.*` config reads (line 16, 255, 272, 359, 385, 386)"
                 },
                 {
@@ -623,11 +623,11 @@
                     "reason": "test: drop the `archivd.*` config reads (line 125, 126, 133, 134, 135, 136)"
                 },
                 {
-                    "path": "app/Support/Billing/Contracts/FulfillmentHandler.php",
+                    "path": "packages/platform/src/Support/Billing/Contracts/FulfillmentHandler.php",
                     "reason": "docblock: Archivd named in prose as the seam example, not in code — keep"
                 },
                 {
-                    "path": "app/Support/Billing/FulfillmentRegistry.php",
+                    "path": "packages/platform/src/Support/Billing/FulfillmentRegistry.php",
                     "reason": "docblock: Archivd named in prose as a registering product, not in code — keep"
                 },
                 {

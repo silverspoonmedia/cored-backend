@@ -1,6 +1,6 @@
 ---
 description: Runtime settings registry, snapshot cache, Settings UI contract
-globs: app/Support/Settings/**,config/settings*.php,database/seeders/*SettingsSeeder.php
+globs: packages/platform/src/Support/Settings/**,config/settings*.php,database/seeders/*SettingsSeeder.php
 alwaysApply: false
 ---
 

@@ -6,7 +6,7 @@ A standard five-action resource routes through `Route::apiResource(...)->except(
 
 | | |
 |---|---|
-| Code | `app/Repositories/Eloquent/EloquentCrudRepository.php`, `App\Domain\{Domain}\{Services,Repositories,Models}`, `App\Domain\{Domain}\Http\{Controllers,Requests,Resources}` |
+| Code | `packages/platform/src/Repositories/Eloquent/EloquentCrudRepository.php`, `App\Domain\{Domain}\{Services,Repositories,Models}`, `App\Domain\{Domain}\Http\{Controllers,Requests,Resources}` |
 | Config | — |
 | API | `routes/api/v1/{slug}.php` |
 | SPA | consumes `*_formatted` / `*_human` only — no view-layer reformatting |

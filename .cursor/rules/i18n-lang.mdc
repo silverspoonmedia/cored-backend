@@ -1,6 +1,6 @@
 ---
 description: Patch locale keys; never dump whole lang JSON files
-globs: lang/**,app/**,routes/**,database/seeders/**,docs/platform/localization.md,docs/platform/reference-localization.md,docs/platform/naming-conventions.md
+globs: lang/**,packages/**,app/**,routes/**,database/seeders/**,docs/platform/localization.md,docs/platform/reference-localization.md,docs/platform/naming-conventions.md
 alwaysApply: false
 ---
 

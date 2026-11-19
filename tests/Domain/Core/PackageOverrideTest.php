@@ -11,6 +11,7 @@ use App\Domain\Currency\Models\Currency;
 use App\Domain\Currency\Services\ExchangeRateService;
 use App\Domain\ErrorLog\Repositories\Contracts\ErrorLogRepositoryInterface;
 use App\Domain\ErrorLog\Repositories\Eloquent\ErrorLogRepository;
+use App\Domain\Identity\Models\User;
 use App\Domain\Inference\Models\AiModelCard;
 use App\Domain\Inference\Services\InferenceCatalogService;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
@@ -62,11 +63,21 @@ class PackageOverrideTest extends TestCase
         $this->assertTrue($manager->isPackaged('Service'));
         $this->assertTrue($manager->isPackaged('Inference'));
         $this->assertTrue($manager->isPackaged('Ai'));
-        $this->assertFalse($manager->isPackaged('Identity'));
+        $this->assertTrue($manager->isPackaged('Identity'));
 
         $this->assertStringContainsString(
             'packages/navigation',
             str_replace('\\', '/', $manager->domainPath('Navigation')),
+        );
+
+        $this->assertStringContainsString(
+            'packages/platform',
+            str_replace('\\', '/', $manager->domainPath('Identity')),
+        );
+
+        $this->assertStringContainsString(
+            'packages/platform',
+            str_replace('\\', '/', (string) (new \ReflectionClass(User::class))->getFileName()),
         );
 
         $reflection = new \ReflectionClass(MenuRepository::class);
@@ -303,6 +314,7 @@ class PackageOverrideTest extends TestCase
         $this->assertHostPrefixWins('Service');
         $this->assertHostPrefixWins('Inference');
         $this->assertHostPrefixWins('Ai');
+        $this->assertHostPrefixWins('Identity');
     }
 
     private function assertHostPrefixWins(string $domain): void

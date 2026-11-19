@@ -6,7 +6,7 @@ Values live in `system_settings` and are edited at **Administration → Settings
 
 | | |
 |---|---|
-| Code | `app/Support/Settings/**`, `app/Domain/*/Services/*Settings*`, `config/*.php` |
+| Code | `packages/platform/src/Support/Settings/**`, `app/Domain/*/Services/*Settings*`, `config/*.php` |
 | Config | `config/settings-local.php` (local dev overrides) |
 | API | `GET`/`PUT /api/v1/admin/settings/{group}` |
 | SPA | `SettingsFormView` (`/apps/settings/platform`, `/apps/archivd/settings`, `/apps/microstock/settings`) |

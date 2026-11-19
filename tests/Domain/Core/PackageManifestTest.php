@@ -45,9 +45,29 @@ class PackageManifestTest extends TestCase
         'Symfony\\Component\\HttpFoundation\\' => 'symfony/http-foundation',
         'Spatie\\Activitylog\\' => 'spatie/laravel-activitylog',
         'Spatie\\Translatable\\' => 'spatie/laravel-translatable',
+        'Spatie\\Permission\\' => 'spatie/laravel-permission',
         'Midtrans\\' => 'midtrans/midtrans-php',
         'iPaymu\\' => 'ipaymu/ipaymu-php-api',
         'Carbon\\' => 'nesbot/carbon',
+        'Aws\\' => 'aws/aws-sdk-php',
+        'Fruitcake\\Cors\\' => 'fruitcake/php-cors',
+        'PHPOpenSourceSaver\\JWTAuth\\' => 'php-open-source-saver/jwt-auth',
+        'Symfony\\Component\\Mime\\' => 'symfony/mime',
+    ];
+
+    /**
+     * Requirements a source file never `use`s but the package needs at runtime.
+     *
+     * Only for a dependency reached through a framework class that resolves it
+     * late: the adapter, the driver or the facade, never a direct import. A new
+     * silent requirement is a defect, so it is declared here with its reason.
+     *
+     * @var array<string, array<string, string>>
+     */
+    private const RUNTIME_ONLY_REQUIREMENTS = [
+        'silverspoonmedia/platform' => [
+            'league/flysystem-aws-s3-v3' => 'S3DirectUploadEngine drives an AWS S3 disk through Illuminate\\Filesystem\\AwsS3V3Adapter, whose driver class lives in this package',
+        ],
     ];
 
     /**
@@ -98,7 +118,7 @@ class PackageManifestTest extends TestCase
             }
 
             foreach ($this->requirements($package) as $dependency) {
-                if ($this->isPlatformRequirement($dependency)) {
+                if ($this->isPlatformRequirement($dependency, $package)) {
                     continue;
                 }
 
@@ -217,9 +237,15 @@ class PackageManifestTest extends TestCase
         return array_keys((array) ($manifest['require'] ?? []));
     }
 
-    private function isPlatformRequirement(string $dependency): bool
+    private function isPlatformRequirement(string $dependency, string $package): bool
     {
-        return in_array($dependency, ['php', 'laravel/framework'], true) || str_starts_with($dependency, 'ext-');
+        return in_array($dependency, ['php', 'laravel/framework'], true)
+            || str_starts_with($dependency, 'ext-')
+            // A path-package sibling (`silverspoonmedia/platform`) is a runtime
+            // seam, not a namespace this package imports: it is required by
+            // DependencyDirectionTest instead.
+            || str_starts_with($dependency, 'silverspoonmedia/')
+            || isset(self::RUNTIME_ONLY_REQUIREMENTS[$package][$dependency]);
     }
 
     /**

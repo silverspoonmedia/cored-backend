@@ -69,7 +69,7 @@ php artisan domain:remove Scratch --force       # executes the manifest
 | `domain:make` | Scaffold folders, provider, route stubs, tests, **`{Name}RoleSeeder`** (Beta tester role + `access {domain} product` permission + Public visibility row) and a starter **`uninstall.json`**; register as **product** (locked by default) and wire the seeder into `DatabaseSeeder`. `--parent={Name}` registers a **subproduct** instead — the parent must already be a registered product domain. |
 | `domain:remove` | Execute the domain's `uninstall.json`: delete paths (backend/SPA/docs), apply shared-file edits, optionally purge data. Refuses core and locked product, and refuses a product while a registered **subproduct** still points at it. Migrations stay without `--purge-data`. |
 
-Implementation: [`DomainManager`](../../app/Support/Domain/DomainManager.php), `app/Console/Commands/Domain/*`.
+Implementation: [`DomainManager`](../../packages/platform/src/Support/Domain/DomainManager.php), `app/Console/Commands/Domain/*`.
 
 ## Domain uninstall manifest
 
@@ -162,7 +162,7 @@ Sibling checkouts resolve as `dirname(base_path()).'/monolith-vue-workers'` and 
 
 The AI-facing procedure is [.cursor/skills/domain-remove/SKILL.md](../../.cursor/skills/domain-remove/SKILL.md); this section owns the schema and the op vocabulary.
 
-Implementation: [`UninstallManifest`](../../app/Support/Domain/UninstallManifest.php), [`UninstallFileEditor`](../../app/Support/Domain/UninstallFileEditor.php), [`UninstallReferenceScanner`](../../app/Support/Domain/UninstallReferenceScanner.php).
+Implementation: [`UninstallManifest`](../../packages/platform/src/Support/Domain/UninstallManifest.php), [`UninstallFileEditor`](../../packages/platform/src/Support/Domain/UninstallFileEditor.php), [`UninstallReferenceScanner`](../../packages/platform/src/Support/Domain/UninstallReferenceScanner.php).
 
 ## Directory layout
 
@@ -225,7 +225,7 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainM
 | `archivd.php` | Archivd (auth + public share) folders/files/uploads | product |
 | `microstock.php` | Microstock (API + thin web entry; Archivd mounts most UI) | product — subproduct of Archivd |
 
-Kernel product registry (`app/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
+Kernel product registry (`packages/platform/src/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
 
 Global: `routes/api.php` — `GET /api/ping` only (`App\Http\Controllers\API\PingController`).
 

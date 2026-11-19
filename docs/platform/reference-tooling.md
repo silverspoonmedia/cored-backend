@@ -122,7 +122,7 @@ env:
   COLUMNS: '200'
 ```
 
-`SettingsServiceProvider::boot()` calls `Schema::hasTable('system_settings')` ([SettingsServiceProvider.php](../../app/Providers/SettingsServiceProvider.php)). Without `DB_CONNECTION=sqlite`, `config/database.php` defaults to `mysql`, the runner has no MySQL, and the install step fails. `sqlite :memory:` answers `hasTable()` with `false` and needs no service. These are real environment variables and Laravel's dotenv repository is immutable, so a populated `.env` could not override them either.
+`SettingsServiceProvider::boot()` calls `Schema::hasTable('system_settings')` ([SettingsServiceProvider.php](../../packages/platform/src/Providers/SettingsServiceProvider.php)). Without `DB_CONNECTION=sqlite`, `config/database.php` defaults to `mysql`, the runner has no MySQL, and the install step fails. `sqlite :memory:` answers `hasTable()` with `false` and needs no service. These are real environment variables and Laravel's dotenv repository is immutable, so a populated `.env` could not override them either.
 
 `COLUMNS: '200'` widens Collision's output. The runner's default is 80 columns, which truncated findings to `file_get_contents(/ho…` — the opposite of a readable gate.
 

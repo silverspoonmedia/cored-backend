@@ -42,7 +42,12 @@ return [
     // Core — packaged domains declare where their source, routes, config and
     // translations live. The namespace stays App\Domain\{Name}\, so only the
     // location moved; a host may still override a class in app/Domain/{Name}/.
-    'Identity' => ['kind' => 'core'],
+    'Identity' => [
+        'kind' => 'core',
+        'package' => 'silverspoonmedia/platform',
+        'path' => 'packages/platform/src/Domain/Identity',
+        'provider' => 'packages/platform/src/Providers/Domain/IdentityServiceProvider.php',
+    ],
     'Navigation' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/navigation',

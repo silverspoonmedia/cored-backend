@@ -1,6 +1,6 @@
 ---
 description: Env profiles, curate, secrets vs system_settings
-globs: .env*,config/*.php,app/Console/Commands/*Env*.php,app/Support/Environment*.php,database/seeders/*SettingsSeeder.php
+globs: .env*,config/*.php,app/Console/Commands/*Env*.php,packages/platform/src/Support/Environment*.php,database/seeders/*SettingsSeeder.php
 alwaysApply: false
 ---
 

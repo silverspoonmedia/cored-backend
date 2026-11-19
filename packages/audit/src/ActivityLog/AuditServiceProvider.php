@@ -5,6 +5,7 @@ namespace App\Domain\ActivityLog;
 use App\Domain\ActivityLog\Console\Commands\EncryptionMigrateActivityLogCommand;
 use App\Domain\ActivityLog\Repositories\Contracts\ActivityLogRepositoryInterface;
 use App\Domain\ActivityLog\Repositories\Eloquent\ActivityLogRepository;
+use App\Domain\ActivityLog\Support\AuthActivityRecorder as AuditAuthRecorder;
 use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Domain\ActivityLog\Support\SensitiveActivityProperties;
 use App\Domain\ActivityLog\Support\SubjectLabelRegistry;
@@ -13,6 +14,7 @@ use App\Domain\ErrorLog\Console\Commands\CleanErrorLogsCommand;
 use App\Domain\ErrorLog\Repositories\Contracts\ErrorLogRepositoryInterface;
 use App\Domain\ErrorLog\Repositories\Eloquent\ErrorLogRepository;
 use App\Domain\ErrorLog\Support\ErrorLogRecorder;
+use App\Support\ActivityLog\AuthActivityRecorder;
 use App\Support\ActivityLog\SubjectAliasRegistrar;
 use App\Support\ActivityLog\SubjectLabelRegistrar;
 use App\Support\Encryption\DecryptionAuditRecorder;
@@ -41,9 +43,11 @@ class AuditServiceProvider extends ServiceProvider
 
         // Kernel contracts — the kernel declares them, this package implements
         // them, so `EnvelopeEncryptionService` and `bootstrap/app.php` never
-        // import a package class.
+        // import a package class. The auth trail is a subscriber registered by
+        // this package (`AuthActivityRecorder::subscribe()`), not by the kernel.
         $this->app->bind(DecryptionAuditRecorder::class, CryptoActivityRecorder::class);
         $this->app->bind(ExceptionRecorder::class, ErrorLogRecorder::class);
+        $this->app->bind(AuthActivityRecorder::class, AuditAuthRecorder::class);
 
         $this->app->singleton(SubjectTypeResolver::class);
         $this->app->bind(SubjectAliasRegistrar::class, SubjectTypeResolver::class);
@@ -70,6 +74,11 @@ class AuditServiceProvider extends ServiceProvider
 
         $this->registerSensitivePropertyEncryption();
         $this->registerErrorLogListener();
+
+        // The activity-log half of the auth trail lives with this package: the
+        // kernel listener & subscriber pair would otherwise make every auth event
+        // carry a package class through the kernel.
+        Event::subscribe(AuditAuthRecorder::class);
     }
 
     /**

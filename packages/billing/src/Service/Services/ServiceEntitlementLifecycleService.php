@@ -4,6 +4,7 @@ namespace App\Domain\Service\Services;
 
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\ServiceEntitlement;
+use App\Domain\Service\Support\ServiceEntitlementSnapshot;
 use App\Support\Billing\Fulfillment;
 use App\Support\Billing\FulfillmentContext;
 use App\Support\Notifications\Contracts\NotificationDispatcher;
@@ -82,7 +83,7 @@ class ServiceEntitlementLifecycleService
                         continue;
                     }
 
-                    $result = $handler->onExpired(FulfillmentContext::fromEntitlement(
+                    $result = $handler->onExpired(ServiceEntitlementSnapshot::fromEntitlement(
                         $entitlement,
                         null,
                         FulfillmentContext::PHASE_EXPIRED,

@@ -6,7 +6,7 @@ Sessions stay on Tier 1 (`SESSION_ENCRYPT` + `APP_KEY`). Envelope-encrypting the
 
 | | |
 |---|---|
-| Code | `app/Support/Encryption/**`, `app/Support/Oci/**` |
+| Code | `packages/platform/src/Support/Encryption/**`, `packages/platform/src/Support/Oci/**` |
 | Config | `config/encryption.php` |
 | Commands | `oci:kms-verify`, `encryption:migrate-p0`, `encryption:migrate-activity-log`, `encryption:flush-decrypted-cache`, `config:rebuild` |
 | Tests | `composer test -- --filter=Oci` (live probe: `OCI_KMS_INTEGRATION_TEST=true … --group=oci`) |

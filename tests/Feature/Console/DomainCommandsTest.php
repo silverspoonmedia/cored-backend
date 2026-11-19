@@ -263,26 +263,42 @@ class DomainCommandsTest extends TestCase
 
     public function test_domain_remove_refuses_platform_core_even_if_config_flipped(): void
     {
-        // Prove config cannot unlock platform core.
+        // Prove config cannot unlock platform core. Identity now lives in
+        // `silverspoonmedia/platform`, so the entry carries `package`/`path` —
+        // replace the whole entry, not a literal one-line shape, and point it at
+        // a host directory this test creates below: that directory is what the
+        // remover would delete if the core guard failed.
+        $hostIdentity = app_path('Domain/Identity');
+        File::ensureDirectoryExists($hostIdentity);
+
         $contents = File::get($this->domainsConfigPath);
-        $contents = str_replace(
-            "'Identity' => ['kind' => 'core']",
-            "'Identity' => ['kind' => 'product', 'locked' => false]",
-            $contents
+        $contents = preg_replace(
+            "~'Identity' => \\[[^\\]]*\\]~",
+            "'Identity' => ['kind' => 'product', 'locked' => false, 'path' => 'app/Domain/Identity']",
+            $contents,
+            1,
         );
-        File::put($this->domainsConfigPath, $contents);
-        config(['domains.Identity' => ['kind' => 'product', 'locked' => false]]);
+        File::put($this->domainsConfigPath, (string) $contents);
+        config(['domains.Identity' => ['kind' => 'product', 'locked' => false, 'path' => 'app/Domain/Identity']]);
 
         $this->assertTrue(app(DomainManager::class)->isPlatformCore('Identity'));
         $this->assertSame('core', app(DomainManager::class)->kind('Identity'));
         $this->assertSame('never', app(DomainManager::class)->removalStatus('Identity'));
 
-        $this->artisan('domain:remove', [
-            'name' => 'Identity',
-            '--force' => true,
-        ])->assertFailed();
+        try {
+            $this->artisan('domain:remove', [
+                'name' => 'Identity',
+                '--force' => true,
+            ])->assertFailed();
 
-        $this->assertDirectoryExists(app_path('Domain/Identity'));
+            $this->assertDirectoryExists($hostIdentity);
+        } finally {
+            // A leaked app/Domain/Identity is an untracked directory git cannot
+            // remove, and it shadows the packaged kernel on the next run.
+            if (File::isDirectory($hostIdentity)) {
+                File::deleteDirectory($hostIdentity);
+            }
+        }
     }
 
     public function test_domain_remove_refuses_all_platform_core_domains(): void

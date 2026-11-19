@@ -211,12 +211,12 @@
                     "match": "(microstock\\.|Settings → Microstock)"
                 },
                 {
-                    "file": "app/Support/Settings/SettingRegistry.php",
+                    "file": "packages/platform/src/Support/Settings/SettingRegistry.php",
                     "op": "remove_lines_matching",
                     "match": "(microstock\\.|^// Microstock$)"
                 },
                 {
-                    "file": "app/Support/Settings/Http/Requests/UpdateSettingsGroupRequest.php",
+                    "file": "packages/platform/src/Support/Settings/Http/Requests/UpdateSettingsGroupRequest.php",
                     "op": "remove_lines_matching",
                     "match": "microstock\\."
                 },
@@ -363,11 +363,11 @@
                     "reason": "owned by the Inference package: the ledger it reads is bound by Microstock and the service leaves with silverspoonmedia/ai (line 7, 8)"
                 },
                 {
-                    "path": "app/Support/Ai/AiUsageConsolidatorRegistry.php",
+                    "path": "packages/platform/src/Support/Ai/AiUsageConsolidatorRegistry.php",
                     "reason": "kernel seam: Microstock only registers itself here and drops that line when it is removed; the registry itself leaves with silverspoonmedia/ai (line 10)"
                 },
                 {
-                    "path": "app/Support/Ai/Contracts/AiUsageLedger.php",
+                    "path": "packages/platform/src/Support/Ai/Contracts/AiUsageLedger.php",
                     "reason": "kernel seam: Microstock binds an adapter and drops that line when it is removed; the contract itself leaves with silverspoonmedia/ai (line 12)"
                 },
                 {
@@ -427,11 +427,11 @@
                     "reason": "owned by the Service domain: this file leaves with Service's own uninstall, nothing to do here (line 7, 12, 52)"
                 },
                 {
-                    "path": "app/Http/Controllers/Concerns/RespondsWithListDisplayMode.php",
+                    "path": "packages/platform/src/Http/Controllers/Concerns/RespondsWithListDisplayMode.php",
                     "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 14)"
                 },
                 {
-                    "path": "app/Support/Settings/SettingsReader.php",
+                    "path": "packages/platform/src/Support/Settings/SettingsReader.php",
                     "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 40)"
                 },
                 {
@@ -519,11 +519,11 @@
                     "reason": "test: drop the `microstock.*` setting reads (line 59, 60, 65, 66, 73)"
                 },
                 {
-                    "path": "app/Support/Billing/Contracts/FulfillmentHandler.php",
+                    "path": "packages/platform/src/Support/Billing/Contracts/FulfillmentHandler.php",
                     "reason": "docblock: Microstock named in prose as the seam example, not in code — keep"
                 },
                 {
-                    "path": "app/Support/Billing/FulfillmentRegistry.php",
+                    "path": "packages/platform/src/Support/Billing/FulfillmentRegistry.php",
                     "reason": "docblock: Microstock named in prose as a registering product, not in code — keep"
                 }
             ]

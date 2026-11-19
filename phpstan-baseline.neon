@@ -70,55 +70,55 @@ parameters:
 			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\<int, App\\Domain\\Identity\\Models\\User\>\:\:getCollection\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: app/Domain/Identity/Http/Controllers/API/V1/UserController.php
+			path: packages/platform/src/Domain/Identity/Http/Controllers/API/V1/UserController.php
 
 		-
 			message: '#^Method PHPOpenSourceSaver\\JWTAuth\\JWTGuard\:\:login\(\) invoked with 2 parameters, 1 required\.$#'
 			identifier: arguments.count
 			count: 2
-			path: app/Domain/Identity/Services/Auth/AuthService.php
+			path: packages/platform/src/Domain/Identity/Services/Auth/AuthService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Domain/Identity/Services/Lookup/LookupService.php
+			path: packages/navigation/src/Services/MenuLookupService.php
 
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getTranslations\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: app/Domain/Identity/Services/Lookup/LookupService.php
+			path: packages/navigation/src/Services/MenuLookupService.php
 
 		-
-			message: '#^Method App\\Domain\\Identity\\Services\\Lookup\\LookupService\:\:menuMatchIds\(\) should return array\<string, true\> but returns array\<string, int\>\.$#'
+			message: '#^Method App\\Domain\\Navigation\\Services\\MenuLookupService\:\:menuMatchIds\(\) should return array\<string, true\> but returns array\<string, int\>\.$#'
 			identifier: return.type
 			count: 1
-			path: app/Domain/Identity/Services/Lookup/LookupService.php
+			path: packages/navigation/src/Services/MenuLookupService.php
 
 		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{id\: string, text\: string\}, Closure\(App\\Domain\\Identity\\Models\\User\)\: array\{id\: string, text\: string\} given\.$#'
 			identifier: argument.type
 			count: 2
-			path: app/Domain/Identity/Services/Lookup/LookupService.php
+			path: packages/platform/src/Domain/Identity/Services/Lookup/LookupService.php
 
 		-
 			message: '#^Property App\\Domain\\Identity\\Models\\User\:\:\$guard_name \(string\) on left side of \?\? is not nullable\.$#'
 			identifier: nullCoalesce.property
 			count: 1
-			path: app/Domain/Identity/Services/Rbac/RoleService.php
+			path: packages/platform/src/Domain/Identity/Services/Rbac/RoleService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Domain/Identity/Services/User/UserManagementService.php
+			path: packages/platform/src/Domain/Identity/Services/User/UserManagementService.php
 
 		-
 			message: '#^PHPDoc tag @return with type array\<string, string\> is incompatible with native type string\.$#'
 			identifier: return.phpDocType
 			count: 1
-			path: app/Domain/Identity/Support/DiscordOAuthState.php
+			path: packages/platform/src/Domain/Identity/Support/DiscordOAuthState.php
 
 		-
 			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\<int, App\\Domain\\Microstock\\Models\\AiUsageEvent\>\:\:getCollection\(\)\.$#'
@@ -196,85 +196,85 @@ parameters:
 			message: '#^Parameter \#1 \$user of method Illuminate\\Contracts\\Auth\\Guard\:\:setUser\(\) expects Illuminate\\Contracts\\Auth\\Authenticatable, PHPOpenSourceSaver\\JWTAuth\\Contracts\\JWTSubject given\.$#'
 			identifier: argument.type
 			count: 1
-			path: app/Http/Middleware/OptionalJwtAuthenticate.php
+			path: packages/platform/src/Http/Middleware/OptionalJwtAuthenticate.php
 
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:onlyTrashed\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: app/Repositories/Eloquent/EloquentCrudRepository.php
+			path: packages/platform/src/Repositories/Eloquent/EloquentCrudRepository.php
 
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:withTrashed\(\)\.$#'
 			identifier: method.notFound
 			count: 2
-			path: app/Repositories/Eloquent/EloquentCrudRepository.php
+			path: packages/platform/src/Repositories/Eloquent/EloquentCrudRepository.php
 
 		-
 			message: '#^Offset ''kind'' on array\{kind\: string, locked\: bool, parent\: string\|null\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
-			path: app/Support/Domain/DomainManager.php
+			path: packages/platform/src/Support/Domain/DomainManager.php
 
 		-
 			message: '#^Offset ''locked'' on array\{kind\: string, locked\: bool, parent\: string\|null\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
-			path: app/Support/Domain/DomainManager.php
+			path: packages/platform/src/Support/Domain/DomainManager.php
 
 		-
 			message: '#^Parameter \#1 \$array \(list\<\(int\|string\)\>\) of array_values is already a list, call has no effect\.$#'
 			identifier: arrayValues.list
 			count: 1
-			path: app/Support/Domain/DomainManager.php
+			path: packages/platform/src/Support/Domain/DomainManager.php
 
 		-
 			message: '#^Variable \$draftData might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: app/Support/Domain/UninstallManifest.php
+			path: packages/platform/src/Support/Domain/UninstallManifest.php
 
 		-
 			message: '#^Call to function is_array\(\) with string will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 1
-			path: app/Support/Encryption/Cache/SensitiveCacheValue.php
+			path: packages/platform/src/Support/Encryption/Cache/SensitiveCacheValue.php
 
 		-
 			message: '#^Offset ''function'' on array\{function\: string, line\?\: int, file\?\: string, class\?\: class\-string, type\?\: ''\-\>''\|''\:\:'', args\?\: list\<mixed\>, object\?\: object\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
-			path: app/Support/Encryption/InvoicePayloadDecryptLogger.php
+			path: packages/platform/src/Support/Encryption/InvoicePayloadDecryptLogger.php
 
 		-
 			message: '#^Property App\\Support\\Settings\\SettingsService\:\:\$reader is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
-			path: app/Support/Settings/SettingsService.php
+			path: packages/platform/src/Support/Settings/SettingsService.php
 
 		-
 			message: '#^Strict comparison using \=\=\= between string and false will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 1
-			path: app/Support/SpaPublicUrl.php
+			path: packages/platform/src/Support/SpaPublicUrl.php
 
 		-
 			message: '#^Access to an undefined property App\\Domain\\Identity\\Models\\Role\:\:\$domain_kind\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Support/User/UserManagementPresenter.php
+			path: packages/platform/src/Support/User/UserManagementPresenter.php
 
 		-
 			message: '#^Access to an undefined property App\\Domain\\Identity\\Models\\Role\:\:\$level\.$#'
 			identifier: property.notFound
 			count: 1
-			path: app/Support/User/UserManagementPresenter.php
+			path: packages/platform/src/Support/User/UserManagementPresenter.php
 
 		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Domain\\Identity\\Models\\Role\>\:\:map\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
 			count: 1
-			path: app/Support/User/UserManagementPresenter.php
+			path: packages/platform/src/Support/User/UserManagementPresenter.php
 
 		-
 			message: '#^PHPDoc tag @return with type array\<string, mixed\> is incompatible with native type void\.$#'
@@ -527,3 +527,4 @@ parameters:
 			identifier: deadCode.unreachable
 			count: 1
 			path: packages/billing/src/Service/Services/ServicePurchaseQuantityService.php
+

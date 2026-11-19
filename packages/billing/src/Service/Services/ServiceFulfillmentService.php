@@ -7,6 +7,7 @@ use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Support\ServiceEntitlementSnapshot;
 use App\Domain\Service\Support\ServiceRealtime;
 use App\Support\Billing\Fulfillment;
 use App\Support\Billing\FulfillmentContext;
@@ -79,7 +80,7 @@ class ServiceFulfillmentService
             $handler = Fulfillment::handler($target);
 
             if ($handler !== null) {
-                $handler->onActivated(FulfillmentContext::fromEntitlement(
+                $handler->onActivated(ServiceEntitlementSnapshot::fromEntitlement(
                     $entitlement,
                     $purchase,
                     FulfillmentContext::PHASE_ACTIVATED,
@@ -117,7 +118,7 @@ class ServiceFulfillmentService
 
             $handler = Fulfillment::handler($entitlement->service?->fulfillment_target);
 
-            $handler?->onExtended(FulfillmentContext::fromEntitlement(
+            $handler?->onExtended(ServiceEntitlementSnapshot::fromEntitlement(
                 $entitlement->loadMissing('service'),
                 null,
                 FulfillmentContext::PHASE_EXTENDED,

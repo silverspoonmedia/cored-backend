@@ -75,7 +75,7 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 
 Permissions come from `RoleSeeder`: `view menu`, `manage menu`, `restore menu`.
 
-SPA menus admin consumes this API directly. Sidebar/navbar trees come from `GET /api/v1/navigation/menus`. Admin layout select options are populated dynamically from `GET /api/v1/navigation/menus/layouts`. Form option lookups use `/api/v1/lookups/*` — the menu edit parent/reference selects consume `lookups/menus` as a nested tree per root group, pre-sorted like this sidebar (type rank h<p<c, then `order`).
+SPA menus admin consumes this API directly. Sidebar/navbar trees come from `GET /api/v1/navigation/menus`. Admin layout select options are populated dynamically from `GET /api/v1/navigation/menus/layouts`. Form option lookups use `/api/v1/lookups/*` (identity) and `/api/v1/navigation/lookups/*` (menus) — the menu edit parent/reference selects consume `navigation/lookups/menus` as a nested tree per root group, pre-sorted like this sidebar (type rank h<p<c, then `order`).
 
 ### Request fields (store/update)
 

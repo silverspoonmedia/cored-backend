@@ -5,7 +5,7 @@ Self-referential, orderable menus with RBAC, domain-access, product-activation a
 | Need | Path |
 |------|------|
 | Code | `packages/navigation/src/` — `MenuRepository` (build + cache), `MenuService` (field map, orchestration) |
-| Provider | `app/Providers/Domain/NavigationServiceProvider.php` |
+| Provider | `packages/navigation/src/NavigationServiceProvider.php` |
 | Seeder | [`packages/navigation/database/seeders/MenuSeeder.php`](../../../packages/navigation/database/seeders/MenuSeeder.php) (sole canonical tree; force-rebuilds in one transaction) |
 | Config | [`packages/navigation/config/navigation.php`](../../../packages/navigation/config/navigation.php) · [`config/spa-routes.php`](../../../config/spa-routes.php) · [`config/products.php`](../../../config/products.php) `menu_routes` |
 | Table | `menus` + `menu_roles`, `menu_user_includes`, `menu_user_excludes` |

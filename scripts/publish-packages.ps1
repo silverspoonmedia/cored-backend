@@ -23,16 +23,23 @@
     Release tag, e.g. v1.0.0. Must start with "v".
 
 .PARAMETER Packages
-    Subset of packages to publish. Defaults to all five.
+    Subset of packages to publish. Defaults to all six.
 
 .PARAMETER DryRun
     Print the plan and change nothing (no repo creation, no push, no tag).
+
+.PARAMETER Bump
+    Write this release's version (the `Version` value without the leading `v`)
+    into every selected `packages/{slug}/composer.json` before the split runs,
+    commit it, then publish. Without it the manifests keep the version they
+    already carry and the tag may disagree with the source — `verify-mirrors.ps1`
+    reports that drift.
 
 .EXAMPLE
     ./scripts/publish-packages.ps1 -Version v1.0.0 -DryRun
 
 .EXAMPLE
-    ./scripts/publish-packages.ps1 -Version v1.0.0
+    ./scripts/publish-packages.ps1 -Version v1.0.1 -Bump
 #>
 [CmdletBinding()]
 param(
@@ -40,9 +47,11 @@ param(
     [ValidatePattern('^v\d+\.\d+\.\d+')]
     [string] $Version,
 
-    [string[]] $Packages = @('navigation', 'notification', 'audit', 'billing', 'ai'),
+    [string[]] $Packages = @('platform', 'navigation', 'notification', 'audit', 'billing', 'ai'),
 
-    [switch] $DryRun
+    [switch] $DryRun,
+
+    [switch] $Bump
 )
 
 $ErrorActionPreference = 'Stop'
@@ -106,6 +115,43 @@ if ($currentBranch.Trim() -ne 'main') {
 Write-Host "Publishing $($Packages -join ', ') as $Version from $currentBranch"
 if ($DryRun) {
     Write-Host 'DRY RUN — no repo is created, nothing is pushed, no tag is written.' -ForegroundColor Yellow
+}
+
+$releaseVersion = $Version.TrimStart('v')
+
+if ($Bump) {
+    foreach ($slug in $Packages) {
+        $manifest = Join-Path $Root "packages/$slug/composer.json"
+        if (-not (Test-Path $manifest)) {
+            throw "Missing package manifest: packages/$slug/composer.json"
+        }
+
+        $json = Get-Content $manifest -Raw
+        if ($json -match '(?m)^\s*"version"\s*:\s*"([^"]*)",?') {
+            if ($Matches[1] -eq $releaseVersion) {
+                Write-Host "  $slug already pins $releaseVersion"
+                continue
+            }
+            $line = [regex]::Match($json, '(?m)^\s*"version"\s*:\s*"[^"]*",?').Value
+            $json = $json.Replace($line, '    "version": "' + $releaseVersion + '",')
+        }
+        else {
+            throw "packages/$slug/composer.json has no version field — add it before publishing a path package."
+        }
+
+        if ($DryRun) {
+            Write-Host "  would pin $slug at $releaseVersion"
+            continue
+        }
+
+        [System.IO.File]::WriteAllText($manifest, $json, (New-Object System.Text.UTF8Encoding($false)))
+        Invoke-Git -Arguments @('add', "packages/$slug/composer.json") | Out-Null
+        Write-Host "  pinned $slug at $releaseVersion"
+    }
+
+    if (-not $DryRun) {
+        Invoke-Git -Arguments @('commit', '-m', "chore(release): pin package versions at $releaseVersion") | Out-Null
+    }
 }
 
 foreach ($slug in $Packages) {

@@ -6,7 +6,7 @@ Cookie- or user-preference-driven locale for API and DB content, with **no route
 
 | | |
 |---|---|
-| Code | `app/Support/Localization/**`, `app/Http/Middleware/SetLocale.php`, `app/Domain/*/Http/Requests/Concerns/*` |
+| Code | `packages/platform/src/Support/Localization/**`, `packages/platform/src/Http/Middleware/SetLocale.php`, `app/Domain/*/Http/Requests/Concerns/*` |
 | Config | `config/localization.php`, `config/app.php` (`locale`) |
 | API | `POST /api/v1/auth/locale`; `X-SPA-Locale` request header |
 | SPA | `monolith-vue-workers/src/i18n/locales/*.json`, `src/i18n/curation-log.json` |

@@ -1,6 +1,6 @@
 ---
 description: Envelope encryption tiers, decrypt cache, KMS connectivity
-globs: app/Support/Encryption/**,app/Support/Oci/**,config/encryption.php
+globs: packages/platform/src/Support/Encryption/**,packages/platform/src/Support/Oci/**,config/encryption.php
 alwaysApply: false
 ---
 

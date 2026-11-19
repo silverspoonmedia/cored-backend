@@ -1,6 +1,6 @@
 ---
 description: Any user-facing copy change — all locales, contextual, readable
-globs: lang/**,app/**,routes/**,database/seeders/**,docs/platform/localization.md,docs/platform/naming-conventions.md
+globs: lang/**,packages/**,app/**,routes/**,database/seeders/**,docs/platform/localization.md,docs/platform/naming-conventions.md
 alwaysApply: true
 ---
 
@@ -27,18 +27,18 @@ Translation is the first thing a user sees. A perfectly built feature nobody can
 Before finishing, read the string back as a native speaker of the target locale, **on that surface**:
 
 - Would a product in that language actually say this? If it reads like a translation, it is not done.
-- Does the register match? `id` Anda (formal neutral) · `ja` です/ます · `ko` 해요체 `-하세요` for instructions and 합쇼체 `-합니다` for declaratives, never one level for both · `zh-CN` 您 · `ar` MSA formal · `ru` вы, lowercase except at sentence start.
+- Does the register match? `id` Anda (formal neutral) — `ja` ??/?? — `ko` ??? `-???` for instructions and ??? `-???` for declaratives, never one level for both — `zh-CN` ? — `ar` MSA formal — `ru` ??, lowercase except at sentence start.
 - Buttons are plain verb forms. Toasts and messages are full sentences. A table header is a stable label, not a participle agreeing with a hidden noun.
-- No filler the target language does not use in product UI (`Пожалуйста` in `ru` is banned).
+- No filler the target language does not use in product UI (`??????????` in `ru` is banned).
 
 ## Anti-patterns (each one shipped once, with the real fix)
 
-- **Calque.** `id` `403 Forbidden` = `Dilarang` → `Terlarang`; `401` = `Tidak Diizinkan` → `Tidak sah`.
-- **False friend.** `ja` `claim` = `クレーム` reads as "complaint", not an ownership claim → `申請`.
-- **Literal rendering of a metaphor.** `zh_CN` `slug` = `子弹` ("bullet") → `标识`; `ar` `410 Gone` = `ذهب` ("he went") → `محتوى محذوف نهائيًا`; `ja` `302 Found` = `発見` ("discovery") → `一時的な移動`.
-- **English left inside non-English prose.** `id` `management`/`creator` stayed English in 26 backend keys → `manajemen`/`kreator`. Invisible to every structural guard: the value differs from `en`, so the duplicate check skips it; the locale is Latin-script, so a script scan finds nothing.
+- **Calque.** `id` `403 Forbidden` = `Dilarang` ? `Terlarang`; `401` = `Tidak Diizinkan` ? `Tidak sah`.
+- **False friend.** `ja` `claim` = `????` reads as "complaint", not an ownership claim ? `??`.
+- **Literal rendering of a metaphor.** `zh_CN` `slug` = `??` ("bullet") ? `??`; `ar` `410 Gone` = `???` ("he went") ? `????? ????? ???????`; `ja` `302 Found` = `??` ("discovery") ? `??????`.
+- **English left inside non-English prose.** `id` `management`/`creator` stayed English in 26 backend keys ? `manajemen`/`kreator`. Invisible to every structural guard: the value differs from `en`, so the duplicate check skips it; the locale is Latin-script, so a script scan finds nothing.
 - **One source phrase, two contexts, one key.** Split the key instead of writing a sentence that is wrong on both surfaces.
-- **Term drift between namespaces.** `zh_CN` `credential` was `凭据` in four files and `凭证` in a fifth. One term per concept, or the glossary says why two senses are kept.
+- **Term drift between namespaces.** `zh_CN` `credential` was `??` in four files and `??` in a fifth. One term per concept, or the glossary says why two senses are kept.
 
 ## Never
 

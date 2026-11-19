@@ -38,6 +38,7 @@
         "silverspoonmedia/billing": "*",
         "silverspoonmedia/navigation": "*",
         "silverspoonmedia/notification": "*",
+        "silverspoonmedia/platform": "*",
         "spatie/laravel-activitylog": "^5.0",
         "spatie/laravel-pdf": "^2.12",
         "spatie/laravel-permission": "^8.0",
@@ -57,6 +58,13 @@
     "autoload": {
         "psr-4": {
             "App\\": "app/",
+            "App\\Support\\": "app/Support/",
+            "App\\Http\\": "app/Http/",
+            "App\\Repositories\\": "app/Repositories/",
+            "App\\Domain\\Identity\\": "app/Domain/Identity/",
+            "App\\Traits\\": "app/Traits/",
+            "App\\Rules\\": "app/Rules/",
+            "App\\Exceptions\\": "app/Exceptions/",
             "App\\Domain\\ActivityLog\\": "app/Domain/ActivityLog/",
             "App\\Domain\\Ai\\": "app/Domain/Ai/",
             "App\\Domain\\Currency\\": "app/Domain/Currency/",
@@ -68,10 +76,7 @@
             "App\\Domain\\Service\\": "app/Domain/Service/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        },
-        "files": [
-            "app/Support/Settings/helpers.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {

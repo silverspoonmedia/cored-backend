@@ -2,9 +2,10 @@
 
 namespace App\Domain\Service\Enums;
 
+use App\Support\Billing\Contracts\SubscriptionInterval;
 use Carbon\CarbonInterface;
 
-enum BillingInterval: string
+enum BillingInterval: string implements SubscriptionInterval
 {
     case Monthly = 'monthly';
     case Quarterly = 'quarterly';

@@ -1,6 +1,6 @@
 ---
 description: CORS perimeter, cookie/CSRF contract, audit and secret hygiene
-globs: config/cors.php,bootstrap/app.php,app/Http/Middleware/**,app/Support/Security/**
+globs: config/cors.php,bootstrap/app.php,packages/platform/src/Http/Middleware/**,packages/platform/src/Support/Security/**
 alwaysApply: false
 ---
 

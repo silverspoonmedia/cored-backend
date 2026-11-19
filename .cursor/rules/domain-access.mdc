@@ -1,6 +1,6 @@
 ---
 description: Domain Access — Public/Private product-domain gate invariants
-globs: app/Support/DomainAccess/**,routes/api/v1/domain-access.php,config/domains.php,lang/*/domain-access.php,docs/domains/domain-access/**
+globs: packages/platform/src/Support/DomainAccess/**,routes/api/v1/domain-access.php,config/domains.php,lang/*/domain-access.php,docs/domains/domain-access/**
 alwaysApply: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 description: CRUD layering, shared repository, FormRequest DRY, dual-field resources
-globs: app/Repositories/**,app/Domain/**/Http/Controllers/**,app/Domain/**/Http/Requests/**
+globs: packages/platform/src/Repositories/**,app/Domain/**/Http/Controllers/**,app/Domain/**/Http/Requests/**
 alwaysApply: false
 ---
 

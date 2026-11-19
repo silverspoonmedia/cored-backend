@@ -1,6 +1,6 @@
 # API aggregation policy
 
-Canonical rules for when and how multiple API reads are aggregated into one call. Lives alongside [cache-policy.md](cache-policy.md) and [configuration-policy.md](configuration-policy.md). The single aggregation transport is `POST /api/v1/batch` (`routes/api/v1/batch.php`, [BatchController](../../app/Http/Controllers/API/BatchController.php)); SPA contract in [../integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
+Canonical rules for when and how multiple API reads are aggregated into one call. Lives alongside [cache-policy.md](cache-policy.md) and [configuration-policy.md](configuration-policy.md). The single aggregation transport is `POST /api/v1/batch` (`routes/api/v1/batch.php`, [BatchController](../../packages/platform/src/Http/Controllers/API/BatchController.php)); SPA contract in [../integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
 
 ## Three rules
 

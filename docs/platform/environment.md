@@ -6,7 +6,7 @@ Laravel loads **one** `.env` at boot; Monolith adds profile snapshots so one mac
 
 | | |
 |---|---|
-| Code | `app/Support/Environment*.php`, `app/Console/Commands/*Env*.php` |
+| Code | `packages/platform/src/Support/Environment*.php`, `app/Console/Commands/*Env*.php` |
 | Config | `.env.example`, `.env.{local,staging,production}.example`, `config/*.php` |
 | Commands | `env:install`, `env:switch`, `env:curate`, `env:backup:create`, `env:restore`, `key:generate`, `config:rebuild`, `config:verify-secrets` |
 | Tests | `tests/Feature/Console/EnvProfileSyncTest.php`, `EnvironmentTemplateQuotingTest` |

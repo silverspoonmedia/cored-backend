@@ -1,12 +1,12 @@
 ---
 description: Product activation registry — state machine, middleware, analytics invariants
-globs: app/Support/Product/**,routes/api/v1/product-activations.php,config/products.php,docs/domains/product-activations/**
+globs: packages/platform/src/Support/Product/**,app/Support/Product/**,routes/api/v1/product-activations.php,config/products.php,docs/domains/product-activations/**
 alwaysApply: false
 ---
 
 # Product Activations
 
-Kernel registry (`app/Support/Product/`, not a `app/Domain/*` module) for **runtime per-user product access**: `product_activations` holds `pending` / `active` / `suspended` / `expired` per `(user, product_key)`.
+Kernel registry (`packages/platform/src/Support/Product/`, not a `app/Domain/*` module; the two analytics services it delegates to stay host-side in `app/Support/Product/Services/`) for **runtime per-user product access**: `product_activations` holds `pending` / `active` / `suspended` / `expired` per `(user, product_key)`.
 
 - **Orthogonal to the paid entitlement layer.** `product.active` answers "may this user use the product at all"; `service_entitlements` answers "may they use paid features inside it" (`ServiceEntitlementService::hasActivePaidArchivd`). Never make one gate the other, and never treat a `service_entitlements` row as an activation.
 - **Activation type is declared per product in `config/products.php`.** Implicit (Archivd, Microstock) auto-activates on register and needs no approval; explicit requires provisioning and cannot reach `active` without `approve`. Implicit activations **cannot enter `pending`**.
