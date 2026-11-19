@@ -28,7 +28,7 @@ class PaymentChannelRouteResource extends JsonResource
             'provider_payment_type' => $this->provider_payment_type,
             'provider_payment_channel' => $this->provider_payment_channel,
             'priority' => $this->priority,
-            'route_role' => $this->route_role?->value ?? $this->route_role,
+            'route_role' => $this->route_role->value ?? $this->route_role,
             'settlement_days' => $this->settlement_days,
             'settlement_label' => $this->settlement_days !== null ? 'H+'.$this->settlement_days : null,
             'fee_flat' => $this->fee_flat,

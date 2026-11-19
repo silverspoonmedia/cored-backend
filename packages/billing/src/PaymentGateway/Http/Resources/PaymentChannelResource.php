@@ -17,11 +17,11 @@ class PaymentChannelResource extends JsonResource
         $payload = [
             'code' => $this->code,
             'display_name' => $this->display_name,
-            'kind' => $this->kind->value ?? $this->kind,
+            'kind' => $this->kind->value,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,
             'cheap_alt_code' => $this->cheap_alt_code,
-            'routing_type' => $this->routing_type?->value ?? $this->routing_type,
+            'routing_type' => $this->routing_type->value,
             'policy_key' => $this->policy_key,
         ];
 

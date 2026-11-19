@@ -54,7 +54,7 @@ class InvoiceChannelFeeService
             'fee_flat' => $route->fee_flat !== null ? (float) $route->fee_flat : null,
             'fee_percent' => $route->fee_percent !== null ? (float) $route->fee_percent : null,
             'gateway_name' => $route->paymentGateway?->name,
-            'route_role' => $route->route_role?->value ?? (is_string($route->route_role) ? $route->route_role : null),
+            'route_role' => $route->route_role->value,
         ], $this->feeBasisFromRoute($route));
     }
 
@@ -100,6 +100,8 @@ class InvoiceChannelFeeService
     {
         $currency = (string) ($invoice->currency ?: 'IDR');
         $invoice->loadMissing('paymentChannelRouteSnapshot');
+        /** @var PaymentChannelRouteSnapshot|null $routeSnapshot */
+        $routeSnapshot = $invoice->paymentChannelRouteSnapshot;
 
         return array_merge([
             'subtotal' => (float) $invoice->subtotal,
@@ -109,7 +111,7 @@ class InvoiceChannelFeeService
             'customer_gross_total' => (float) $invoice->customer_gross_total,
             'customer_gross_total_formatted' => MoneyPresenter::formatted($invoice->customer_gross_total, $currency),
             'currency' => $currency,
-        ], $this->feeBasisFields($invoice->paymentChannelRouteSnapshot));
+        ], $this->feeBasisFields($routeSnapshot));
     }
 
     /**

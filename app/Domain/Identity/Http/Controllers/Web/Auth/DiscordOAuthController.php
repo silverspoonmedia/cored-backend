@@ -47,11 +47,11 @@ class DiscordOAuthController extends Controller
         }
 
         if ($oauthError !== null) {
-            return $this->redirectAfterCallback($payload, 'denied', __('web/identity-connections.discord_denied'));
+            return $this->redirectAfterCallback($payload, 'denied');
         }
 
         if ($code === '' || $payload === null) {
-            return $this->redirectAfterCallback($payload, 'error', __('web/identity-connections.discord_callback_invalid'));
+            return $this->redirectAfterCallback($payload, 'error');
         }
 
         $user = $this->userFromCallback($request, $payload);
@@ -59,15 +59,11 @@ class DiscordOAuthController extends Controller
         try {
             $tokenPayload = $this->discordOAuth->exchangeCode($code);
             $this->oauthAccounts->connectDiscord($user, $tokenPayload);
-        } catch (IdentityOAuthException $e) {
-            return $this->redirectAfterCallback($payload, 'error', $e->getMessage());
+        } catch (IdentityOAuthException) {
+            return $this->redirectAfterCallback($payload, 'error');
         }
 
-        return $this->redirectAfterCallback(
-            $payload,
-            'connected',
-            __('web/identity-connections.discord_connected'),
-        );
+        return $this->redirectAfterCallback($payload, 'connected');
     }
 
     /**

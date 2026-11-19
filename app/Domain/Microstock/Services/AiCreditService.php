@@ -26,7 +26,7 @@ class AiCreditService
 
     public function balance(string $userId): int
     {
-        return (int) (AiBalance::query()->find($userId)?->balance_micro_usd ?? 0);
+        return (int) (AiBalance::query()->find($userId)->balance_micro_usd ?? 0);
     }
 
     public function creditFromPurchase(ServicePurchase $purchase): void

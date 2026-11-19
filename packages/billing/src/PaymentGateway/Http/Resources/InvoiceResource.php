@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Http\Resources;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Models\PaymentChannelRouteSnapshot;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutInstructionResolver;
 use App\Http\Resources\Concerns\FormatsPresentation;
@@ -29,8 +30,9 @@ class InvoiceResource extends JsonResource
     {
         $currency = $this->currency;
         $this->loadMissing('paymentChannelRouteSnapshot.paymentGateway');
-        $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($this->paymentChannelRouteSnapshot);
+        /** @var PaymentChannelRouteSnapshot|null $routeSnapshot */
         $routeSnapshot = $this->paymentChannelRouteSnapshot;
+        $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($routeSnapshot);
         $staff = $this->viewerIsInvoiceStaff($request);
 
         return [
@@ -65,7 +67,7 @@ class InvoiceResource extends JsonResource
             ...$this->dateFields('paid_at', $this->paid_at),
             ...$this->dateFields('expired_at', $this->expired_at),
             ...($staff ? $this->dateFields('withdrawable_at', $this->withdrawable_at) : []),
-            'disbursement_status' => $this->when($staff, $this->disbursement_status?->value ?? $this->disbursement_status),
+            'disbursement_status' => $this->when($staff, $this->disbursement_status->value ?? $this->disbursement_status),
             ...($staff ? $this->dateFields('disbursed_at', $this->disbursed_at) : []),
             ...$this->dateFields('created_at', $this->created_at),
             ...$this->dateFields('updated_at', $this->updated_at),

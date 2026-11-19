@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Services;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Models\PaymentChannelRouteSnapshot;
 use App\Domain\PaymentGateway\Support\Routing\PaymentChannelFeeCalculator;
 use Illuminate\Database\Eloquent\Builder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -94,6 +95,7 @@ class InvoiceCsvExportService
      */
     private function row(Invoice $invoice): array
     {
+        /** @var PaymentChannelRouteSnapshot|null $route */
         $route = $invoice->paymentChannelRouteSnapshot;
 
         return [
@@ -106,8 +108,8 @@ class InvoiceCsvExportService
             (float) $invoice->payment_channel_fee,
             (float) $invoice->customer_gross_total,
             $invoice->payment_channel_code,
-            $invoice->paymentGateway?->name ?? $route?->paymentGateway?->name,
-            $route?->route_role?->value ?? $route?->route_role,
+            $invoice->paymentGateway->name ?? $route?->paymentGateway?->name,
+            $route?->route_role->value,
             $route?->settlement_days,
             $route ? $this->feeCalculator->formatFeeLabelFromSnapshot($route) : null,
             $invoice->external_transaction_id,

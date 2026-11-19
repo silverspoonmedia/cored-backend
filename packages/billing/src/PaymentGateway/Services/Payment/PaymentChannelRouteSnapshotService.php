@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Services\Payment;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
 use App\Domain\PaymentGateway\Models\PaymentChannelRouteSnapshot;
 
@@ -12,14 +13,18 @@ class PaymentChannelRouteSnapshotService
     {
         if ($invoice->payment_channel_route_snapshot_id !== null) {
             $invoice->loadMissing('paymentChannelRouteSnapshot');
+            /** @var PaymentChannelRouteSnapshot|null $existing */
+            $existing = $invoice->paymentChannelRouteSnapshot;
 
-            if ($invoice->paymentChannelRouteSnapshot !== null) {
-                return $invoice->paymentChannelRouteSnapshot;
+            if ($existing !== null) {
+                return $existing;
             }
         }
 
         $route->loadMissing('paymentChannel');
-        $channelCode = (string) ($route->paymentChannel?->code ?? $invoice->payment_channel_code ?? '');
+        /** @var PaymentChannel|null $channel */
+        $channel = $route->paymentChannel;
+        $channelCode = (string) ($channel->code ?? $invoice->payment_channel_code ?? '');
 
         $snapshot = PaymentChannelRouteSnapshot::fromRoute($route, $channelCode);
         $invoice->payment_channel_route_snapshot_id = $snapshot->id;

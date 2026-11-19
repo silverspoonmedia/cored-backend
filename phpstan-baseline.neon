@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Console/Commands/EnvBackupCreateCommand.php
-
-		-
 			message: '#^Call to an undefined method Symfony\\Contracts\\EventDispatcher\\EventDispatcherInterface\:\:addListener\(\)\.$#'
 			identifier: method.notFound
 			count: 2
@@ -31,18 +25,6 @@ parameters:
 			path: app/Domain/Archivd/Http/Controllers/API/V1/WorkspaceController.php
 
 		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: app/Domain/Archivd/Http/Resources/FolderResource.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 3
-			path: app/Domain/Archivd/Http/Resources/HostedFileResource.php
-
-		-
 			message: '#^Strict comparison using \=\=\= between non\-falsy\-string and '''' will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 1
@@ -55,94 +37,16 @@ parameters:
 			path: app/Domain/Archivd/Jobs/ComputeHostedFileChecksum.php
 
 		-
-			message: '#^Cannot call method isPast\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Archivd/Models/FileUpload.php
-
-		-
-			message: '#^Cannot call method isLockedForUpload\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Archivd/Models/Folder.php
-
-		-
-			message: '#^Cannot call method greaterThan\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Archivd/Models/HostedFile.php
-
-		-
-			message: '#^Cannot call method isSystem\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Archivd/Models/Workspace.php
-
-		-
-			message: '#^Cannot call method isFuture\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Archivd/Models/WorkspaceInvite.php
-
-		-
-			message: '#^Cannot call method isPast\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Archivd/Models/WorkspaceInvite.php
-
-		-
 			message: '#^Method App\\Domain\\Archivd\\Services\\HashBlocklistService\:\:blockedSet\(\) should return array\<string, true\> but returns array\<string, bool\>\.$#'
 			identifier: return.type
 			count: 1
 			path: app/Domain/Archivd/Services/HashBlocklistService.php
 
 		-
-			message: '#^Method App\\Domain\\Archivd\\Services\\SignedDownloadService\:\:resolve\(\) should return array\{url\: string, expires_at\: Illuminate\\Support\\Carbon\} but returns array\{url\: string, expires_at\: string\|null\}\.$#'
+			message: '#^Method App\\Domain\\Archivd\\Services\\SignedDownloadService\:\:resolve\(\) should return array\{url\: string, expires_at\: Illuminate\\Support\\Carbon\} but returns array\{url\: string, expires_at\: Carbon\\Carbon\|null\}\.$#'
 			identifier: return.type
 			count: 1
 			path: app/Domain/Archivd/Services/SignedDownloadService.php
-
-		-
-			message: '#^Method App\\Domain\\Archivd\\Services\\WorkspaceAccessService\:\:roleFor\(\) should return App\\Domain\\Archivd\\Enums\\WorkspaceRole\|null but returns string\|null\.$#'
-			identifier: return.type
-			count: 1
-			path: app/Domain/Archivd/Services/WorkspaceAccessService.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 2
-			path: app/Domain/Archivd/Services/WorkspaceService.php
-
-		-
-			message: '#^Property App\\Domain\\Archivd\\Models\\Workspace\:\:\$status \(string\) does not accept App\\Domain\\Archivd\\Enums\\WorkspaceStatus\:\:Archived\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Domain/Archivd/Services/WorkspaceService.php
-
-		-
-			message: '#^Property App\\Domain\\Archivd\\Models\\WorkspaceInvite\:\:\$status \(string\) does not accept App\\Domain\\Archivd\\Enums\\WorkspaceInviteStatus\:\:Accepted\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Domain/Archivd/Services/WorkspaceService.php
-
-		-
-			message: '#^Property App\\Domain\\Archivd\\Models\\WorkspaceInvite\:\:\$status \(string\) does not accept App\\Domain\\Archivd\\Enums\\WorkspaceInviteStatus\:\:Expired\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Domain/Archivd/Services/WorkspaceService.php
-
-		-
-			message: '#^Property App\\Domain\\Archivd\\Models\\WorkspaceMember\:\:\$role \(string\) does not accept App\\Domain\\Archivd\\Enums\\WorkspaceRole\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Domain/Archivd/Services/WorkspaceService.php
-
-		-
-			message: '#^Property App\\Domain\\Archivd\\Models\\WorkspaceMember\:\:\$status \(string\) does not accept App\\Domain\\Archivd\\Enums\\WorkspaceMemberStatus\:\:Removed\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Domain/Archivd/Services/WorkspaceService.php
 
 		-
 			message: '#^Unreachable statement \- code above always terminates\.$#'
@@ -169,28 +73,10 @@ parameters:
 			path: app/Domain/Identity/Http/Controllers/API/V1/UserController.php
 
 		-
-			message: '#^Method App\\Domain\\Identity\\Http\\Controllers\\Web\\Auth\\DiscordOAuthController\:\:redirectAfterCallback\(\) invoked with 3 parameters, 2 required\.$#'
-			identifier: arguments.count
-			count: 4
-			path: app/Domain/Identity/Http/Controllers/Web/Auth/DiscordOAuthController.php
-
-		-
-			message: '#^Cannot call method lte\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Identity/Models/IdentityOAuthAccount.php
-
-		-
 			message: '#^Method PHPOpenSourceSaver\\JWTAuth\\JWTGuard\:\:login\(\) invoked with 2 parameters, 1 required\.$#'
 			identifier: arguments.count
 			count: 2
 			path: app/Domain/Identity/Services/Auth/AuthService.php
-
-		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Identity/Services/Auth/TwoFactorService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
@@ -229,12 +115,6 @@ parameters:
 			path: app/Domain/Identity/Services/User/UserManagementService.php
 
 		-
-			message: '#^Cannot call method gt\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Identity/Services/UserOAuthAccountService.php
-
-		-
 			message: '#^PHPDoc tag @return with type array\<string, string\> is incompatible with native type string\.$#'
 			identifier: return.phpDocType
 			count: 1
@@ -259,70 +139,16 @@ parameters:
 			path: app/Domain/Microstock/Http/Controllers/API/V1/BillingController.php
 
 		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: app/Domain/Microstock/Http/Controllers/API/V1/CollectionController.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 4
-			path: app/Domain/Microstock/Http/Controllers/API/V1/WorkspaceController.php
-
-		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Microstock/Http/Resources/AdminBillingUsageEventResource.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: app/Domain/Microstock/Http/Resources/BillingLedgerEntryResource.php
-
-		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Microstock/Http/Resources/BillingLedgerEntryResource.php
-
-		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: app/Domain/Microstock/Http/Resources/BillingUsageEventResource.php
-
-		-
 			message: '#^Parameter \#2 \$fallbackCreatedAt of method App\\Domain\\Microstock\\Jobs\\AnalysisWatchdog\:\:isPastGrace\(\) expects Illuminate\\Support\\Carbon\|null, Carbon\\Carbon\|null given\.$#'
 			identifier: argument.type
 			count: 2
 			path: app/Domain/Microstock/Jobs/AnalysisWatchdog.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>billing_source" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Domain/Microstock/Jobs/AnalyzeAssetThinking.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>billing_source" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Domain/Microstock/Jobs/AnalyzeAssetVision.php
-
-		-
 			message: '#^Property App\\Domain\\Microstock\\Jobs\\ProcessCollection\:\:\$billingMode is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: app/Domain/Microstock/Jobs/ProcessCollection.php
-
-		-
-			message: '#^Cannot call method isTerminal\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Domain/Microstock/Jobs/UploadCollectionToMarketplace.php
 
 		-
 			message: '#^Access to an undefined property App\\Domain\\Microstock\\Models\\AiUsageEvent\:\:\$event_count\.$#'
@@ -337,34 +163,10 @@ parameters:
 			path: app/Domain/Microstock/Services/AdminBillingAnalyticsService.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>balance_micro_usd" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Domain/Microstock/Services/AiCreditService.php
-
-		-
-			message: '#^Match expression does not handle remaining value\: string$#'
-			identifier: match.unhandled
-			count: 1
-			path: app/Domain/Microstock/Services/BillingLedgerService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Domain/Microstock/Services/BillingLedgerService.php
-
-		-
 			message: '#^Property App\\Domain\\Microstock\\Models\\MarketplaceCredential\:\:\$secret_payload \(string\) does not accept array\<string, mixed\>\.$#'
 			identifier: assign.propertyType
 			count: 1
 			path: app/Domain/Microstock/Services/CredentialService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Domain/Microstock/Services/CsvExportService.php
 
 		-
 			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
@@ -391,12 +193,6 @@ parameters:
 			path: app/Domain/Microstock/Support/Billing/MicrostockFulfillmentHandler.php
 
 		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 2
-			path: app/Domain/Microstock/Support/MicrostockRealtime.php
-
-		-
 			message: '#^Parameter \#1 \$user of method Illuminate\\Contracts\\Auth\\Guard\:\:setUser\(\) expects Illuminate\\Contracts\\Auth\\Authenticatable, PHPOpenSourceSaver\\JWTAuth\\Contracts\\JWTSubject given\.$#'
 			identifier: argument.type
 			count: 1
@@ -413,36 +209,6 @@ parameters:
 			identifier: method.notFound
 			count: 2
 			path: app/Repositories/Eloquent/EloquentCrudRepository.php
-
-		-
-			message: '#^Parameter \$periodEnd of class App\\Support\\Billing\\FulfillmentContext constructor expects Carbon\\CarbonInterface\|null, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Support/Billing/FulfillmentContext.php
-
-		-
-			message: '#^Parameter \$periodStart of class App\\Support\\Billing\\FulfillmentContext constructor expects Carbon\\CarbonInterface\|null, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Support/Billing/FulfillmentContext.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Support/Billing/FulfillmentContext.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>fulfillment_target" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Support/Billing/FulfillmentContext.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>storage_bytes" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Support/Billing/FulfillmentContext.php
 
 		-
 			message: '#^Offset ''kind'' on array\{kind\: string, locked\: bool, parent\: string\|null\} on left side of \?\? always exists and is not nullable\.$#'
@@ -469,18 +235,6 @@ parameters:
 			path: app/Support/Domain/UninstallManifest.php
 
 		-
-			message: '#^Property App\\Support\\DomainAccess\\DomainAccessService\:\:\$cache \(array\<string, App\\Support\\DomainAccess\\Enums\\DomainVisibility\>\|null\) does not accept array\<string, string\>\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Support/DomainAccess/DomainAccessService.php
-
-		-
-			message: '#^Property App\\Support\\DomainAccess\\DomainAccessService\:\:\$cache \(array\<string, App\\Support\\DomainAccess\\Enums\\DomainVisibility\>\|null\) is never assigned array\<string, App\\Support\\DomainAccess\\Enums\\DomainVisibility\> so it can be removed from the property type\.$#'
-			identifier: property.unusedType
-			count: 1
-			path: app/Support/DomainAccess/DomainAccessService.php
-
-		-
 			message: '#^Call to function is_array\(\) with string will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 1
@@ -491,60 +245,6 @@ parameters:
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Support/Encryption/InvoicePayloadDecryptLogger.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Support/EnvironmentMutationGuard.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: app/Support/Product/Http/Middleware/ProductActive.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 5
-			path: app/Support/Product/Services/ProductActivationService.php
-
-		-
-			message: '#^Cannot call method canApprove\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Support/Product/Services/ProductActivationService.php
-
-		-
-			message: '#^Cannot call method canExpire\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: app/Support/Product/Services/ProductActivationService.php
-
-		-
-			message: '#^Cannot call method canReactivate\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Support/Product/Services/ProductActivationService.php
-
-		-
-			message: '#^Cannot call method canSuspend\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Support/Product/Services/ProductActivationService.php
-
-		-
-			message: '#^Property App\\Support\\Product\\Models\\ProductActivation\:\:\$provisioning_payload \(string\|null\) does not accept array\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Support/Product/Services/ProductActivationService.php
-
-		-
-			message: '#^Property App\\Support\\Product\\Models\\ProductActivation\:\:\$state \(string\) does not accept App\\Support\\Product\\Enums\\ProductActivationState\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Support/Product/Services/ProductActivationService.php
 
 		-
 			message: '#^Property App\\Support\\Settings\\SettingsService\:\:\$reader is never read, only written\.$#'
@@ -577,81 +277,15 @@ parameters:
 			path: app/Support/User/UserManagementPresenter.php
 
 		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: packages/ai/src/Ai/Database/Seeders/AiConnectionSeeder.php
-
-		-
 			message: '#^PHPDoc tag @return with type array\<string, mixed\> is incompatible with native type void\.$#'
 			identifier: return.phpDocType
 			count: 1
 			path: packages/ai/src/Ai/Http/Requests/UpdateAiConnectionRequest.php
 
 		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 2
-			path: packages/ai/src/Ai/Http/Resources/AiConnectionResource.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: packages/ai/src/Ai/Http/Resources/AiConnectionResource.php
-
-		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: packages/ai/src/Ai/Services/AiConnectionResolver.php
-
-		-
-			message: '#^Parameter \$driver of class App\\Domain\\Ai\\Support\\AiConnectionData constructor expects App\\Domain\\Ai\\Enums\\AiConnectionDriver, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/ai/src/Ai/Services/AiConnectionResolver.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 5
-			path: packages/ai/src/Ai/Services/AiConnectionService.php
-
-		-
-			message: '#^Property App\\Domain\\Ai\\Models\\AiConnection\:\:\$driver \(string\) does not accept App\\Domain\\Ai\\Enums\\AiConnectionDriver\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/ai/src/Ai/Services/AiConnectionService.php
-
-		-
-			message: '#^Property App\\Domain\\Ai\\Models\\AiConnection\:\:\$extra_headers \(string\|null\) does not accept array\<string, string\>\|null\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/ai/src/Ai/Services/AiConnectionService.php
-
-		-
 			message: '#^Property App\\Domain\\Ai\\Models\\AiConnection\:\:\$secret_payload \(string\) does not accept array\<string, string\>\.$#'
 			identifier: assign.propertyType
 			count: 2
-			path: packages/ai/src/Ai/Services/AiConnectionService.php
-
-		-
-			message: '#^Property App\\Domain\\Ai\\Models\\AiConnection\:\:\$status \(string\) does not accept App\\Domain\\Ai\\Enums\\AiConnectionStatus\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/ai/src/Ai/Services/AiConnectionService.php
-
-		-
-			message: '#^Property App\\Domain\\Ai\\Models\\AiConnection\:\:\$status \(string\) does not accept App\\Domain\\Ai\\Enums\\AiConnectionStatus\:\:Active\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/ai/src/Ai/Services/AiConnectionService.php
-
-		-
-			message: '#^Property App\\Domain\\Ai\\Models\\AiConnection\:\:\$status \(string\) does not accept App\\Domain\\Ai\\Enums\\AiConnectionStatus\:\:Pending\.$#'
-			identifier: assign.propertyType
-			count: 1
 			path: packages/ai/src/Ai/Services/AiConnectionService.php
 
 		-
@@ -715,16 +349,10 @@ parameters:
 			path: packages/audit/src/ActivityLog/AuditServiceProvider.php
 
 		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
+			message: '#^Method App\\Domain\\Currency\\Services\\ExchangeRateService\:\:resolveRate\(\) should return array\{rate\: float, provider\: string, fetched_at\: Illuminate\\Support\\Carbon, snapshot_id\: string\|null\} but returns array\{rate\: float, provider\: string, fetched_at\: Carbon\\Carbon, snapshot_id\: string\}\.$#'
+			identifier: return.type
 			count: 2
 			path: packages/billing/src/Currency/Services/ExchangeRateService.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Console/Commands/PaymentsDisbursementReopenCommand.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
@@ -739,202 +367,10 @@ parameters:
 			path: packages/billing/src/PaymentGateway/Http/Controllers/API/V1/PaymentIncomeController.php
 
 		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/InvoiceResource.php
-
-		-
-			message: '#^Parameter \#1 \$snapshot of method App\\Domain\\PaymentGateway\\Services\\Payment\\InvoiceChannelFeeService\:\:feeBasisFields\(\) expects App\\Domain\\PaymentGateway\\Models\\PaymentChannelRouteSnapshot\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/InvoiceResource.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/InvoiceResource.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 2
-			path: packages/billing/src/PaymentGateway/Http/Resources/PaymentChannelResource.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/PaymentChannelResource.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/PaymentChannelRouteResource.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/PaymentChannelRouteResource.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/PaymentChannelRouteSnapshotResource.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/PaymentChannelRouteSnapshotResource.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/PaymentIncomeInvoiceResource.php
-
-		-
-			message: '#^Parameter \#1 \$snapshot of method App\\Domain\\PaymentGateway\\Services\\Payment\\InvoiceChannelFeeService\:\:feeBasisFields\(\) expects App\\Domain\\PaymentGateway\\Models\\PaymentChannelRouteSnapshot\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/PaymentIncomeInvoiceResource.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/PaymentGateway/Http/Resources/PaymentIncomeInvoiceResource.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 2
-			path: packages/billing/src/PaymentGateway/Http/Resources/SubscriptionResource.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: packages/billing/src/PaymentGateway/Http/Resources/SubscriptionResource.php
-
-		-
-			message: '#^Cannot call method isPast\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Models/Subscription.php
-
-		-
-			message: '#^Cannot call method lessThanOrEqualTo\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Models/Subscription.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 3
-			path: packages/billing/src/PaymentGateway/Services/Billing/InvoiceDisbursementService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$disbursement_status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\DisbursementStatus\:\:Completed\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Billing/InvoiceDisbursementService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$disbursement_status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\DisbursementStatus\:\:Eligible\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Billing/InvoiceDisbursementService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$disbursement_status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\DisbursementStatus\:\:Failed\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Billing/InvoiceDisbursementService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$disbursement_status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\DisbursementStatus\:\:None\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Billing/InvoiceDisbursementService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$disbursement_status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\DisbursementStatus\:\:Processing\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Billing/InvoiceDisbursementService.php
-
-		-
 			message: '#^PHPDoc tag @param references unknown parameter\: \$data$#'
 			identifier: parameter.notFound
 			count: 1
 			path: packages/billing/src/PaymentGateway/Services/Billing/InvoiceFundsLedgerService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$disbursement_status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\DisbursementStatus\:\:Eligible\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Billing/InvoiceFundsLedgerService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$disbursement_status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\DisbursementStatus\:\:None\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Billing/InvoiceFundsLedgerService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/InvoiceCsvExportService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paymentGateway\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/InvoiceCsvExportService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$route_role\.$#'
-			identifier: property.notFound
-			count: 2
-			path: packages/billing/src/PaymentGateway/Services/InvoiceCsvExportService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$settlement_days\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/InvoiceCsvExportService.php
-
-		-
-			message: '#^Cannot call method toDateTimeString\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/InvoiceCsvExportService.php
-
-		-
-			message: '#^Parameter \#1 \$snapshot of method App\\Domain\\PaymentGateway\\Support\\Routing\\PaymentChannelFeeCalculator\:\:formatFeeLabelFromSnapshot\(\) expects App\\Domain\\PaymentGateway\\Models\\PaymentChannelRouteSnapshot, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/InvoiceCsvExportService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/InvoiceCsvExportService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/InvoiceCsvExportService.php
 
 		-
 			message: '#^Property App\\Domain\\PaymentGateway\\Services\\InvoiceService\:\:\$repository is never read, only written\.$#'
@@ -947,54 +383,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: packages/billing/src/PaymentGateway/Services/Payment/InvoiceActiveCheckoutCancellationService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/InvoiceChannelCheckoutService.php
-
-		-
-			message: '#^Parameter \#2 \$gateway of method App\\Domain\\PaymentGateway\\Services\\Payment\\InvoiceChannelCheckoutService\:\:assignGatewayForRoute\(\) expects App\\Domain\\PaymentGateway\\Models\\PaymentGateway, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/InvoiceChannelCheckoutService.php
-
-		-
-			message: '#^Parameter \#2 \$gateway of method App\\Domain\\PaymentGateway\\Services\\Payment\\InvoiceChannelCheckoutService\:\:persistSuccessfulCheckout\(\) expects App\\Domain\\PaymentGateway\\Models\\PaymentGateway, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/InvoiceChannelCheckoutService.php
-
-		-
-			message: '#^Parameter \#2 \$gateway of method App\\Domain\\PaymentGateway\\Services\\Payment\\PaymentInstructionNormalizer\:\:normalize\(\) expects App\\Domain\\PaymentGateway\\Models\\PaymentGateway, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/InvoiceChannelCheckoutService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/InvoiceChannelFeeService.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/InvoiceChannelFeeService.php
-
-		-
-			message: '#^Parameter \#1 \$snapshot of method App\\Domain\\PaymentGateway\\Services\\Payment\\InvoiceChannelFeeService\:\:feeBasisFields\(\) expects App\\Domain\\PaymentGateway\\Models\\PaymentChannelRouteSnapshot\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/InvoiceChannelFeeService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/InvoiceChannelFeeService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
@@ -1021,24 +409,6 @@ parameters:
 			path: packages/billing/src/PaymentGateway/Services/Payment/InvoicePaymentInitiationGuard.php
 
 		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$gateway_response_payload \(string\|null\) does not accept array\<string, mixed\>\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Ipaymu/IpaymuInvoiceSynchronizer.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Subscription\:\:\$status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\SubscriptionStatus\:\:Active\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Ipaymu/IpaymuInvoiceSynchronizer.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Subscription\:\:\$status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\SubscriptionStatus\:\:Cancelled\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Ipaymu/IpaymuInvoiceSynchronizer.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1048,30 +418,6 @@ parameters:
 			message: '#^Call to an undefined method App\\Domain\\PaymentGateway\\Repositories\\Contracts\\InvoiceRepositoryInterface\:\:findOrFail\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Ipaymu/IpaymuPaymentService.php
-
-		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: packages/billing/src/PaymentGateway/Services/Payment/Ipaymu/IpaymuPaymentService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$gateway_request_payload \(string\|null\) does not accept array\<string, float\|string\>\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Ipaymu/IpaymuPaymentService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$gateway_request_payload \(string\|null\) does not accept array\<string, string\>\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Ipaymu/IpaymuPaymentService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$gateway_response_payload \(string\|null\) does not accept array\<mixed\>\.$#'
-			identifier: assign.propertyType
-			count: 2
 			path: packages/billing/src/PaymentGateway/Services/Payment/Ipaymu/IpaymuPaymentService.php
 
 		-
@@ -1091,24 +437,6 @@ parameters:
 			identifier: notIdentical.alwaysTrue
 			count: 1
 			path: packages/billing/src/PaymentGateway/Services/Payment/Ipaymu/IpaymuWebhookPayload.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$gateway_response_payload \(string\|null\) does not accept array\<mixed\>\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Midtrans/MidtransInvoiceSynchronizer.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Subscription\:\:\$status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\SubscriptionStatus\:\:Active\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Midtrans/MidtransInvoiceSynchronizer.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Subscription\:\:\$status \(string\) does not accept App\\Domain\\PaymentGateway\\Enums\\SubscriptionStatus\:\:Cancelled\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Midtrans/MidtransInvoiceSynchronizer.php
 
 		-
 			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
@@ -1135,24 +463,6 @@ parameters:
 			path: packages/billing/src/PaymentGateway/Services/Payment/Midtrans/MidtransPaymentService.php
 
 		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: packages/billing/src/PaymentGateway/Services/Payment/Midtrans/MidtransPaymentService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$gateway_request_payload \(string\|null\) does not accept array\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Midtrans/MidtransPaymentService.php
-
-		-
-			message: '#^Property App\\Domain\\PaymentGateway\\Models\\Invoice\:\:\$gateway_request_payload \(string\|null\) does not accept array\<string, mixed\>\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/Midtrans/MidtransPaymentService.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$paymentGateway\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1165,64 +475,10 @@ parameters:
 			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentChannelResolver.php
 
 		-
-			message: '#^Method App\\Domain\\PaymentGateway\\Services\\Payment\\PaymentChannelResolver\:\:resolve\(\) should return array\{channel\: App\\Domain\\PaymentGateway\\Models\\PaymentChannel, route\: App\\Domain\\PaymentGateway\\Models\\PaymentChannelRoute, gateway\: App\\Domain\\PaymentGateway\\Models\\PaymentGateway\}\|null but returns array\{channel\: App\\Domain\\PaymentGateway\\Models\\PaymentChannel, route\: App\\Domain\\PaymentGateway\\Models\\PaymentChannelRoute, gateway\: Illuminate\\Database\\Eloquent\\Model\|null\}\.$#'
-			identifier: return.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentChannelResolver.php
-
-		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:sortBy\(\) expects array\<array\{string, ''asc''\|''desc''\|SortDirection\}\|\(callable\(Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Model\)\: mixed\)\|\(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: mixed\)\|string\>\|\(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: mixed\)\|int\|string, Closure\(App\\Domain\\PaymentGateway\\Models\\PaymentChannelRoute\)\: array\{int, int\<0, max\>\} given\.$#'
 			identifier: argument.type
 			count: 1
 			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentChannelResolver.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentChannelRouteSnapshotService.php
-
-		-
-			message: '#^Method App\\Domain\\PaymentGateway\\Services\\Payment\\PaymentChannelRouteSnapshotService\:\:capture\(\) should return App\\Domain\\PaymentGateway\\Models\\PaymentChannelRouteSnapshot but returns Illuminate\\Database\\Eloquent\\Model\.$#'
-			identifier: return.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentChannelRouteSnapshotService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentChannelRouteSnapshotService.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 2
-			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentInstructionNormalizer.php
-
-		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentInstructionNormalizer.php
-
-		-
-			message: '#^Parameter \#1 \$kind of method App\\Domain\\PaymentGateway\\Services\\Payment\\PaymentInstructionNormalizer\:\:normalizeIpaymu\(\) expects App\\Domain\\PaymentGateway\\Enums\\PaymentChannelKind, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentInstructionNormalizer.php
-
-		-
-			message: '#^Parameter \#1 \$kind of method App\\Domain\\PaymentGateway\\Services\\Payment\\PaymentInstructionNormalizer\:\:normalizeMidtrans\(\) expects App\\Domain\\PaymentGateway\\Enums\\PaymentChannelKind, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/billing/src/PaymentGateway/Services/Payment/PaymentInstructionNormalizer.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 2
-			path: packages/billing/src/PaymentGateway/Services/PaymentChannelService.php
 
 		-
 			message: '#^Parameter \#1 \$routes of static method App\\Domain\\PaymentGateway\\Support\\Routing\\PaymentRouteSort\:\:sortRoutes\(\) expects Illuminate\\Support\\Collection\<int, App\\Domain\\PaymentGateway\\Models\\PaymentChannelRoute\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
@@ -1243,130 +499,22 @@ parameters:
 			path: packages/billing/src/PaymentGateway/Services/SubscriptionService.php
 
 		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: packages/billing/src/PaymentGateway/Support/PaymentRealtime.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Support\\Carbon\:\:floatDiffInDays\(\)\.$#'
-			identifier: method.notFound
+			message: '#^Method App\\Domain\\Service\\Services\\ServiceEntitlementService\:\:activateAddon\(\) should return array\{entitlement\: App\\Domain\\Service\\Models\\ServiceEntitlement, period_start\: Illuminate\\Support\\Carbon, period_end\: Illuminate\\Support\\Carbon\} but returns array\{entitlement\: App\\Domain\\Service\\Models\\ServiceEntitlement, period_start\: Illuminate\\Support\\Carbon, period_end\: Carbon\\Carbon\}\.$#'
+			identifier: return.type
 			count: 1
-			path: packages/billing/src/Service/Services/MainPlanChangeCalculator.php
+			path: packages/billing/src/Service/Services/ServiceEntitlementService.php
 
 		-
-			message: '#^Cannot call method lessThanOrEqualTo\(\) on string\.$#'
-			identifier: method.nonObject
+			message: '#^Method App\\Domain\\Service\\Services\\ServiceEntitlementService\:\:activateMain\(\) should return array\{entitlement\: App\\Domain\\Service\\Models\\ServiceEntitlement, period_start\: Illuminate\\Support\\Carbon, period_end\: Illuminate\\Support\\Carbon\} but returns array\{entitlement\: App\\Domain\\Service\\Models\\ServiceEntitlement, period_start\: Carbon\\Carbon, period_end\: Illuminate\\Support\\Carbon\}\.$#'
+			identifier: return.type
 			count: 1
-			path: packages/billing/src/Service/Services/MainPlanChangeCalculator.php
+			path: packages/billing/src/Service/Services/ServiceEntitlementService.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>storage_bytes" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/billing/src/Service/Services/MainPlanChangeCalculator.php
-
-		-
-			message: '#^Cannot call method copy\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceAddonRenewalService.php
-
-		-
-			message: '#^Cannot call method lessThan\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceAddonRenewalService.php
-
-		-
-			message: '#^Cannot call method lessThanOrEqualTo\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceAddonRenewalService.php
-
-		-
-			message: '#^Cannot call method toDateString\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceEntitlementLifecycleService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: packages/billing/src/Service/Services/ServiceEntitlementLifecycleService.php
-
-		-
-			message: '#^Cannot call method copy\(\) on string\.$#'
-			identifier: method.nonObject
+			message: '#^Parameter \#2 \$from of method App\\Domain\\Service\\Services\\ServiceEntitlementService\:\:addPeriod\(\) expects Illuminate\\Support\\Carbon, Carbon\\Carbon given\.$#'
+			identifier: argument.type
 			count: 2
 			path: packages/billing/src/Service/Services/ServiceEntitlementService.php
-
-		-
-			message: '#^Cannot call method greaterThan\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 3
-			path: packages/billing/src/Service/Services/ServiceEntitlementService.php
-
-		-
-			message: '#^Cannot call method lessThan\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceEntitlementService.php
-
-		-
-			message: '#^Property App\\Domain\\Service\\Models\\ServiceEntitlement\:\:\$status \(string\) does not accept App\\Domain\\Service\\Enums\\EntitlementStatus\:\:Active\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceEntitlementService.php
-
-		-
-			message: '#^Property App\\Domain\\Service\\Models\\ServiceEntitlement\:\:\$status \(string\) does not accept App\\Domain\\Service\\Enums\\EntitlementStatus\:\:Expired\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceEntitlementService.php
-
-		-
-			message: '#^Property App\\Domain\\Service\\Models\\ServiceEntitlement\:\:\$status \(string\) does not accept App\\Domain\\Service\\Enums\\EntitlementStatus\:\:Grace\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceEntitlementService.php
-
-		-
-			message: '#^Property App\\Domain\\Service\\Models\\ServiceAddonRenewal\:\:\$status \(string\) does not accept App\\Domain\\Service\\Enums\\PurchaseStatus\:\:Cancelled\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceFulfillmentService.php
-
-		-
-			message: '#^Property App\\Domain\\Service\\Models\\ServiceAddonRenewal\:\:\$status \(string\) does not accept App\\Domain\\Service\\Enums\\PurchaseStatus\:\:Failed\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceFulfillmentService.php
-
-		-
-			message: '#^Property App\\Domain\\Service\\Models\\ServiceAddonRenewal\:\:\$status \(string\) does not accept App\\Domain\\Service\\Enums\\PurchaseStatus\:\:Paid\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceFulfillmentService.php
-
-		-
-			message: '#^Property App\\Domain\\Service\\Models\\ServicePurchase\:\:\$status \(string\) does not accept App\\Domain\\Service\\Enums\\PurchaseStatus\:\:Cancelled\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceFulfillmentService.php
-
-		-
-			message: '#^Property App\\Domain\\Service\\Models\\ServicePurchase\:\:\$status \(string\) does not accept App\\Domain\\Service\\Enums\\PurchaseStatus\:\:Failed\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: packages/billing/src/Service/Services/ServiceFulfillmentService.php
-
-		-
-			message: '#^Property App\\Domain\\Service\\Models\\ServicePurchase\:\:\$status \(string\) does not accept App\\Domain\\Service\\Enums\\PurchaseStatus\:\:Paid\.$#'
-			identifier: assign.propertyType
-			count: 2
-			path: packages/billing/src/Service/Services/ServiceFulfillmentService.php
 
 		-
 			message: '#^Property App\\Domain\\Service\\Services\\ServicePurchaseQuantityService\:\:\$realtime is never read, only written\.$#'
@@ -1379,45 +527,3 @@ parameters:
 			identifier: deadCode.unreachable
 			count: 1
 			path: packages/billing/src/Service/Services/ServicePurchaseQuantityService.php
-
-		-
-			message: '#^Parameter \#1 \$fallback of method App\\Domain\\Navigation\\Http\\Requests\\UpdateMenuRequest\:\:effectiveAudience\(\) expects App\\Domain\\Navigation\\Enums\\MenuAudience, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: packages/navigation/src/Http/Requests/UpdateMenuRequest.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: packages/navigation/src/Http/Resources/MenuListResource.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: packages/navigation/src/Repositories/Eloquent/MenuRepository.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Navigation\\Models\\Menu\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: packages/navigation/src/Repositories/Eloquent/MenuRepository.php
-
-		-
-			message: '#^Parameter \#2 \$callback of static method Illuminate\\Cache\\Repository\:\:rememberForever\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: packages/navigation/src/Repositories/Eloquent/MenuRepository.php
-
-		-
-			message: '#^Cannot call method usesRoles\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: packages/navigation/src/Services/MenuService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>notify_subject_user" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: packages/notification/src/Services/NotificationAudienceService.php
