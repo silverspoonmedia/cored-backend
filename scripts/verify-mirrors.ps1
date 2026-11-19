@@ -1,4 +1,4 @@
-﻿#>
+﻿<#>
 .SYNOPSIS
     Verify that every package mirror matches the monolith source.
 
@@ -77,12 +77,14 @@ function Get-RemoteTags {
     $result = Invoke-Git -Arguments @('ls-remote', '--tags', $Url)
     $tagList = @()
     foreach ($line in ($result.Output -split "`n")) {
-        if ($line -match 'refs/tags/(.+)$') {
-            $tagList += $Matches[1]
+        # An annotated tag appears twice: `refs/tags/v1.0.1` and the peeled
+        # `refs/tags/v1.0.1^{}` that points at the commit it wraps.
+        if ($line -match 'refs/tags/([^\^]+)(\^\{\})?$') {
+            $tagList += $Matches[1].Trim()
         }
     }
 
-    return $tagList
+    return ($tagList | Sort-Object -Unique)
 }
 
 if (-not (Test-Path (Join-Path $Root 'composer.json'))) {
@@ -109,14 +111,31 @@ foreach ($slug in $Packages) {
         continue
     }
 
-    $split = (Invoke-Git -Arguments @('subtree', 'split', "--prefix=$prefix")).Output
-    if (-not $split -or $split.Length -lt 40) {
+    # `git subtree split` prints progress to stderr and the SHA on stdout, so the
+    # merged stream has to be filtered rather than used directly.
+    $splitOutput = Invoke-Git -Arguments @('subtree', 'split', "--prefix=$prefix")
+    $split = ($splitOutput.Output -split "\r?\n" | Where-Object { $_ -match '^[0-9a-f]{40}$' } | Select-Object -Last 1)
+
+    if (-not $split -or $split.Length -ne 40) {
         $drift += "$slug`: local subtree split produced no SHA"
         continue
     }
 
-    if ($split -eq $remote) {
+    # The mirror's `main` is the split plus at most one commit that strips the
+    # `version` field (see publish-packages.ps1), so a plain SHA comparison
+    # against `ls-remote` never matches by design. Fetch it into a scratch ref
+    # and accept either the split itself or a single child of it.
+    $scratch = "refs/mirror-check/$slug"
+    $fetched = Invoke-Git -Arguments @('fetch', '--quiet', '--force', $url, "refs/heads/main:$scratch") -AllowFail
+    $mainSha = if ($fetched.Code -eq 0) { (Invoke-Git -Arguments @('rev-parse', "$scratch^{commit}")).Output } else { '' }
+    $parentSha = if ($mainSha) { (Invoke-Git -Arguments @('rev-parse', "$scratch^") -AllowFail).Output } else { '' }
+    Invoke-Git -Arguments @('update-ref', '-d', $scratch) -AllowFail | Out-Null
+
+    if ($mainSha -eq $split) {
         Write-Host "  main in sync ($($split.Substring(0, 8)))"
+    }
+    elseif ($parentSha -eq $split) {
+        Write-Host "  main in sync, release commit on top ($($mainSha.Substring(0, 8)))"
     }
     else {
         Write-Host "  main drifted: mirror $($remote.Substring(0, 8)) vs source $($split.Substring(0, 8))" -ForegroundColor Yellow
@@ -133,7 +152,6 @@ foreach ($slug in $Packages) {
 
     $tags = Get-RemoteTags -Url $url
     $latest = $tags | Sort-Object { [version]($_ -replace '^v', '') } | Select-Object -Last 1
-
     if ($latest -eq "v$declared") {
         Write-Host "  newest tag $latest matches the pinned version"
     }
