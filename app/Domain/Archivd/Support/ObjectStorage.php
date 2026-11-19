@@ -50,9 +50,7 @@ class ObjectStorage
         }
 
         foreach ($byDisk as $disk => $paths) {
-            if ($paths !== []) {
-                Storage::disk($disk)->delete($paths);
-            }
+            Storage::disk($disk)->delete($paths);
         }
     }
 }

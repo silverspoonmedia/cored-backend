@@ -7,8 +7,8 @@ use App\Domain\Microstock\Models\AiBalance;
 use App\Domain\Microstock\Models\AiCreditTransaction;
 use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Models\DailyFreeUsage;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -34,8 +34,8 @@ class AdminBillingAnalyticsService
             COALESCE(SUM(billable_micro_usd), 0) as billable_micro_usd
         ')->first();
 
-        $providerMicro = (int) ($totalsRow->provider_cost_micro_usd ?? 0);
-        $billableMicro = (int) ($totalsRow->billable_micro_usd ?? 0);
+        $providerMicro = (int) ($totalsRow?->getAttribute('provider_cost_micro_usd') ?? 0);
+        $billableMicro = (int) ($totalsRow?->getAttribute('billable_micro_usd') ?? 0);
 
         $bySource = (clone $eventsQuery)
             ->selectRaw('
@@ -46,11 +46,11 @@ class AdminBillingAnalyticsService
             ')
             ->groupBy('billing_source')
             ->get()
-            ->mapWithKeys(function ($row): array {
+            ->mapWithKeys(function (AiUsageEvent $row): array {
                 $source = (string) ($row->billing_source ?? 'unknown');
 
                 return [$source => [
-                    'event_count' => (int) $row->event_count,
+                    'event_count' => (int) $row->getAttribute('event_count'),
                     'provider_cost_usd' => $this->ledger->formatUsd((int) $row->provider_cost_micro_usd),
                     'billable_usd' => $this->ledger->formatUsd((int) $row->billable_micro_usd),
                 ]];
@@ -67,11 +67,11 @@ class AdminBillingAnalyticsService
             ->groupBy('stage')
             ->orderByDesc('event_count')
             ->get()
-            ->map(fn ($row): array => [
-                'stage' => (string) ($row->stage ?? ''),
-                'event_count' => (int) $row->event_count,
-                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->provider_cost_micro_usd),
-                'billable_usd' => $this->ledger->formatUsd((int) $row->billable_micro_usd),
+            ->map(fn (AiUsageEvent $row): array => [
+                'stage' => (string) ($row->getAttribute('stage') ?? ''),
+                'event_count' => (int) $row->getAttribute('event_count'),
+                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->getAttribute('provider_cost_micro_usd')),
+                'billable_usd' => $this->ledger->formatUsd((int) $row->getAttribute('billable_micro_usd')),
             ])
             ->values()
             ->all();
@@ -88,12 +88,12 @@ class AdminBillingAnalyticsService
             ->orderByDesc('event_count')
             ->limit(20)
             ->get()
-            ->map(fn ($row): array => [
-                'resolved_model' => (string) $row->model_name,
-                'event_count' => (int) $row->event_count,
-                'total_tokens' => (int) $row->total_tokens,
-                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->provider_cost_micro_usd),
-                'billable_usd' => $this->ledger->formatUsd((int) $row->billable_micro_usd),
+            ->map(fn (AiUsageEvent $row): array => [
+                'resolved_model' => (string) ($row->getAttribute('model_name') ?? ''),
+                'event_count' => (int) $row->getAttribute('event_count'),
+                'total_tokens' => (int) $row->getAttribute('total_tokens'),
+                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->getAttribute('provider_cost_micro_usd')),
+                'billable_usd' => $this->ledger->formatUsd((int) $row->getAttribute('billable_micro_usd')),
             ])
             ->values()
             ->all();
@@ -117,9 +117,9 @@ class AdminBillingAnalyticsService
                 'to' => $to,
             ],
             'totals' => [
-                'event_count' => (int) ($totalsRow->event_count ?? 0),
-                'unique_users' => (int) ($totalsRow->unique_users ?? 0),
-                'total_tokens' => (int) ($totalsRow->total_tokens ?? 0),
+                'event_count' => (int) ($totalsRow?->getAttribute('event_count') ?? 0),
+                'unique_users' => (int) ($totalsRow?->getAttribute('unique_users') ?? 0),
+                'total_tokens' => (int) ($totalsRow?->getAttribute('total_tokens') ?? 0),
                 'provider_cost_micro_usd' => $providerMicro,
                 'provider_cost_usd' => $this->ledger->formatUsd($providerMicro),
                 'billable_micro_usd' => $billableMicro,

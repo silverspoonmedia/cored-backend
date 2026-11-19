@@ -51,11 +51,14 @@ class HashBlocklistService
             return [];
         }
 
-        return ArchivdHashBlocklist::query()
-            ->whereIn('sha256', $normalized)
-            ->pluck('sha256')
-            ->mapWithKeys(fn (mixed $sha): array => [(string) $sha => true])
-            ->all();
+        /** @var array<string, true> $blocked */
+        $blocked = [];
+
+        foreach (ArchivdHashBlocklist::query()->whereIn('sha256', $normalized)->pluck('sha256') as $sha) {
+            $blocked[(string) $sha] = true;
+        }
+
+        return $blocked;
     }
 
     /**

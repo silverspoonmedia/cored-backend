@@ -7,6 +7,7 @@ use App\Support\Encryption\DecryptionContext;
 use App\Support\Encryption\EncryptedEnvelope;
 use App\Support\Encryption\EnvelopeEncryptionService;
 use Illuminate\Support\Collection;
+use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 use Spatie\Activitylog\Models\Activity;
 use Throwable;
 
@@ -70,14 +71,18 @@ class SensitiveActivityProperties
      *
      * Idempotent: values already stored as an envelope are left untouched, and
      * non-PII keys are never modified. Runs before the row is persisted.
+     *
+     * The `$properties` bag and its write-back live on the Eloquent model, not
+     * on {@see ActivityContract}; the attribute path reads them, the setter
+     * only runs on the model that carries `properties`.
      */
-    public static function encryptInPlace(Activity $activity): void
+    public static function encryptInPlace(ActivityContract $activity): void
     {
         if (! self::enabled()) {
             return;
         }
 
-        $properties = $activity->properties;
+        $properties = $activity instanceof Activity ? $activity->properties : null;
 
         if ($properties === null) {
             return;
@@ -113,7 +118,7 @@ class SensitiveActivityProperties
             $changed = true;
         }
 
-        if ($changed) {
+        if ($changed && $activity instanceof Activity) {
             $activity->properties = collect($attributes);
         }
     }

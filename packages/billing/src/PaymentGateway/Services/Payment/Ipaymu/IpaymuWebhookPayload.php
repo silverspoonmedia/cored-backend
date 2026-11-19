@@ -30,7 +30,7 @@ final class IpaymuWebhookPayload
     {
         foreach (['transactionId', 'TransactionId', 'trx_id', 'TrxId', 'id'] as $key) {
             $v = $payload[$key] ?? null;
-            if (is_numeric($v) && (string) $v !== '') {
+            if (is_numeric($v)) {
                 return (string) $v;
             }
         }

@@ -6,7 +6,6 @@ use App\Domain\Archivd\Enums\FileVariantKind;
 use App\Domain\Archivd\Enums\FileVariantStatus;
 use App\Domain\Archivd\Models\FileVariant;
 use App\Domain\Archivd\Models\HostedFile;
-use App\Domain\Archivd\Services\FileVariantGenerator;
 use App\Domain\Archivd\Services\FileVariantService;
 use App\Domain\Archivd\Services\SignedDownloadService;
 use App\Domain\Microstock\Services\AssetResizeService;
@@ -54,7 +53,6 @@ class VisionImageResolverTest extends TestCase
 
         $resolver = new VisionImageResolver(
             $variants,
-            new FileVariantGenerator,
             $downloads,
             $this->createMock(AssetResizeService::class),
         );
@@ -82,7 +80,6 @@ class VisionImageResolverTest extends TestCase
 
         $resolver = new VisionImageResolver(
             $this->createMock(FileVariantService::class),
-            new FileVariantGenerator,
             $this->createMock(SignedDownloadService::class),
             $resizer,
         );

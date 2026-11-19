@@ -7,6 +7,7 @@ use App\Domain\Service\Http\Resources\ServicePurchaseResource;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceCheckoutService;
 use App\Domain\Service\Services\ServicePurchaseQuantityService;
+use App\Domain\Service\Support\ServiceRealtime;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
@@ -43,6 +44,8 @@ class ServicePurchaseController extends Controller
             $purchase,
             (int) $request->validated('quantity'),
         );
+
+        app(ServiceRealtime::class)->purchaseChanged($record->id, 'quantity_updated');
 
         $record = $this->checkout->getPurchase((string) $record->id);
 

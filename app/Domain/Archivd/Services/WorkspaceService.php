@@ -61,7 +61,7 @@ class WorkspaceService
             throw new ArchivdException(__('api/archivd.workspace.name_required'), 422);
         }
 
-        return DB::transaction(function () use ($actor, $name): Workspace {
+        $workspace = DB::transaction(function () use ($actor, $name): Workspace {
             // Serialize slot checks per owner (concurrent create at cap).
             User::query()->whereKey($actor->id)->lockForUpdate()->firstOrFail();
             $this->workspaceAccess->assertCanCreateOwnedWorkspace($actor->id);

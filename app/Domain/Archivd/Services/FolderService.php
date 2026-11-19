@@ -29,6 +29,7 @@ class FolderService
      * @return array{
      *     owner_id: string,
      *     workspace_id: string|null,
+     *     workspace: Workspace|null,
      *     folder: Folder|null,
      *     breadcrumb: list<array{id: string|null, name: string}>,
      *     folders: Collection<int, Folder>,

@@ -72,7 +72,7 @@ class ComputeHostedFileChecksum implements ShouldQueue
             }
         }
 
-        if ($checksum === null || $checksum === false || $checksum === '') {
+        if ($checksum === null) {
             return;
         }
 

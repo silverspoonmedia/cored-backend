@@ -52,7 +52,7 @@ class HttpAiMetadataService implements AiMetadataService
 
     private function httpRetries(array $cfg = []): int
     {
-        if (isset($cfg['max_retries']) && $cfg['max_retries'] !== null) {
+        if (isset($cfg['max_retries'])) {
             return max(0, (int) $cfg['max_retries']);
         }
 

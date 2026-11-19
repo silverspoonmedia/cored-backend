@@ -34,11 +34,17 @@ final class AnalysisBillingContext
         return ++$this->thinkingAttemptCounter;
     }
 
-    /** @template TReturn @param callable(): TReturn $callback @return TReturn */
+    /**
+     * @template TReturn
+     *
+     * @param  callable(): TReturn  $callback
+     * @return TReturn
+     */
     public static function run(self $context, callable $callback): mixed
     {
         $previous = self::$current;
         self::$current = $context;
+
         try {
             return $callback();
         } finally {

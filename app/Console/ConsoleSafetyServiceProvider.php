@@ -30,7 +30,7 @@ class ConsoleSafetyServiceProvider
             $artisan = $event->artisan;
             $dispatcher = $artisan->getDispatcher();
 
-            if ($dispatcher === null) {
+            if (! $dispatcher instanceof EventDispatcher) {
                 $dispatcher = new EventDispatcher;
                 $artisan->setDispatcher($dispatcher);
             }
@@ -67,7 +67,7 @@ class ConsoleSafetyServiceProvider
             $artisan = $event->artisan;
             $dispatcher = $artisan->getDispatcher();
 
-            if ($dispatcher === null) {
+            if (! $dispatcher instanceof EventDispatcher) {
                 $dispatcher = new EventDispatcher;
                 $artisan->setDispatcher($dispatcher);
             }

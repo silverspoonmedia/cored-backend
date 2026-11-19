@@ -45,8 +45,6 @@ class UpdateAiConnectionRequest extends FormRequest
      * Blank fields mean "keep the stored value" — Laravel's
      * ConvertEmptyStringsToNull turns them into null before validation, so a
      * null here is intentional, not malformed input.
-     *
-     * @return array<string, mixed>
      */
     protected function prepareForValidation(): void
     {

@@ -16,6 +16,7 @@ use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\Activitylog\Models\Activity;
 
 class WorkspaceController extends Controller
 {
@@ -132,13 +133,13 @@ class WorkspaceController extends Controller
         $limit = (int) $request->query('limit', 50);
         $rows = $this->workspaces->activity($request->user(), $workspace, $limit);
 
-        $payload = $rows->map(static function ($row): array {
+        $payload = $rows->map(static function (Activity $row): array {
             return [
                 'id' => $row->id,
                 'event' => $row->event ?? $row->description,
                 'description' => $row->description,
                 'causer' => $row->causer !== null ? [
-                    'id' => $row->causer->id,
+                    'id' => (string) $row->causer->getKey(),
                     'name' => $row->causer->name ?? null,
                     'email' => $row->causer->email ?? null,
                 ] : null,

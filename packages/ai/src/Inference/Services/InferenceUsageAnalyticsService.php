@@ -5,9 +5,9 @@ namespace App\Domain\Inference\Services;
 use App\Domain\Inference\Models\AiModelCard;
 use App\Domain\Inference\Models\InferenceProvider;
 use App\Support\Ai\Contracts\AiUsageLedger;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 
 class InferenceUsageAnalyticsService
@@ -38,8 +38,8 @@ class InferenceUsageAnalyticsService
             COALESCE(SUM(billable_micro_usd), 0) as billable_micro_usd
         ')->first();
 
-        $providerMicro = (int) ($totalsRow->provider_cost_micro_usd ?? 0);
-        $billableMicro = (int) ($totalsRow->billable_micro_usd ?? 0);
+        $providerMicro = (int) ($totalsRow?->getAttribute('provider_cost_micro_usd') ?? 0);
+        $billableMicro = (int) ($totalsRow?->getAttribute('billable_micro_usd') ?? 0);
 
         $bySource = (clone $eventsQuery)
             ->selectRaw('
@@ -50,13 +50,13 @@ class InferenceUsageAnalyticsService
             ')
             ->groupBy('billing_source')
             ->get()
-            ->mapWithKeys(function ($row): array {
-                $source = (string) ($row->billing_source ?? 'unknown');
+            ->mapWithKeys(function (Model $row): array {
+                $source = (string) ($row->getAttribute('billing_source') ?? 'unknown');
 
                 return [$source => [
-                    'event_count' => (int) $row->event_count,
-                    'provider_cost_usd' => $this->ledger->formatUsd((int) $row->provider_cost_micro_usd),
-                    'billable_usd' => $this->ledger->formatUsd((int) $row->billable_micro_usd),
+                    'event_count' => (int) $row->getAttribute('event_count'),
+                    'provider_cost_usd' => $this->ledger->formatUsd((int) $row->getAttribute('provider_cost_micro_usd')),
+                    'billable_usd' => $this->ledger->formatUsd((int) $row->getAttribute('billable_micro_usd')),
                 ]];
             })
             ->all();
@@ -71,11 +71,11 @@ class InferenceUsageAnalyticsService
             ->groupBy('stage')
             ->orderByDesc('event_count')
             ->get()
-            ->map(fn ($row): array => [
-                'stage' => (string) ($row->stage ?? ''),
-                'event_count' => (int) $row->event_count,
-                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->provider_cost_micro_usd),
-                'billable_usd' => $this->ledger->formatUsd((int) $row->billable_micro_usd),
+            ->map(fn (Model $row): array => [
+                'stage' => (string) ($row->getAttribute('stage') ?? ''),
+                'event_count' => (int) $row->getAttribute('event_count'),
+                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->getAttribute('provider_cost_micro_usd')),
+                'billable_usd' => $this->ledger->formatUsd((int) $row->getAttribute('billable_micro_usd')),
             ])
             ->values()
             ->all();
@@ -92,12 +92,12 @@ class InferenceUsageAnalyticsService
             ->orderByDesc('event_count')
             ->limit(20)
             ->get()
-            ->map(fn ($row): array => [
-                'resolved_model' => (string) $row->model_name,
-                'event_count' => (int) $row->event_count,
-                'total_tokens' => (int) $row->total_tokens,
-                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->provider_cost_micro_usd),
-                'billable_usd' => $this->ledger->formatUsd((int) $row->billable_micro_usd),
+            ->map(fn (Model $row): array => [
+                'resolved_model' => (string) ($row->getAttribute('model_name') ?? ''),
+                'event_count' => (int) $row->getAttribute('event_count'),
+                'total_tokens' => (int) $row->getAttribute('total_tokens'),
+                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->getAttribute('provider_cost_micro_usd')),
+                'billable_usd' => $this->ledger->formatUsd((int) $row->getAttribute('billable_micro_usd')),
             ])
             ->values()
             ->all();
@@ -120,13 +120,13 @@ class InferenceUsageAnalyticsService
             ->pluck('slug', 'id');
 
         $byProviderRows = $byProvider
-            ->map(fn ($row): array => [
-                'inference_provider_id' => (string) $row->inference_provider_id,
-                'provider_slug' => $providerSlugs[(string) $row->inference_provider_id] ?? null,
-                'event_count' => (int) $row->event_count,
-                'total_tokens' => (int) $row->total_tokens,
-                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->provider_cost_micro_usd),
-                'billable_usd' => $this->ledger->formatUsd((int) $row->billable_micro_usd),
+            ->map(fn (Model $row): array => [
+                'inference_provider_id' => (string) $row->getAttribute('inference_provider_id'),
+                'provider_slug' => $providerSlugs[(string) $row->getAttribute('inference_provider_id')] ?? null,
+                'event_count' => (int) $row->getAttribute('event_count'),
+                'total_tokens' => (int) $row->getAttribute('total_tokens'),
+                'provider_cost_usd' => $this->ledger->formatUsd((int) $row->getAttribute('provider_cost_micro_usd')),
+                'billable_usd' => $this->ledger->formatUsd((int) $row->getAttribute('billable_micro_usd')),
             ])
             ->values()
             ->all();
@@ -137,9 +137,9 @@ class InferenceUsageAnalyticsService
                 'to' => $to,
             ],
             'totals' => [
-                'event_count' => (int) ($totalsRow->event_count ?? 0),
-                'unique_users' => (int) ($totalsRow->unique_users ?? 0),
-                'total_tokens' => (int) ($totalsRow->total_tokens ?? 0),
+                'event_count' => (int) ($totalsRow?->getAttribute('event_count') ?? 0),
+                'unique_users' => (int) ($totalsRow?->getAttribute('unique_users') ?? 0),
+                'total_tokens' => (int) ($totalsRow?->getAttribute('total_tokens') ?? 0),
                 'provider_cost_micro_usd' => $providerMicro,
                 'provider_cost_usd' => $this->ledger->formatUsd($providerMicro),
                 'billable_micro_usd' => $billableMicro,
@@ -177,16 +177,16 @@ class InferenceUsageAnalyticsService
             COALESCE(SUM(billable_micro_usd), 0) as billable_micro_usd
         ')->first();
 
-        $providerMicro = (int) ($totalsRow->provider_cost_micro_usd ?? 0);
-        $billableMicro = (int) ($totalsRow->billable_micro_usd ?? 0);
+        $providerMicro = (int) ($totalsRow?->getAttribute('provider_cost_micro_usd') ?? 0);
+        $billableMicro = (int) ($totalsRow?->getAttribute('billable_micro_usd') ?? 0);
 
         return [
             'period' => [
                 'from' => $from,
                 'to' => $to,
             ],
-            'event_count' => (int) ($totalsRow->event_count ?? 0),
-            'total_tokens' => (int) ($totalsRow->total_tokens ?? 0),
+            'event_count' => (int) ($totalsRow?->getAttribute('event_count') ?? 0),
+            'total_tokens' => (int) ($totalsRow?->getAttribute('total_tokens') ?? 0),
             'provider_cost_usd' => $this->ledger->formatUsd($providerMicro),
             'billable_usd' => $this->ledger->formatUsd($billableMicro),
             'margin_usd' => $this->ledger->formatUsd(max(0, $billableMicro - $providerMicro)),
@@ -227,7 +227,10 @@ class InferenceUsageAnalyticsService
     ): Builder {
         $model = $this->ledger->usageEventModel();
 
-        $query = $model::query()->whereNull('voided_at');
+        /** @var Builder<Model> $query */
+        $query = $model::query();
+
+        $query->whereNull('voided_at');
         $this->applyDateFilters($query, $from, $to);
 
         if ($inferenceProviderId !== null && $inferenceProviderId !== '') {

@@ -35,7 +35,7 @@ final class ArchivdFulfillmentHandler implements FulfillmentHandler
         return [ArchivdCatalog::CODE_FREE];
     }
 
-    public function fixedPeriodDays(): ?int
+    public function fixedPeriodDays(): int
     {
         return BillingPeriod::DAYS;
     }

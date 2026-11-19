@@ -37,10 +37,14 @@ class SignedDownloadService
         }
 
         if ($file->hasUsableSignedDownloadUrl() && $this->cachedUrlMatchesMode($file)) {
-            return [
-                'url' => (string) $file->signed_download_url,
-                'expires_at' => $file->signed_download_expires_at,
-            ];
+            $expiresAt = $file->signed_download_expires_at;
+
+            if ($expiresAt !== null) {
+                return [
+                    'url' => (string) $file->signed_download_url,
+                    'expires_at' => Carbon::parse($expiresAt),
+                ];
+            }
         }
 
         return $this->mintAndCache($file);

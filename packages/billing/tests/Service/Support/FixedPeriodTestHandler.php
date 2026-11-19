@@ -25,7 +25,7 @@ final class FixedPeriodTestHandler implements FulfillmentHandler
         return [];
     }
 
-    public function fixedPeriodDays(): ?int
+    public function fixedPeriodDays(): int
     {
         return self::PERIOD_DAYS;
     }

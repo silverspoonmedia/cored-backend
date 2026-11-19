@@ -65,6 +65,8 @@ class SubscriptionService
         $subscription = $this->subscriptions->findOrFail($id);
         $invoice = $subscription->invoice;
 
+        // A paid checkout leaves a pending invoice behind; deleting the
+        // subscription without dropping it leaves a payable orphan.
         if ($invoice !== null && $invoice->status === 'pending') {
             $invoice->delete();
         }

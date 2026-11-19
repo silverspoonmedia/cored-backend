@@ -5,8 +5,8 @@ namespace App\Domain\PaymentGateway\Services;
 use App\Domain\PaymentGateway\Enums\DisbursementStatus;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Support\Presentation\MoneyPresenter;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -61,6 +61,7 @@ class PaymentIncomeAnalyticsService
      *     basis?: string|null,
      *     gateway?: string|null,
      * }  $filters
+     * @return LengthAwarePaginator<int, Invoice>
      */
     public function invoicesPaginated(array $filters, int $perPage = 20): LengthAwarePaginator
     {
@@ -114,7 +115,7 @@ class PaymentIncomeAnalyticsService
      *     basis?: string|null,
      *     gateway?: string|null,
      * }  $filters
-     * @return list<array<string, mixed>>
+     * @return array<string, array{invoice_count: int, service_revenue: float, service_revenue_formatted: string|null}>
      */
     private function pipelineBuckets(array $filters): array
     {

@@ -81,7 +81,7 @@ class MidtransOpenApiSignatureVerifier
 
         $pathInfo = $request->getPathInfo();
 
-        if (is_string($pathInfo) && $pathInfo !== '') {
+        if ($pathInfo !== '') {
             $paths[] = self::normalizeEndpointPath($pathInfo);
         }
 
@@ -147,15 +147,7 @@ class MidtransOpenApiSignatureVerifier
             return false;
         }
 
-        try {
-            $result = openssl_verify($data, $signatureBinary, $key, OPENSSL_ALGO_SHA256);
-
-            return $result === 1;
-        } finally {
-            if (PHP_VERSION_ID < 80000) {
-                openssl_free_key($key);
-            }
-        }
+        return openssl_verify($data, $signatureBinary, $key, OPENSSL_ALGO_SHA256) === 1;
     }
 
     protected static function normalizePublicKeyPem(string $key): string

@@ -109,7 +109,6 @@ class CollectionService
             (string) $actor->id,
             (string) Str::uuid(),
             $plan->dailySlots,
-            $billingMode,
         );
 
         $folder = $folder->refresh();

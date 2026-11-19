@@ -5,6 +5,7 @@ namespace App\Domain\Currency\Services;
 use App\Domain\Currency\Exceptions\ExchangeRateException;
 use App\Domain\Currency\Models\Currency;
 use App\Domain\Currency\Models\ExchangeRateSnapshot;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -27,7 +28,7 @@ class ExchangeRateService
      * @return array{
      *     rate: float,
      *     provider: string,
-     *     fetched_at: Carbon,
+     *     fetched_at: CarbonInterface,
      *     amount: float,
      *     from: string,
      *     to: string,
@@ -70,7 +71,11 @@ class ExchangeRateService
     }
 
     /**
-     * @return array{rate: float, provider: string, fetched_at: Carbon, snapshot_id: string|null}
+     * A DB or cache row carries `Carbon\Carbon` (the Eloquent cast), a fresh
+     * fetch carries `Illuminate\Support\Carbon`; both are the same object graph,
+     * so the shape declares the framework interface.
+     *
+     * @return array{rate: float, provider: string, fetched_at: CarbonInterface, snapshot_id: string|null}
      */
     private function resolveRate(string $from, string $to): array
     {

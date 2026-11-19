@@ -23,6 +23,7 @@ use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Actions\LogActivityAction;
+use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 use Throwable;
 
 /**
@@ -91,7 +92,7 @@ class AuditServiceProvider extends ServiceProvider
     {
         LogActivityAction::clearBeforeLoggingCallbacks();
         LogActivityAction::beforeLogging(
-            static fn ($activity) => SensitiveActivityProperties::encryptInPlace($activity),
+            static fn (ActivityContract $activity) => SensitiveActivityProperties::encryptInPlace($activity),
         );
     }
 

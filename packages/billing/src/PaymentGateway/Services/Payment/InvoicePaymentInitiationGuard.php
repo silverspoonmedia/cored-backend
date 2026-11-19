@@ -245,9 +245,11 @@ class InvoicePaymentInitiationGuard
     }
 
     /**
+     * @return object|array<string, mixed>
+     *
      * @throws \Exception
      */
-    protected function fetchMidtransTransactionStatus(string $invoiceNumber): object
+    protected function fetchMidtransTransactionStatus(string $invoiceNumber): object|array
     {
         return Transaction::status($invoiceNumber);
     }

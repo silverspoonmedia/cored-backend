@@ -46,7 +46,7 @@ final class AiConnectionSecrets
             $payload[$key] = $trimmed;
         }
 
-        if (! isset($payload['api_key']) || $payload['api_key'] === '') {
+        if (! isset($payload['api_key'])) {
             throw new AiException(__('api/ai.connection.payload_missing', ['field' => 'api_key']), 422);
         }
 

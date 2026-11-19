@@ -86,9 +86,6 @@ class InvoiceFundsLedgerService
         return null;
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
     protected function parseIpaymuDate(mixed $value): ?Carbon
     {
         if ($value === null || $value === '') {

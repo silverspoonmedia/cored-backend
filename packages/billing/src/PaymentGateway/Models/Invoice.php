@@ -79,6 +79,9 @@ class Invoice extends Model
         return $this->morphTo();
     }
 
+    /**
+     * @return BelongsTo<PaymentGateway, $this>
+     */
     public function paymentGateway(): BelongsTo
     {
         return $this->belongsTo(PaymentGateway::class);

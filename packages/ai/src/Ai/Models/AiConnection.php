@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Owns "where do we call". Never owns pricing — that stays in the Inference
  * domain (`ai_inference_providers`, `ai_provider_model_rates`).
+ *
+ * @property array<string, string> $secret_payload
  */
 class AiConnection extends Model
 {

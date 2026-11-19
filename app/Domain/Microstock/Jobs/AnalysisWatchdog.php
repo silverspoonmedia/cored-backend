@@ -9,6 +9,7 @@ use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AnalysisStageService;
+use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -142,14 +143,14 @@ class AnalysisWatchdog implements ShouldQueue
             });
     }
 
-    private function isPastGrace(?string $startedAt, ?Carbon $fallbackCreatedAt, int $graceSeconds): bool
+    private function isPastGrace(?string $startedAt, CarbonInterface|string|null $fallbackCreatedAt, int $graceSeconds): bool
     {
         if ($startedAt !== null) {
             return Carbon::parse($startedAt)->lt(now()->subSeconds($graceSeconds));
         }
 
         if ($fallbackCreatedAt !== null) {
-            return $fallbackCreatedAt->lt(now()->subSeconds($graceSeconds));
+            return Carbon::parse($fallbackCreatedAt)->lt(now()->subSeconds($graceSeconds));
         }
 
         return false;

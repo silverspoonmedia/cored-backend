@@ -12,7 +12,7 @@ class InferenceCatalogSeeder extends Seeder
     /**
      * Public list-price models (USD per 1M tokens). Mirrors legacy microstock rate card.
      *
-     * @var array<string, array{input_per_million_usd: float, output_per_million_usd: float, display_name?: string}>
+     * @var array<string, array{input_per_million_usd: float, output_per_million_usd: float}>
      */
     private const MODEL_RATES = [
         'grok-grok-4.5-high' => ['input_per_million_usd' => 3.0, 'output_per_million_usd' => 15.0],
@@ -43,7 +43,7 @@ class InferenceCatalogSeeder extends Seeder
             $cards[$slug] = AiModelCard::query()->updateOrCreate(
                 ['slug' => $slug],
                 [
-                    'display_name' => $rates['display_name'] ?? $slug,
+                    'display_name' => $slug,
                     'is_active' => true,
                 ],
             );

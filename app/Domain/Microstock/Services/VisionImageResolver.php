@@ -4,7 +4,6 @@ namespace App\Domain\Microstock\Services;
 
 use App\Domain\Archivd\Enums\FileVariantKind;
 use App\Domain\Archivd\Models\HostedFile;
-use App\Domain\Archivd\Services\FileVariantGenerator;
 use App\Domain\Archivd\Services\FileVariantService;
 use App\Domain\Archivd\Services\SignedDownloadService;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +16,6 @@ class VisionImageResolver
 {
     public function __construct(
         private readonly FileVariantService $variants,
-        private readonly FileVariantGenerator $generator,
         private readonly SignedDownloadService $downloads,
         private readonly AssetResizeService $resizer,
     ) {}

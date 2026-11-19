@@ -12,6 +12,7 @@ use App\Domain\Service\Models\ServicePurchase;
 use App\Support\Billing\BillingClock;
 use App\Support\Billing\Fulfillment;
 use App\Support\Billing\FulfillmentRegistry;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -47,7 +48,7 @@ class ServiceEntitlementService
      * Main up/down: now + period + surplus_days.
      * Addon unit: quantity++; ends_at fixed (shared anniversary).
      *
-     * @return array{entitlement: ServiceEntitlement, period_start: ?Carbon, period_end: ?Carbon}
+     * @return array{entitlement: ServiceEntitlement, period_start: CarbonInterface|null, period_end: CarbonInterface|null}
      */
     public function activateFromPurchase(ServicePurchase $purchase): array
     {
@@ -120,7 +121,7 @@ class ServiceEntitlementService
     }
 
     /**
-     * @return array{entitlement: ServiceEntitlement, period_start: Carbon, period_end: Carbon}
+     * @return array{entitlement: ServiceEntitlement, period_start: CarbonInterface, period_end: CarbonInterface}
      */
     private function activateAddon(
         ServiceEntitlement $entitlement,
@@ -169,7 +170,7 @@ class ServiceEntitlementService
     }
 
     /**
-     * @return array{entitlement: ServiceEntitlement, period_start: Carbon, period_end: Carbon}
+     * @return array{entitlement: ServiceEntitlement, period_start: CarbonInterface, period_end: CarbonInterface}
      */
     private function activateMain(
         ServiceEntitlement $entitlement,
@@ -598,10 +599,10 @@ class ServiceEntitlementService
      * Fixed-day targets (storage plans) bill the same period the credit math
      * uses; everything else keeps the catalog's calendar interval.
      */
-    private function addPeriod(BillingInterval $interval, Carbon $from, ?Service $service): Carbon
+    private function addPeriod(BillingInterval $interval, CarbonInterface $from, ?Service $service): Carbon
     {
         $next = BillingClock::addPeriod($service?->fulfillment_target, $from, $interval);
 
-        return $next instanceof Carbon ? $next : Carbon::instance($next);
+        return Carbon::instance($next);
     }
 }

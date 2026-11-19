@@ -67,16 +67,13 @@ final class IpaymuSignatureVerifier
         $decoded = json_decode($rawBody, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
             $compact = json_encode($decoded, JSON_UNESCAPED_SLASHES);
-            if (is_string($compact) && $compact !== '') {
+            if (is_string($compact)) {
                 $candidates[] = $compact;
             }
         }
 
         $unique = [];
         foreach ($candidates as $c) {
-            if ($c === '') {
-                continue;
-            }
             $unique[$c] = true;
         }
 

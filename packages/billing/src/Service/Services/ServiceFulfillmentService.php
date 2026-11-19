@@ -14,6 +14,7 @@ use App\Support\Billing\FulfillmentContext;
 use App\Support\Billing\FulfillmentRegistry;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -58,8 +59,8 @@ class ServiceFulfillmentService
         $result = $this->entitlements->activateFromPurchase($purchase);
 
         $purchase->status = PurchaseStatus::Paid;
-        $purchase->period_start = $result['period_start'];
-        $purchase->period_end = $result['period_end'];
+        $purchase->period_start = $result['period_start'] === null ? null : Carbon::instance($result['period_start']);
+        $purchase->period_end = $result['period_end'] === null ? null : Carbon::instance($result['period_end']);
         $purchase->save();
         $this->realtime->purchaseChanged($purchase->id, 'paid');
 

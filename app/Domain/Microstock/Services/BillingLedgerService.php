@@ -8,8 +8,8 @@ use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePurchase;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 

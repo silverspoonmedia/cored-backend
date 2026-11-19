@@ -35,7 +35,7 @@ final class MicrostockFulfillmentHandler implements FulfillmentHandler
         return [];
     }
 
-    public function fixedPeriodDays(): ?int
+    public function fixedPeriodDays(): int
     {
         // Slot addons renew with the shared stack anniversary, so they follow the
         // same fixed 30-day clock the storage addons they sit next to use.

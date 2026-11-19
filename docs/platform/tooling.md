@@ -31,12 +31,12 @@ Implementation: `app/Console/Commands/PintCommand.php` — Symfony Process, `ign
 
 ## PHPStan (Larastan)
 
-Level 5 over `app/`, the five packages' `src/`, `database/`, `routes/`, and `config/` — `tests/` is out of scope on purpose (a suite is a scaffold, not shipped code). Config: `phpstan.neon`; the adopted debt: `phpstan-baseline.neon`.
+Level 5 over `app/`, the five packages' `src/`, `database/`, `routes/`, and `config/` — `tests/` is out of scope on purpose (a suite is a scaffold, not shipped code). Config: `phpstan.neon`. There is **no baseline**: the tree is clean at level 5.
 
 ```bash
 php artisan phpstan                 # wrapper, forwards args
 composer check:types                # what the gate runs
-vendor/bin/phpstan analyse --generate-baseline   # only to burn down an entry
+vendor/bin/phpstan analyse --generate-baseline   # forbidden — fix the finding, not the report
 ```
 
 Four settings are load-bearing, each with its reason in the config:
@@ -50,7 +50,9 @@ Four settings are load-bearing, each with its reason in the config:
 
 `tmpDir` is `.phpstan.cache`, which is gitignored **and** in `UninstallReferenceScanner::SKIP_DIRS` — the scanner reads the working tree, so a cache of generated PHP would otherwise appear as product-domain references and fail `DomainUninstallManifestTest`.
 
-**The baseline is a burn-down list, not an allowlist.** `composer check:types` fails on anything it does not already name, so new code is held to level 5, and each entry is deleted by fixing the finding it names. It opened on 2026-11-19 at `299` findings; the same day's `parseModelCastsMethod: true` (below) and a pass over the nullsafe/enum-read sites took it to `111` (`property.notFound` 37, `method.notFound` 14, `argument.type` 11), with `nullsafe.neverNull` fully gone. Never add one.
+**Zero baseline is the invariant.** `composer check:types` fails on any finding, so new code is held to level 5 with no allowlist to absorb it. The file opened on 2026-11-19 at `299` findings; `parseModelCastsMethod: true` plus a pass over the nullsafe/enum-read sites took it to `111`, and a burn-down over the same week resolved the rest — mostly by typing the generics (`Builder<Model>`, `LengthAwarePaginator<int, Model>`), replacing `SoftDeletes` macros with `withoutGlobalScope(SoftDeletingScope::class)` on the shared repository, and aggregating through `getAttribute()` instead of undeclared aliases. Never reintroduce `phpstan-baseline.neon`; fix the finding it would have named.
+
+Tarik model columns off the aggregate alias path: `selectRaw('COUNT(*) as event_count')` returns a row whose alias is not a migrated column, so `$row->event_count` is `property.notFound`. Read it through `$row->getAttribute('event_count')` and the finding disappears without an ignore.
 
 ## `composer check`
 

@@ -40,6 +40,9 @@ class PaymentChannel extends Model
         ];
     }
 
+    /**
+     * @return HasMany<PaymentChannelRoute, $this>
+     */
     public function routes(): HasMany
     {
         return $this->hasMany(PaymentChannelRoute::class);

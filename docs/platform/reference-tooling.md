@@ -33,7 +33,7 @@ Two steps before the suite are the quality gates, both added 2026-11-19:
 | Step | Why it is a job step |
 |---|---|
 | `vendor/bin/pint --test` | The whole tree was formatted once, by hand, before this step existed. From then on `--test` fails only on drift a diff introduced — the check is cheap and the failure names the file. |
-| `vendor/bin/phpstan analyse` | Level 5 over `app/`, the packages' `src/`, `database/`, `routes/`, `config/`; `phpstan-baseline.neon` names the debt adopted at the same time. `JWT_SECRET` is in the job `env:` because Larastan boots the app: without a secret the JWT guard extension is absent and `JWTAuth::parser()` analyses as an undefined static method — three findings that do not exist locally, so the committed baseline would stop matching on the runner. |
+| `vendor/bin/phpstan analyse` | Level 5 over `app/`, the packages' `src/`, `database/`, `routes/`, `config/`; there is no baseline, so the step fails on any finding. `JWT_SECRET` is in the job `env:` because Larastan boots the app: without a secret the JWT guard extension is absent and `JWTAuth::parser()` analyses as an undefined static method — three findings that do not exist locally. |
 
 Two properties make a full-suite run possible on a bare runner, and both are pinned in `phpunit.xml` rather than in the workflow:
 

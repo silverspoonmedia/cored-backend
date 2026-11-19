@@ -40,7 +40,7 @@ class MidtransPaymentService
      */
     private function createSnapTokenWithinContext(array $input): array
     {
-        $invoiceModel = $this->invoices->findOrFail($input['invoice_id']);
+        $invoiceModel = $this->invoices->findOrFailById($input['invoice_id']);
         $this->checkoutCancellation->abandonActiveCheckout($invoiceModel);
 
         $invoice = $this->gatewayResolver->assignGatewayIfMissing(

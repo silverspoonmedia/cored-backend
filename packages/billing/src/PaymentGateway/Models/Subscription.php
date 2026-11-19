@@ -57,6 +57,9 @@ class Subscription extends Model
         ];
     }
 
+    /**
+     * @return MorphOne<Invoice, $this>
+     */
     public function invoice(): MorphOne
     {
         return $this->morphOne(Invoice::class, 'invoiceable');

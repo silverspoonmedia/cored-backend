@@ -36,7 +36,6 @@ class ProcessCollection implements ShouldQueue
         private readonly string $billingUserId,
         private readonly string $analysisRunId,
         private readonly int $dailySlots = 0,
-        private readonly ?string $billingMode = null,
     ) {}
 
     public function handle(AnalysisStageService $stages): void

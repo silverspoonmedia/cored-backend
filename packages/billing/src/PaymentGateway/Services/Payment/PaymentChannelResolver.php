@@ -75,7 +75,7 @@ class PaymentChannelResolver
             ->where('is_active', true)
             ->with('paymentGateway')
             ->get()
-            ->sortBy(fn (PaymentChannelRoute $route): array => [
+            ->sortBy(fn (PaymentChannelRoute $route, int $index): array => [
                 PaymentRouteSort::roleWeight($route->route_role),
                 $route->priority,
             ])
