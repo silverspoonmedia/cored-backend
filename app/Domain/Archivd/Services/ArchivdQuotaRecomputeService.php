@@ -17,6 +17,7 @@ class ArchivdQuotaRecomputeService
     public function __construct(
         private readonly ArchivdRealtime $realtime,
     ) {}
+
     /**
      * @return array{quota_bytes: int, main_bytes: int, addon_bytes: int, free_bytes: int}
      */

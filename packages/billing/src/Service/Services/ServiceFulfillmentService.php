@@ -4,13 +4,13 @@ namespace App\Domain\Service\Services;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\PurchaseStatus;
-use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Support\ServiceRealtime;
 use App\Support\Billing\Fulfillment;
 use App\Support\Billing\FulfillmentContext;
+use App\Support\Billing\FulfillmentRegistry;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Log;
  *
  * The package owns activation and period math; what a target *does* with a fresh
  * entitlement (recompute a quota, credit a balance) is a product decision,
- * routed through the kernel {@see \App\Support\Billing\FulfillmentRegistry}.
+ * routed through the kernel {@see FulfillmentRegistry}.
  * No handler registered = nothing to do, which is exactly what a host without
  * that product gets.
  */

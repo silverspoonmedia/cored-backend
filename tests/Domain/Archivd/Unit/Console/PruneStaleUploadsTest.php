@@ -3,6 +3,8 @@
 namespace Tests\Domain\Archivd\Unit\Console;
 
 use App\Domain\Archivd\Models\FileUpload;
+use App\Domain\Archivd\Services\DirectUploadService;
+use App\Domain\Archivd\Support\ObjectKeyResolver;
 use App\Domain\Identity\Models\User;
 use App\Support\Storage\S3DirectUploadEngine;
 use App\Support\Storage\S3DirectUploadException;
@@ -196,11 +198,11 @@ class PruneStaleUploadsTest extends TestCase
             FileUpload::STRATEGY_SINGLE,
         );
 
-        $objectKey = app(\App\Domain\Archivd\Support\ObjectKeyResolver::class)
+        $objectKey = app(ObjectKeyResolver::class)
             ->objectKey($single->user_id, $single->path);
         Storage::disk('local')->put($objectKey, 'full-file-bytes');
 
-        app(\App\Domain\Archivd\Services\DirectUploadService::class)->forceAbortPending($single);
+        app(DirectUploadService::class)->forceAbortPending($single);
 
         $this->assertSame(FileUpload::STATUS_ABORTED, $single->refresh()->status);
         Storage::disk('local')->assertExists($objectKey);

@@ -2,11 +2,11 @@
 
 namespace Tests\Domain\Inference\Unit\Services;
 
+use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Inference\Models\AiModelRateSnapshot;
 use App\Domain\Inference\Models\InferenceProvider;
 use App\Domain\Inference\Models\ProviderModelRate;
 use App\Domain\Inference\Services\AiModelRateSnapshotService;
-use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

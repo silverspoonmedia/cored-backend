@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Domain\Ai\Database\Seeders\AiConnectionSeeder;
 use App\Domain\Archivd\Database\Seeders\ArchivdCatalogSeeder;
+use App\Domain\Currency\Database\Seeders\CurrencySeeder;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Microstock\Database\Seeders\MicrostockCatalogSeeder;
@@ -11,7 +12,6 @@ use App\Domain\Navigation\Database\Seeders\MenuSeeder;
 use App\Domain\Notification\Database\Seeders\NotificationTypeSettingSeeder;
 use App\Domain\PaymentGateway\Database\Seeders\PaymentChannelSeeder;
 use App\Domain\PaymentGateway\Database\Seeders\PaymentGatewaySeeder;
-use App\Domain\Currency\Database\Seeders\CurrencySeeder;
 use App\Domain\Service\Database\Seeders\ServiceCatalogSeeder;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;

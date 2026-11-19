@@ -4,9 +4,9 @@ namespace App\Domain\PaymentGateway\Tests\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
+use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
-use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Tests\TestCase;
 
 class InvoiceCheckoutChannelsApiTest extends TestCase

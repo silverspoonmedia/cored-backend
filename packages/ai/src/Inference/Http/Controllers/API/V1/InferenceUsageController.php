@@ -10,6 +10,7 @@ use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\ListQueryPaginator;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class InferenceUsageController extends Controller
 {
@@ -50,7 +51,7 @@ class InferenceUsageController extends Controller
             $request->query('inference_provider_id'),
         );
 
-        /** @var class-string<\Illuminate\Http\Resources\Json\JsonResource> $resource */
+        /** @var class-string<JsonResource> $resource */
         $resource = (string) config('ai.usage_event_resource');
 
         return $this->successResponse([

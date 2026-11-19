@@ -3,6 +3,7 @@
 namespace Tests\Unit\Localization;
 
 use App\Support\Localization\Concerns\ValidatesTranslatableInput;
+use App\Support\Localization\LocalePreference;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Validator as ValidatorFacade;
 use Illuminate\Validation\Validator;
@@ -95,7 +96,7 @@ class TranslatableTestRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $this->validateTranslatableString($validator, 'name', \App\Support\Localization\LocalePreference::supported());
+            $this->validateTranslatableString($validator, 'name', LocalePreference::supported());
         });
     }
 }

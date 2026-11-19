@@ -2,13 +2,13 @@
 
 namespace Tests\Domain\Microstock\Unit\Services;
 
+use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\AiCreditTransactionType;
 use App\Domain\Microstock\Models\AiCreditTransaction;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePurchase;
-use App\Domain\Microstock\Support\MicrostockCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
@@ -92,9 +92,9 @@ class AiCreditServiceTest extends TestCase
         $this->assertSame(0, app(AiCreditService::class)->balance((string) $user->id));
     }
 
-    private function userWithRole(string $role, string $email): \App\Domain\Identity\Models\User
+    private function userWithRole(string $role, string $email): User
     {
-        $user = \App\Domain\Identity\Models\User::factory()->create([
+        $user = User::factory()->create([
             'email' => $email,
             'name' => $email,
         ]);

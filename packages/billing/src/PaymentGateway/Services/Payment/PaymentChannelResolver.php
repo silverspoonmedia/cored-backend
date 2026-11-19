@@ -4,6 +4,7 @@ namespace App\Domain\PaymentGateway\Services\Payment;
 
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
+use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Support\Routing\ChannelPolicyDefinition;
 use App\Domain\PaymentGateway\Support\Routing\PaymentRouteSort;
 use App\Domain\PaymentGateway\Support\Routing\RoutingPolicy;
@@ -20,7 +21,7 @@ class PaymentChannelResolver
     ) {}
 
     /**
-     * @return array{channel: PaymentChannel, route: PaymentChannelRoute, gateway: \App\Domain\PaymentGateway\Models\PaymentGateway}|null
+     * @return array{channel: PaymentChannel, route: PaymentChannelRoute, gateway: PaymentGateway}|null
      */
     public function resolve(string $channelCode): ?array
     {

@@ -5,7 +5,6 @@ namespace Tests\Feature\Console;
 use App\Support\Config\ConfigSecretCheck;
 use App\Support\Config\ConfigSecretVerificationResult;
 use App\Support\Config\ConfigSecretVerifier;
-use Illuminate\Support\Facades\File;
 use Mockery\MockInterface;
 use Tests\TestCase;
 

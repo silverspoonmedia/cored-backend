@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\BusinessRuleException;
+
 return [
 
     /*
@@ -77,7 +79,7 @@ return [
     */
 
     'dont_store' => [
-        App\Exceptions\BusinessRuleException::class,
+        BusinessRuleException::class,
     ],
 
 ];

@@ -6,6 +6,7 @@ use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransAccountLinkingWe
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentNotificationService;
 use App\Support\ApiResponder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Mockery;
 use Mockery\MockInterface;
 use Tests\TestCase;
@@ -101,7 +102,7 @@ class MidtransWebhookTest extends TestCase
         $mock = Mockery::mock(MidtransAccountLinkingWebhookService::class);
         $mock->shouldReceive('handle')
             ->once()
-            ->with(Mockery::type(\Illuminate\Http\Request::class))
+            ->with(Mockery::type(Request::class))
             ->andReturn(ApiResponder::success(null, 'account-linking-ack'));
 
         $this->app->instance(MidtransAccountLinkingWebhookService::class, $mock);

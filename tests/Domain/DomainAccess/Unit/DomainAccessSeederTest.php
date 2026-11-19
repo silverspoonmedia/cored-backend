@@ -3,7 +3,6 @@
 namespace Tests\Domain\DomainAccess\Unit;
 
 use App\Domain\Identity\Enums\DomainKind;
-use App\Domain\Identity\Models\Permission;
 use App\Domain\Identity\Models\Role;
 use App\Support\DomainAccess\ProductNames;
 use Database\Seeders\DomainAccessSeeder;

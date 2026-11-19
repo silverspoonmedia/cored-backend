@@ -2,14 +2,13 @@
 
 namespace App\Domain\Service\Tests\Feature\Http\Controllers\API\V1;
 
-use App\Domain\Service\Tests\Support\TestPlans;
-
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePrice;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Tests\Support\TestPlans;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;

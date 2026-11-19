@@ -10,7 +10,7 @@
 require __DIR__.'/../../vendor/autoload.php';
 
 $app = require_once __DIR__.'/../../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Domain\FileHosting\Enums\CollectionStatus;
 use App\Domain\FileHosting\Models\Folder;
@@ -21,6 +21,8 @@ use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Microstock\Services\CollectionService;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\DB;
 
 config(['queue.default' => 'sync']);
 
@@ -108,12 +110,12 @@ if (! $shouldAnalyze && $status !== CollectionStatus::Processing) {
     exit(1);
 }
 
-echo "Mode: ".($shouldAnalyze ? 'analyze + wait' : 'wait (already processing)')."\n";
+echo 'Mode: '.($shouldAnalyze ? 'analyze + wait' : 'wait (already processing)')."\n";
 
 echo "Folder: {$folder->id}\n";
 echo "Workspace: {$folder->workspace_id}\n";
 echo "Files: {$files->count()}\n";
-echo "Hint: ".($folder->collection_hint ?? '(none)')."\n";
+echo 'Hint: '.($folder->collection_hint ?? '(none)')."\n";
 echo "Label: {$label}\n";
 echo "Queue: sync\n";
 
@@ -128,7 +130,7 @@ if ($shouldAnalyze) {
     try {
         app(CollectionService::class)->analyze($owner, $folderId);
         // Sync queue runs AnalysisWatchdog inline; delayed re-dispatch loops while ANY folder is processing.
-        Illuminate\Support\Facades\DB::table('jobs')->delete();
+        DB::table('jobs')->delete();
     } catch (Throwable $e) {
         fwrite(STDERR, 'Analyze failed: '.$e->getMessage()."\n");
         exit(1);

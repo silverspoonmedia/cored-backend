@@ -24,9 +24,17 @@ use App\Support\Ai\Contracts\AiUsageConsolidator;
 use App\Support\Ai\Contracts\AiUsageLedger;
 use App\Support\Billing\FulfillmentRegistry;
 use App\Support\Domain\DomainManager;
+use App\Support\Encryption\DecryptedValueCache;
 use App\Support\Encryption\DecryptionAuditRecorder;
+use App\Support\Encryption\DecryptionContext;
+use App\Support\Encryption\EnvelopeEncryptionService;
+use App\Support\Encryption\InvoicePayloadDecryptLogger;
 use App\Support\ErrorLogging\ExceptionRecorder;
 use App\Support\Navigation\PresentedTreeEpoch;
+use App\Support\Oci\Kms\Contracts\KmsDekClientInterface;
+use App\Support\Oci\Kms\LocalKmsDekClient;
+use Illuminate\Container\Container;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Tests\TestCase;
 
 /**
@@ -232,7 +240,7 @@ class PackageOverrideTest extends TestCase
         $resource = (string) config('ai.usage_event_resource');
         $this->assertNotSame('', $resource);
         $this->assertTrue(class_exists($resource));
-        $this->assertTrue(is_subclass_of($resource, \Illuminate\Http\Resources\Json\JsonResource::class));
+        $this->assertTrue(is_subclass_of($resource, JsonResource::class));
     }
 
     /**
@@ -297,9 +305,6 @@ class PackageOverrideTest extends TestCase
         $this->assertHostPrefixWins('Ai');
     }
 
-    /**
-     * @return void
-     */
     private function assertHostPrefixWins(string $domain): void
     {
         $hostDir = base_path('app/Domain/'.$domain.'/Support');
@@ -358,19 +363,19 @@ class PackageOverrideTest extends TestCase
         // audit implementations unbound, the decrypt choke point still builds
         // and simply stops auditing. A bare container is the honest simulation —
         // a host that never installed `silverspoonmedia/audit`.
-        $container = new \Illuminate\Container\Container;
-        $container->instance(\App\Support\Oci\Kms\Contracts\KmsDekClientInterface::class, new \App\Support\Oci\Kms\LocalKmsDekClient);
-        $container->instance(\App\Support\Encryption\DecryptedValueCache::class, new \App\Support\Encryption\DecryptedValueCache);
-        $container->instance(\App\Support\Encryption\InvoicePayloadDecryptLogger::class, new \App\Support\Encryption\InvoicePayloadDecryptLogger);
+        $container = new Container;
+        $container->instance(KmsDekClientInterface::class, new LocalKmsDekClient);
+        $container->instance(DecryptedValueCache::class, new DecryptedValueCache);
+        $container->instance(InvoicePayloadDecryptLogger::class, new InvoicePayloadDecryptLogger);
 
         $this->assertFalse($container->bound(DecryptionAuditRecorder::class));
 
-        $service = $container->make(\App\Support\Encryption\EnvelopeEncryptionService::class);
+        $service = $container->make(EnvelopeEncryptionService::class);
 
-        $this->assertInstanceOf(\App\Support\Encryption\EnvelopeEncryptionService::class, $service);
+        $this->assertInstanceOf(EnvelopeEncryptionService::class, $service);
         $this->assertSame(
             'secret',
-            $service->decrypt($service->encrypt('secret'), new \App\Support\Encryption\DecryptionContext('users', 'user-1', 'field')),
+            $service->decrypt($service->encrypt('secret'), new DecryptionContext('users', 'user-1', 'field')),
         );
     }
 }

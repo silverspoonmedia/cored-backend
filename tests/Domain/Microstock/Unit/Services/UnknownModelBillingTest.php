@@ -2,6 +2,8 @@
 
 namespace Tests\Domain\Microstock\Unit\Services;
 
+use App\Domain\Identity\Models\User;
+use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Inference\Enums\InferenceRateSource;
 use App\Domain\Inference\Models\AiModelCard;
 use App\Domain\Inference\Models\AiModelRateSnapshot;
@@ -10,6 +12,7 @@ use App\Domain\Inference\Models\ProviderModelRate;
 use App\Domain\Inference\Services\InferenceCatalogService;
 use App\Domain\Microstock\Enums\AiCreditTransactionType;
 use App\Domain\Microstock\Enums\BillingSource;
+use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Services\AiBillingService;
 use App\Domain\Microstock\Services\AiCreditService;
@@ -17,7 +20,6 @@ use App\Domain\Microstock\Services\UnknownModelBillingConsolidationService;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
 use App\Domain\Notification\Models\ActivityNotification;
 use App\Domain\Notification\Notifications\NotificationType;
-use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -219,14 +221,14 @@ class UnknownModelBillingTest extends TestCase
         app(AiCreditService::class)->addCredit((string) $user->id, 100_000, AiCreditTransactionType::Purchase);
         app(AiCreditService::class)->debit((string) $user->id, 200_000, 'asset_metadata', 'meta-neg', AiCreditTransactionType::Adjustment);
 
-        $this->expectException(\App\Domain\Microstock\Exceptions\MicrostockException::class);
+        $this->expectException(MicrostockException::class);
 
         app(AiBillingService::class)->planAnalyze($user, 1, 'paid');
     }
 
-    private function userWithRole(string $role, string $email): \App\Domain\Identity\Models\User
+    private function userWithRole(string $role, string $email): User
     {
-        $user = \App\Domain\Identity\Models\User::factory()->create([
+        $user = User::factory()->create([
             'email' => $email,
             'name' => $email,
         ]);

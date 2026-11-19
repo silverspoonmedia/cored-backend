@@ -6,8 +6,8 @@ use App\Domain\ActivityLog\Support\CryptoActivityPropertyPresenter;
 use App\Domain\ActivityLog\Support\SensitiveActivityPropertyPresenter;
 use App\Domain\ErrorLog\Support\ErrorContextRedactor;
 use App\Domain\Identity\Models\User;
-use App\Domain\Navigation\Models\Menu;
 use App\Http\Resources\Concerns\FormatsPresentation;
+use App\Support\ActivityLog\SubjectLabelRegistrar;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -99,13 +99,11 @@ class ActivityLogResource extends JsonResource
         $subject = $this->subject;
 
         if ($subject instanceof Model) {
-            return match (true) {
-                $subject instanceof User => $subject->name.' ('.$subject->email.')',
-                $subject instanceof Menu => is_array($subject->name)
-                    ? ($subject->getTranslation('name', app()->getLocale()) ?: (string) reset($subject->name))
-                    : (string) $subject->name,
-                default => (string) ($subject->getKey() ?? ''),
-            };
+            if ($presenter = app(SubjectLabelRegistrar::class)->resolve($subject)) {
+                return $presenter->label($subject);
+            }
+
+            return (string) ($subject->getKey() ?? '');
         }
 
         $email = $this->decryptedProperties()['email'] ?? null;

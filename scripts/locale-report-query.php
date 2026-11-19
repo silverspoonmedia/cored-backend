@@ -8,14 +8,14 @@ foreach ($args0 as $a) {
     if (str_starts_with($a, '--json-show=')) {
         $parts = explode(':', substr($a, 12), 2);
         [$loc, $group] = $parts;
-        $j = json_decode(file_get_contents(__DIR__ . "/../lang/{$loc}.json"), true);
+        $j = json_decode(file_get_contents(__DIR__."/../lang/{$loc}.json"), true);
         echo json_encode($j[$group] ?? null, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), PHP_EOL;
         exit(0);
     }
     if (str_starts_with($a, '--json-diff=')) {
         $loc = substr($a, 12);
-        $en = json_decode(file_get_contents(__DIR__ . '/../lang/en.json'), true);
-        $other = json_decode(file_get_contents(__DIR__ . "/../lang/{$loc}.json"), true);
+        $en = json_decode(file_get_contents(__DIR__.'/../lang/en.json'), true);
+        $other = json_decode(file_get_contents(__DIR__."/../lang/{$loc}.json"), true);
         $missing = array_diff(array_keys($en), array_keys($other));
         $extra = array_diff(array_keys($other), array_keys($en));
         echo 'en=', count($en), ' ', $loc, '=', count($other), ' missing=', count($missing), ' extra=', count($extra), PHP_EOL;
@@ -26,7 +26,7 @@ foreach ($args0 as $a) {
     }
 }
 
-$report = json_decode(file_get_contents(__DIR__ . '/../backend-locale-report.json'), true);
+$report = json_decode(file_get_contents(__DIR__.'/../backend-locale-report.json'), true);
 $args = array_slice($argv, 1);
 $verbose = in_array('--verbose', $args, true);
 $fileFilter = null;

@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Support\Routing;
 
 use App\Domain\PaymentGateway\Enums\ChannelRoutingType;
+use App\Domain\PaymentGateway\Enums\PaymentRouteRole;
 
 readonly class ChannelPolicyDefinition
 {
@@ -68,7 +69,7 @@ readonly class ChannelPolicyDefinition
             gateway: strtolower($node['pg']),
             settlementDays: RoutePolicyDefinition::parseSettlementDays((string) ($node['settlement'] ?? 'H+2')),
             fee: FeePolicyDefinition::fromMixed($node['fee'] ?? throw new \InvalidArgumentException("Channel {$key} requires fee."), $vatInclusive),
-            role: \App\Domain\PaymentGateway\Enums\PaymentRouteRole::Only,
+            role: PaymentRouteRole::Only,
         );
 
         return new self(
@@ -97,7 +98,7 @@ readonly class ChannelPolicyDefinition
             $vatInclusive = $key === 'qris' && strtolower((string) ($node['primary']['pg'] ?? '')) === 'midtrans';
             $routes[] = RoutePolicyDefinition::fromPolicyNode(
                 $node['primary'],
-                \App\Domain\PaymentGateway\Enums\PaymentRouteRole::Primary,
+                PaymentRouteRole::Primary,
                 $vatInclusive,
             );
         }
@@ -109,7 +110,7 @@ readonly class ChannelPolicyDefinition
 
             $routes[] = RoutePolicyDefinition::fromPolicyNode(
                 $node['fallback'],
-                \App\Domain\PaymentGateway\Enums\PaymentRouteRole::Fallback,
+                PaymentRouteRole::Fallback,
                 false,
                 $policyTag,
             );

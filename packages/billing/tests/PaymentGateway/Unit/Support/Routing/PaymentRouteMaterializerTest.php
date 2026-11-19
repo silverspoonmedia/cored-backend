@@ -2,11 +2,11 @@
 
 namespace App\Domain\PaymentGateway\Tests\Unit\Support\Routing;
 
+use App\Domain\PaymentGateway\Database\Seeders\PaymentGatewaySeeder;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
-use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Support\Routing\PaymentRouteMaterializer;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PaymentRouteMaterializerTest extends TestCase
@@ -17,7 +17,7 @@ class PaymentRouteMaterializerTest extends TestCase
     public function test_materializes_policy_channels_and_routes(): void
     {
         $this->seedPaymentGatewayConfig();
-        $this->seed(\App\Domain\PaymentGateway\Database\Seeders\PaymentGatewaySeeder::class);
+        $this->seed(PaymentGatewaySeeder::class);
 
         $stats = app(PaymentRouteMaterializer::class)->sync(dryRun: false);
 

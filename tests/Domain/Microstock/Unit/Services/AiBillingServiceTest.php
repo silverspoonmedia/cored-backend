@@ -4,13 +4,13 @@ namespace Tests\Domain\Microstock\Unit\Services;
 
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AiBillingService;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
-use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\Concerns\GrantsMicrostockAiCredits;
@@ -290,7 +290,7 @@ class AiBillingServiceTest extends TestCase
         $this->assertNotNull(AiUsageEvent::query()->first()?->billed_at);
     }
 
-  /**
+    /**
      * @return array{0: AssetMetadata, 1: HostedFile}
      */
     private function metadataWithFile(User $user, string $name): array

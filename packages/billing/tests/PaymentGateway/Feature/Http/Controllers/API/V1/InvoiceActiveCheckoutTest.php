@@ -6,10 +6,10 @@ use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentService;
+use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\Concerns\SeedsRolesAndPermissions;
-use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Tests\TestCase;
 
 class InvoiceActiveCheckoutTest extends TestCase

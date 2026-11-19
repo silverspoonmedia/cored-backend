@@ -5,7 +5,6 @@ namespace App\Domain\PaymentGateway\Models;
 // Enum
 use App\Domain\PaymentGateway\Enums\BillingCycle;
 use App\Domain\PaymentGateway\Enums\SubscriptionStatus;
-
 // Internal
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -47,14 +46,14 @@ class Subscription extends Model
     {
         return [
             'billing_cycle' => BillingCycle::class,
-            'amount'        => 'decimal:2',
-            'status'        => SubscriptionStatus::class,
+            'amount' => 'decimal:2',
+            'status' => SubscriptionStatus::class,
             'trial_ends_at' => 'datetime',
-            'started_at'    => 'datetime',
-            'expires_at'    => 'datetime',
-            'auto_renew'    => 'boolean',
-            'cancelled_at'  => 'datetime',
-            'metadata'      => 'array',
+            'started_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'auto_renew' => 'boolean',
+            'cancelled_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Localization;
 
+use App\Support\Localization\LocalePreference;
 use FilesystemIterator;
 use RecursiveArrayIterator;
 use RecursiveDirectoryIterator;
@@ -289,7 +290,7 @@ class LocaleParityTest extends TestCase
      */
     private function supportedLocales(): array
     {
-        return \App\Support\Localization\LocalePreference::supported();
+        return LocalePreference::supported();
     }
 
     /**

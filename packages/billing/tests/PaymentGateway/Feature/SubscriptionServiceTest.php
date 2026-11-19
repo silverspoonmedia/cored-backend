@@ -4,7 +4,6 @@ namespace App\Domain\PaymentGateway\Tests\Feature;
 
 use App\Domain\PaymentGateway\Enums\BillingCycle;
 use App\Domain\PaymentGateway\Enums\SubscriptionStatus;
-use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\SubscriptionService;

@@ -17,6 +17,7 @@ use App\Support\Auth\UserPresenter;
 use App\Support\Encryption\Cache\SensitiveCacheValue;
 use App\Support\Product\Exceptions\ProductActivationException;
 use App\Support\Product\Exceptions\ProductNotFoundException;
+use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
 use PHPOpenSourceSaver\JWTAuth\JWTGuard;
 
 class AuthService
@@ -70,7 +72,7 @@ class AuthService
      */
     private function activateImplicitProducts(User $user): void
     {
-        foreach (\App\Support\Product\ProductRegistry::implicitProductKeys() as $productKey) {
+        foreach (ProductRegistry::implicitProductKeys() as $productKey) {
             try {
                 $this->productActivations->activateImplicit($user, $productKey, 'register_hook');
             } catch (ProductActivationException|ProductNotFoundException $e) {
@@ -161,7 +163,7 @@ class AuthService
         }
 
         if (! is_string($tokenString) || $tokenString === '') {
-            throw new \PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException('Token not provided');
+            throw new JWTException('Token not provided');
         }
 
         return $this->refreshFromToken($tokenString);
@@ -189,7 +191,7 @@ class AuthService
             $user = $guard->setToken($newToken)->user();
 
             if (! $user instanceof User) {
-                throw new \PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException('User not found');
+                throw new JWTException('User not found');
             }
 
             return $this->buildAuthPayload($user, $newToken, $ttlMinutes, $remember);

@@ -124,7 +124,7 @@ class AiConnectionService
      */
     public function update(User $actor, AiConnection $connection, array $data): AiConnection
     {
-        $updated = DB::transaction(function () use ($actor, $connection, $data): AiConnection {
+        $updated = DB::transaction(function () use ($connection, $data): AiConnection {
             /** @var AiConnection $locked */
             $locked = AiConnection::query()->whereKey($connection->id)->lockForUpdate()->firstOrFail();
 

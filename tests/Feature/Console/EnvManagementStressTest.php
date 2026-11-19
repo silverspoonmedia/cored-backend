@@ -7,6 +7,7 @@ use App\Support\EnvironmentCurator;
 use App\Support\EnvironmentKeyWriter;
 use App\Support\EnvironmentMutationGuard;
 use App\Support\EnvironmentProfileManager;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
 use Tests\TestCase;
@@ -446,7 +447,7 @@ class EnvManagementStressTest extends TestCase
     {
         $writer = new EnvironmentKeyWriter;
 
-        $this->expectException(\Illuminate\Contracts\Filesystem\FileNotFoundException::class);
+        $this->expectException(FileNotFoundException::class);
 
         $this->guard->run(
             'key:generate',

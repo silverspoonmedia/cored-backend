@@ -2,16 +2,15 @@
 
 namespace Tests\Domain\Archivd\Unit\Billing;
 
+use App\Domain\Archivd\Support\ArchivdCatalog;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PurchaseChangeType;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\ServiceEntitlement;
-use App\Domain\Archivd\Support\ArchivdCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\SeedsCurrencies;
-use Tests\Domain\Archivd\Unit\Billing\ArchivdBillingScenarioHarness;
 use Tests\TestCase;
 
 /**
@@ -37,14 +36,14 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_T01_free_user_no_purchase(): void
+    public function test_t01_free_user_no_purchase(): void
     {
         $this->assertSame($this->free(), $this->quotaBytes());
         $this->assertNull($this->activeMain());
         $this->assertSame(0, ServiceEntitlement::query()->where('user_id', $this->user->id)->count());
     }
 
-    public function test_T02_new_buy_1tb(): void
+    public function test_t02_new_buy_1tb(): void
     {
         $this->at('2026-01-18 12:00:00');
         $r = $this->checkout($this->main1);
@@ -58,7 +57,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertSame($this->expectedQuota($this->main1), $this->quotaBytes());
     }
 
-    public function test_T03_new_buy_2tb(): void
+    public function test_t03_new_buy_2tb(): void
     {
         $this->at('2026-01-18 12:00:00');
         $r = $this->checkout($this->main2);
@@ -68,7 +67,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertSame($this->expectedQuota($this->main2), $this->quotaBytes());
     }
 
-    public function test_T04_renew_same_1tb_mid_period(): void
+    public function test_t04_renew_same_1tb_mid_period(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -82,7 +81,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertTrue($this->activeMain()->ends_at->equalTo(Carbon::parse('2026-03-19 12:00:00')));
     }
 
-    public function test_T05_renew_on_exact_ends_at(): void
+    public function test_t05_renew_on_exact_ends_at(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -94,7 +93,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertTrue($this->activeMain()->ends_at->equalTo(Carbon::parse('2026-03-19 12:00:00')));
     }
 
-    public function test_T06_first_addon_100_only_no_main(): void
+    public function test_t06_first_addon_100_only_no_main(): void
     {
         $this->at('2026-01-27 12:00:00');
         $r = $this->checkout($this->addon100);
@@ -106,7 +105,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertSame($this->expectedQuota(null, 1, 0), $this->quotaBytes());
     }
 
-    public function test_T07_first_addon_500_only(): void
+    public function test_t07_first_addon_500_only(): void
     {
         $this->at('2026-01-30 12:00:00');
         $this->checkout($this->addon500);
@@ -115,7 +114,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertSame($this->expectedQuota(null, 0, 1), $this->quotaBytes());
     }
 
-    public function test_T08_same_day_second_100_freezes_ends(): void
+    public function test_t08_same_day_second_100_freezes_ends(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -127,7 +126,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertTrue($ent->ends_at->equalTo($ends));
     }
 
-    public function test_T09_100_then_500_share_ends(): void
+    public function test_t09_100_then_500_share_ends(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -140,7 +139,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertTrue($e100->ends_at->equalTo(Carbon::parse('2026-02-26 12:00:00')));
     }
 
-    public function test_T10_addon_anniversary_pay_full_stack(): void
+    public function test_t10_addon_anniversary_pay_full_stack(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -157,7 +156,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertTrue($this->sharedAddonEndsAt()->equalTo(Carbon::parse('2026-03-28 12:00:00')));
     }
 
-    public function test_T11_upgrade_1tb_to_2tb_mid_cycle(): void
+    public function test_t11_upgrade_1tb_to_2tb_mid_cycle(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -177,7 +176,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertSame(EntitlementStatus::Expired, $this->entitlementFor($this->main1)->status);
     }
 
-    public function test_T12_downgrade_2tb_to_1tb_mid_cycle(): void
+    public function test_t12_downgrade_2tb_to_1tb_mid_cycle(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main2);
@@ -190,7 +189,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertSame($this->main1->id, $this->activeMain()->service_id);
     }
 
-    public function test_T13_zero_charge_downgrade_immediate_fulfill(): void
+    public function test_t13_zero_charge_downgrade_immediate_fulfill(): void
     {
         // Day-1 of $54.95 period: huge credit vs $24.95 list → charge 0 + surplus
         $this->at('2026-01-18 12:00:00');
@@ -206,7 +205,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertNull($r['purchase']->invoice);
     }
 
-    public function test_T14_main_exclusive_after_switch(): void
+    public function test_t14_main_exclusive_after_switch(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -218,7 +217,7 @@ class ArchivdBillingTameUseCasesTest extends TestCase
         $this->assertSame(EntitlementStatus::Active, $this->entitlementFor($this->main2)->status);
     }
 
-    public function test_T15_free_always_stacks_with_paid(): void
+    public function test_t15_free_always_stacks_with_paid(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);

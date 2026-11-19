@@ -8,6 +8,7 @@ use App\Domain\Ai\Services\AiConnectionService;
 use App\Domain\Identity\Models\User;
 use App\Support\Settings\Repositories\Contracts\SystemSettingRepositoryInterface;
 use App\Support\Settings\SettingRegistry;
+use Database\Seeders\LocalSettingsSeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Throwable;
@@ -20,7 +21,7 @@ use Throwable;
  * binds consumer slug settings (Microstock vision/thinking) and
  * promotes the flagged entry to default.
  *
- * Same contract as {@see \Database\Seeders\LocalSettingsSeeder}: `APP_ENV=local` only, idempotent
+ * Same contract as {@see LocalSettingsSeeder}: `APP_ENV=local` only, idempotent
  * upsert so re-seeding refreshes local values. Staging/production wire
  * connections by hand at Settings → AI connections.
  *

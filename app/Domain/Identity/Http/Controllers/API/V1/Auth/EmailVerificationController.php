@@ -2,9 +2,9 @@
 
 namespace App\Domain\Identity\Http\Controllers\API\V1\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\Auth\EmailVerificationService;
+use App\Http\Controllers\Controller;
 use App\Support\Auth\UserPresenter;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;

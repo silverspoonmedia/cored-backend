@@ -4,6 +4,7 @@ namespace Tests\Domain\Archivd\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Archivd\Models\FileUpload;
 use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Services\DirectUploadService;
 use App\Domain\Archivd\Services\SignedDownloadService;
 use App\Domain\Identity\Models\User;
@@ -275,7 +276,7 @@ class ArchivdCoverageGapTest extends TestCase
         $this->grantPaidMain($target);
 
         // Seed committed bytes on the target so the response is distinguishable.
-        \App\Domain\Archivd\Models\HostedFile::query()->create([
+        HostedFile::query()->create([
             'user_id' => $target->id,
             'folder_id' => null,
             'name' => 't.bin',

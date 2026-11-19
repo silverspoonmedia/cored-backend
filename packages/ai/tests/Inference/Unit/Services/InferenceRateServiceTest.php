@@ -2,9 +2,9 @@
 
 namespace Tests\Domain\Inference\Unit\Services;
 
+use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Inference\Enums\InferenceRateSource;
 use App\Domain\Inference\Services\InferenceRateService;
-use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

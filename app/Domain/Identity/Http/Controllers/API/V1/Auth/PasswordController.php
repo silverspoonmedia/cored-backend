@@ -2,12 +2,12 @@
 
 namespace App\Domain\Identity\Http\Controllers\API\V1\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Domain\Identity\Http\Requests\Auth\ChangePasswordRequest;
 use App\Domain\Identity\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Domain\Identity\Http\Requests\Auth\ResetPasswordRequest;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\Auth\PasswordResetService;
+use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;

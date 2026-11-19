@@ -3,13 +3,13 @@
 namespace Tests\Domain\Ai\Feature\Database\Seeders;
 
 use App\Domain\Ai\Contracts\AiConnectionProbe;
+use App\Domain\Ai\Database\Seeders\AiConnectionSeeder;
 use App\Domain\Ai\Enums\AiConnectionStatus;
 use App\Domain\Ai\Models\AiConnection;
 use App\Domain\Ai\Services\AiConnectionResolver;
 use App\Domain\Ai\Support\AiConnectionTestResult;
 use App\Domain\Identity\Models\User;
 use App\Support\Settings\Repositories\Contracts\SystemSettingRepositoryInterface;
-use App\Domain\Ai\Database\Seeders\AiConnectionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;

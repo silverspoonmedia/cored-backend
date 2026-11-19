@@ -8,9 +8,9 @@ use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
 use App\Domain\PaymentGateway\Models\PaymentChannelRouteSnapshot;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
+use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Tests\TestCase;
 
 class InvoiceChannelFeeServiceTest extends TestCase

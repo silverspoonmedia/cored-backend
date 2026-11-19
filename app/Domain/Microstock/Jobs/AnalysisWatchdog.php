@@ -14,6 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
 
 /**
  * Single authority that declares stalled AI analysis failed. With decoupled
@@ -114,7 +115,7 @@ class AnalysisWatchdog implements ShouldQueue
                     return;
                 }
 
-                if (\Illuminate\Support\Carbon::parse($completedAt)->isAfter($cutoff)) {
+                if (Carbon::parse($completedAt)->isAfter($cutoff)) {
                     return;
                 }
 
@@ -141,10 +142,10 @@ class AnalysisWatchdog implements ShouldQueue
             });
     }
 
-    private function isPastGrace(?string $startedAt, ?\Illuminate\Support\Carbon $fallbackCreatedAt, int $graceSeconds): bool
+    private function isPastGrace(?string $startedAt, ?Carbon $fallbackCreatedAt, int $graceSeconds): bool
     {
         if ($startedAt !== null) {
-            return \Illuminate\Support\Carbon::parse($startedAt)->lt(now()->subSeconds($graceSeconds));
+            return Carbon::parse($startedAt)->lt(now()->subSeconds($graceSeconds));
         }
 
         if ($fallbackCreatedAt !== null) {

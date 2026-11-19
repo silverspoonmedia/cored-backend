@@ -8,11 +8,11 @@ use App\Domain\Archivd\Models\FileUpload;
 use App\Domain\Archivd\Models\FileVariant;
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Models\UserQuota;
+use App\Domain\Archivd\Support\ArchivdCatalog;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Services\ServiceEntitlementService;
-use App\Domain\Archivd\Support\ArchivdCatalog;
 use App\Support\Presentation\BytePresenter;
 use App\Support\Product\Models\ProductActivation;
 

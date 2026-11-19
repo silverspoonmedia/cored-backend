@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Support;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Support\SpaPublicUrl;
 
 final class InvoiceWebDestination
 {
@@ -16,10 +17,10 @@ final class InvoiceWebDestination
         $invoiceId = self::invoiceId($invoice);
 
         if ($type === 'service_purchase' && $invoiceableId !== null) {
-            return \App\Support\SpaPublicUrl::to('/apps/service-purchases/'.$invoiceableId);
+            return SpaPublicUrl::to('/apps/service-purchases/'.$invoiceableId);
         }
 
-        return \App\Support\SpaPublicUrl::to('/apps/invoices/'.$invoiceId);
+        return SpaPublicUrl::to('/apps/invoices/'.$invoiceId);
     }
 
     /**
@@ -40,7 +41,7 @@ final class InvoiceWebDestination
             return null;
         }
 
-        return \App\Support\SpaPublicUrl::to('/apps/service-purchases/'.self::invoiceableId($invoice));
+        return SpaPublicUrl::to('/apps/service-purchases/'.self::invoiceableId($invoice));
     }
 
     /**

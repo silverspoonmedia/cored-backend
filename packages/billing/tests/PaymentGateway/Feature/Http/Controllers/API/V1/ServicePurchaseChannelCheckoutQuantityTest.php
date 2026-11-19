@@ -2,21 +2,21 @@
 
 namespace App\Domain\PaymentGateway\Tests\Feature\Http\Controllers\API\V1;
 
-use App\Domain\Service\Tests\Support\TestPlans;
-
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentService;
+use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePrice;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Tests\Support\TestPlans;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Mockery;
 use Tests\Concerns\SeedsCurrencies;
 use Tests\Concerns\SeedsRolesAndPermissions;
-use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
 use Tests\TestCase;
 
 class ServicePurchaseChannelCheckoutQuantityTest extends TestCase
@@ -82,7 +82,7 @@ class ServicePurchaseChannelCheckoutQuantityTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $this->partialMock(\App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService::class);
+        $this->partialMock(IpaymuPaymentService::class);
 
         $this->mock(MidtransPaymentService::class, function ($mock) use ($invoice): void {
             $mock->shouldReceive('charge')

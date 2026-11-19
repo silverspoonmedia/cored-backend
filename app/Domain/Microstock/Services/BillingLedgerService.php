@@ -8,6 +8,7 @@ use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -232,7 +233,7 @@ class BillingLedgerService
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<AiCreditTransaction>| \Illuminate\Database\Eloquent\Builder<AiUsageEvent>  $query
+     * @param  Builder<AiCreditTransaction>| Builder<AiUsageEvent>  $query
      */
     private function applyDateFilters(mixed $query, ?string $from, ?string $to): void
     {

@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Archivd\Unit\Billing;
 
+use App\Domain\Archivd\Support\ArchivdCatalog;
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
@@ -10,15 +11,12 @@ use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Exceptions\ServiceException;
 use App\Domain\Service\Models\Service;
-use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePrice;
 use App\Domain\Service\Services\MainPlanChangeCalculator;
-use App\Domain\Archivd\Support\ArchivdCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\SeedsCurrencies;
-use Tests\Domain\Archivd\Unit\Billing\ArchivdBillingScenarioHarness;
 use Tests\TestCase;
 
 /**
@@ -45,7 +43,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_A01_credit_base_after_net_upgrade_uses_list_not_charge(): void
+    public function test_a01_credit_base_after_net_upgrade_uses_list_not_charge(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -63,7 +61,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertEqualsWithDelta($creditFromList, $down['quote']['credit_amount'], 0.15);
     }
 
-    public function test_A02_zero_charge_switch_preserves_list_credit_base(): void
+    public function test_a02_zero_charge_switch_preserves_list_credit_base(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main2);
@@ -82,7 +80,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertLessThan(self::PRICE_2TB, $again['quote']['charge_amount']);
     }
 
-    public function test_A03_upgrade_on_last_day_credit_near_zero(): void
+    public function test_a03_upgrade_on_last_day_credit_near_zero(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -95,7 +93,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertEqualsWithDelta(self::PRICE_2TB, $r['quote']['charge_amount'], 1.0);
     }
 
-    public function test_A04_downgrade_day1_large_surplus_days(): void
+    public function test_a04_downgrade_day1_large_surplus_days(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main2);
@@ -110,7 +108,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertTrue($this->activeMain()->ends_at->equalTo($expectedEnd));
     }
 
-    public function test_A05_period_fixed_30_days_aligned_with_credit_divisor(): void
+    public function test_a05_period_fixed_30_days_aligned_with_credit_divisor(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -129,7 +127,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertEqualsWithDelta($expected, $credit, 0.05);
     }
 
-    public function test_A06_renew_when_already_expired_no_grace(): void
+    public function test_a06_renew_when_already_expired_no_grace(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -148,7 +146,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertSame(EntitlementStatus::Active, $this->entitlementFor($this->main1)->status);
     }
 
-    public function test_A07_addon_buy_while_ends_at_already_due(): void
+    public function test_a07_addon_buy_while_ends_at_already_due(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -159,7 +157,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->checkout($this->addon100);
     }
 
-    public function test_A08_unpaid_renewal_blocks_unit_buy(): void
+    public function test_a08_unpaid_renewal_blocks_unit_buy(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -183,7 +181,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertNull($this->createAddonRenewalOnly(), 'still one pending');
     }
 
-    public function test_A09_two_pending_renewal_prevention(): void
+    public function test_a09_two_pending_renewal_prevention(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -195,7 +193,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertNull($b);
     }
 
-    public function test_A10_equal_storage_mains_classified_by_storage_only(): void
+    public function test_a10_equal_storage_mains_classified_by_storage_only(): void
     {
         // Fake second main with same storage as 1TB
         $clone = Service::query()->create([
@@ -219,7 +217,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertSame(PurchaseChangeType::Downgrade->value, $r['quote']['change_type']);
     }
 
-    public function test_A11_checkout_free_code_blocked(): void
+    public function test_a11_checkout_free_code_blocked(): void
     {
         $free = Service::query()->create([
             'code' => ArchivdCatalog::CODE_FREE,
@@ -237,7 +235,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->checkout($free);
     }
 
-    public function test_A12_unit_on_due_day_blocked_renew_then_unit_works(): void
+    public function test_a12_unit_on_due_day_blocked_renew_then_unit_works(): void
     {
         // Order A: unit buy on due day is blocked
         $this->at('2026-01-27 12:00:00');
@@ -269,7 +267,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertTrue($this->entitlementFor($this->addon500)->ends_at->equalTo($endsAfterRenew));
     }
 
-    public function test_A13_main_switch_resets_period_to_now_not_old_anniversary(): void
+    public function test_a13_main_switch_resets_period_to_now_not_old_anniversary(): void
     {
         $this->at('2026-01-18 12:00:00');
         $this->checkout($this->main1);
@@ -281,7 +279,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertTrue($this->activeMain()->ends_at->equalTo(Carbon::parse('2026-03-12 12:00:00')));
     }
 
-    public function test_A14_expired_addon_rebuy_resets_qty_to_one(): void
+    public function test_a14_expired_addon_rebuy_resets_qty_to_one(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);
@@ -300,7 +298,7 @@ class ArchivdBillingAnomalyUseCasesTest extends TestCase
         $this->assertSame(EntitlementStatus::Active, $this->entitlementFor($this->addon100)->status);
     }
 
-    public function test_A15_missing_usd_price_on_renewal_soft_fails(): void
+    public function test_a15_missing_usd_price_on_renewal_soft_fails(): void
     {
         $this->at('2026-01-27 12:00:00');
         $this->checkout($this->addon100);

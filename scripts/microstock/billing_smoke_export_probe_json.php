@@ -7,14 +7,13 @@
 require __DIR__.'/../../vendor/autoload.php';
 
 $app = require_once __DIR__.'/../../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\Microstock\Enums\AnalysisStageStatus;
-use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AnalysisStageService;
+use Illuminate\Contracts\Console\Kernel;
 
 $folderId = $argv[1] ?? null;
 $label = $argv[2] ?? 'manual-export';

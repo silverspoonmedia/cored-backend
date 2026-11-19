@@ -4,7 +4,6 @@ namespace App\Domain\ErrorLog\Support;
 
 use App\Domain\ErrorLog\Models\ErrorLog;
 use App\Domain\ErrorLog\Repositories\Contracts\ErrorLogRepositoryInterface;
-use App\Domain\ErrorLog\Support\ErrorLogRealtime;
 use App\Exceptions\BusinessRuleException;
 use App\Support\ErrorLogging\ExceptionRecorder;
 use Illuminate\Http\Request;

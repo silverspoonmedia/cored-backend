@@ -2,11 +2,11 @@
 
 namespace App\Domain\Identity\Http\Controllers\API\V1;
 
-use App\Http\Controllers\Controller;
 use App\Domain\Identity\Http\Requests\Lookup\LookupMenusRequest;
 use App\Domain\Identity\Http\Requests\Lookup\LookupRequest;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\Lookup\LookupService;
+use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;

@@ -2,13 +2,14 @@
 
 namespace App\Domain\Identity\Services\Lookup;
 
-use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\Rbac\RoleService;
+use App\Domain\Navigation\Models\Menu;
+use App\Support\Localization\LocalePreference;
 use App\Support\Localization\TranslationResolver;
-use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class LookupService
 {
@@ -215,7 +216,7 @@ class LookupService
      */
     private function menuMatchIds(Collection $menus, string $needle): array
     {
-        $locales = \App\Support\Localization\LocalePreference::supported();
+        $locales = LocalePreference::supported();
 
         return $menus
             ->filter(function (Menu $menu) use ($needle, $locales): bool {

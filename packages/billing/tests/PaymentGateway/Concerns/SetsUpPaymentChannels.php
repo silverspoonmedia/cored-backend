@@ -2,10 +2,10 @@
 
 namespace App\Domain\PaymentGateway\Tests\Concerns;
 
-use App\Domain\PaymentGateway\Models\Invoice;
-use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Database\Seeders\PaymentChannelSeeder;
 use App\Domain\PaymentGateway\Database\Seeders\PaymentGatewaySeeder;
+use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Models\PaymentGateway;
 use Illuminate\Support\Str;
 
 trait SetsUpPaymentChannels

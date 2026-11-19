@@ -2,7 +2,6 @@
 
 use App\Domain\Identity\Models\User;
 use App\Exceptions\BusinessRuleException;
-use App\Support\ErrorLogging\ExceptionRecorder;
 use App\Http\Kernel;
 use App\Http\Middleware\AuthenticateWithSpaCookie;
 use App\Http\Middleware\OptionalJwtAuthenticate;
@@ -13,6 +12,7 @@ use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\VerifySpaCsrf;
 use App\Support\ApiResponder;
 use App\Support\Auth\SpaCsrf;
+use App\Support\ErrorLogging\ExceptionRecorder;
 use App\Support\Http\StampApiCors;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;

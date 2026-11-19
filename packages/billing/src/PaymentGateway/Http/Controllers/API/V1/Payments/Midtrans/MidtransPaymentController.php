@@ -2,12 +2,12 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\API\V1\Payments\Midtrans;
 
-use App\Http\Controllers\Controller;
 use App\Domain\PaymentGateway\Http\Requests\Payments\Midtrans\MidtransChargeRequest;
 use App\Domain\PaymentGateway\Http\Requests\Payments\Midtrans\MidtransRefundRequest;
 use App\Domain\PaymentGateway\Http\Requests\Payments\Midtrans\MidtransSnapTokenRequest;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentService;
+use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 

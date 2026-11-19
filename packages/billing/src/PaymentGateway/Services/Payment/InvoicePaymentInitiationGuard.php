@@ -10,6 +10,7 @@ use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchroni
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransSdk;
 use App\Support\Encryption\DecryptSourceContext;
 use Illuminate\Support\Facades\DB;
+use iPaymu\iPaymu;
 use Midtrans\Transaction;
 
 /**
@@ -256,7 +257,7 @@ class InvoicePaymentInitiationGuard
      *
      * @throws \Throwable
      */
-    protected function fetchIpaymuTransactionStatus(\iPaymu\iPaymu $client, int $transactionId): array
+    protected function fetchIpaymuTransactionStatus(iPaymu $client, int $transactionId): array
     {
         $response = $client->checkTransaction($transactionId);
 

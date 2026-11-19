@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Bootstrap;
 
+use Illuminate\Contracts\Console\Kernel;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 
 class LoadMonolithEnvironmentVariablesTest extends BaseTestCase
@@ -70,7 +71,7 @@ class LoadMonolithEnvironmentVariablesTest extends BaseTestCase
         require $this->basePath('vendor/autoload.php');
 
         $app = require $this->basePath('bootstrap/app.php');
-        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        $app->make(Kernel::class)->bootstrap();
 
         $this->assertSame('api-key-from-active-env', $app['config']->get('payment.gateways.ipaymu.api_key'));
         $this->assertSame('va-from-active-env', $app['config']->get('payment.gateways.ipaymu.va'));

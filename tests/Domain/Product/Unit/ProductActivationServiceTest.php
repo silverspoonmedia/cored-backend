@@ -9,7 +9,6 @@ use App\Support\Product\Exceptions\ProductActivationException;
 use App\Support\Product\Exceptions\ProductNotFoundException;
 use App\Support\Product\Models\ProductActivation;
 use App\Support\Product\Services\ProductActivationService;
-use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\Concerns\SeedsRolesAndPermissions;

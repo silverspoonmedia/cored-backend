@@ -7,6 +7,7 @@ use App\Domain\Service\Database\Factories\ServiceFactory;
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
+use App\Providers\Domain\MicrostockServiceProvider;
 
 /**
  * Microstock's Service factory states, registered as macros on the package factory.
@@ -14,7 +15,7 @@ use App\Domain\Service\Enums\ServiceStatus;
  * The billing package owns a product-agnostic `ServiceFactory`; a SKU code is
  * Microstock knowledge, so the states live here.
  *
- * Registered from {@see \App\Providers\Domain\MicrostockServiceProvider::boot()}.
+ * Registered from {@see MicrostockServiceProvider::boot()}.
  */
 final class MicrostockServiceStates
 {

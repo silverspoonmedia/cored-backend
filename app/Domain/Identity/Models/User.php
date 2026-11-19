@@ -5,6 +5,7 @@ namespace App\Domain\Identity\Models;
 use App\Domain\Identity\Notifications\ResetPasswordNotification;
 use App\Domain\Identity\Notifications\VerifyEmailNotification;
 use App\Support\Encryption\Casts\EnvelopeEncrypted;
+use App\Support\Localization\LocalePreference;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
@@ -77,7 +78,7 @@ class User extends Authenticatable implements HasLocalePreference, JWTSubject, M
         $locale = $this->{$column} ?? null;
 
         return is_string($locale)
-            ? \App\Support\Localization\LocalePreference::normalize($locale)
+            ? LocalePreference::normalize($locale)
             : null;
     }
 

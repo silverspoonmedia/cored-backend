@@ -1,0 +1,49 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+
+    paths:
+        - app
+        - packages/ai/src
+        - packages/audit/src
+        - packages/billing/src
+        - packages/navigation/src
+        - packages/notification/src
+        - database
+        - routes
+        - config
+
+    # Without every migration path Larastan cannot read the model columns, and every
+    # `$model->column` in the five packages reports `property.notFound` — 626 of the
+    # findings on the first run were this, not real defects. A new package with its
+    # own `database/migrations` must be added here in the same task.
+    databaseMigrationsPath:
+        - database/migrations
+        - packages/ai/database/migrations
+        - packages/audit/database/migrations
+        - packages/billing/database/migrations
+        - packages/navigation/database/migrations
+        - packages/notification/database/migrations
+
+    # `tests/**` is deliberately outside the analysed surface. A suite is a
+    # scaffold, not shipped code: its helpers lean on `$this->get()`, factories and
+    # `assertSee()` magic that produce findings PHPStan cannot make actionable
+    # without annotating every test. The tests are already the gate for that code.
+
+    # PHPDoc here documents intent (`array{...}` on a payload that arrives over
+    # HTTP), not a proven type. Treating it as certain turns every defensive `??`
+    # and `is_array()` into a false positive.
+    treatPhpDocTypesAsCertain: false
+
+    tmpDir: .phpstan.cache
+
+    ignoreErrors:
+        # `JsonResource::$this->field` is `__get` on the wrapped model, not a
+        # property of the resource class. PHPStan cannot see the model's columns
+        # through it, so every resource field reports `property.notFound`.
+        - identifier: property.notFound
+          paths:
+              - */Http/Resources/*

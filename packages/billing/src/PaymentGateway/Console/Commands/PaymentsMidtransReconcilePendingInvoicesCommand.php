@@ -4,17 +4,14 @@ namespace App\Domain\PaymentGateway\Console\Commands;
 
 // Contract
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
-
 // Service
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransSdk;
 use App\Support\Encryption\DecryptSourceContext;
-
 // External
-use Midtrans\Transaction;
-
-// Internal
 use Illuminate\Console\Command;
+// Internal
+use Midtrans\Transaction;
 
 // Class
 class PaymentsMidtransReconcilePendingInvoicesCommand extends Command

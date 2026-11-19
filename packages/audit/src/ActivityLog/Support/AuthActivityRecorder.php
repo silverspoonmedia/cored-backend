@@ -4,7 +4,6 @@ namespace App\Domain\ActivityLog\Support;
 
 use App\Domain\Identity\Listeners\LogAuthenticationEvents;
 use App\Domain\Identity\Models\User;
-use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 
 /**
  * Writes authentication lifecycle entries to Spatie activitylog (`log_name: auth`).

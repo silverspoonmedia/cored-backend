@@ -2,10 +2,10 @@
 
 namespace App\Domain\Service\Models;
 
+use App\Domain\Service\Database\Factories\ServiceFactory;
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
-use App\Domain\Service\Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

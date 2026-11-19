@@ -2,8 +2,6 @@
 
 namespace App\Domain\Service\Tests\Unit\Services;
 
-use App\Domain\Service\Tests\Support\TestPlans;
-
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\EntitlementStatus;
@@ -11,6 +9,9 @@ use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceEntitlementService;
+use App\Domain\Service\Tests\Support\FixedPeriodTestHandler;
+use App\Domain\Service\Tests\Support\TestPlans;
+use App\Support\Billing\FulfillmentRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -26,8 +27,8 @@ class ServiceEntitlementServiceTest extends TestCase
         parent::setUp();
 
         // `test_target` bills a fixed 30-day period — the seam a product uses.
-        app(\App\Support\Billing\FulfillmentRegistry::class)
-            ->register(\App\Domain\Service\Tests\Support\FixedPeriodTestHandler::class);
+        app(FulfillmentRegistry::class)
+            ->register(FixedPeriodTestHandler::class);
 
         $this->service = app(ServiceEntitlementService::class);
     }

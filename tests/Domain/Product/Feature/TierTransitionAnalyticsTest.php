@@ -4,13 +4,13 @@ namespace Tests\Domain\Product\Feature;
 
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
+use App\Domain\Service\Database\Factories\ServiceFactory;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceEntitlementService;
 use App\Domain\Service\Services\ServiceFulfillmentService;
 use App\Support\Product\Models\ProductAnalytic;
 use App\Support\Product\Services\ProductActivationService;
-use App\Domain\Service\Database\Factories\ServiceFactory;
 use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +23,9 @@ class TierTransitionAnalyticsTest extends TestCase
     use SeedsRolesAndPermissions;
 
     private ServiceEntitlementService $entitlements;
+
     private ServiceFulfillmentService $fulfillment;
+
     private ProductActivationService $activations;
 
     protected function setUp(): void

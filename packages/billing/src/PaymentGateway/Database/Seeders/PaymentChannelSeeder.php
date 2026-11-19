@@ -2,8 +2,8 @@
 
 namespace App\Domain\PaymentGateway\Database\Seeders;
 
-use App\Domain\PaymentGateway\Support\Routing\PaymentRouteMaterializer;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
+use App\Domain\PaymentGateway\Support\Routing\PaymentRouteMaterializer;
 use Illuminate\Database\Seeder;
 
 class PaymentChannelSeeder extends Seeder

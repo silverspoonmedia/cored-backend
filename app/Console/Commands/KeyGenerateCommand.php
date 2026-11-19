@@ -4,9 +4,9 @@ namespace App\Console\Commands;
 
 use App\Support\EnvironmentKeyWriter;
 use App\Support\EnvironmentMutationGuard;
+use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Console\Prohibitable;
-use Illuminate\Console\Command;
 use Illuminate\Encryption\Encrypter;
 use Symfony\Component\Console\Attribute\AsCommand;
 
