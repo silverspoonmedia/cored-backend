@@ -14,11 +14,24 @@
         <testsuite name="Domain">
             <directory>tests/Domain</directory>
         </testsuite>
-        <testsuite name="Packages">
+        <!-- One suite per core package, so a package's tests can be run alone
+             while the full run still covers every tree: PHPUnit runs all suites
+             in this file by default. A directory may appear in exactly one
+             suite — listing it twice makes PHPUnit warn per file and turns a
+             green run's exit code to 1. -->
+        <testsuite name="Package:audit">
             <directory>packages/audit/tests</directory>
+        </testsuite>
+        <testsuite name="Package:ai">
             <directory>packages/ai/tests</directory>
+        </testsuite>
+        <testsuite name="Package:billing">
             <directory>packages/billing/tests</directory>
+        </testsuite>
+        <testsuite name="Package:navigation">
             <directory>packages/navigation/tests</directory>
+        </testsuite>
+        <testsuite name="Package:notification">
             <directory>packages/notification/tests</directory>
         </testsuite>
     </testsuites>

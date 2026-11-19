@@ -62,6 +62,7 @@ Four settings are load-bearing, each with its reason in the config:
 php artisan pint --test          # formatting — also a `backend` CI job step
 php artisan phpstan              # static analysis — also a `backend` CI job step
 php artisan test                 # whole backend suite — what the `backend` CI job runs
+php artisan test --testsuite=Package:billing   # one core package's tree alone
 php artisan test --filter=Documentation
 php artisan test --filter=Locale
 php scripts/docs-guard.php
@@ -81,3 +82,7 @@ php artisan test                 # whole suite; ~7 min on the dev machine, longe
 A green run is `failed: 0`, **not** `passed == tests`: the suite ends with one skipped OCI KMS integration test, seven more cross-repo skips when the sibling checkout is absent, and one risky stdout report — all by design. The exact counts and why they must stay are in [reference-tooling.md](reference-tooling.md#a-green-run-is-failed-0).
 
 Run **one** suite at a time. `tests/bootstrap.php` takes an advisory lock on `bootstrap/cache/.phpunit.lock` and refuses to start a second concurrent run, because `bootstrap/cache` and the temporary domain fixtures are shared and a concurrent run reports phantom errors in files the change never touched. The full reasoning is in [reference-tooling.md — one suite at a time](reference-tooling.md#one-suite-at-a-time).
+
+## Per-package suites
+
+`phpunit.xml` gives each package its own `Package:{slug}` suite, so one package runs alone (`php artisan test --testsuite=Package:billing`); PHPUnit runs every suite in the file by default, so the full run still covers all five trees. A directory may appear in exactly one suite — listing it twice makes PHPUnit reject it for the second suite, warn once per file, and exit non-zero on an otherwise green run; `PackageTestSuiteTest` fails on both a missing wiring and a duplicate. This isolates the **tree**, not the host: those tests still extend `Tests\TestCase`, use `Tests\Concerns\*` and boot the whole monolith. A genuinely standalone run needs Orchestra Testbench plus a fixture stubbing the kernel contracts; no package has that yet. A package that ships tests nobody wired would contribute zero assertions, silently.

@@ -441,13 +441,14 @@ class DomainManager
         File::ensureDirectoryExists($domainPath.'/Repositories/Eloquent');
         File::ensureDirectoryExists($domainPath.'/Models');
 
-        File::put($this->providerPath($name), $this->providerStub($name));
-        File::put($this->apiRoutePath($name), $this->routeStub($name, 'API'));
-        File::put($this->webRoutePath($name), $this->routeStub($name, 'Web'));
-        File::put($this->roleSeederPath($name), $this->roleSeederStub($name));
+        $this->writeSourceFile($this->providerPath($name), $this->providerStub($name));
+        $this->writeSourceFile($this->apiRoutePath($name), $this->routeStub($name, 'API'));
+        $this->writeSourceFile($this->webRoutePath($name), $this->routeStub($name, 'Web'));
+        $this->writeSourceFile($this->roleSeederPath($name), $this->roleSeederStub($name));
 
         $testsFeature = $this->testsPath($name).'/Feature';
         File::ensureDirectoryExists($testsFeature);
+        // A placeholder, not a source file — it has to stay empty.
         File::put($testsFeature.'/.gitkeep', '');
 
         $this->registerInConfig($name, kind: 'product', locked: $locked, parent: $parent);
@@ -583,7 +584,7 @@ class DomainManager
             throw new RuntimeException('Could not update config/domains.php — closing ]; not found.');
         }
 
-        File::put($path, $updated);
+        $this->writeSourceFile($path, $updated);
         config(["domains.{$name}" => $runtime]);
     }
 
@@ -604,7 +605,7 @@ class DomainManager
             throw new RuntimeException("Could not remove [{$name}] from config/domains.php.");
         }
 
-        File::put($path, $updated);
+        $this->writeSourceFile($path, $updated);
 
         $all = config('domains', []);
         if (is_array($all)) {
@@ -648,7 +649,7 @@ class DomainManager
             throw new RuntimeException('Could not register provider in bootstrap/providers.php.');
         }
 
-        File::put($path, $updated);
+        $this->writeSourceFile($path, $updated);
     }
 
     public function unregisterProvider(string $name): void
@@ -661,7 +662,7 @@ class DomainManager
         $contents = str_replace("\nuse App\\Providers\\Domain\\{$short};", '', $contents);
         $contents = str_replace("\n    {$short}::class,", '', $contents);
 
-        File::put($path, $contents);
+        $this->writeSourceFile($path, $contents);
     }
 
     public function registerApiV1Require(string $name): void
@@ -675,7 +676,7 @@ class DomainManager
             return;
         }
 
-        File::put($path, $this->appendLine($contents, $line));
+        $this->writeSourceFile($path, $this->appendLine($contents, $line));
     }
 
     public function registerWebRequire(string $name): void
@@ -700,7 +701,7 @@ class DomainManager
             throw new RuntimeException('Could not register web route require in routes/web.php.');
         }
 
-        File::put($path, $updated);
+        $this->writeSourceFile($path, $updated);
     }
 
     /**
@@ -739,7 +740,7 @@ class DomainManager
         }
 
         if ($updated !== $contents) {
-            File::put($path, $updated);
+            $this->writeSourceFile($path, $updated);
         }
     }
 
@@ -803,7 +804,7 @@ class DomainManager
             }
         }
 
-        File::put($path, implode("\n", $filtered));
+        $this->writeSourceFile($path, implode("\n", $filtered));
     }
 
     /**
@@ -890,7 +891,7 @@ class DomainManager
         // Rejoin faithfully: the trailing empty elements preg_split leaves behind
         // *are* the file's trailing newlines, so make → remove round-trips to the
         // same bytes. Appending an extra newline here used to add a blank line.
-        File::put($path, implode("\n", $filtered));
+        $this->writeSourceFile($path, implode("\n", $filtered));
     }
 
     /**
@@ -906,6 +907,22 @@ class DomainManager
         }
 
         return $trimmed."\n".$line.$suffix;
+    }
+
+    /**
+     * The only writer for a source file edited in place.
+     *
+     * Every mutation above anchors on the closing `];` of a PHP file and re-emits
+     * it from a literal, so the file's own trailing newline is consumed and not
+     * given back — `config/domains.php` and `bootstrap/providers.php` came out
+     * without one, which Pint reports as `single_blank_line_at_eof` on the next
+     * commit. Normalising here means no caller can produce a source file that
+     * fails the style gate, and make → remove still round-trips to the same bytes
+     * because the normalised suffix is what every write starts from.
+     */
+    private function writeSourceFile(string $path, string $contents): void
+    {
+        File::put($path, rtrim($contents, "\r\n")."\n");
     }
 
     private function providerStub(string $name): string

@@ -77,14 +77,32 @@ class DomainCommandsTest extends TestCase
     {
         $this->purgeTestDomainArtifacts();
 
-        File::put($this->domainsConfigPath, $this->domainsConfigBackup);
-        File::put($this->providersPath, $this->providersBackup);
-        File::put($this->apiV1Path, $this->apiV1Backup);
-        File::put($this->webPath, $this->webBackup);
-        File::put($this->bootstrapPath, $this->bootstrapBackup);
-        File::put($this->databaseSeederPath, $this->databaseSeederBackup);
+        // Restore byte-for-byte, then prove it. A mutation that drops the file's
+        // trailing newline (the `];`-anchored rewrite in DomainManager used to)
+        // would otherwise land in the working tree and fail the next commit's
+        // Pint check, far from the test that caused it.
+        $this->assertRestored($this->domainsConfigPath, $this->domainsConfigBackup);
+        $this->assertRestored($this->providersPath, $this->providersBackup);
+        $this->assertRestored($this->apiV1Path, $this->apiV1Backup);
+        $this->assertRestored($this->webPath, $this->webBackup);
+        $this->assertRestored($this->bootstrapPath, $this->bootstrapBackup);
+        $this->assertRestored($this->databaseSeederPath, $this->databaseSeederBackup);
 
         parent::tearDown();
+    }
+
+    /**
+     * Write the snapshot back and fail when the bytes differ.
+     */
+    private function assertRestored(string $path, string $backup): void
+    {
+        File::put($path, $backup);
+
+        $this->assertSame(
+            $backup,
+            File::get($path),
+            basename($path).' was not restored byte-for-byte — a domain command left it mutated.',
+        );
     }
 
     public function test_domain_list_shows_kind_and_removal_axes(): void
@@ -521,6 +539,56 @@ class DomainCommandsTest extends TestCase
 
         // The live pair this axis was introduced for.
         $this->assertSame('Archivd', $domains->parentOf('Microstock'));
+    }
+
+    public function test_make_then_remove_round_trips_the_files_it_touches(): void
+    {
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--removable' => true,
+        ])->assertSuccessful();
+
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        // Byte-identical, trailing newline included: every one of these files is
+        // rewritten in place by domain:make / domain:remove, and a writer that
+        // drops the final newline fails `pint --test` on the next commit.
+        foreach ([
+            'config/domains.php' => $this->domainsConfigBackup,
+            'bootstrap/providers.php' => $this->providersBackup,
+            'routes/api/v1.php' => $this->apiV1Backup,
+            'routes/web.php' => $this->webBackup,
+            'database/seeders/DatabaseSeeder.php' => $this->databaseSeederBackup,
+        ] as $path => $before) {
+            $this->assertSame(
+                $before,
+                File::get(base_path($path)),
+                $path.' did not survive a make → remove round trip byte-for-byte.',
+            );
+        }
+    }
+
+    public function test_every_source_file_the_commands_rewrite_ends_with_one_newline(): void
+    {
+        foreach ([
+            'config/domains.php',
+            'bootstrap/providers.php',
+            'routes/api/v1.php',
+            'routes/web.php',
+            'database/seeders/DatabaseSeeder.php',
+            'bootstrap/app.php',
+        ] as $path) {
+            $contents = File::get(base_path($path));
+
+            $this->assertSame(
+                rtrim($contents, "\r\n")."\n",
+                $contents,
+                $path.' does not end with exactly one newline — Pint reports that as single_blank_line_at_eof.',
+            );
+        }
     }
 
     private function purgeTestDomainArtifacts(): void
