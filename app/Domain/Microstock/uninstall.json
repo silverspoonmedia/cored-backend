@@ -1259,6 +1259,10 @@
                 {
                     "path": "src/components/HomepageFeatures/index.tsx",
                     "reason": "hand edit (docs site): review the Microstock reference and drop it (line 19)"
+                },
+                {
+                    "path": "docs-coverage.json",
+                    "reason": "coverage manifest entry `domain.microstock` — the page set is retired for this deployment, and the entry is the record of that decision"
                 }
             ]
         }

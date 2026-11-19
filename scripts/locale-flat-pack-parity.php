@@ -65,10 +65,23 @@ const OWNER_OVERRIDES = [
     // The pack `File`/`Files` are noun labels; `actions.php` renders the verb
     // "to file a document" (`id` `Mengajukan`) and is the wrong copy.
     'File' => ['web/archivd', 'type_file'],
-    // `Connect` in `actions.php` is the machine-text `id` `Menghubung`; the
-    // curated copy is the identity-connections button.
-    'Connect' => ['web/identity-connections', 'connect'],
 ];
+
+/**
+ * English scalars with no backend namespace left to own them.
+ *
+ * `Connect` was overridden to the button on a screen that is now SPA-only
+ * (`src/i18n/locales/*.json`), and its backend pack
+ * (`lang/{locale}/web/identity-connections.php`) was deleted with its last
+ * backend reader. Falling back to `actions.php` would compare the pack against
+ * the *named-action* register (`ko` `연결하기`, `ar` `اتصال`), which is correct
+ * there and wrong in a bare button label, so the guard would report three
+ * phantom drifts. There is no honest backend owner: report the scalar as
+ * unowned, not as divergent.
+ *
+ * @var list<string>
+ */
+const UNOWNED_SCALARS = ['Connect'];
 
 [$requested, $flags] = locale_scan_args($argv);
 $verbose = in_array('--verbose', $flags, true);
@@ -239,7 +252,7 @@ foreach ($locales as $locale) {
     }
 
     foreach ($pack as $english => $current) {
-        if (! isset($owners[$english])) {
+        if (! isset($owners[$english]) || in_array($english, UNOWNED_SCALARS, true)) {
             $entry['unowned']++;
 
             continue;

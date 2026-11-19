@@ -10,7 +10,13 @@
     },
     "require": {
         "php": "^8.4",
-        "illuminate/support": "^13.0",
+        "ipaymu/ipaymu-php-api": "^3.0",
+        "laravel/framework": "^13.0",
+        "midtrans/midtrans-php": "^2.6",
+        "nesbot/carbon": "^3.0",
+        "spatie/laravel-activitylog": "^5.0",
+        "symfony/http-foundation": "^8.0",
+        "symfony/http-kernel": "^8.0",
         "symfony/yaml": "^8.1"
     },
     "autoload": {

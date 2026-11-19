@@ -18,7 +18,8 @@ All supported locales in the same change (`en`, `id`, `ja`, `ko`, `zh_CN`, `ar`,
 ## Resolution and placement
 
 - Backend order: `users.locale` → `X-SPA-Locale` header → `locale` cookie → `config('app.locale')`, via `SetLocale` on `web` and `api`. The SPA accepts `zh-CN` at the boundary and canonicalizes to `zh_CN`; never store or return the alias.
-- Application strings → `lang/{locale}/{ui,menu,notifications,mail,list_actions}.php`, `web/*.php` (only what surviving server PHP resolves), `api/*.php`, `forms/*.php`. A screen only the SPA reads belongs in the SPA JSON, not in a new `web/*.php`.
+- Application strings → `lang/{locale}/{ui,mail,list_actions}.php`, `web/*.php` (only what surviving server PHP resolves), `api/*.php`, `forms/*.php`. A screen only the SPA reads belongs in the SPA JSON, not in a new `web/*.php`.
+- A `lang/en` file no call site addresses is dead translation and fails `LocaleOrphanGroupTest` — delete it in all seven locales in the same change. `menu.php`, `notifications.php` and `web/identity-connections.php` were exactly that; do not recreate them.
 - Package-managed packs (`validation.php`, `auth.php`, `passwords.php`, `actions.php`, `pagination.php`, `http-statuses.php`) are curated and flagged like application files — `lang:update` overwrites them (it also runs from `composer update`'s `post-update-cmd`), so re-review after every upgrade and recover with `git checkout -- lang/`.
 - Flat pack `lang/{locale}.json` is in curation scope: owned scalars mirror their canonical PHP owner (`http-statuses` → `ui` → `actions` → first `web/*`), unowned package chrome is curated against the target language. `locale-flat-pack-parity.php` is the guard.
 - Mirrored packs (`validation`, `http-statuses`, `auth`, `passwords`, `pagination`) must read identically to the SPA copy — settle one wording per key, then mirror. `actions.*` is deliberately not mirrored.

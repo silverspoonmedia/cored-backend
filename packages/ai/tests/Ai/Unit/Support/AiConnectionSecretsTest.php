@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Domain\Ai\Unit\Support;
+namespace App\Domain\Ai\Tests\Unit\Support;
 
 use App\Domain\Ai\Exceptions\AiException;
 use App\Domain\Ai\Support\AiConnectionSecrets;

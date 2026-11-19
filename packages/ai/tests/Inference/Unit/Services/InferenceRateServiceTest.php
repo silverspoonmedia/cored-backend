@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Domain\Inference\Unit\Services;
+namespace App\Domain\Inference\Tests\Unit\Services;
 
 use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Inference\Enums\InferenceRateSource;

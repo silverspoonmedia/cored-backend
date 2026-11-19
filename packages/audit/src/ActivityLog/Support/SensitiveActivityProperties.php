@@ -2,7 +2,7 @@
 
 namespace App\Domain\ActivityLog\Support;
 
-use App\Providers\Domain\ActivityLogServiceProvider;
+use App\Domain\ActivityLog\AuditServiceProvider;
 use App\Support\Encryption\DecryptionContext;
 use App\Support\Encryption\EncryptedEnvelope;
 use App\Support\Encryption\EnvelopeEncryptionService;
@@ -19,7 +19,7 @@ use Throwable;
  * {@see SensitiveActivityPropertyPresenter} only.
  *
  * Registered once via `LogActivityAction::beforeLogging()` in
- * {@see ActivityLogServiceProvider}.
+ * {@see AuditServiceProvider}.
  */
 class SensitiveActivityProperties
 {

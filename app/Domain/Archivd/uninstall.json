@@ -1018,6 +1018,14 @@
                 {
                     "path": "src/components/HomepageFeatures/index.tsx",
                     "reason": "hand edit (docs site): review the Archivd reference and drop it (line 19)"
+                },
+                {
+                    "path": "docs-coverage.json",
+                    "reason": "coverage manifest entry `domain.archivd` — the page set is retired for this deployment, and the entry is the record of that decision (line 29)"
+                },
+                {
+                    "path": "scripts/check-docs.mjs",
+                    "reason": "docblock example of a one-line registry entry — prose, not code (line 94)"
                 }
             ]
         }

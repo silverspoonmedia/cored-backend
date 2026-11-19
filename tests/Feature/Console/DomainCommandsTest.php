@@ -307,6 +307,38 @@ class DomainCommandsTest extends TestCase
         ])->assertFailed();
     }
 
+    /**
+     * `PLATFORM_CORE` is the hardcoded half of the core list and `config/domains.php`
+     * is the declared half. `domain:remove` refuses both, but nothing kept the two
+     * in step: a domain added to the registry as `kind => core` (and packaged,
+     * like Navigation) stayed removable as long as somebody forgot the constant,
+     * and vice versa. They are the same set by definition.
+     */
+    public function test_platform_core_matches_every_core_entry_in_the_registry(): void
+    {
+        /** @var array<string, array<string, mixed>> $domains */
+        $domains = config('domains', []);
+
+        $core = [];
+
+        foreach ($domains as $name => $entry) {
+            if (is_array($entry) && ($entry['kind'] ?? null) === 'core') {
+                $core[] = $name;
+            }
+        }
+
+        sort($core);
+
+        $hardcoded = DomainManager::PLATFORM_CORE;
+        sort($hardcoded);
+
+        $this->assertSame(
+            $core,
+            $hardcoded,
+            'DomainManager::PLATFORM_CORE and the `kind => core` entries in config/domains.php are two halves of one list — add the domain to the half it is missing from.',
+        );
+    }
+
     public function test_loaders_list_core_requires_before_product(): void
     {
         $api = File::get($this->apiV1Path);

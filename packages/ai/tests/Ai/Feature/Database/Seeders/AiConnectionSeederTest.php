@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Domain\Ai\Feature\Database\Seeders;
+namespace App\Domain\Ai\Tests\Feature\Database\Seeders;
 
 use App\Domain\Ai\Contracts\AiConnectionProbe;
 use App\Domain\Ai\Database\Seeders\AiConnectionSeeder;

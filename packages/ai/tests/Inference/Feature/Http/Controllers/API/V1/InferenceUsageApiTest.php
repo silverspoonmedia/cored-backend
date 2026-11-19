@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Domain\Inference\Feature\Http\Controllers\API\V1;
+namespace App\Domain\Inference\Tests\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;

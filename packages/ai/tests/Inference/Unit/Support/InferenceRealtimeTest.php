@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Domain\Inference\Unit\Support;
+namespace App\Domain\Inference\Tests\Unit\Support;
 
 use App\Domain\Inference\Events\InferenceCatalogChanged;
 use App\Domain\Inference\Support\InferenceRealtime;

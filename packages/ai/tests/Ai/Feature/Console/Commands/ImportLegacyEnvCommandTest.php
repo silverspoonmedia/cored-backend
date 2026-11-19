@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Domain\Ai\Feature\Console\Commands;
+namespace App\Domain\Ai\Tests\Feature\Console\Commands;
 
 use App\Domain\Ai\Enums\AiConnectionStatus;
 use App\Domain\Ai\Models\AiConnection;

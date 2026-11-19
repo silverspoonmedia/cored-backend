@@ -225,7 +225,10 @@ const MIN_OCCURRENCES = [
         'Истёк' => ['backend' => 1, 'spa' => 1],
         'Действует до' => ['backend' => 2, 'spa' => 4],
         'Источник' => ['backend' => 4, 'spa' => 5],
-        'провайдер' => ['backend' => 19, 'spa' => 37],
+        // Lowered 19 → 17 on 2026-11-19: the orphaned `web/identity-connections.php`
+        // carried both `провайдер` hits (`provider_heading` and the generic
+        // `provider_not_configured`, now an SPA-only pack). Measured count.
+        'провайдер' => ['backend' => 17, 'spa' => 37],
     ],
     // `id` has no single rejected word for most of its collapses — `channel` is
     // correct outside a payment channel, `error` is the ordinary word for a system
@@ -242,7 +245,10 @@ const MIN_OCCURRENCES = [
         // post-mortems in docs/archive/.
         'kedaluwarsa' => ['backend' => 11, 'spa' => 11],
         'Berkas' => ['backend' => 27, 'spa' => 24],
-        'verifikasi' => ['backend' => 14, 'spa' => 23],
+        // Lowered 14 → 12 on 2026-11-19: the orphaned `web/identity-connections.php`
+        // carried both `verifikasi` hits (`verified`/`verify` on the connections
+        // screen, now an SPA-only pack). Measured count after deletion.
+        'verifikasi' => ['backend' => 12, 'spa' => 23],
         'kredensial' => ['backend' => 9, 'spa' => 12],
         // Lowered 23 → 18 on 2026-10-02 (a product domain was sunset): the five
         // `slug` SPA keys were the only `Slug` hits that went away. See the
@@ -284,7 +290,11 @@ const MIN_OCCURRENCES = [
         '归档' => ['backend' => 7, 'spa' => 8],
         '凭证' => ['backend' => 15, 'spa' => 24],
         '孤立' => ['backend' => 1, 'spa' => 1],
-        '验证' => ['backend' => 39, 'spa' => 81],
+        // Lowered 39 → 36 on 2026-11-19: two `验证` hits lived in the orphaned
+        // `web/identity-connections.php` and one in `menu.php`
+        // (`two_factor` = `双重身份验证`), both Blade-era groups deleted with this
+        // change. The remaining 36 are live; the floor is the measured count.
+        '验证' => ['backend' => 36, 'spa' => 81],
         '创作者' => ['backend' => 1, 'spa' => 1],
         '方案' => ['backend' => 24, 'spa' => 30],
         '登录' => ['backend' => 22, 'spa' => 33],
@@ -302,7 +312,11 @@ const MIN_OCCURRENCES = [
         'إتمام الشراء' => ['backend' => 16, 'spa' => 23],
         'الفوترة' => ['backend' => 5, 'spa' => 15],
         'أرشفة' => ['backend' => 5, 'spa' => 9],
-        'استعادة' => ['backend' => 15, 'spa' => 22],
+        // Lowered 15 → 14 on 2026-11-19: the orphaned `notifications.php`
+        // (Blade-era flash messages) held `restored` `تمت استعادة السجل بنجاح.`,
+        // the one occurrence this floor was counting. The floor is the measured
+        // count after that deletion, not a reverted wave.
+        'استعادة' => ['backend' => 14, 'spa' => 22],
         'بيانات الاعتماد' => ['backend' => 10, 'spa' => 14],
         'قائمة الانتظار' => ['backend' => 7, 'spa' => 4],
         'التخزين' => ['backend' => 13, 'spa' => 21],

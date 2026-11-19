@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Domain\Ai\Unit\Services;
+namespace App\Domain\Ai\Tests\Unit\Services;
 
 use App\Domain\Ai\Enums\AiConnectionStatus;
 use App\Domain\Ai\Exceptions\AiException;
