@@ -62,13 +62,14 @@ class AddLocaleCommandTest extends TestCase
 
         // 2. Application-owned files copied, preserving nested structure.
         $this->assertFileExists(lang_path(self::TEST_LOCALE.'/ui.php'));
-        $this->assertFileExists(lang_path(self::TEST_LOCALE.'/mail.php'));
         $this->assertFileExists(lang_path(self::TEST_LOCALE.'/web/session.php'));
 
-        // Identity's `api/users.php` now ships with `silverspoonmedia/platform`,
-        // so it is not the host's to scaffold — the kernel's own `resources/lang`
-        // carries it for every locale.
+        // Identity's `api/users.php` and the reset-password `mail.php` now ship
+        // with `silverspoonmedia/platform`, so they are not the host's to
+        // scaffold — the kernel's own `resources/lang` carries them for every
+        // locale.
         $this->assertFileDoesNotExist(lang_path(self::TEST_LOCALE.'/api/users.php'));
+        $this->assertFileDoesNotExist(lang_path(self::TEST_LOCALE.'/mail.php'));
 
         // 3. Managed laravel-lang files are NOT copied (the package owns them).
         $this->assertFileDoesNotExist(lang_path(self::TEST_LOCALE.'/validation.php'));

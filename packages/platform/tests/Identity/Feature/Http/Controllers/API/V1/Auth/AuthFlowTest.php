@@ -1,22 +1,20 @@
 <?php
 
-namespace Tests\Domain\Core\Identity\Feature\Http\Controllers\API\V1\Auth;
+namespace App\Domain\Identity\Tests\Feature\Http\Controllers\API\V1\Auth;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Notifications\ResetPasswordNotification;
 use App\Domain\Identity\Services\Auth\TwoFactorService;
+use App\Domain\Identity\Tests\Feature\FeatureTestCase;
 use App\Support\Auth\SpaAuthCookie;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Support\Testing\Concerns\SeedsRolesAndPermissions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
-use Tests\Concerns\SeedsRolesAndPermissions;
-use Tests\TestCase;
 
-class AuthFlowTest extends TestCase
+class AuthFlowTest extends FeatureTestCase
 {
-    use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
     protected function setUp(): void

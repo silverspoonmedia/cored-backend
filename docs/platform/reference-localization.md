@@ -118,11 +118,13 @@ Runtime `setLocale()` persists the SPA choice and updates the HTML `lang` attrib
 
 ```
 lang/{en,id,ja,ko,zh_CN,ar,ru}/
-  ui.php, mail.php, list_actions.php
+  ui.php, list_actions.php
   web/*.php
   api/*.php
   forms/*.php
 ```
+
+`mail.php` left the host with the kernel extraction: its only key, `mail.reset_password_api_hint`, is rendered by `App\Domain\Identity\Notifications\ResetPasswordNotification`, which ships in `silverspoonmedia/platform`. It now lives in `packages/platform/resources/lang/{locale}/mail.php`, so a kernel-only install renders the line instead of the raw key — and `locale:add` no longer scaffolds it (`tests/Feature/Console/AddLocaleCommandTest.php` asserts its absence).
 
 `menu.php` and `notifications.php` are gone: they held static nav and flash copy for Blade layouts that no longer exist, and no server-side call site addressed a single key (`tests/Unit/Localization/LocaleOrphanGroupTest.php` is the guard that now fails on a file like them). `web/identity-connections.php` went the same way once its screen became SPA-only.
 

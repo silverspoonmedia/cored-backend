@@ -305,28 +305,64 @@ class PackageOverrideTest extends TestCase
         // namespaces of the bundled package each have their own explicit host
         // prefix in the root manifest, so an override at app/Domain/{Domain}/...
         // must win against packages/*/src/{Domain}/.
-        $this->assertHostPrefixWins('Navigation');
-        $this->assertHostPrefixWins('Notification');
-        $this->assertHostPrefixWins('ActivityLog');
-        $this->assertHostPrefixWins('ErrorLog');
-        $this->assertHostPrefixWins('PaymentGateway');
-        $this->assertHostPrefixWins('Currency');
-        $this->assertHostPrefixWins('Service');
-        $this->assertHostPrefixWins('Inference');
-        $this->assertHostPrefixWins('Ai');
-        $this->assertHostPrefixWins('Identity');
+        foreach (['Navigation', 'Notification', 'ActivityLog', 'ErrorLog', 'PaymentGateway', 'Currency', 'Service', 'Inference', 'Ai', 'Identity'] as $domain) {
+            $this->assertHostPrefixWins('App\\Domain\\'.$domain.'\\Support', 'app/Domain/'.$domain.'/Support');
+        }
     }
 
-    private function assertHostPrefixWins(string $domain): void
+    /**
+     * The kernel's own override hooks: `App\Support`, `App\Http`, the shared
+     * repositories, traits/rules/exceptions, and the host `database/` roots.
+     *
+     * `silverspoonmedia/platform` ships these namespaces, so the root manifest
+     * declares each host directory *before* the package copy. The prefixes exist
+     * for exactly one reason — a host that needs to replace a kernel class drops
+     * the file in `app/` and the autoloader must prefer it — and an empty
+     * directory makes that hook look like dead configuration. Probe one file per
+     * prefix: if the host copy resolves, the hook is alive; if the package copy
+     * resolves, the consumer silently loses the override with no error.
+     */
+    public function test_kernel_override_prefixes_resolve_host_first(): void
     {
-        $hostDir = base_path('app/Domain/'.$domain.'/Support');
+        foreach ([
+            'App\\Support\\' => 'app/Support',
+            'App\\Http\\' => 'app/Http',
+            'App\\Repositories\\' => 'app/Repositories',
+            'App\\Traits\\' => 'app/Traits',
+            'App\\Rules\\' => 'app/Rules',
+            'App\\Exceptions\\' => 'app/Exceptions',
+            'Database\\Factories\\' => 'database/factories',
+            'Database\\Seeders\\' => 'database/seeders',
+        ] as $namespace => $hostPath) {
+            $this->assertHostPrefixWins($namespace, $hostPath);
+        }
+    }
+
+    /**
+     * Write one probe class into the host directory and assert the autoloader
+     * resolves that path, not a packaged copy of the same namespace.
+     *
+     * The probe is unique per directory and removed in `finally`, including the
+     * directories this test had to create — the repository never sees it.
+     */
+    private function assertHostPrefixWins(string $namespace, string $hostPath): void
+    {
+        $hostDir = base_path($hostPath);
         $hostFile = $hostDir.'/PackageOverrideProbe.php';
-        $createdDir = ! is_dir($hostDir);
+
+        // Every ancestor that does not exist yet, deepest first: the probe is a
+        // temporary artifact, so the cleanup removes exactly what it created.
+        $createdDirs = [];
+        for ($dir = $hostDir; ! is_dir($dir); $dir = dirname($dir)) {
+            $createdDirs[] = $dir;
+        }
 
         $this->assertFileDoesNotExist($hostFile);
 
         $loader = require base_path('vendor/autoload.php');
-        $probe = 'App\\Domain\\'.$domain.'\\Support\\PackageOverrideProbe';
+
+        $fileNamespace = rtrim($namespace, '\\');
+        $probe = $fileNamespace.'\\PackageOverrideProbe';
 
         $forgetMissing = function () use ($loader): void {
             $cache = new \ReflectionProperty($loader, 'missingClasses');
@@ -336,13 +372,13 @@ class PackageOverrideTest extends TestCase
         try {
             $this->assertFalse((bool) $loader->findFile($probe));
 
-            if ($createdDir) {
+            if ($createdDirs !== []) {
                 mkdir($hostDir, 0777, true);
             }
 
             file_put_contents(
                 $hostFile,
-                "<?php\n\nnamespace App\\Domain\\{$domain}\\Support;\n\nfinal class PackageOverrideProbe\n{\n    public const SOURCE = 'host';\n}\n"
+                "<?php\n\nnamespace {$fileNamespace};\n\nfinal class PackageOverrideProbe\n{\n    public const SOURCE = 'host';\n}\n"
             );
 
             clearstatcache();
@@ -351,14 +387,14 @@ class PackageOverrideTest extends TestCase
             $this->assertSame(
                 str_replace('\\', '/', (string) realpath($hostFile)),
                 str_replace('\\', '/', (string) realpath((string) $loader->findFile($probe))),
-                "A host class in the {$domain} namespace must resolve from app/, not from a package under packages/."
+                "A host class in the [{$fileNamespace}] namespace must resolve from {$hostPath}/, not from a package copy."
             );
         } finally {
             if (is_file($hostFile)) {
                 @unlink($hostFile);
             }
 
-            foreach ([$hostDir, base_path('app/Domain/'.$domain.'/Support'), base_path('app/Domain/'.$domain)] as $dir) {
+            foreach ($createdDirs as $dir) {
                 if (is_dir($dir) && count(scandir($dir) ?: []) <= 2) {
                     @rmdir($dir);
                 }

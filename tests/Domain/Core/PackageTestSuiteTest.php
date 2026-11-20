@@ -209,14 +209,13 @@ class PackageTestSuiteTest extends TestCase
                 }
 
                 $isAbstract = (bool) preg_match('/\babstract\s+class\b/', $source);
+                $parent = $this->parentClass($source);
 
-                if (! preg_match('/\bclass\s+[A-Za-z0-9_]+\s+extends\s+(\\\\?[A-Za-z0-9_\\\\]+)/', $source, $match)) {
+                if ($parent === null) {
                     $violations[] = $package.' test '.$relative.' declares no class or extends nothing';
 
                     continue;
                 }
-
-                $parent = ltrim($match[1], '\\');
 
                 if ($isAbstract) {
                     if ($parent !== $base && $parent !== 'PackageTestCase' && ! $this->isPackageOwned($parent, $package)) {
@@ -226,12 +225,8 @@ class PackageTestSuiteTest extends TestCase
                     continue;
                 }
 
-                // Reached through the package's own abstract `TestCase`, whose
+                // Reached through the package's own abstract base, whose own
                 // parent is checked above — one hop is the whole chain here.
-                if ($parent === 'TestCase') {
-                    continue;
-                }
-
                 if ($this->isPackageOwned($parent, $package)) {
                     continue;
                 }
@@ -287,20 +282,66 @@ class PackageTestSuiteTest extends TestCase
     }
 
     /**
-     * Whether a parent class belongs to the package namespace (`App\Domain\{X}\Tests\*`),
-     * i.e. the package's own abstract `TestCase`.
+     * Fully-qualified name of the parent class declared in a test file.
+     *
+     * A file usually writes `extends TestCase` and imports the class, so reading
+     * the `extends` token alone proves nothing: an unqualified name must be
+     * resolved through the file's own `use` statements first, or a host base
+     * would look identical to a package one. Returns null when the file declares
+     * no class.
+     */
+    private function parentClass(string $source): ?string
+    {
+        if (! preg_match('/\bclass\s+[A-Za-z0-9_]+\s+extends\s+(\\\\?[A-Za-z0-9_\\\\]+)/', $source, $match)) {
+            return null;
+        }
+
+        $parent = $match[1];
+
+        if (str_starts_with($parent, '\\')) {
+            return ltrim($parent, '\\');
+        }
+
+        $head = str_contains($parent, '\\') ? substr($parent, 0, (int) strpos($parent, '\\')) : $parent;
+
+        preg_match_all('/^use\s+([A-Za-z0-9_\\\\]+)(?:\s+as\s+([A-Za-z0-9_]+))?\s*;/m', $source, $imports, PREG_SET_ORDER);
+
+        foreach ($imports as $import) {
+            $imported = $import[1];
+            $alias = $import[2] ?? substr($imported, (int) strrpos('\\'.$imported, '\\'));
+
+            if ($alias !== $head) {
+                continue;
+            }
+
+            $rest = substr($parent, strlen($head));
+
+            return $imported.$rest;
+        }
+
+        return $parent;
+    }
+
+    /**
+     * Whether a parent class belongs to the package's own test namespace —
+     * the package's abstract `TestCase` or `FeatureTestCase`.
+     *
+     * Resolved against the manifest's `tests/` PSR-4 prefixes rather than a
+     * guessed `App\Domain\{Domain}\*`: a bundled package owns one test namespace
+     * per domain (`PaymentGateway`, `Currency`, `Service`), and guessing one of
+     * them would fail every test that extends another.
      */
     private function isPackageOwned(string $parent, string $package): bool
     {
         $slug = substr($package, strpos($package, '/') + 1);
 
-        $domain = match ($slug) {
-            'platform' => 'Identity',
-            default => ucfirst($slug),
-        };
+        foreach (array_keys($this->psr4TestPrefixes($slug)) as $prefix) {
+            if (str_starts_with($parent, $prefix)) {
+                return true;
+            }
+        }
 
-        return str_starts_with($parent, 'App\\Domain\\'.$domain.'\\Tests\\')
-            || str_starts_with($parent, 'App\\Domain\\'.ucfirst($slug).'\\');
+        return false;
     }
 
     /**

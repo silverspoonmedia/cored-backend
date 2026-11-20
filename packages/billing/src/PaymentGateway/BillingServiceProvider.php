@@ -53,6 +53,9 @@ class BillingServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../../config/payment.php', 'payment');
         $this->mergeConfigFrom(__DIR__.'/../../config/payment-routing.php', 'payment-routing');
         $this->mergeConfigFrom(__DIR__.'/../../config/service.php', 'service');
+        // Billing is the only reader of the FX provider, so its defaults ship
+        // here. Shallow merge: a host that still carries `frankfurter` wins.
+        $this->mergeConfigFrom(__DIR__.'/../../config/services.php', 'services');
 
         $this->app->bind(InvoiceRepositoryInterface::class, InvoiceRepository::class);
         $this->app->bind(PaymentGatewayRepositoryInterface::class, PaymentGatewayRepository::class);

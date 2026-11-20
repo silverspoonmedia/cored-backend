@@ -1,17 +1,15 @@
 <?php
 
-namespace Tests\Domain\Core\Identity\Feature\Http\Controllers\API\V1;
+namespace App\Domain\Identity\Tests\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\Identity\Tests\Feature\FeatureTestCase;
+use App\Support\Testing\Concerns\SeedsRolesAndPermissions;
 use Illuminate\Support\Facades\Hash;
-use Tests\Concerns\SeedsRolesAndPermissions;
-use Tests\TestCase;
 
-class LookupTest extends TestCase
+class LookupTest extends FeatureTestCase
 {
-    use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
     protected function setUp(): void
