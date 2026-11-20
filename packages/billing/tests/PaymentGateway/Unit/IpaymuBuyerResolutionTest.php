@@ -5,15 +5,12 @@ namespace App\Domain\PaymentGateway\Tests\Unit;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use App\Domain\Service\Models\ServicePurchase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReflectionMethod;
-use Tests\TestCase;
 
 class IpaymuBuyerResolutionTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_resolve_buyer_uses_service_purchase_user_without_request_buyer(): void
     {
         config(['payment.default_buyer_phone' => '081000000000']);

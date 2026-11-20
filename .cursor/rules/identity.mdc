@@ -1,6 +1,6 @@
 ---
 description: Identity auth, JWT cookie, throttle, H-RBAC and lookups invariants
-globs: packages/platform/src/Domain/Identity/**,routes/api/v1/identity.php,routes/web/identity-oauth-callback.php,config/auth.php,config/jwt.php,config/permission.php,lang/*/auth.php,lang/*/passwords.php,docs/domains/identity/**
+globs: packages/platform/src/Domain/Identity/**,packages/platform/routes/identity.php,packages/platform/routes/web-identity-oauth-callback.php,config/auth.php,config/jwt.php,config/permission.php,lang/*/auth.php,lang/*/passwords.php,docs/domains/identity/**
 alwaysApply: false
 ---
 

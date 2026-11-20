@@ -4,15 +4,12 @@ namespace App\Domain\ActivityLog\Tests\Unit\Support;
 
 use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
+use App\Domain\ActivityLog\Tests\TestCase;
 use App\Domain\Identity\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Activitylog\Models\Activity;
-use Tests\TestCase;
 
 class CryptoActivityRecorderTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_record_field_decrypted_writes_crypto_log_without_secrets(): void
     {
         $user = User::factory()->create();

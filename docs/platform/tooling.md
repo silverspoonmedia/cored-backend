@@ -7,9 +7,8 @@ Developer tooling that is not a test: formatting, static analysis, and the two-j
 | Pint and PHPStan usage, `composer check` | below |
 | CI job steps, why each one exists, expected skip/risky counts | [reference-tooling.md](reference-tooling.md) |
 | Which docs gates CI runs, and which need both checkouts | [reference-tooling.md — the docs gates](reference-tooling.md#the-docs-gates) |
-| Which defect class each `locale` job step covers | [reference-localization.md — CI coverage vs manual runs](reference-localization.md#ci-coverage-vs-manual-runs) |
+| What each `locale` job step covers | [localization.md](localization.md) + [reference-localization.md — CI coverage](reference-localization.md#ci-coverage-vs-manual-runs) |
 | PR & merge process, and the gap left for SPA-only pull requests | [reference-localization.md — PR & merge process](reference-localization.md#pr--merge-process) |
-| Localization gates the `locale` job runs | [localization.md](localization.md) |
 
 ## Laravel Pint
 
@@ -50,9 +49,7 @@ Four settings are load-bearing, each with its reason in the config:
 
 `tmpDir` is `.phpstan.cache`, which is gitignored **and** in `UninstallReferenceScanner::SKIP_DIRS` — the scanner reads the working tree, so a cache of generated PHP would otherwise appear as product-domain references and fail `DomainUninstallManifestTest`.
 
-**Zero baseline is the invariant.** `composer check:types` fails on any finding, so new code is held to level 5 with no allowlist to absorb it. The file opened on 2026-11-19 at `299` findings; `parseModelCastsMethod: true` plus a pass over the nullsafe/enum-read sites took it to `111`, and a burn-down over the same week resolved the rest — mostly by typing the generics (`Builder<Model>`, `LengthAwarePaginator<int, Model>`), replacing `SoftDeletes` macros with `withoutGlobalScope(SoftDeletingScope::class)` on the shared repository, and aggregating through `getAttribute()` instead of undeclared aliases. Never reintroduce `phpstan-baseline.neon`; fix the finding it would have named.
-
-Tarik model columns off the aggregate alias path: `selectRaw('COUNT(*) as event_count')` returns a row whose alias is not a migrated column, so `$row->event_count` is `property.notFound`. Read it through `$row->getAttribute('event_count')` and the finding disappears without an ignore.
+**Zero baseline is the invariant.** `composer check:types` fails on any finding, so new code is held to level 5 with no allowlist to absorb it — the tree opened on 2026-11-19 at 299 findings and was burned down by typing the generics (`Builder<Model>`, `LengthAwarePaginator<int, Model>`), replacing `SoftDeletes` macros with `withoutGlobalScope(SoftDeletingScope::class)` on the shared repository, and aggregating through `getAttribute()` instead of undeclared aliases. Never reintroduce `phpstan-baseline.neon`; fix the finding it would have named. `selectRaw('COUNT(*) as event_count')` returns an alias that is not a migrated column, so `$row->event_count` is `property.notFound` — read it through `$row->getAttribute('event_count')`.
 
 ## `composer check`
 
@@ -71,9 +68,7 @@ php scripts/docs-guard.php
 php scripts/docs-cross-repo-links.php   # needs both checkouts; skipped links are reported, not failed
 ```
 
-The SPA gates are `npm run check:docs`, `npm run check:i18n`, and `npm run check:env` (the mode-file value guard — see [reference-tooling.md — the sibling's CI job](reference-tooling.md#the-siblings-ci-job)).
-
-The last four are the **docs** gates. Their normative statement, and the SPA half (`npm run check:docs`, `npm run check:i18n`), is owned by [.cursor/rules/docs-pakem.mdc](../../.cursor/rules/docs-pakem.mdc) — run them from there when a task touches documentation; this list is the operational copy for the whole backend. Which of them CI actually runs, and the cross-repo half it cannot, is in [reference-tooling.md — the docs gates](reference-tooling.md#the-docs-gates).
+The SPA gates are `npm run check:docs`, `npm run check:i18n` and `npm run check:env` (the mode-file value guard — see [reference-tooling.md — the sibling's CI job](reference-tooling.md#the-siblings-ci-job)). The last four commands above are the **docs** gates; their normative statement is owned by [.cursor/rules/docs-pakem.mdc](../../.cursor/rules/docs-pakem.mdc) — run them from there when a task touches documentation, this list is the operational copy. Which of them CI actually runs, and the cross-repo half it cannot, is in [reference-tooling.md — the docs gates](reference-tooling.md#the-docs-gates).
 
 Reproduce the `backend` job locally before pushing — same command, same in-memory database:
 
@@ -87,4 +82,8 @@ Run **one** suite at a time. `tests/bootstrap.php` takes an advisory lock on `bo
 
 ## Per-package suites
 
-`phpunit.xml` gives each package its own `Package:{slug}` suite, so one package runs alone (`php artisan test --testsuite=Package:billing`); PHPUnit runs every suite in the file by default, so the full run still covers all five trees. A directory may appear in exactly one suite — listing it twice makes PHPUnit reject it for the second suite, warn once per file, and exit non-zero on an otherwise green run; `PackageTestSuiteTest` fails on both a missing wiring and a duplicate. This isolates the **tree**, not the host: those tests still extend `Tests\TestCase`, use `Tests\Concerns\*` and boot the whole monolith. A genuinely standalone run needs Orchestra Testbench plus a fixture stubbing the kernel contracts; no package has that yet. A package that ships tests nobody wired would contribute zero assertions, silently.
+`phpunit.xml` gives each package its own `Package:{slug}` suite, so one package runs alone (`php artisan test --testsuite=Package:billing`); PHPUnit runs every suite in the file by default, so the full run still covers all six trees. A directory may appear in exactly one suite — listing it twice makes PHPUnit reject it for the second suite, warn once per file, and exit non-zero on an otherwise green run; `PackageTestSuiteTest` fails on both a missing wiring and a duplicate.
+
+Those tests run **standalone**, not against the host: each extends `App\Support\Testing\PackageTestCase` (Orchestra Testbench), which boots the kernel providers plus the package's own provider, builds the schema from `App\Support\Testing\KernelSchema` plus the package's migrations, and mounts the package's registry-declared routes under `/api/v1`. Nothing is read from `bootstrap/app.php`, `database/migrations` or `tests/**`, so a consumer who clones the mirror tag runs the same suite; `PackageTestSuiteTest` fails a package test that extends anything else, and `DependencyDirectionTest` fails one that imports `Tests\Concerns\*`, `Database\Seeders\*` or a product domain. A test that needs a host-assembled route, a host fixture or a product row lives in `tests/Domain/Core/{Domain}/` and keeps the host base.
+
+Each package carries its own `phpunit.xml.dist` and a `composer test` script (`@php vendor/bin/phpunit`), so `composer install && composer test` inside `packages/{slug}` works with no monolith. `composer test:standalone` (`scripts/run-standalone-package-suite.php`, the `standalone-packages` CI job) is the proof: it copies each package to a temporary directory, resolves the siblings from source, installs and runs the suite; `PackageStandaloneRunTest` asserts the pieces that runner needs.

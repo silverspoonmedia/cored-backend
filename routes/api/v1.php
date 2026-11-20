@@ -10,9 +10,8 @@ use App\Support\Domain\DomainManager;
 // app/Domain/* keep their require line: the loader stays the single place a
 // version's endpoint set is assembled.
 
-require __DIR__.'/v1/identity.php';
-
-// Core packages, in registry order (packages/*/routes/api.php).
+// Core packages, in registry order (packages/*/routes/*.php). Identity is the
+// first entry: the kernel's own auth/user surface ships in `silverspoonmedia/platform`.
 foreach (app(DomainManager::class)->packageApiRoutePaths() as $packageRouteFile) {
     require $packageRouteFile;
 }

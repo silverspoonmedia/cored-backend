@@ -5,13 +5,10 @@ namespace App\Domain\Inference\Tests\Unit\Services;
 use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Inference\Enums\InferenceRateSource;
 use App\Domain\Inference\Services\InferenceRateService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Domain\Inference\Tests\TestCase;
 
 class InferenceRateServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected function setUp(): void
     {
         parent::setUp();

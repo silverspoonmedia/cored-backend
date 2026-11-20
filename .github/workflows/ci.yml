@@ -180,3 +180,44 @@ jobs:
       # `phpunit.xml`), so it needs no service: no MySQL, no Redis, no queue worker.
       - name: Backend test suite
         run: php artisan test
+
+  # The one check that proves a package's published toolchain works: copy
+  # `packages/{slug}` to a temporary directory, resolve `silverspoonmedia/*` from
+  # the sibling sources, `composer install`, `composer test`. Without it a package
+  # can green the monolith's suite while a consumer who clones its mirror tag
+  # cannot run a single test — the exact debt the Testbench harness closed.
+  #
+  # Scheduled on the same triggers as the rest, because a Composer install per
+  # package is minutes of network; path filters would let a change to
+  # `packages/platform/src` skip it while still changing what the siblings resolve.
+  standalone-packages:
+    name: Standalone package suites
+    runs-on: ubuntu-latest
+    env: *test-env
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_sqlite, sqlite3, bcmath, gd, zip, exif, curl
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      # Each package installs its own `require` + `require-dev` (Laravel, Testbench,
+      # the sibling kernel) into its temporary copy, so the copy's PHP needs the same
+      # extensions the suite does.
+      - name: Standalone package suites
+        run: composer test:standalone

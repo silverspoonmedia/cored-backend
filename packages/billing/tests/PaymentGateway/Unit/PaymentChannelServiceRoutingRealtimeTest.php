@@ -6,14 +6,12 @@ use App\Domain\PaymentGateway\Events\PaymentRoutingCatalogChanged;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Services\PaymentChannelService;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\PaymentGateway\Tests\TestCase;
+use App\Support\Testing\Concerns\SeedsRolesAndPermissions;
 use Illuminate\Support\Facades\Event;
-use Tests\Concerns\SeedsRolesAndPermissions;
-use Tests\TestCase;
 
 class PaymentChannelServiceRoutingRealtimeTest extends TestCase
 {
-    use RefreshDatabase;
     use SeedsRolesAndPermissions;
     use SetsUpPaymentChannels;
 

@@ -4,10 +4,10 @@ Core domain that owns authentication (JWT + cookie, 2FA, email verification, hCa
 
 | Need | Path |
 |------|------|
-| Code | `app/Domain/Identity/` — `AuthService`, `UserManagementService`, `RoleService`, `TwoFactorService`, `UserOAuthAccountService` |
+| Code | `packages/platform/src/Domain/Identity/` — `AuthService`, `UserManagementService`, `RoleService`, `TwoFactorService`, `UserOAuthAccountService` |
 | Config | [`config/auth.php`](../../../config/auth.php) · [`config/jwt.php`](../../../config/jwt.php) · [`config/permission.php`](../../../config/permission.php) · Settings → Platform (`platform.jwt.*`, `platform.auth.*`, `platform.two_factor.*`) |
-| API | [`routes/api/v1/identity.php`](../../../routes/api/v1/identity.php) — `/api/v1/auth/*`, `/api/v1/users*`, `/api/v1/lookups/*`, `/api/v1/profile/connections*` |
-| Web route | [`routes/web/identity-oauth-callback.php`](../../../routes/web/identity-oauth-callback.php) — `auth.discord.callback` (the only identity web route) |
+| API | [`packages/platform/routes/identity.php`](../../../packages/platform/routes/identity.php) — `/api/v1/auth/*`, `/api/v1/users*`, `/api/v1/lookups/*`, `/api/v1/profile/connections*` |
+| Web route | [`packages/platform/routes/web-identity-oauth-callback.php`](../../../packages/platform/routes/web-identity-oauth-callback.php) — `auth.discord.callback` (the only identity web route) |
 | SPA | Vue Router `auth.*`, `users.*`, `roles.*`, `profile.connections` |
 | Realtime | `rbac.roles` / `rbac.users` / `rbac` (permission `view user`) · self-only `App.Models.User.{id}` |
 | Translations | `lang/*/auth.php`, `lang/*/passwords.php` |

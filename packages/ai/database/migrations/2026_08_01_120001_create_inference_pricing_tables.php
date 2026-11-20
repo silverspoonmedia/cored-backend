@@ -72,24 +72,33 @@ return new class extends Migration
 
         // Billing-side links. The columns themselves ship with the microstock
         // tables; the FKs land here because these are the tables they point at.
-        Schema::table('microstock_ai_usage_events', function (Blueprint $table): void {
-            $table->foreign('ai_model_rate_snapshot_id')
-                ->references('id')
-                ->on('ai_model_rate_snapshots')
-                ->nullOnDelete();
-            $table->foreign('inference_provider_id')
-                ->references('id')
-                ->on('ai_inference_providers')
-                ->nullOnDelete();
-        });
+        //
+        // Guarded on the host owning that table: the ledger is a product-domain
+        // table (it leaves with Microstock's uninstall), so a standalone package
+        // test — or a consumer without that product — creates the pricing catalog
+        // and skips the link, instead of failing on a table nothing will use.
+        if (Schema::hasTable('microstock_ai_usage_events')) {
+            Schema::table('microstock_ai_usage_events', function (Blueprint $table): void {
+                $table->foreign('ai_model_rate_snapshot_id')
+                    ->references('id')
+                    ->on('ai_model_rate_snapshots')
+                    ->nullOnDelete();
+                $table->foreign('inference_provider_id')
+                    ->references('id')
+                    ->on('ai_inference_providers')
+                    ->nullOnDelete();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('microstock_ai_usage_events', function (Blueprint $table): void {
-            $table->dropForeign(['inference_provider_id']);
-            $table->dropForeign(['ai_model_rate_snapshot_id']);
-        });
+        if (Schema::hasTable('microstock_ai_usage_events')) {
+            Schema::table('microstock_ai_usage_events', function (Blueprint $table): void {
+                $table->dropForeign(['inference_provider_id']);
+                $table->dropForeign(['ai_model_rate_snapshot_id']);
+            });
+        }
 
         Schema::dropIfExists('ai_model_rate_snapshots');
         Schema::dropIfExists('ai_provider_model_rates');

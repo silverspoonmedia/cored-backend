@@ -5,15 +5,12 @@ namespace App\Domain\Ai\Tests\Unit\Services;
 use App\Domain\Ai\Enums\AiConnectionStatus;
 use App\Domain\Ai\Models\AiConnection;
 use App\Domain\Ai\Services\AiConnectionResolver;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\Ai\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
 class AiConnectionResolverTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected function setUp(): void
     {
         parent::setUp();

@@ -5,12 +5,10 @@ namespace App\Domain\PaymentGateway\Tests\Unit;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutInstructionResolver;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 
 class InvoiceCheckoutInstructionResolverTest extends TestCase
 {
-    use RefreshDatabase;
     use SetsUpPaymentChannels;
 
     private InvoiceCheckoutInstructionResolver $resolver;

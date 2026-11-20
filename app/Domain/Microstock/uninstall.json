@@ -391,19 +391,19 @@
                     "reason": "owned by the Inference package: the legacy rate card it mirrors leaves with Microstock and the seeder leaves with silverspoonmedia/ai (line 13)"
                 },
                 {
-                    "path": "packages/ai/tests/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
+                    "path": "tests/Domain/Core/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
                     "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 29, 30, 48, 69, 73, 75)"
                 },
                 {
-                    "path": "packages/ai/tests/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
+                    "path": "tests/Domain/Core/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
                     "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 41, 42, 109, 117, 127, 128)"
                 },
                 {
-                    "path": "packages/ai/tests/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
+                    "path": "tests/Domain/Core/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
                     "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 37, 38, 47)"
                 },
                 {
-                    "path": "packages/ai/tests/Inference/Feature/Http/Controllers/API/V1/InferenceUsageApiTest.php",
+                    "path": "tests/Domain/Core/Inference/Feature/Http/Controllers/API/V1/InferenceUsageApiTest.php",
                     "reason": "owned by the Inference package: the usage row it seeds comes from Microstock's ledger emulation and the test leaves with silverspoonmedia/ai (line 7, 33)"
                 },
                 {
@@ -471,15 +471,15 @@
                     "reason": "docblock: Microstock named in prose, not in code — keep, or reword the example (line 12, 13)"
                 },
                 {
-                    "path": "packages/ai/tests/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
+                    "path": "tests/Domain/Core/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php",
                     "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 29, 30, 48, 69, 73, 75)"
                 },
                 {
-                    "path": "packages/ai/tests/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
+                    "path": "tests/Domain/Core/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php",
                     "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 41, 42, 109, 117, 127, 128)"
                 },
                 {
-                    "path": "packages/ai/tests/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
+                    "path": "tests/Domain/Core/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php",
                     "reason": "owned by the Ai package: the microstock cases it asserts leave with Microstock and the test leaves with silverspoonmedia/ai (line 37, 38, 47)"
                 },
                 {
@@ -491,7 +491,7 @@
                     "reason": "test: drop the `WorkspaceKind::Microstock` branch and its callers (line 44, 51, 52)"
                 },
                 {
-                    "path": "packages/navigation/tests/Feature/Database/Seeders/MenuSeederTest.php",
+                    "path": "tests/Domain/Navigation/HostMenuSeederTreeTest.php",
                     "reason": "test: drop the `microstock.*` keys (line 144, 220, 244, 335)"
                 },
                 {

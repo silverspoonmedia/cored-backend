@@ -29,7 +29,6 @@ foreach (app(DomainManager::class)->packageWebRoutePaths() as $packageWebRouteFi
     require $packageWebRouteFile;
 }
 
-require __DIR__.'/web/identity-oauth-callback.php';
 require __DIR__.'/web/archivd-public.php';
 
 // Product domain web routes (optional server endpoints; appended by domain:make).

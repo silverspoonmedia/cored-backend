@@ -4,10 +4,9 @@ namespace App\Domain\Currency\Tests\Unit\Support;
 
 use App\Domain\Currency\Events\CurrencyChanged;
 use App\Domain\Currency\Services\CurrencyAdminService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\Currency\Tests\Concerns\SeedsCurrencies;
+use App\Domain\Currency\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
-use Tests\Concerns\SeedsCurrencies;
-use Tests\TestCase;
 
 /**
  * Currency mutations broadcast on the settings channel only when a broadcaster
@@ -16,7 +15,6 @@ use Tests\TestCase;
  */
 class CurrencyRealtimeTest extends TestCase
 {
-    use RefreshDatabase;
     use SeedsCurrencies;
 
     private function enableBroadcast(): void

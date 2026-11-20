@@ -6,15 +6,12 @@ use App\Domain\PaymentGateway\Enums\DisbursementStatus;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\PaymentIncomeAnalyticsService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Tests\TestCase;
 
 class PaymentIncomeAnalyticsServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_overview_aggregates_paid_invoices_by_paid_at(): void
     {
         $midtransId = PaymentGateway::query()->create([

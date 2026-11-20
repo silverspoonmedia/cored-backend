@@ -6,12 +6,10 @@ use App\Domain\PaymentGateway\Database\Seeders\PaymentGatewaySeeder;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Support\Routing\PaymentRouteMaterializer;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 
 class PaymentRouteMaterializerTest extends TestCase
 {
-    use RefreshDatabase;
     use SetsUpPaymentChannels;
 
     public function test_materializes_policy_channels_and_routes(): void

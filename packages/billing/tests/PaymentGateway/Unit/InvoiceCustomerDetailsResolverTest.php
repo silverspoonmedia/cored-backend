@@ -8,17 +8,14 @@ use App\Domain\PaymentGateway\Enums\SubscriptionStatus;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCustomerDetailsResolver;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use App\Domain\Service\Models\ServicePurchase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Tests\TestCase;
 
 class InvoiceCustomerDetailsResolverTest extends TestCase
 {
-    use RefreshDatabase;
-
     private InvoiceCustomerDetailsResolver $resolver;
 
     protected function setUp(): void

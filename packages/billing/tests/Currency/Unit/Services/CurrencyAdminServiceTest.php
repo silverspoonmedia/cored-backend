@@ -5,11 +5,10 @@ namespace App\Domain\Currency\Tests\Unit\Services;
 use App\Domain\Currency\Exceptions\ExchangeRateException;
 use App\Domain\Currency\Models\Currency;
 use App\Domain\Currency\Services\CurrencyAdminService;
+use App\Domain\Currency\Tests\Concerns\SeedsCurrencies;
+use App\Domain\Currency\Tests\TestCase;
 use App\Exceptions\BusinessRuleException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-use Tests\Concerns\SeedsCurrencies;
-use Tests\TestCase;
 
 /**
  * The catalog half of the currency domain: exactly one settlement row, admin
@@ -18,7 +17,6 @@ use Tests\TestCase;
  */
 class CurrencyAdminServiceTest extends TestCase
 {
-    use RefreshDatabase;
     use SeedsCurrencies;
 
     protected function setUp(): void

@@ -4,8 +4,8 @@ namespace App\Domain\Inference\Tests\Unit\Support;
 
 use App\Domain\Inference\Events\InferenceCatalogChanged;
 use App\Domain\Inference\Support\InferenceRealtime;
+use App\Domain\Inference\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
-use Tests\TestCase;
 
 class InferenceRealtimeTest extends TestCase
 {

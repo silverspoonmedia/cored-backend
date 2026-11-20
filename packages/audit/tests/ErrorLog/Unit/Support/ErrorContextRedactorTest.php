@@ -3,7 +3,7 @@
 namespace App\Domain\ErrorLog\Tests\Unit\Support;
 
 use App\Domain\ErrorLog\Support\ErrorContextRedactor;
-use Tests\TestCase;
+use App\Domain\ErrorLog\Tests\TestCase;
 
 class ErrorContextRedactorTest extends TestCase
 {

@@ -4,7 +4,7 @@ namespace App\Domain\PaymentGateway\Tests\Unit\Support\Routing;
 
 use App\Domain\PaymentGateway\Support\Routing\FeePolicyDefinition;
 use App\Domain\PaymentGateway\Support\Routing\PaymentChannelFeeCalculator;
-use Tests\TestCase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 
 class PaymentChannelFeeCalculatorTest extends TestCase
 {

@@ -46,6 +46,8 @@ return [
         'kind' => 'core',
         'package' => 'silverspoonmedia/platform',
         'path' => 'packages/platform/src/Domain/Identity',
+        'routes' => 'packages/platform/routes/identity.php',
+        'web' => 'packages/platform/routes/web-identity-oauth-callback.php',
         'provider' => 'packages/platform/src/Providers/Domain/IdentityServiceProvider.php',
     ],
     'Navigation' => [

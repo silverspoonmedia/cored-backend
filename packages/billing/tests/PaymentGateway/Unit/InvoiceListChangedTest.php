@@ -4,8 +4,8 @@ namespace App\Domain\PaymentGateway\Tests\Unit;
 
 use App\Domain\PaymentGateway\Events\InvoiceListChanged;
 use App\Domain\PaymentGateway\Support\PaymentRealtime;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
-use Tests\TestCase;
 
 class InvoiceListChangedTest extends TestCase
 {

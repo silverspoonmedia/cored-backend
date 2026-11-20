@@ -11,15 +11,12 @@ use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceEntitlementService;
 use App\Domain\Service\Tests\Support\FixedPeriodTestHandler;
 use App\Domain\Service\Tests\Support\TestPlans;
+use App\Domain\Service\Tests\TestCase;
 use App\Support\Billing\FulfillmentRegistry;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Tests\TestCase;
 
 class ServiceEntitlementServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     private ServiceEntitlementService $service;
 
     protected function setUp(): void

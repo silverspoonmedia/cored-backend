@@ -48,6 +48,12 @@ parameters:
     tmpDir: .phpstan.cache
 
     ignoreErrors:
+        # The kernel's testing concerns exist only for package test suites, and
+        # `tests/**` is outside the analysed surface (see above), so PHPStan sees
+        # zero uses. They are exercised by every package suite, not dead code.
+        - identifier: trait.unused
+          paths:
+              - packages/platform/src/Support/Testing/Concerns/*
         # `JsonResource::$this->field` is `__get` on the wrapped model, not a
         # property of the resource class. PHPStan cannot see the model's columns
         # through it, so every resource field reports `property.notFound`.

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Domain\Ai\Database\Seeders\AiConnectionSeeder;
 use App\Domain\Archivd\Database\Seeders\ArchivdCatalogSeeder;
 use App\Domain\Currency\Database\Seeders\CurrencySeeder;
+use App\Domain\Identity\Database\Seeders\RoleSeeder;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
 use App\Domain\Microstock\Database\Seeders\MicrostockCatalogSeeder;
@@ -19,13 +20,19 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
 
+/**
+ * The monolith's full seed.
+ *
+ * Product catalogs, product role ladders and the demo users live here, not in a
+ * package: this seeder runs against the host database the products extend. The
+ * core role ladder moved into the kernel
+ * (`App\Domain\Identity\Database\Seeders\RoleSeeder`) so a package test can seed
+ * it without this tree.
+ */
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         $this->call(RoleSeeder::class);

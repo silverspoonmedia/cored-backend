@@ -53,6 +53,8 @@ class PackageManifestTest extends TestCase
         'Fruitcake\\Cors\\' => 'fruitcake/php-cors',
         'PHPOpenSourceSaver\\JWTAuth\\' => 'php-open-source-saver/jwt-auth',
         'Symfony\\Component\\Mime\\' => 'symfony/mime',
+        'Orchestra\\Testbench\\' => 'orchestra/testbench',
+        'PragmaRX\\Google2FALaravel\\' => 'pragmarx/google2fa-laravel',
     ];
 
     /**
@@ -67,6 +69,7 @@ class PackageManifestTest extends TestCase
     private const RUNTIME_ONLY_REQUIREMENTS = [
         'silverspoonmedia/platform' => [
             'league/flysystem-aws-s3-v3' => 'S3DirectUploadEngine drives an AWS S3 disk through Illuminate\\Filesystem\\AwsS3V3Adapter, whose driver class lives in this package',
+            'chillerlan/php-qrcode' => 'TwoFactorService asks `app(\'pragmarx.google2fa\')` for an inline QR image; google2fa-qrcode builds it through this adapter, chosen by `class_exists()` at runtime, never imported',
         ],
     ];
 
@@ -125,6 +128,139 @@ class PackageManifestTest extends TestCase
                 if (! isset($used[$dependency])) {
                     $violations[] = $package.' requires '.$dependency.' but no source file imports it';
                 }
+            }
+        }
+
+        $this->assertSame([], $violations, implode("\n", $violations));
+    }
+
+    /**
+     * `composer.lock` and the package manifests must agree on the version.
+     *
+     * A path package resolves at whatever version its manifest declares, and the
+     * lock records that resolution. Bumping only the manifest leaves the lock
+     * pinning the old version: the mirror tag, the published release and the
+     * installed copy then disagree, and `composer update` silently offers an
+     * "upgrade" of a package that never changed in this checkout. This is the
+     * guard that would have caught the bump commit that skipped the lock.
+     */
+    public function test_locked_versions_match_package_manifests(): void
+    {
+        $lock = json_decode((string) file_get_contents(base_path('composer.lock')), true);
+        $this->assertIsArray($lock, 'composer.lock is not valid JSON.');
+
+        $locked = [];
+
+        foreach (['packages', 'packages-dev'] as $section) {
+            foreach ((array) ($lock[$section] ?? []) as $entry) {
+                $name = $entry['name'] ?? null;
+
+                if (is_string($name) && str_starts_with($name, 'silverspoonmedia/')) {
+                    $locked[$name] = (string) ($entry['version'] ?? '');
+                }
+            }
+        }
+
+        $violations = [];
+
+        foreach ($this->packages() as $slug => $package) {
+            $manifest = $this->manifest($slug);
+            $version = (string) ($manifest['version'] ?? '');
+
+            if (! isset($locked[$package])) {
+                $violations[] = $package.' is declared in config/domains.php but does not appear in composer.lock';
+
+                continue;
+            }
+
+            if ($locked[$package] !== $version) {
+                $violations[] = $package.': composer.lock pins '.$locked[$package].' but packages/'.$slug.'/composer.json declares '.$version.' — run `composer update silverspoonmedia/* --no-scripts`';
+            }
+        }
+
+        $this->assertSame([], $violations, implode("\n", $violations));
+    }
+
+    /**
+     * The host must require a path package by a range, never `*`.
+     *
+     * `*` binds nothing: a local resolution and a registry resolution become
+     * indistinguishable, `composer validate` warns on every one, and a consumer of
+     * the host cannot tell a package pinned to this checkout from a released one.
+     * `pdf-tools` is the documented exemption — it is a VCS dependency pinned to
+     * a commit hash, not a path package.
+     */
+    public function test_root_requirement_is_a_caret_constraint(): void
+    {
+        $root = json_decode((string) file_get_contents(base_path('composer.json')), true);
+        $this->assertIsArray($root, 'composer.json is not valid JSON.');
+
+        $exempt = ['silverspoonmedia/pdf-tools'];
+        $violations = [];
+
+        foreach ($this->packages() as $package) {
+            if (in_array($package, $exempt, true)) {
+                continue;
+            }
+
+            $constraint = $root['require'][$package] ?? null;
+
+            if (! is_string($constraint)) {
+                $violations[] = 'composer.json does not require '.$package;
+
+                continue;
+            }
+
+            if (! preg_match('/^\^1\.\d+$/', $constraint)) {
+                $violations[] = $package.' is required as "'.$constraint.'" but must be a caret range ("^1.0")';
+            }
+        }
+
+        $this->assertSame([], $violations, implode("\n", $violations));
+    }
+
+    /**
+     * A sibling package must depend on the kernel at the same minor line it
+     * publishes on.
+     *
+     * Every core package consumes the kernel's seams. If `notification` ships
+     * `1.2.0` but requires `silverspoonmedia/platform: ^1.0`, then `1.0.0` of the
+     * kernel satisfies it even though the seam it uses arrived in `1.2.0` — and
+     * the failure appears in a consumer's install, not here.
+     */
+    public function test_every_package_declares_the_kernel_at_its_own_minor(): void
+    {
+        $violations = [];
+
+        foreach ($this->packages() as $slug => $package) {
+            if ($slug === 'platform') {
+                continue;
+            }
+
+            $manifest = $this->manifest($slug);
+            $version = (string) ($manifest['version'] ?? '');
+            $constraint = $manifest['require']['silverspoonmedia/platform'] ?? null;
+
+            if (! preg_match('/^(\d+)\.(\d+)/', $version, $own)) {
+                $violations[] = $package.' declares an unparsable version "'.$version.'"';
+
+                continue;
+            }
+
+            if (! is_string($constraint)) {
+                $violations[] = $package.' does not require silverspoonmedia/platform';
+
+                continue;
+            }
+
+            if (! preg_match('/^(\d+)\.(\d+)/', ltrim($constraint, '^~'), $kernel)) {
+                $violations[] = $package.' requires silverspoonmedia/platform as "'.$constraint.'" which is not a parsable range';
+
+                continue;
+            }
+
+            if ($own[1] !== $kernel[1] || $own[2] !== $kernel[2]) {
+                $violations[] = $package.' is version '.$version.' but requires silverspoonmedia/platform '.$constraint.' — they must share the '.$own[1].'.'.$own[2].' minor';
             }
         }
 
@@ -230,11 +366,22 @@ class PackageManifestTest extends TestCase
      */
     private function requirements(string $package): array
     {
-        $manifest = json_decode((string) file_get_contents(base_path('packages/'.substr($package, strpos($package, '/') + 1).'/composer.json')), true);
+        return array_keys((array) ($this->manifest(substr($package, strpos($package, '/') + 1))['require'] ?? []));
+    }
 
-        $this->assertIsArray($manifest, $package.'/composer.json is not valid JSON.');
+    /**
+     * Decoded manifest of a package under `packages/{slug}`.
+     *
+     * @return array<string, mixed>
+     */
+    private function manifest(string $slug): array
+    {
+        $path = base_path('packages/'.$slug.'/composer.json');
+        $manifest = json_decode((string) file_get_contents($path), true);
 
-        return array_keys((array) ($manifest['require'] ?? []));
+        $this->assertIsArray($manifest, $path.' is not valid JSON.');
+
+        return $manifest;
     }
 
     private function isPlatformRequirement(string $dependency, string $package): bool

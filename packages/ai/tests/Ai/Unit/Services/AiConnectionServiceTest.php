@@ -6,17 +6,15 @@ use App\Domain\Ai\Enums\AiConnectionStatus;
 use App\Domain\Ai\Exceptions\AiException;
 use App\Domain\Ai\Models\AiConnection;
 use App\Domain\Ai\Services\AiConnectionService;
+use App\Domain\Ai\Tests\TestCase;
 use App\Domain\Identity\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Support\Testing\Concerns\SeedsRolesAndPermissions;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\Concerns\SeedsRolesAndPermissions;
-use Tests\TestCase;
 
 class AiConnectionServiceTest extends TestCase
 {
-    use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
     protected function setUp(): void

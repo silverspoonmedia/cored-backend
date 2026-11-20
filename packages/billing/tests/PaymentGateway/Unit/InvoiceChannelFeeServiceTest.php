@@ -9,13 +9,11 @@ use App\Domain\PaymentGateway\Models\PaymentChannelRouteSnapshot;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use Illuminate\Support\Str;
-use Tests\TestCase;
 
 class InvoiceChannelFeeServiceTest extends TestCase
 {
-    use RefreshDatabase;
     use SetsUpPaymentChannels;
 
     protected function setUp(): void

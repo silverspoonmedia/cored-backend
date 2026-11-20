@@ -479,19 +479,19 @@
                     "reason": "test: drop the `use App\\Domain\\Archivd\\…` import and the code that consumes it (line 5, 6, 7, 8, 9, 76)"
                 },
                 {
-                    "path": "packages/navigation/tests/Feature/Database/Seeders/MenuSeederConformanceTest.php",
+                    "path": "tests/Domain/Navigation/HostMenuSeederConformanceTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 11, 32)"
                 },
                 {
-                    "path": "packages/navigation/tests/Feature/Database/Seeders/MenuSeederTest.php",
+                    "path": "tests/Domain/Navigation/HostMenuSeederTreeTest.php",
                     "reason": "test: drop the `archivd.*` keys (line 11, 27, 51, 52, 55, 56)"
                 },
                 {
-                    "path": "packages/navigation/tests/Feature/PrivateDomainMenuVisibilityTest.php",
+                    "path": "tests/Domain/Navigation/HostPrivateDomainMenuVisibilityTest.php",
                     "reason": "test: drop the `archivd.*` keys (line 22, 29, 31)"
                 },
                 {
-                    "path": "packages/billing/tests/PaymentGateway/Feature/Http/Controllers/API/V1/ServicePurchaseChannelCheckoutQuantityTest.php",
+                    "path": "tests/Domain/Core/PaymentGateway/Feature/Http/Controllers/API/V1/ServicePurchaseChannelCheckoutQuantityTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 53)"
                 },
                 {
@@ -543,11 +543,11 @@
                     "reason": "test: drop the `Archivd` entry (line 16, 18, 19, 30, 37, 43)"
                 },
                 {
-                    "path": "packages/billing/tests/Service/Feature/Http/Controllers/API/V1/ServiceCrudTest.php",
+                    "path": "tests/Domain/Core/Service/Feature/Http/Controllers/API/V1/ServiceCrudTest.php",
                     "reason": "test: drop the `archivd.*` keys (line 34, 38, 48, 77)"
                 },
                 {
-                    "path": "packages/billing/tests/Service/Feature/Http/Controllers/API/V1/ServicePurchaseQuantityApiTest.php",
+                    "path": "tests/Domain/Core/Service/Feature/Http/Controllers/API/V1/ServicePurchaseQuantityApiTest.php",
                     "reason": "test: review the Archivd reference and drop it (line 41, 92, 120, 141)"
                 },
                 {

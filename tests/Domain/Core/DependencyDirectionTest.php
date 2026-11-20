@@ -125,6 +125,54 @@ class DependencyDirectionTest extends TestCase
     }
 
     /**
+     * A package test may import only what ships with the package or its
+     * dependencies.
+     *
+     * `Tests\Concerns\*` and `Database\Seeders\*` are the monolith's
+     * autoload-dev and its host seeders: nothing a consumer's tag resolves. A
+     * package test that reaches for either runs here and fatals downstream, so
+     * the fixture it wants moves beside the test (a `Concerns/` trait in the
+     * package's own `tests/`) or the test moves to `tests/Domain/Core/`.
+     *
+     * `App\Domain\{Product}\*` is the mirror of rule 1 for the test tree: a
+     * product row or factory a core package cannot ship, so the test that needs
+     * one is a host test by definition.
+     *
+     * @var list<string>
+     */
+    private const HOST_ONLY_TEST_ROOTS = [
+        'Tests\\',
+        'Database\\Seeders\\',
+        'Database\\Factories\\',
+    ];
+
+    public function test_no_package_test_imports_a_host_only_fixture(): void
+    {
+        $violations = [];
+
+        foreach (array_keys($this->packages()) as $slug) {
+            foreach ($this->filesUnder('packages/'.$slug.'/tests') as $path => $source) {
+                $code = (string) preg_replace('~/\*.*?\*/~s', '', $source);
+                $code = (string) preg_replace('~^\s*(?:\*|//).*$~m', '', $code);
+
+                foreach (self::HOST_ONLY_TEST_ROOTS as $root) {
+                    if (preg_match('~['." \n\t".']'.preg_quote($root, '~').'~', $code)) {
+                        $violations[] = $path.' imports host-only fixture '.$root.'*';
+                    }
+                }
+
+                foreach ($this->importsOf($code) as $domain) {
+                    if ($this->domainKind($domain) === 'product') {
+                        $violations[] = $path.' imports product domain '.$domain.' — a test that needs a product row belongs in tests/Domain/Core/';
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], $violations, implode("\n", $violations));
+    }
+
+    /**
      * Every PHP file in a listed package's `src`, keyed by repo-relative path.
      *
      * @return array<string, string>

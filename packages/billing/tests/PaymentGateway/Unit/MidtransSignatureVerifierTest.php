@@ -3,7 +3,7 @@
 namespace App\Domain\PaymentGateway\Tests\Unit;
 
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransSignatureVerifier;
-use Tests\TestCase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 
 class MidtransSignatureVerifierTest extends TestCase
 {

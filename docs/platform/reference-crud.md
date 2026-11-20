@@ -30,7 +30,7 @@ Never put business logic in the generic repository. Standard five-action CRUD �
 Route::apiResource('users', UserController::class)->except(['create', 'edit']);
 ```
 
-**References:** v1 users (`routes/api/v1/identity.php`); Archivd folders/files under `routes/api/v1/archivd.php`.
+**References:** v1 users (`packages/platform/routes/identity.php`); Archivd folders/files under `routes/api/v1/archivd.php`.
 
 **Not** `apiResource` when you need extra actions, query-mode paging, per-verb permissions, or optional-auth reads — see [Navigation](../domains/navigation/README.md), [list-display-modes](list-display-modes.md).
 
@@ -81,7 +81,7 @@ HTTP → Form Request → Controller → Service → Repository → Model
 
 ## Identity Users (simple CRUD)
 
-Reference for shared-repo CRUD: Identity `UserController` → user services/repos under `app/Domain/Identity/`, routes in `routes/api/v1/identity.php`.
+Reference for shared-repo CRUD: Identity `UserController` → user services/repos under `packages/platform/src/Domain/Identity/`, routes in `packages/platform/routes/identity.php`.
 
 API envelope: `ApiResponse` (`status`, `message`, optional `data`). List/show use Eloquent API Resources under `App\Domain\{Domain}\Http\Resources\…`. Tabular indexes that support `display_mode` may return a flat `T[]` or, when `page` / `per_page` / `search` are present on `display_mode=query`, `{ items, pagination }` — [list-display-modes.md](list-display-modes.md). Query and flat list rows carry `actions[]` (`QueryRowAction`); that is the live SPA row-button source.
 

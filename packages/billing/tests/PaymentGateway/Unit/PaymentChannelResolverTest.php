@@ -6,12 +6,10 @@ use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
 use App\Domain\PaymentGateway\Services\Payment\PaymentChannelResolver;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 
 class PaymentChannelResolverTest extends TestCase
 {
-    use RefreshDatabase;
     use SetsUpPaymentChannels;
 
     public function test_resolves_primary_route_before_fallback_by_role(): void

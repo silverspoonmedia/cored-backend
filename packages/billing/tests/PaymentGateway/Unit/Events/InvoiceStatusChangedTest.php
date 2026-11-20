@@ -3,8 +3,8 @@
 namespace App\Domain\PaymentGateway\Tests\Unit\Events;
 
 use App\Domain\PaymentGateway\Events\InvoiceStatusChanged;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use Illuminate\Broadcasting\PrivateChannel;
-use Tests\TestCase;
 
 class InvoiceStatusChangedTest extends TestCase
 {

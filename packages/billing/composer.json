@@ -20,6 +20,10 @@
         "symfony/http-kernel": "^8.0",
         "symfony/yaml": "^8.1"
     },
+    "require-dev": {
+        "orchestra/testbench": "^11.0",
+        "phpunit/phpunit": "^12.5"
+    },
     "autoload": {
         "psr-4": {
             "App\\Domain\\Currency\\": "src/Currency/",
@@ -29,6 +33,11 @@
             "App\\Domain\\PaymentGateway\\Tests\\": "tests/PaymentGateway/",
             "App\\Domain\\Service\\Tests\\": "tests/Service/"
         }
+    },
+    "scripts": {
+        "test": [
+            "@php vendor/bin/phpunit"
+        ]
     },
     "extra": {
         "laravel": {
