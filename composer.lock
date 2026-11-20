@@ -6712,11 +6712,11 @@
         },
         {
             "name": "silverspoonmedia/ai",
-            "version": "1.0.3",
+            "version": "1.0.4",
             "dist": {
                 "type": "path",
                 "url": "packages/ai",
-                "reference": "b627e00206ee5211663913e903f094210d2f22ce"
+                "reference": "8af152615bc985b8ab5a388db05ec2c49047566e"
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -6765,11 +6765,11 @@
         },
         {
             "name": "silverspoonmedia/audit",
-            "version": "1.0.3",
+            "version": "1.0.4",
             "dist": {
                 "type": "path",
                 "url": "packages/audit",
-                "reference": "ac7939c58de10a41c6b4419c925eecbe22084924"
+                "reference": "5ac0b202d3e37d5fc27870f4083fdee9c40fc171"
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -6818,11 +6818,11 @@
         },
         {
             "name": "silverspoonmedia/billing",
-            "version": "1.0.3",
+            "version": "1.0.4",
             "dist": {
                 "type": "path",
                 "url": "packages/billing",
-                "reference": "a7e0ffc503fa8bf62592db52e3380686d83c505d"
+                "reference": "a1ab4887484fa74bd75be69d0c09438273641591"
             },
             "require": {
                 "ipaymu/ipaymu-php-api": "^3.0",
@@ -6878,11 +6878,11 @@
         },
         {
             "name": "silverspoonmedia/navigation",
-            "version": "1.0.3",
+            "version": "1.0.4",
             "dist": {
                 "type": "path",
                 "url": "packages/navigation",
-                "reference": "50bb3e3b7ccf3863bbd4addffe0bacb1233fb074"
+                "reference": "e2d2cc86143611efc9a3d1fd8cc43a1a5d3c3783"
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -6931,11 +6931,11 @@
         },
         {
             "name": "silverspoonmedia/notification",
-            "version": "1.0.3",
+            "version": "1.0.4",
             "dist": {
                 "type": "path",
                 "url": "packages/notification",
-                "reference": "21f7c844fd986503049c83ef7a08646f7aaf4188"
+                "reference": "7c04c7468dffda431f7232e0055c3af423323dd8"
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -7092,11 +7092,11 @@
         },
         {
             "name": "silverspoonmedia/platform",
-            "version": "1.0.3",
+            "version": "1.0.4",
             "dist": {
                 "type": "path",
                 "url": "packages/platform",
-                "reference": "21c3a99b7b6e526376535eac0d062fbd5ddd5084"
+                "reference": "60b430016db0cc40620e7f3676cd5f480990bc82"
             },
             "require": {
                 "aws/aws-sdk-php": "^3.0",
