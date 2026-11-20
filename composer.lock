@@ -6712,11 +6712,11 @@
         },
         {
             "name": "silverspoonmedia/ai",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "dist": {
                 "type": "path",
                 "url": "packages/ai",
-                "reference": "33acbc6de5d7bb10afbbd9120671a1a7b7765ae3"
+                "reference": "b627e00206ee5211663913e903f094210d2f22ce"
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -6765,11 +6765,11 @@
         },
         {
             "name": "silverspoonmedia/audit",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "dist": {
                 "type": "path",
                 "url": "packages/audit",
-                "reference": "e2a839a2b2bfd29dbd5e730fcfc39c28582d16d6"
+                "reference": "ac7939c58de10a41c6b4419c925eecbe22084924"
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -6818,11 +6818,11 @@
         },
         {
             "name": "silverspoonmedia/billing",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "dist": {
                 "type": "path",
                 "url": "packages/billing",
-                "reference": "d39f35f655f9162f7b4059d76900a936f1241e5b"
+                "reference": "a7e0ffc503fa8bf62592db52e3380686d83c505d"
             },
             "require": {
                 "ipaymu/ipaymu-php-api": "^3.0",
@@ -6878,11 +6878,11 @@
         },
         {
             "name": "silverspoonmedia/navigation",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "dist": {
                 "type": "path",
                 "url": "packages/navigation",
-                "reference": "9bd208c9ebd897ae97c9c84074fd4b11609cdce6"
+                "reference": "50bb3e3b7ccf3863bbd4addffe0bacb1233fb074"
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -6931,11 +6931,11 @@
         },
         {
             "name": "silverspoonmedia/notification",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "dist": {
                 "type": "path",
                 "url": "packages/notification",
-                "reference": "f27f056cb570c70128f97007acb9efc56e33ad0f"
+                "reference": "21f7c844fd986503049c83ef7a08646f7aaf4188"
             },
             "require": {
                 "laravel/framework": "^13.0",
@@ -7092,11 +7092,11 @@
         },
         {
             "name": "silverspoonmedia/platform",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "dist": {
                 "type": "path",
                 "url": "packages/platform",
-                "reference": "19a34a4825989ba4605f741208d48bb16c9a1729"
+                "reference": "9e3c9fe6c579708ecb55fc6a85bad4fd9c73e12a"
             },
             "require": {
                 "aws/aws-sdk-php": "^3.0",
@@ -7111,6 +7111,7 @@
                 "spatie/laravel-activitylog": "^5.0",
                 "spatie/laravel-permission": "^8.0",
                 "symfony/http-foundation": "^8.0",
+                "symfony/http-kernel": "^8.0",
                 "symfony/mime": "^8.0"
             },
             "require-dev": {
@@ -7125,7 +7126,8 @@
                         "App\\Providers\\ProductServiceProvider",
                         "App\\Providers\\DomainAccessServiceProvider",
                         "App\\Providers\\SettingsServiceProvider",
-                        "App\\Providers\\Domain\\IdentityServiceProvider"
+                        "App\\Providers\\Domain\\IdentityServiceProvider",
+                        "App\\Providers\\ApiExceptionEnvelopeServiceProvider"
                     ]
                 }
             },
