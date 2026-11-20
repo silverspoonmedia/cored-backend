@@ -34,8 +34,11 @@ class PackageStandaloneRunTest extends TestCase
      */
     public const DIRECTORIES = [
         'packages',
+        'client-scaffold',
         'tests/Domain/Core/PackageStandaloneRunTest.php',
+        'tests/Domain/Core/ConsumerScaffoldTest.php',
         'scripts/run-standalone-package-suite.php',
+        'scripts/run-consumer-scaffold-check.php',
         '.github/workflows/ci.yml',
     ];
 
@@ -80,6 +83,34 @@ class PackageStandaloneRunTest extends TestCase
         $this->assertFileExists(
             base_path('scripts/run-standalone-package-suite.php'),
             'The standalone package runner is missing — the `standalone-packages` CI job would call nothing.',
+        );
+    }
+
+    /**
+     * The consumer template is the other half of the same job.
+     *
+     * A package suite proves one package in isolation; the scaffold run proves the
+     * six assemble into a bootable project. Without the script the job would still
+     * pass while `client-scaffold` rotted.
+     */
+    public function test_the_consumer_scaffold_runner_exists(): void
+    {
+        $this->assertFileExists(
+            base_path('scripts/run-consumer-scaffold-check.php'),
+            'The consumer scaffold runner is missing — the `Consumer scaffold` CI step would call nothing.',
+        );
+
+        $workflow = (string) file_get_contents(base_path('.github/workflows/ci.yml'));
+
+        $this->assertStringContainsString(
+            'scripts/run-consumer-scaffold-check.php',
+            $workflow,
+            'The `standalone-packages` job must run the consumer scaffold check; otherwise only the packages are proven and the template is not.',
+        );
+
+        $this->assertDirectoryExists(
+            base_path('client-scaffold/config'),
+            'client-scaffold must be a real template — the scaffold check copies it.',
         );
     }
 

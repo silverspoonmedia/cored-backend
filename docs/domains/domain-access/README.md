@@ -9,7 +9,7 @@ It is a separate axis, distinct from module taxonomy (`config/domains.php`), the
 | Code | `packages/platform/src/Support/DomainAccess/` — `DomainAccessService`, `ProductNames`, `DomainAccessGate` |
 | Config | [`config/domains.php`](../../../config/domains.php) · [`config/products.php`](../../../config/products.php) `menu_routes` |
 | Table | `product_domain_visibilities` (`product_key` unique, `visibility`) |
-| API | [`routes/api/v1/domain-access.php`](../../../routes/api/v1/domain-access.php) — `GET /api/v1/admin/domain-access`, `PUT …/{key}` |
+| API | [`packages/platform/routes/kernel-domain-access.php`](../../../packages/platform/routes/kernel-domain-access.php) — `GET /api/v1/admin/domain-access`, `PUT …/{key}` (kernel-owned, mounted by `DomainManager::packageApiRoutePaths()` in both the monolith and a consumer install) |
 | SPA | Vue Router `domain-access.index` → `/apps/domain-access` (no server `web` route) |
 | Seeding | `DomainAccessSeeder` + `Database\Seeders\Concerns\SeedsBetaTesterRole` |
 | Realtime | `domain-access` private channel — `.domain.visibility.changed` |

@@ -1,6 +1,6 @@
 ---
 description: Product activation registry — state machine, middleware, analytics invariants
-globs: packages/platform/src/Support/Product/**,app/Support/Product/**,routes/api/v1/product-activations.php,config/products.php,docs/domains/product-activations/**
+globs: packages/platform/src/Support/Product/**,packages/platform/routes/kernel-product-activations.php,config/products.php,docs/domains/product-activations/**
 alwaysApply: false
 ---
 

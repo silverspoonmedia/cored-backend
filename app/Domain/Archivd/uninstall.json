@@ -633,6 +633,22 @@
                 {
                     "path": "app/Domain/Microstock/Database/Seeders/MicrostockCatalogSeeder.php",
                     "reason": "owned by the Microstock domain: the only hit is a product description string; it leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "client-scaffold/config/domains.php",
+                    "reason": "consumer template: the docblock names the product domains it deliberately does not register — prose, not a registry entry, and it leaves with the scaffold, not with a product"
+                },
+                {
+                    "path": "packages/platform/tests/Identity/Unit/Support/KernelConfigSelfSufficiencyTest.php",
+                    "reason": "consumer guard: `archivd` is listed as a product-owned config group read behind a default, and the docblock explains why a consumer with no product takes the direct path — the assertion is that the key is legal, not that the product exists"
+                },
+                {
+                    "path": "scripts/run-consumer-scaffold-check.php",
+                    "reason": "consumer guard: the runner asserts a core-only install mounts NO product URI, so the product names are the negative assertion — they must stay"
+                },
+                {
+                    "path": "tests/Domain/Core/ConsumerScaffoldTest.php",
+                    "reason": "consumer guard: asserts the scaffold registry does not name a product domain — the product names are the negative assertion, not a reference to ship"
                 }
             ]
         },

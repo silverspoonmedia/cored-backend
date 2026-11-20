@@ -60,6 +60,7 @@
         "psr-4": {
             "App\\": "app/",
             "App\\Support\\": "app/Support/",
+            "App\\Console\\": "app/Console/",
             "App\\Http\\": "app/Http/",
             "App\\Repositories\\": "app/Repositories/",
             "App\\Domain\\Identity\\": "app/Domain/Identity/",

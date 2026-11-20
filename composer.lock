@@ -7096,7 +7096,7 @@
             "dist": {
                 "type": "path",
                 "url": "packages/platform",
-                "reference": "9e3c9fe6c579708ecb55fc6a85bad4fd9c73e12a"
+                "reference": "21c3a99b7b6e526376535eac0d062fbd5ddd5084"
             },
             "require": {
                 "aws/aws-sdk-php": "^3.0",
@@ -7135,6 +7135,7 @@
                 "psr-4": {
                     "App\\Support\\": "src/Support/",
                     "App\\Domain\\Identity\\": "src/Domain/Identity/",
+                    "App\\Console\\": "src/Console/",
                     "App\\Http\\": "src/Http/",
                     "App\\Repositories\\": "src/Repositories/",
                     "App\\Providers\\": "src/Providers/",
