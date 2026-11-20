@@ -8,7 +8,7 @@ Kernel registry (`packages/platform/src/Support/Product/`) that answers one ques
 | Config | [`config/products.php`](../../../config/products.php) (`activation_type`, `fulfillment_target`, `menu_routes`) |
 | Table | `product_activations` · `product_analytics` (bucketed aggregates) |
 | Middleware | `product.active:{Product}` |
-| API | [`routes/api/v1/product-activations.php`](../../../routes/api/v1/product-activations.php) — `/api/v1/product-activations` + `/api/v1/admin/product-activations` |
+| API | [`packages/platform/routes/kernel-product-activations.php`](../../../packages/platform/routes/kernel-product-activations.php) — `/api/v1/product-activations` + `/api/v1/admin/product-activations` (kernel-owned, mounted by `DomainManager::packageApiRoutePaths()`) |
 | SPA | Vue Router `product-activations.index` / `product-activations.show` under `/apps/product-activations` |
 | Commands | `php artisan product:recompute-analytics [--product=Archivd]` |
 | Realtime | `product-activations` private channel — `.product.activation.changed` |

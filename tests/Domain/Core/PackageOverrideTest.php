@@ -326,6 +326,7 @@ class PackageOverrideTest extends TestCase
     {
         foreach ([
             'App\\Support\\' => 'app/Support',
+            'App\\Console\\' => 'app/Console',
             'App\\Http\\' => 'app/Http',
             'App\\Repositories\\' => 'app/Repositories',
             'App\\Traits\\' => 'app/Traits',
@@ -335,6 +336,45 @@ class PackageOverrideTest extends TestCase
             'Database\\Seeders\\' => 'database/seeders',
         ] as $namespace => $hostPath) {
             $this->assertHostPrefixWins($namespace, $hostPath);
+        }
+    }
+
+    /**
+     * The consumer template must declare the same override hooks.
+     *
+     * A consumer's `app/` is the only host tree it has, and those nine prefixes
+     * exist for exactly one reason: replacing a kernel class from the project.
+     * This is a structural assertion only — no probe class is written into
+     * `client-scaffold/`, which is a shipped template, not a scratch directory.
+     * `ConsumerScaffoldTest` checks the manifest directly.
+     */
+    public function test_the_consumer_template_declares_the_same_override_prefixes(): void
+    {
+        $scaffold = json_decode((string) file_get_contents(base_path('client-scaffold/composer.json')), true);
+        $root = json_decode((string) file_get_contents(base_path('composer.json')), true);
+
+        $scaffoldPrefixes = (array) ($scaffold['autoload']['psr-4'] ?? []);
+        $rootPrefixes = (array) ($root['autoload']['psr-4'] ?? []);
+
+        foreach ([
+            'App\\Support\\',
+            'App\\Console\\',
+            'App\\Http\\',
+            'App\\Repositories\\',
+            'App\\Traits\\',
+            'App\\Rules\\',
+            'App\\Exceptions\\',
+            'Database\\Factories\\',
+            'Database\\Seeders\\',
+        ] as $namespace) {
+            $this->assertArrayHasKey($namespace, $rootPrefixes, "The root composer.json declares no [{$namespace}] prefix to copy.");
+            $this->assertArrayHasKey($namespace, $scaffoldPrefixes, "client-scaffold/composer.json must declare the [{$namespace}] prefix: without it a consumer cannot override a kernel class in that namespace.");
+        }
+
+        // Host trees the template deliberately does not carry: `App\Domain\*`
+        // belongs to a product domain, and a consumer install has none.
+        foreach ($scaffoldPrefixes as $namespace => $path) {
+            $this->assertStringNotContainsString('core/', (string) $path, "client-scaffold PSR-4 path [{$path}] still points at a core subtree.");
         }
     }
 

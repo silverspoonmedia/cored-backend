@@ -20,5 +20,7 @@ yarn-error.log
 /.idea
 /.vscode
 
-# ── Core subtree (managed via git subtree, not committed) ──
-/core
+# ── Core packages ──────────────────────────────────────────
+# Core domains arrive through Composer (vendor/silverspoonmedia/*). There is no
+# core/ subtree in this project: config/domains.php names the packages and
+# DomainManager resolves them through Composer's install paths.

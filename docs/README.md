@@ -83,7 +83,7 @@ The browser UI lives in the sibling SPA. These are historical only; the live lis
 |----------|-------|
 | [project-overview.md](integration/project-overview.md) | Monolith and Monolith-Vue-Workers — architecture and relationship |
 | [vue-workers-spa.md](integration/vue-workers-spa.md) | SPA contract: API shapes, `SPA_URL` minting, i18n runtime, batch hydration, realtime registry, CI; deep dive [reference-vue-workers-spa.md](integration/reference-vue-workers-spa.md) |
-| [client-subtree.md](integration/client-subtree.md) | Consuming this repo as a `core/` git subtree in a client project |
+| [client-project.md](integration/client-project.md) | Building a project on the core packages: `client-scaffold` template, registry, route loaders, PSR-4 override hooks, config split, verification |
 | [core-packages.md](integration/core-packages.md) | Core domains shipped as Composer path packages: layout, host wiring, override precedence, kernel contracts, how to add one |
 
 ## Archive (not daily reading)

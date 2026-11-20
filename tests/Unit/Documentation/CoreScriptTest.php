@@ -4,6 +4,16 @@ namespace Tests\Unit\Documentation;
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * The git subtree path is retired.
+ *
+ * Core domains ship as Composer packages (`silverspoonmedia/platform`,
+ * `…/navigation`, …), and `client-scaffold/` is the consumer template. The two
+ * shell scripts that mirrored the monorepo into a client checkout — and the
+ * subtree guide that documented them — must not come back: a reintroduced script
+ * would silently re-create a second distribution path that no longer works with
+ * the package registry. This test is the regression guard, not a style check.
+ */
 class CoreScriptTest extends TestCase
 {
     private string $basePath;
@@ -14,60 +24,25 @@ class CoreScriptTest extends TestCase
         $this->basePath = dirname(__DIR__, 3);
     }
 
-    public function test_update_core_script_exists_with_required_workflow(): void
+    public function test_subtree_scripts_are_gone(): void
     {
-        $path = $this->basePath.DIRECTORY_SEPARATOR.'update-core.sh';
+        foreach (['update-core.sh', 'push-core.sh'] as $script) {
+            $path = $this->basePath.DIRECTORY_SEPARATOR.$script;
 
-        $this->assertFileExists($path);
-
-        $content = file_get_contents($path);
-
-        foreach ([
-            '#!/usr/bin/env bash',
-            'set -euo pipefail',
-            'MONOLITH_URL="${MONOLITH_URL:-https://github.com/silverspoonmedia/monolith.git}"',
-            'git remote add',
-            'git fetch',
-            'git subtree pull',
-            '--squash',
-            'diff -rq config/',
-            'php artisan migrate',
-        ] as $term) {
-            $this->assertStringContainsString($term, $content);
-        }
-    }
-
-    public function test_push_core_script_exists_with_required_workflow(): void
-    {
-        $path = $this->basePath.DIRECTORY_SEPARATOR.'push-core.sh';
-
-        $this->assertFileExists($path);
-
-        $content = file_get_contents($path);
-
-        foreach ([
-            '#!/usr/bin/env bash',
-            'set -euo pipefail',
-            'MONOLITH_URL="${MONOLITH_URL:-https://github.com/silverspoonmedia/monolith.git}"',
-            'git diff-index --quiet HEAD --',
-            'git subtree push',
-            'read -r -p "Continue? [y/N] " CONFIRM',
-            'WARNING',
-        ] as $term) {
-            $this->assertStringContainsString($term, $content);
-        }
-    }
-
-    public function test_scripts_do_not_contain_emoji_status_prefixes(): void
-    {
-        foreach (['update-core.sh', 'push-core.sh'] as $file) {
-            $content = file_get_contents($this->basePath.DIRECTORY_SEPARATOR.$file);
-
-            $this->assertDoesNotMatchRegularExpression(
-                '/[🔍📡✅📥🔎📊📋🚀📝⚙️⚠️📦🔄🏁❌📁]/u',
-                $content,
-                "{$file} must avoid emoji status prefixes."
+            $this->assertFileDoesNotExist(
+                $path,
+                "{$script} belongs to the retired git subtree model; core domains are Composer packages now."
             );
         }
+    }
+
+    public function test_subtree_guide_is_gone(): void
+    {
+        $path = $this->basePath.DIRECTORY_SEPARATOR.'docs'.DIRECTORY_SEPARATOR.'integration'.DIRECTORY_SEPARATOR.'client-subtree.md';
+
+        $this->assertFileDoesNotExist(
+            $path,
+            'The client guide is docs/integration/client-project.md; a subtree guide would document a distribution path the packages do not support.'
+        );
     }
 }

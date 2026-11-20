@@ -21,6 +21,16 @@ use Tests\TestCase;
  *   (`spa-routes.menu`/`deny` grow with product domains, `services` gains
  *   blocks): the kernel may not introduce an entry the host has not accepted,
  *   because a kernel-only install would then boot a payload the host rejects.
+ *
+ * **This is the monolith guard only.** It compares two files that exist
+ * side-by-side in this checkout, which a consumer install does not have: a
+ * downstream project ships no host copy to compare against. The consumer-side
+ * answer is `packages/platform/tests/.../KernelConfigSelfSufficiencyTest`
+ * (every `config()` literal the kernel reads resolves on a package-only boot)
+ * together with `tests/Domain/Core/ConsumerScaffoldTest` (the template publishes
+ * the host-owned groups). Keep all three: dropping this one would stop noticing
+ * a kernel default that drifted from the host's, which is a monolith bug; and
+ * dropping the other two would let a consumer install fail with nothing red here.
  */
 class KernelConfigParityTest extends TestCase
 {

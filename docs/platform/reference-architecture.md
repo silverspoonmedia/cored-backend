@@ -65,11 +65,11 @@ php artisan domain:remove Scratch --force       # executes the manifest
 
 | Command | Effect |
 |---------|--------|
-| `domain:list` | Name, **Kind** (`core`\|`product`), **Parent** (the product it extends, `—` = none), **Removal** (`never`\|`locked`\|`removable`), whether `app/Domain/{Name}` exists |
+| `domain:list` | Name, **Kind** (`core`\|`product`), **Parent** (the product it extends, `—` = none), **Removal** (`never`\|`locked`\|`removable`), whether the domain directory exists (`yes`/`missing`), and **Package** (`package` = Composer package — `packages/{slug}` here, `vendor/silverspoonmedia/{slug}` in a consumer install | `—` = `app/Domain/`) |
 | `domain:make` | Scaffold folders, provider, route stubs, tests, **`{Name}RoleSeeder`** (Beta tester role + `access {domain} product` permission + Public visibility row) and a starter **`uninstall.json`**; register as **product** (locked by default) and wire the seeder into `DatabaseSeeder`. `--parent={Name}` registers a **subproduct** instead — the parent must already be a registered product domain. |
 | `domain:remove` | Execute the domain's `uninstall.json`: delete paths (backend/SPA/docs), apply shared-file edits, optionally purge data. Refuses core and locked product, and refuses a product while a registered **subproduct** still points at it. Migrations stay without `--purge-data`. |
 
-Implementation: [`DomainManager`](../../packages/platform/src/Support/Domain/DomainManager.php), `app/Console/Commands/Domain/*`.
+Implementation: [`DomainManager`](../../packages/platform/src/Support/Domain/DomainManager.php), `domain:list` in [`packages/platform/src/Console/Commands/Domain/`](../../packages/platform/src/Console/Commands/Domain/) (kernel — a consumer install runs the same class from `vendor`), `domain:make` / `domain:remove` in `app/Console/Commands/Domain/` (host — they rewrite host trees).
 
 ## Domain uninstall manifest
 

@@ -6,8 +6,6 @@ use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RedirectIfWebAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
-use App\Models\User;
-use App\Support\ApiResponder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\Authenticate;
@@ -31,29 +29,16 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        api: [
-            __DIR__.'/../core/routes/api.php',
-            __DIR__.'/../routes/api.php',
-        ],
+        api: __DIR__.'/../routes/api.php',
         then: function (): void {
+            // The version loader mounts every core package endpoint (registry
+            // order) and then the client's own routes. Packages are never
+            // required one by one here: config/domains.php names them and
+            // DomainManager resolves each install path through Composer.
             Route::middleware('api')
                 ->prefix('api/v1')
                 ->name('api.v1.')
-                ->group(base_path('core/routes/api/v1.php'));
-
-            if (file_exists(base_path('routes/api/v1.php'))) {
-                Route::middleware('api')
-                    ->prefix('api/v1')
-                    ->name('api.v1.')
-                    ->group(base_path('routes/api/v1.php'));
-            }
-
-            if (file_exists(base_path('core/routes/api/v2.php'))) {
-                Route::middleware('api')
-                    ->prefix('api/v2')
-                    ->name('api.v2.')
-                    ->group(base_path('core/routes/api/v2.php'));
-            }
+                ->group(base_path('routes/api/v1.php'));
 
             if (file_exists(base_path('routes/api/v2.php'))) {
                 Route::middleware('api')
@@ -62,18 +47,9 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->group(base_path('routes/api/v2.php'));
             }
         },
-        web: [
-            __DIR__.'/../core/routes/web.php',
-            __DIR__.'/../routes/web.php',
-        ],
-        commands: [
-            __DIR__.'/../core/routes/console.php',
-            __DIR__.'/../routes/console.php',
-        ],
-        channels: [
-            __DIR__.'/../core/routes/channels.php',
-            __DIR__.'/../routes/channels.php',
-        ],
+        web: __DIR__.'/../routes/web.php',
+        commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/whatsup',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -106,97 +82,23 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
-        );
+        // The API error envelope is kernel policy: `App\Support\Http\ApiExceptionEnvelope`
+        // turns a 401/403/404/429 into `{status: "error", message: …}`. This project
+        // registers nothing for that — `KernelServiceProvider` already does, and
+        // registering twice would answer every exception with two renderables.
+        // Host-only concerns belong below.
 
-        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            $previous = $e->getPrevious();
-
-            if ($previous instanceof ModelNotFoundException) {
-                $message = match ($previous->getModel()) {
-                    User::class => __('api/users.not_found'),
-                    default => __('api/common.data_not_found'),
-                };
-
-                return ApiResponder::error($message, 404);
-            }
-
-            return ApiResponder::error(__('api/common.resource_not_found'), 404);
-        });
-
-        $exceptions->render(function (AuthenticationException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            $message = $request->bearerToken()
-                ? __('api/auth.token_invalid')
-                : __('api/auth.bearer_required');
-
-            return ApiResponder::error($message, 401);
-        });
-
-        $exceptions->render(function (UnauthorizedHttpException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            $message = match ($e->getMessage()) {
-                'Token not provided' => __('api/auth.bearer_required'),
-                'User not found' => __('api/auth.token_invalid'),
-                default => $e->getMessage() ?: __('api/auth.could_not_authenticate'),
-            };
-
-            return ApiResponder::error($message, 401);
-        });
-
-        $exceptions->render(function (JWTException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            $message = match (true) {
-                $e instanceof TokenExpiredException => __('api/auth.token_expired'),
-                $e instanceof TokenBlacklistedException => __('api/auth.token_revoked'),
-                $e instanceof TokenInvalidException => __('api/auth.token_invalid'),
-                default => __('api/auth.could_not_authenticate'),
-            };
-
-            return ApiResponder::error($message, 401);
-        });
-
-        $exceptions->render(function (PermissionUnauthorizedException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            return ApiResponder::error(__('api/common.unauthorized'), 403);
-        });
-
-        $exceptions->render(function (AuthorizationException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            return ApiResponder::error(
-                $e->getMessage() ?: __('api/common.unauthorized'),
-                403,
-            );
-        });
-
-        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            return ApiResponder::error(
-                $e->getMessage() ?: __('api/common.unauthorized'),
-                403,
-            );
-        });
+        $exceptions->dontReport([
+            AuthorizationException::class,
+            AuthenticationException::class,
+            ModelNotFoundException::class,
+            NotFoundHttpException::class,
+            PermissionUnauthorizedException::class,
+            AccessDeniedHttpException::class,
+            UnauthorizedHttpException::class,
+            JWTException::class,
+            TokenExpiredException::class,
+            TokenInvalidException::class,
+            TokenBlacklistedException::class,
+        ]);
     })->create();

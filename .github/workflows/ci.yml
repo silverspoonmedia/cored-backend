@@ -221,3 +221,11 @@ jobs:
       # extensions the suite does.
       - name: Standalone package suites
         run: composer test:standalone
+
+      # The packages each pass alone; this proves the template assembles them.
+      # `run-consumer-scaffold-check.php` copies `client-scaffold`, swaps the private
+      # VCS mirrors for path repositories to `packages/*`, installs, lists domains and
+      # routes, migrates on sqlite, and asserts one real 422 carries a translated
+      # sentence. It shares the install above, so it costs minutes, not more.
+      - name: Consumer scaffold
+        run: php -d memory_limit=1G scripts/run-consumer-scaffold-check.php
