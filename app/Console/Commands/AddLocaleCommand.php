@@ -17,10 +17,12 @@ use Symfony\Component\Finder\Finder;
  *   2. config('localization.supported_locales')
  *      → SetLocale + LocaleController whitelist; without it the locale can
  *        never be resolved or persisted.
- *   3. APPLICATION-OWNED files (ui.php, web/*, api/*, mail.php, …)
+ *   3. APPLICATION-OWNED files (ui.php, web/*, api/*, …)
  *      → copied from a reference locale so every key exists immediately
  *        (English fallback values), keeping LocaleParityTest green. Translate
- *        the copies afterwards.
+ *        the copies afterwards. Files a core package ships — `api/users.php`,
+ *        `api/auth.php`, `mail.php` — are not here: they live in
+ *        `packages/platform/resources/lang` and ship with the kernel.
  *
  * Example:
  *   php artisan locale:add fr

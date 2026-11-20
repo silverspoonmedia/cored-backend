@@ -162,8 +162,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
             $message = match (true) {
                 $e instanceof TokenExpiredException => __('api/auth.token_expired'),
-                $e instanceof TokenInvalidException => __('api/auth.token_invalid'),
                 $e instanceof TokenBlacklistedException => __('api/auth.token_revoked'),
+                $e instanceof TokenInvalidException => __('api/auth.token_invalid'),
                 default => __('api/auth.could_not_authenticate'),
             };
 

@@ -1,6 +1,5 @@
 <?php
 
-use App\Domain\Identity\Models\User;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Kernel;
 use App\Http\Middleware\AuthenticateWithSpaCookie;
@@ -10,37 +9,25 @@ use App\Http\Middleware\RequireSpaRequestHeader;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\VerifySpaCsrf;
-use App\Support\ApiResponder;
 use App\Support\Auth\SpaCsrf;
 use App\Support\ErrorLogging\ExceptionRecorder;
+use App\Support\Http\ApiExceptionEnvelope;
 use App\Support\Http\StampApiCors;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
-use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
-use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenBlacklistedException;
-use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
-use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
-use Spatie\Permission\Exceptions\UnauthorizedException as PermissionUnauthorizedException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withEvents(discover: [
@@ -155,9 +142,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
-        );
+        // The envelope itself is kernel policy (`App\Support\Http\ApiExceptionEnvelope`),
+        // shared with a consumer that installs `silverspoonmedia/platform` alone.
+        // Host-only concerns stay below: reporting, the 419 session branch, CORS.
+        ApiExceptionEnvelope::register($exceptions->handler);
 
         $exceptions->dontReport([
             BusinessRuleException::class,
@@ -170,118 +158,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
             if (app()->bound(ExceptionRecorder::class)) {
                 app(ExceptionRecorder::class)->recordException($e);
             }
-        });
-
-        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            $previous = $e->getPrevious();
-
-            if ($previous instanceof ModelNotFoundException) {
-                $message = match ($previous->getModel()) {
-                    User::class => __('api/users.not_found'),
-                    default => __('api/common.data_not_found'),
-                };
-
-                return ApiResponder::error($message, 404);
-            }
-
-            return ApiResponder::error(__('api/common.resource_not_found'), 404);
-        });
-
-        $exceptions->render(function (AuthenticationException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            $message = $request->bearerToken()
-                ? __('api/auth.token_invalid')
-                : __('api/auth.bearer_required');
-
-            return ApiResponder::error($message, 401);
-        });
-
-        $exceptions->render(function (UnauthorizedHttpException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            $message = match ($e->getMessage()) {
-                'Token not provided' => __('api/auth.bearer_required'),
-                'User not found' => __('api/auth.token_invalid'),
-                default => $e->getMessage() ?: __('api/auth.could_not_authenticate'),
-            };
-
-            return ApiResponder::error($message, 401);
-        });
-
-        $exceptions->render(function (
-            JWTException $e,
-            Request $request,
-        ) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            $message = match (true) {
-                $e instanceof TokenExpiredException => __('api/auth.token_expired'),
-                $e instanceof TokenInvalidException => __('api/auth.token_invalid'),
-                $e instanceof TokenBlacklistedException => __('api/auth.token_revoked'),
-                default => __('api/auth.could_not_authenticate'),
-            };
-
-            return ApiResponder::error($message, 401);
-        });
-
-        $exceptions->render(function (PermissionUnauthorizedException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            return ApiResponder::error(__('api/common.unauthorized'), 403);
-        });
-
-        $exceptions->render(function (AuthorizationException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            return ApiResponder::error(
-                $e->getMessage() ?: __('api/common.unauthorized'),
-                403,
-            );
-        });
-
-        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            return ApiResponder::error(
-                $e->getMessage() ?: __('api/common.unauthorized'),
-                403,
-            );
-        });
-
-        // Keep the API error envelope for rate-limit rejections (login throttle
-        // throws ThrottleRequestsException; route middleware throws it too).
-        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
-            if (! $request->is('api/*')) {
-                return null;
-            }
-
-            $response = ApiResponder::error(
-                $e->getMessage() ?: __('api/common.too_many_requests'),
-                429,
-            );
-
-            foreach ($e->getHeaders() as $name => $value) {
-                $response->headers->set($name, $value);
-            }
-
-            return $response;
         });
 
         $exceptions->render(function (HttpException $e, Request $request) {

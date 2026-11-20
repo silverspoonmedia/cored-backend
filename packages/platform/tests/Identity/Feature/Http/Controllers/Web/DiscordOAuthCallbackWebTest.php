@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Domain\Core\Identity\Feature\Http\Controllers\Web;
+namespace App\Domain\Identity\Tests\Feature\Http\Controllers\Web;
 
-use Tests\TestCase;
+use App\Domain\Identity\Tests\Feature\FeatureTestCase;
 
-class DiscordOAuthCallbackWebTest extends TestCase
+class DiscordOAuthCallbackWebTest extends FeatureTestCase
 {
     private const SPA = 'https://spa.test';
 

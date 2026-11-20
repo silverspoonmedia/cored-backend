@@ -1,15 +1,13 @@
 <?php
 
-namespace Tests\Domain\Core\Identity\Feature\Http\Controllers\API\V1\Auth;
+namespace App\Domain\Identity\Tests\Feature\Http\Controllers\API\V1\Auth;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\Identity\Tests\Feature\FeatureTestCase;
+use App\Support\Testing\Concerns\SeedsRolesAndPermissions;
 use Illuminate\Support\Facades\Http;
-use Tests\Concerns\SeedsRolesAndPermissions;
-use Tests\TestCase;
 
-class HcaptchaAuthTest extends TestCase
+class HcaptchaAuthTest extends FeatureTestCase
 {
-    use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
     protected function setUp(): void

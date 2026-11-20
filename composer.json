@@ -111,6 +111,7 @@
             "phpstan analyse --no-progress --memory-limit=1G"
         ],
         "test:standalone": [
+            "Composer\\Config::disableProcessTimeout",
             "@php scripts/run-standalone-package-suite.php"
         ],
         "post-autoload-dump": [

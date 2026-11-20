@@ -39,15 +39,12 @@ return [
     |--------------------------------------------------------------------------
     | Frankfurter FX (ECB rates, no API key)
     |--------------------------------------------------------------------------
-    | Used by Service domain checkout to convert display currency → IDR.
-    | @see https://www.frankfurter.app/docs/
+    | The block itself now ships with `silverspoonmedia/billing`
+    | (`config/services.php`), merged in by `BillingServiceProvider`, so a
+    | billing-only install keeps a working FX provider and this host does not
+    | carry a second copy. `SettingRegistry` (`platform.frankfurter.*`) still
+    | reads `services.frankfurter.*`, and `FRANKFURTER_BASE_URL` still wins.
     */
-    'frankfurter' => [
-        'base_url' => env('FRANKFURTER_BASE_URL', 'https://api.frankfurter.app'),
-        // Tier B — Settings → Platform (platform.frankfurter.timeout / cache_ttl)
-        'timeout' => 10,
-        'cache_ttl' => 3600,
-    ],
 
     'discord' => [
         'client_id' => env('DISCORD_CLIENT_ID'),
