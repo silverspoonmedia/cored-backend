@@ -3,7 +3,7 @@
     "description": "Silverspoon core domain package: forensic activity trail + grouped persistent error log.",
     "type": "library",
     "license": "proprietary",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "homepage": "https://github.com/silverspoonmedia/audit",
     "support": {
         "source": "https://github.com/silverspoonmedia/audit"
