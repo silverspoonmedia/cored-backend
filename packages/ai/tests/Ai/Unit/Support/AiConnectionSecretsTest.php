@@ -4,8 +4,8 @@ namespace App\Domain\Ai\Tests\Unit\Support;
 
 use App\Domain\Ai\Exceptions\AiException;
 use App\Domain\Ai\Support\AiConnectionSecrets;
+use App\Domain\Ai\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
 class AiConnectionSecretsTest extends TestCase
 {

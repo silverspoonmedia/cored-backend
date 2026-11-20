@@ -5,16 +5,14 @@ namespace App\Domain\Currency\Tests\Unit\Services;
 use App\Domain\Currency\Exceptions\ExchangeRateException;
 use App\Domain\Currency\Models\ExchangeRateSnapshot;
 use App\Domain\Currency\Services\ExchangeRateService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\Currency\Tests\Concerns\SeedsCurrencies;
+use App\Domain\Currency\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Tests\Concerns\SeedsCurrencies;
-use Tests\TestCase;
 
 class ExchangeRateServiceTest extends TestCase
 {
-    use RefreshDatabase;
     use SeedsCurrencies;
 
     private ExchangeRateService $service;

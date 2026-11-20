@@ -5,6 +5,13 @@
          colors="true"
 >
     <testsuites>
+        <!-- The host tree and the package trees migrate differently: `tests/**`
+             boots the monolith application (`Tests\TestCase`), every package runs
+             its own Testbench harness (`App\Support\Testing\PackageTestCase`).
+             PHPUnit caches ONE reflection list for the whole process, so the two
+             must not share a process — `tests/bootstrap.php` then re-runs the
+             process per suite. Splitting `tests/**` into several processes keeps
+             Focused and Feature independent. -->
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>

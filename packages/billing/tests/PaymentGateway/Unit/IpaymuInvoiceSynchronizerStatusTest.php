@@ -5,9 +5,9 @@ namespace App\Domain\PaymentGateway\Tests\Unit;
 use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Support\PaymentRealtime;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use App\Domain\Service\Services\ServiceFulfillmentService;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
 
 class IpaymuInvoiceSynchronizerStatusTest extends TestCase
 {

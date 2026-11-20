@@ -7,13 +7,10 @@ use App\Domain\Inference\Models\AiModelRateSnapshot;
 use App\Domain\Inference\Models\InferenceProvider;
 use App\Domain\Inference\Models\ProviderModelRate;
 use App\Domain\Inference\Services\AiModelRateSnapshotService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Domain\Inference\Tests\TestCase;
 
 class AiModelRateSnapshotServiceTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected function setUp(): void
     {
         parent::setUp();

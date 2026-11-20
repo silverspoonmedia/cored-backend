@@ -6,12 +6,10 @@ use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\PaymentInstructionNormalizer;
 use App\Domain\PaymentGateway\Tests\Concerns\SetsUpPaymentChannels;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 
 class PaymentInstructionNormalizerTest extends TestCase
 {
-    use RefreshDatabase;
     use SetsUpPaymentChannels;
 
     private PaymentInstructionNormalizer $normalizer;

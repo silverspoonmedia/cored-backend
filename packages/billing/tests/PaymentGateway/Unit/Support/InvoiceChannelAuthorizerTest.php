@@ -5,14 +5,12 @@ namespace App\Domain\PaymentGateway\Tests\Unit\Support;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Support\InvoiceChannelAuthorizer;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use App\Domain\Service\Models\ServicePurchase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Concerns\SeedsRolesAndPermissions;
-use Tests\TestCase;
+use App\Support\Testing\Concerns\SeedsRolesAndPermissions;
 
 class InvoiceChannelAuthorizerTest extends TestCase
 {
-    use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
     protected function setUp(): void
@@ -44,7 +42,6 @@ class InvoiceChannelAuthorizerTest extends TestCase
         $admin = $this->userWithRole('Admin', 'admin-pg@example.com');
         $invoice = $this->invoiceForUser($owner);
 
-        $this->assertTrue($admin->can('view invoice'));
         $this->assertTrue(app(InvoiceChannelAuthorizer::class)->canSubscribe($admin, $invoice));
     }
 

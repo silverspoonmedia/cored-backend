@@ -5,8 +5,8 @@ namespace App\Domain\Service\Tests\Unit\Support;
 use App\Domain\Service\Events\ServiceCatalogChanged;
 use App\Domain\Service\Events\ServicePurchaseChanged;
 use App\Domain\Service\Support\ServiceRealtime;
+use App\Domain\Service\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
-use Tests\TestCase;
 
 class ServiceRealtimeTest extends TestCase
 {

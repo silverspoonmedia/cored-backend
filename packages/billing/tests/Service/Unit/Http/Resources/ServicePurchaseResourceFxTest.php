@@ -5,14 +5,12 @@ namespace App\Domain\Service\Tests\Unit\Http\Resources;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Http\Resources\ServicePurchaseResource;
 use App\Domain\Service\Models\ServicePurchase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\Service\Tests\TestCase;
+use App\Support\Testing\Concerns\SeedsRolesAndPermissions;
 use Illuminate\Http\Request;
-use Tests\Concerns\SeedsRolesAndPermissions;
-use Tests\TestCase;
 
 class ServicePurchaseResourceFxTest extends TestCase
 {
-    use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
     protected function setUp(): void

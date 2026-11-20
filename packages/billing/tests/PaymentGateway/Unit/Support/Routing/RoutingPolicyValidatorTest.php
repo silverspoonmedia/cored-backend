@@ -3,7 +3,7 @@
 namespace App\Domain\PaymentGateway\Tests\Unit\Support\Routing;
 
 use App\Domain\PaymentGateway\Support\Routing\RoutingPolicyValidator;
-use Tests\TestCase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 
 class RoutingPolicyValidatorTest extends TestCase
 {

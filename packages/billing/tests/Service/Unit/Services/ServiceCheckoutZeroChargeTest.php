@@ -2,6 +2,7 @@
 
 namespace App\Domain\Service\Tests\Unit\Services;
 
+use App\Domain\Currency\Tests\Concerns\SeedsCurrencies;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PurchaseStatus;
@@ -11,14 +12,11 @@ use App\Domain\Service\Models\ServicePrice;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceCheckoutService;
 use App\Domain\Service\Tests\Support\TestPlans;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\Service\Tests\TestCase;
 use Illuminate\Support\Carbon;
-use Tests\Concerns\SeedsCurrencies;
-use Tests\TestCase;
 
 class ServiceCheckoutZeroChargeTest extends TestCase
 {
-    use RefreshDatabase;
     use SeedsCurrencies;
 
     protected function setUp(): void

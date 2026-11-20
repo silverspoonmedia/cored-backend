@@ -10,18 +10,15 @@ use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Support\PaymentRealtime;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use App\Domain\Service\Services\ServiceFulfillmentService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Mockery;
 use Mockery\MockInterface;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Tests\TestCase;
 
 class InvoicePaymentInitiationGuardTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected function tearDown(): void
     {
         Mockery::close();

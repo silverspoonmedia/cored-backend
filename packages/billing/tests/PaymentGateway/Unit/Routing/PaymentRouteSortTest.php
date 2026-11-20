@@ -5,8 +5,8 @@ namespace App\Domain\PaymentGateway\Tests\Unit\Routing;
 use App\Domain\PaymentGateway\Enums\PaymentRouteRole;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
 use App\Domain\PaymentGateway\Support\Routing\PaymentRouteSort;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use Illuminate\Support\Collection;
-use Tests\TestCase;
 
 class PaymentRouteSortTest extends TestCase
 {

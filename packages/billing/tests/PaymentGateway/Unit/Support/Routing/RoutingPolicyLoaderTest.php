@@ -5,7 +5,7 @@ namespace App\Domain\PaymentGateway\Tests\Unit\Support\Routing;
 use App\Domain\PaymentGateway\Enums\ChannelRoutingType;
 use App\Domain\PaymentGateway\Support\Routing\RoutingPolicyLoader;
 use App\Domain\PaymentGateway\Support\Routing\RoutingPolicyValidator;
-use Tests\TestCase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 
 class RoutingPolicyLoaderTest extends TestCase
 {

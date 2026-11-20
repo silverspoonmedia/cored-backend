@@ -4,8 +4,8 @@ namespace App\Domain\ErrorLog\Tests\Unit\Support;
 
 use App\Domain\ErrorLog\Events\ErrorLogRecorded;
 use App\Domain\ErrorLog\Support\ErrorLogRealtime;
+use App\Domain\ErrorLog\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
-use Tests\TestCase;
 
 class ErrorLogRealtimeTest extends TestCase
 {

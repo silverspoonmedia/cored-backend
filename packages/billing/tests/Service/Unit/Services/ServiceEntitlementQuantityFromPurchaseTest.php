@@ -9,13 +9,10 @@ use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceFulfillmentService;
 use App\Domain\Service\Tests\Support\TestPlans;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use App\Domain\Service\Tests\TestCase;
 
 class ServiceEntitlementQuantityFromPurchaseTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_fulfill_addon_purchase_with_quantity_three_increments_entitlement_by_three(): void
     {
         $user = User::factory()->create();

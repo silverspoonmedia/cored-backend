@@ -11,14 +11,11 @@ use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\MainPlanChangeCalculator;
 use App\Domain\Service\Tests\Support\TestPlans;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\Service\Tests\TestCase;
 use Illuminate\Support\Carbon;
-use Tests\TestCase;
 
 class MainPlanChangeCalculatorTest extends TestCase
 {
-    use RefreshDatabase;
-
     private MainPlanChangeCalculator $calc;
 
     protected function setUp(): void

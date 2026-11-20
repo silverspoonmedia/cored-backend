@@ -10,15 +10,13 @@ use App\Domain\PaymentGateway\Events\PaymentRoutingCatalogChanged;
 use App\Domain\PaymentGateway\Events\SubscriptionChanged;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Support\PaymentRealtime;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use App\Domain\Service\Models\ServicePurchase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Support\Testing\Concerns\SeedsRolesAndPermissions;
 use Illuminate\Support\Facades\Event;
-use Tests\Concerns\SeedsRolesAndPermissions;
-use Tests\TestCase;
 
 class PaymentRealtimeTest extends TestCase
 {
-    use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
     protected function setUp(): void

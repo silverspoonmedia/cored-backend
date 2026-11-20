@@ -5,14 +5,11 @@ namespace App\Domain\PaymentGateway\Tests\Unit;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransSnapParameterBuilder;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use App\Domain\Service\Models\ServicePurchase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
 class MidtransSnapParameterBuilderTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_includes_customer_details_for_service_purchase(): void
     {
         config(['payment.default_buyer_phone' => '081000000000']);

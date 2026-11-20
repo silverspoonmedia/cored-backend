@@ -4,14 +4,11 @@ namespace App\Domain\PaymentGateway\Tests\Unit;
 
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuInvoiceSynchronizer;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Domain\PaymentGateway\Tests\TestCase;
 use Illuminate\Support\Str;
-use Tests\TestCase;
 
 class IpaymuMonetaryReconcileTest extends TestCase
 {
-    use RefreshDatabase;
-
     private IpaymuInvoiceSynchronizer $synchronizer;
 
     protected function setUp(): void

@@ -88,6 +88,60 @@ class PackageTestSuiteTest extends TestCase
     }
 
     /**
+     * Two shapes, one invariant: `phpunit.xml` in the monolith and the same
+     * `tests/` directories in the package's own `phpunit.xml.dist`.
+     *
+     * The dist file is what a consumer runs after `composer install` inside a
+     * cloned mirror; the root file is what CI runs here. They need not list the
+     * suite under the same name (`Package:billing` vs `billing`), but every test
+     * directory the package manifest declares must be discovered by both, or a
+     * test exists that one of the two runs never sees.
+     */
+    public function test_every_package_dist_lists_its_declared_test_directories(): void
+    {
+        $violations = [];
+
+        foreach ($this->packages() as $slug => $package) {
+            $dist = base_path('packages/'.$slug.'/phpunit.xml.dist');
+
+            if (! is_file($dist)) {
+                $violations[] = $package.' has no phpunit.xml.dist — `composer test` inside a cloned tag would run nothing';
+
+                continue;
+            }
+
+            $listed = array_merge(...array_values($this->suites((string) file_get_contents($dist)) ?: [[]]));
+            foreach ($this->declaredTestDirectories($slug) as $directory) {
+                if (! in_array(rtrim($directory, '/'), $listed, true)) {
+                    $violations[] = $package.' phpunit.xml.dist does not list '.$directory;
+                }
+            }
+        }
+
+        $this->assertSame([], $violations, implode("\n", $violations));
+    }
+
+    /**
+     * `tests/` directories the package manifest maps (`autoload.psr-4` paths
+     * that start with `tests/`).
+     *
+     * @return list<string>
+     */
+    private function declaredTestDirectories(string $slug): array
+    {
+        $manifest = json_decode((string) file_get_contents(base_path('packages/'.$slug.'/composer.json')), true);
+        $directories = [];
+
+        foreach ((array) ($manifest['autoload']['psr-4'] ?? []) as $path) {
+            if (is_string($path) && str_starts_with($path, 'tests/')) {
+                $directories[] = $path;
+            }
+        }
+
+        return array_values(array_unique($directories));
+    }
+
+    /**
      * A package test file must live under the PSR-4 prefix its own manifest
      * declares for `tests/`.
      *
@@ -121,6 +175,132 @@ class PackageTestSuiteTest extends TestCase
         }
 
         $this->assertSame([], $violations, implode("\n", $violations));
+    }
+
+    /**
+     * Every package test boots the standalone harness, never a host base.
+     *
+     * A package test that extends `Tests\TestCase` only runs inside this
+     * checkout: `Tests\*` is autoload-dev of the monolith and never ships, so a
+     * consumer who clones a mirror tag gets a fatal on the first assertion. The
+     * base is `App\Support\Testing\PackageTestCase`. A test that needs a host
+     * route, a host fixture or a product table does not belong here — it moves
+     * to `tests/Domain/Core/{Domain}/` and keeps the host base.
+     *
+     * Exempt: the package's own abstract `TestCase` scaffolds (they extend the
+     * kernel base and are named in the list) and fixture helpers that are not
+     * tests at all (`Concerns/`, `Factories/`, `Support/`).
+     */
+    public function test_every_package_test_runs_under_the_standalone_base(): void
+    {
+        $base = 'App\\Support\\Testing\\PackageTestCase';
+        $violations = [];
+
+        foreach ($this->packages() as $slug => $package) {
+            $root = base_path('packages/'.$slug.'/tests');
+
+            if (! is_dir($root)) {
+                continue;
+            }
+
+            foreach ($this->phpFiles($root) as $relative => $source) {
+                if ($this->isTestFixture($relative)) {
+                    continue;
+                }
+
+                $isAbstract = (bool) preg_match('/\babstract\s+class\b/', $source);
+
+                if (! preg_match('/\bclass\s+[A-Za-z0-9_]+\s+extends\s+(\\\\?[A-Za-z0-9_\\\\]+)/', $source, $match)) {
+                    $violations[] = $package.' test '.$relative.' declares no class or extends nothing';
+
+                    continue;
+                }
+
+                $parent = ltrim($match[1], '\\');
+
+                if ($isAbstract) {
+                    if ($parent !== $base && $parent !== 'PackageTestCase' && ! $this->isPackageOwned($parent, $package)) {
+                        $violations[] = $package.' abstract test base '.$relative.' extends '.$parent.' instead of '.$base;
+                    }
+
+                    continue;
+                }
+
+                // Reached through the package's own abstract `TestCase`, whose
+                // parent is checked above — one hop is the whole chain here.
+                if ($parent === 'TestCase') {
+                    continue;
+                }
+
+                if ($this->isPackageOwned($parent, $package)) {
+                    continue;
+                }
+
+                if ($parent !== 'PHPUnit\\Framework\\TestCase' && $parent !== $base) {
+                    $violations[] = $package.' test '.$relative.' extends '.$parent.' — package tests must extend '.$base.' (or a package TestCase built on it)';
+                }
+            }
+        }
+
+        $this->assertSame([], $violations, implode("\n", $violations));
+    }
+
+    /**
+     * PHP files under a package `tests/` tree, keyed by path relative to it.
+     *
+     * @return array<string, string>
+     */
+    private function phpFiles(string $root): array
+    {
+        $files = [];
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
+            $files[$relative] = (string) file_get_contents($file->getPathname());
+        }
+
+        return $files;
+    }
+
+    /**
+     * Whether a relative path is a fixture directory rather than a test class.
+     */
+    private function isTestFixture(string $relative): bool
+    {
+        foreach (['Concerns/', 'Factories/', 'Support/', 'Fixtures/'] as $directory) {
+            if (str_starts_with($relative, $directory)) {
+                return true;
+            }
+        }
+
+        // A per-domain helper directory (`Currency/Concerns/`, `Service/Support/`)
+        // holds traits and fixtures, not test classes.
+        return (bool) preg_match('~/(Concerns|Factories|Support|Fixtures)/~', $relative);
+    }
+
+    /**
+     * Whether a parent class belongs to the package namespace (`App\Domain\{X}\Tests\*`),
+     * i.e. the package's own abstract `TestCase`.
+     */
+    private function isPackageOwned(string $parent, string $package): bool
+    {
+        $slug = substr($package, strpos($package, '/') + 1);
+
+        $domain = match ($slug) {
+            'platform' => 'Identity',
+            default => ucfirst($slug),
+        };
+
+        return str_starts_with($parent, 'App\\Domain\\'.$domain.'\\Tests\\')
+            || str_starts_with($parent, 'App\\Domain\\'.ucfirst($slug).'\\');
     }
 
     /**

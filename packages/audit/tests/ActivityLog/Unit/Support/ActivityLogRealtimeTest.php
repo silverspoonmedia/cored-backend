@@ -4,8 +4,8 @@ namespace App\Domain\ActivityLog\Tests\Unit\Support;
 
 use App\Domain\ActivityLog\Events\ActivityLogAppended;
 use App\Domain\ActivityLog\Support\ActivityLogRealtime;
+use App\Domain\ActivityLog\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
-use Tests\TestCase;
 
 class ActivityLogRealtimeTest extends TestCase
 {
