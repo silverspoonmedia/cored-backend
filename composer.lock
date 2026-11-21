@@ -7092,11 +7092,11 @@
         },
         {
             "name": "silverspoonmedia/platform",
-            "version": "1.0.4",
+            "version": "1.0.5",
             "dist": {
                 "type": "path",
                 "url": "packages/platform",
-                "reference": "2702393d3948306073711e68b7e622c9199b6af6"
+                "reference": "88a870e482b1a718149f73200afa0e86b2092d6d"
             },
             "require": {
                 "aws/aws-sdk-php": "^3.0",
