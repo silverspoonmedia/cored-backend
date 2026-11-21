@@ -15,7 +15,10 @@
          tag, push commit + tag
 
     A mirror is never edited by hand. Re-running is safe: an existing repo is
-    reused, main is force-updated from the split, and an existing tag is skipped.
+    reused, main is force-updated from the split, and an existing tag keeps its
+    commit — the `version`-strip commit is replayed on top of the new main so the
+    mirror never runs ahead of the monolith, and a consumer that already locked
+    that tag keeps resolving the same commit.
 
     Contract: docs/integration/core-packages.md#distribution
 
@@ -181,15 +184,21 @@ foreach ($slug in $Packages) {
         }
     }
 
-    if ($exists -and (Get-RemoteTag -Slug $slug -Tag $Version)) {
-        Write-Host "  tag $Version already published — skipping" -ForegroundColor Yellow
-        continue
+    $tagExists = $exists -and (Get-RemoteTag -Slug $slug -Tag $Version)
+
+    if ($tagExists) {
+        Write-Host "  tag $Version already published — syncing main only" -ForegroundColor Yellow
     }
 
     if ($DryRun) {
         Write-Host "  would: git subtree split --prefix=$prefix --branch $splitBranch"
         Write-Host "  would: push $splitBranch to $url main"
-        Write-Host "  would: drop 'version' from composer.json, commit, tag $Version, push"
+        if ($tagExists) {
+            Write-Host "  would: keep tag $Version as published"
+        }
+        else {
+            Write-Host "  would: drop 'version' from composer.json, commit, tag $Version, push"
+        }
         continue
     }
 
@@ -218,9 +227,17 @@ foreach ($slug in $Packages) {
             Write-Host "  composer.json already carries no 'version'"
         }
 
-        Invoke-Git -Arguments @('tag', '-a', $Version, '-m', "silverspoonmedia/$slug $Version") -WorkDir $temp | Out-Null
-        Invoke-Git -Arguments @('push', 'origin', 'HEAD:main', "refs/tags/$Version") -WorkDir $temp | Out-Null
-        Write-Host "  tagged $Version and pushed" -ForegroundColor Green
+        if ($tagExists) {
+            # The tag stays where it was: a consumer already resolved that
+            # commit, so re-tagging would move an immovable reference silently.
+            Invoke-Git -Arguments @('push', 'origin', 'HEAD:main') -WorkDir $temp | Out-Null
+            Write-Host "  synced mirror main, kept tag $Version" -ForegroundColor Green
+        }
+        else {
+            Invoke-Git -Arguments @('tag', '-a', $Version, '-m', "silverspoonmedia/$slug $Version") -WorkDir $temp | Out-Null
+            Invoke-Git -Arguments @('push', 'origin', 'HEAD:main', "refs/tags/$Version") -WorkDir $temp | Out-Null
+            Write-Host "  tagged $Version and pushed" -ForegroundColor Green
+        }
     }
     finally {
         if (Test-Path $temp) {
