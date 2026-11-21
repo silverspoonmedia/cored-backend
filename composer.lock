@@ -7096,7 +7096,7 @@
             "dist": {
                 "type": "path",
                 "url": "packages/platform",
-                "reference": "60b430016db0cc40620e7f3676cd5f480990bc82"
+                "reference": "2702393d3948306073711e68b7e622c9199b6af6"
             },
             "require": {
                 "aws/aws-sdk-php": "^3.0",
@@ -7110,6 +7110,7 @@
                 "pragmarx/google2fa-laravel": "^3.0",
                 "spatie/laravel-activitylog": "^5.0",
                 "spatie/laravel-permission": "^8.0",
+                "symfony/console": "^8.0",
                 "symfony/http-foundation": "^8.0",
                 "symfony/http-kernel": "^8.0",
                 "symfony/mime": "^8.0"

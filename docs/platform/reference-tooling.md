@@ -24,7 +24,7 @@ Steps, and why each one is there:
 
 ### `backend` job
 
-Runs `php artisan test` — the whole suite (`tests/Unit`, `tests/Feature`, `tests/Domain`), not a `--testsuite` subset. It exists because `--filter=Locale` was the only thing the workflow ran: a change that broke `tests/Domain/**` merged green, and a single product domain can be 60+ feature test files. `--testsuite=Domain` was the alternative and was rejected: `tests/Unit` and `tests/Feature` boot the same app and cost little, and a subset invites "which suite was that in?" as a permanent question.
+Runs `php artisan test` — every testsuite in `phpunit.xml` (`tests/Unit`, `tests/Feature`, `tests/Domain`, and one `Package:{slug}` per package), not a `--testsuite` subset. It exists because `--filter=Locale` was the only thing the workflow ran: a change that broke `tests/Domain/**` merged green, and a single product domain can be 60+ feature test files. `--testsuite=Domain` was the alternative and was rejected: the other suites boot the same app and cost little, and a subset invites "which suite was that in?" as a permanent question.
 
 The job reuses the `locale` job's environment through a YAML alias (`env: &test-env` / `env: *test-env`), so the two cannot drift into different database settings. It repeats the PHP pin, the Composer cache, the install, and the empty `.env` step for the same reasons as `locale`.
 
@@ -46,18 +46,18 @@ The job is the slow half of the workflow (the `locale` job is seconds). That is 
 
 ## A green run is `failed: 0`
 
-**A green run is `failed: 0`, not `passed == tests`.** The suite is `1718` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. The local row is quoted exactly as that environment prints it. The runner row is the same run with those seven cases moved from `passed` to `skipped`, so it is derived, not quoted:
+**A green run is `failed: 0`, not `passed == tests`.** The suite is `1756` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. The local row is quoted exactly as that environment prints it. The runner row is the same run with those seven cases moved from `passed` to `skipped`, so it is derived, not quoted:
 
 | Source | Result |
 |---|---|
-| Local `php artisan test`, both siblings present (re-measured 2026-11-19) | JSON report: `"tests":1718, "passed":1717, "skipped":1, "risky":1, "assertions":18108` (~7 min) |
-| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 1710 passed` — derived: the same `1718` total with the seven cross-repo cases skipped |
+| Local `php artisan test`, both siblings present (re-measured 2026-11-21) | JSON report: `"tests":1756, "passed":1755, "skipped":1, "risky":1, "assertions":18288` (~7 min) |
+| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 1748 passed` — derived: the same `1756` total with the seven cross-repo cases skipped |
 
-Both are green: `failed: 0` is the contract, and the total is `1718` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
+Both are green: `failed: 0` is the contract, and the total is `1756` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
 
-The `1718` is the current corpus. It moved from `1698` when the five packaged core domains' suites (`tests/Packages`, 496 cases) were added to the runner, then to `1711` with the quality-gate and dependency-direction tests, and to `1718` with the subject-label seam tests — the pre-removal figure was `2454`, and the 2026-10-07 product-domain removal plus the migration squash are what took that difference. Re-measure this pair whenever a product domain is removed, a testsuite is added, or a `config/*.php` file appears or disappears — a stale total here reads as a corpus failure in the next session that touches it.
+The `1756` is the current corpus. It moved from `1698` when the packaged core domains' suites (`packages/*/tests`, one `Package:{slug}` suite each, 466 cases) were added to the runner, then to `1711` with the quality-gate and dependency-direction tests, to `1718` with the subject-label seam tests, and to `1756` with the consumer-contract guards (`ConsumerScaffoldTest`, `KernelConfigSelfSufficiencyTest`, `DomainUninstallManifestTest`) and the flush-command cases — the pre-removal figure was `2454`, and the 2026-10-07 product-domain removal plus the migration squash are what took that difference. `client-scaffold/tests` is **not** part of this total: it boots the copy's own `vendor/`, so `run-consumer-scaffold-check.php` runs it inside the temporary install. Re-measure this pair whenever a product domain is removed, a testsuite is added, or a `config/*.php` file appears or disappears — a stale total here reads as a corpus failure in the next session that touches it.
 
-The `assertions` field is the one number here that moves while the corpus does not. `SettingRegistryEnvPolicyTest::test_operational_env_keys_are_not_used_in_config_files` asserts once per (config file × the `45` keys in `removedOperationalEnvKeys()`), so deleting `config/purifier.php` on 2026-10-12 took exactly `45` off the total — `18392` → `18347`, and the packaged suites brought it to `18095`, the quality gates to `18108` — with `tests` unchanged at `1718`. `tests`, `skipped` and `risky` are the fields that track the corpus; `assertions` tracks the corpus plus the config surface.
+The `assertions` field is the one number here that moves while the corpus does not. `SettingRegistryEnvPolicyTest::test_operational_env_keys_are_not_used_in_config_files` asserts once per (config file × the `45` keys in `removedOperationalEnvKeys()`), so deleting `config/purifier.php` on 2026-10-12 took exactly `45` off the total — `18392` → `18347`, the packaged suites brought it to `18095`, the quality gates to `18108`, and the consumer-contract and flush-command cases to `18288` — with `tests` unchanged at `1756`. `tests`, `skipped` and `risky` are the fields that track the corpus; `assertions` tracks the corpus plus the config surface.
 
 | Count | Source | Why it is expected |
 |---|---|---|

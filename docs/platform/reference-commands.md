@@ -38,7 +38,7 @@ Full index of the **project-specific** command surface (beyond Laravel/package d
 |---------|---------|---------|
 | `settings:rebuild-cache` | Rebuild the forever cache snapshot for `system_settings` from the DB | [settings.md](settings.md) |
 | `menu:flush-cache` | Flush the two-tier navigation cache (snapshot + presented trees) | [domains/navigation/README.md](../domains/navigation/README.md) |
-| `encryption:flush-decrypted-cache` | Flush decrypted-value cache entries used by envelope encryption | [envelope-encryption.md](envelope-encryption.md) |
+| `encryption:flush-decrypted-cache` | Forget decrypted plaintext for one context (kernel-shipped; no bulk flush) | [envelope-encryption.md](envelope-encryption.md) |
 | `permission:cache-reset` | Spatie permission catalog cache | [domains/identity/README.md](../domains/identity/README.md) |
 
 Domain data caches are forever + rebuild-on-miss + invalidate-on-change — [cache-policy.md](cache-policy.md).

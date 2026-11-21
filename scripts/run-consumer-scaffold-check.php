@@ -14,14 +14,16 @@
  *
  *  1. copy `client-scaffold` (no `vendor`, no `node_modules`);
  *  2. rewrite the copy's `composer.json` — path repositories to
- *     `packages/*` instead of the private VCS mirrors, `minimum-stability: dev`
- *     so the untagged path packages resolve — then `composer install`;
+ *     `packages/*` instead of the private VCS mirrors, so no org token is
+ *     needed — then `composer install`;
  *  3. `php artisan package:discover` and `php artisan domain:list`: the registry
  *     must report the ten core domains and no product domain;
  *  4. `php artisan route:list --json`: the pinned core URI set must be present;
  *  5. `php artisan migrate --force` on sqlite: host-owned migrations plus the
  *     package ones the providers load;
- *  6. one real request through the kernel: `POST /api/v1/auth/login` with an
+ *  6. the scaffold's own suite (`client-scaffold/tests`), the only place those
+ *     tests run: they boot the copy's `bootstrap/app.php` against its `vendor/`;
+ *  7. one real request through the kernel: `POST /api/v1/auth/login` with an
  *     empty body must answer 422 with a translated sentence, never a raw
  *     validation key.
  *
@@ -87,6 +89,8 @@ try {
     $steps[] = ['route:list', ...scaffold_routes($work)];
 
     $steps[] = ['migrate', ...scaffold_migrate($work)];
+
+    $steps[] = ['scaffold suite', ...scaffold_tests($work)];
 
     $steps[] = ['validation envelope', ...scaffold_validation_probe($work)];
 } finally {
@@ -155,10 +159,9 @@ function scaffold_composer_arguments(): array
  * A manifest the scaffold can install from, then `composer install`.
  *
  * The copy lives outside the monolith, so the private VCS mirrors are replaced by
- * path repositories to this checkout's `packages/`. `minimum-stability: dev` is
- * required: a path package carries its `version` (`1.0.3`) but Composer still
- * resolves it as a dev branch when the repository is `path` and the root has no
- * matching tag history.
+ * path repositories to this checkout's `packages/`. Each path package pins its
+ * `version`, which is what keeps `minimum-stability: stable` resolvable without
+ * tag history beside the copy.
  *
  * @param  list<string>  $composer
  * @return array{bool, string}
@@ -199,7 +202,7 @@ function scaffold_composer_install(string $root, string $work, array $composer):
     }
 
     $manifest['repositories'] = $repositories;
-    // Stability stays `stable`: each path package pins its `version` (1.0.3), so a
+    // Stability stays `stable`: each path package pins its own `version`, so a
     // `dev` floor would only widen the resolver's search for no gain.
     $manifest['prefer-stable'] = true;
     $manifest['config'] = array_merge(
@@ -363,6 +366,54 @@ function scaffold_routes(string $work): array
 function scaffold_migrate(string $work): array
 {
     return scaffold_artisan($work, ['migrate', '--force', '--no-interaction']);
+}
+
+/**
+ * The scaffold's own suite, run inside the copy against its `vendor/`.
+ *
+ * `client-scaffold/tests` boots `bootstrap/app.php` and asserts the registry,
+ * the kernel bindings and the mounted routes. Nothing in the monolith runs it:
+ * those tests need the copy's install, so this step is their only execution and
+ * the only proof that a consumer's first test file starts green.
+ *
+ * @return array{bool, string}
+ */
+function scaffold_tests(string $work): array
+{
+    $log = $work.DIRECTORY_SEPARATOR.'scaffold-junit.xml';
+
+    [$ok, $output] = scaffold_process(
+        ['php', 'vendor'.DIRECTORY_SEPARATOR.'bin'.DIRECTORY_SEPARATOR.'phpunit', '--colors=never', '--no-coverage', '--log-junit', $log],
+        $work,
+        scaffold_probe_environment($work),
+    );
+
+    if (! $ok) {
+        return [false, $output];
+    }
+
+    // Exit 0 also means "no tests collected": assert the count from the JUnit
+    // log, because a suite that silently stops being discovered would otherwise
+    // pass every run.
+    $xml = is_file($log) ? @simplexml_load_file($log) : false;
+
+    @unlink($log);
+
+    if ($xml === false) {
+        return [false, "PHPUnit wrote no JUnit log.\n".scaffold_tail($output)];
+    }
+
+    $cases = 0;
+
+    foreach ($xml->xpath('//testcase') ?: [] as $case) {
+        $cases++;
+    }
+
+    if ($cases < 1) {
+        return [false, "PHPUnit collected no test in the copy.\n".scaffold_tail($output)];
+    }
+
+    return [true, ''];
 }
 
 /**

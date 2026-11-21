@@ -93,9 +93,11 @@ A config file may be the one `oci setup config` writes, as-is: OCI emits `#` com
 ```bash
 php artisan oci:kms-verify          # generateDek probe
 php artisan encryption:migrate-p0
-php artisan encryption:flush-decrypted-cache {context?}
+php artisan encryption:flush-decrypted-cache {context}
 php artisan config:rebuild          # after OCI/encryption env changes
 ```
+
+`context` is required: plaintext is forgotten per context, and there is no bulk flush — enumerating a cache store is driver-specific, and the cache contract is driver-agnostic. Run the command once per context suffix after a key rotation; an empty argument exits `1` and clears nothing.
 
 Exit codes on verify: 0 ok; 1 config; 2 auth; 3 IAM; 4 network; 5 other. On 3 — fix IAM, do not loop.
 

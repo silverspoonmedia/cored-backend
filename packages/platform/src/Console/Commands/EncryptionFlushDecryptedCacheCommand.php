@@ -6,6 +6,16 @@ use App\Support\Encryption\DecryptedValueCache;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+/**
+ * Invalidate decrypted plaintext for one context, and nothing else.
+ *
+ * The cache is keyed per `context` + ciphertext fingerprint, and plaintext is
+ * forgotten on encrypt / cast `set`, so a flush is only needed after a secret
+ * rewrite or key rotation. There is **no bulk flush**: enumerating a cache store
+ * is driver-specific (Redis SCAN, a database LIKE, an `array` diff) and the cache
+ * contract is driver-agnostic (`docs/platform/cache-policy.md`). Asking for one
+ * without a context is therefore an error, not a no-op.
+ */
 #[AsCommand(name: 'encryption:flush-decrypted-cache')]
 class EncryptionFlushDecryptedCacheCommand extends Command
 {
@@ -30,7 +40,7 @@ class EncryptionFlushDecryptedCacheCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->error('Bulk decrypted-cache flush is not implemented. Provide a context key suffix.');
+        $this->error('Bulk decrypted-cache flush is not available: the cache is flushed per context. Pass a context key suffix.');
         $this->line('Example: php artisan encryption:flush-decrypted-cache invoices.gateway_response_payload.{uuid}');
 
         return self::FAILURE;

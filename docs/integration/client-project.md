@@ -59,7 +59,7 @@ Drop a class in `app/Support/Storage/Foo.php` and it replaces the kernel's. Forg
 
 ## The provider a consumer must register
 
-`App\Providers\KernelServiceProvider` carries the kernel runtime: five config merges, four seam registries, the CRUD repository binding, the CORS service, `domain:list`, storage directories, the migration publish tag. It is **deliberately absent from `extra.laravel.providers`** — auto-discovery would boot it here too, and a second pass after a registry resolved would drop every registration. The scaffold lists it in `bootstrap/providers.php`; every binding sits behind `! $this->app->bound(...)` on both sides, so whichever provider runs first wins.
+`App\Providers\KernelServiceProvider` carries the kernel runtime: five config merges, four seam registries, the CRUD repository binding, the CORS service, `domain:list`, `encryption:flush-decrypted-cache`, storage directories, the migration publish tag. It is **deliberately absent from `extra.laravel.providers`** — auto-discovery would boot it here too, and a second pass after a registry resolved would drop every registration. The scaffold lists it in `bootstrap/providers.php`; every binding sits behind `! $this->app->bound(...)` on both sides, so whichever provider runs first wins.
 
 | Owner | Groups |
 |-------|--------|
@@ -80,7 +80,7 @@ php artisan route:list --path=api/v1
 php artisan migrate --force
 ```
 
-`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` runs that sequence on a temporary copy of `client-scaffold` with path repositories, then asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence, not a raw key. The `standalone-packages` CI job runs it. `client-scaffold/tests/TestCase.php` boots `bootstrap/app.php` the way a request does, so a test sees the real provider set and route loader.
+`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` runs that sequence on a temporary copy of `client-scaffold` with path repositories, then runs the scaffold's own `tests/` (the only place they execute — they need the copy's `vendor/`), then asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence, not a raw key. The `standalone-packages` CI job runs it.
 
 ## What is retired
 

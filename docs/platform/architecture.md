@@ -41,7 +41,7 @@ Each product domain owns an **uninstall manifest** — `app/Domain/{Name}/uninst
 
 | | |
 |---|---|
-| Code | `app/Domain/*/`, `packages/platform/src/` (kernel, incl. `Support/Domain/DomainManager.php` and its `domain:list` command), `packages/*/src/`, `app/Console/Commands/Domain/*` (host-only `domain:make` / `domain:remove`) |
+| Code | `app/Domain/*/`, `packages/platform/src/` (kernel: `Support/Domain/DomainManager.php`, `Console/Commands/` — `domain:list` + `encryption:flush-decrypted-cache`), `packages/*/src/`, `app/Console/Commands/Domain/*` (host-only `domain:make` / `domain:remove`) |
 | Config | `config/domains.php`, `bootstrap/providers.php`, `packages/*/config/*` |
 | Routes | `routes/api/v1.php` → `routes/api/v1/{domain}.php` or `packages/*/routes/{domain}.php`; `routes/web.php` → `routes/web/{domain}.php` or a packaged registry `web` key |
 | Commands | `domain:list` (kernel — `packages/platform/src/Console/Commands/Domain/ListDomainsCommand.php`, registered by `KernelServiceProvider` for a consumer), `domain:make` / `domain:remove` (host — they rewrite host trees) |

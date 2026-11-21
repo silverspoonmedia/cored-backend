@@ -65,7 +65,7 @@ Rotation is a **provider-first** procedure. Rotate at the provider, then update 
 | `OCI_KMS_*` | OCI IAM | Rotate the credential, then `php artisan oci:kms-verify` (exit `3` = IAM, `1` = config, `2` = auth, `4` = network, `5` = other). |
 | Webhook credentials | Payment provider dashboards | `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` point at a host; the signing keys live in the provider dashboard. |
 
-After a rotation: `php artisan config:rebuild`, then `php artisan encryption:flush-decrypted-cache` when a key or secret that feeds decryption moved. Restart `queue:work`, `schedule:work`, and Octane — long-lived workers hold the old values and will keep using them until they recycle. Then confirm with `php artisan about` and one realtime round-trip, and treat the leaked values as inert.
+After a rotation: `php artisan config:rebuild`, then `php artisan encryption:flush-decrypted-cache {context}` once per context when a key or secret that feeds decryption moved (single-context only — bulk flush is deliberately absent). Restart `queue:work`, `schedule:work`, and Octane — long-lived workers hold the old values and will keep using them until they recycle. Then confirm with `php artisan about` and one realtime round-trip, and treat the leaked values as inert.
 
 **Never** rotate by editing the tracked backup file, and never re-add a `.env*` variant to the index: the blanket pattern above is the only thing standing between a future suffix and another leak. A file that slips through is a finding, not a template.
 

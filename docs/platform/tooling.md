@@ -30,7 +30,7 @@ Implementation: `app/Console/Commands/PintCommand.php` — Symfony Process, `ign
 
 ## PHPStan (Larastan)
 
-Level 5 over `app/`, the five packages' `src/`, `database/`, `routes/`, and `config/` — `tests/` is out of scope on purpose (a suite is a scaffold, not shipped code). Config: `phpstan.neon`. There is **no baseline**: the tree is clean at level 5.
+Level 5 over `app/`, the six packages' `src/`, `database/`, `routes/`, and `config/` — `tests/` is out of scope on purpose (a suite is a scaffold, not shipped code). Config: `phpstan.neon`. There is **no baseline**: the tree is clean at level 5.
 
 ```bash
 php artisan phpstan                 # wrapper, forwards args
@@ -42,7 +42,7 @@ Four settings are load-bearing, each with its reason in the config:
 
 | Setting | Why |
 |---|---|
-| `databaseMigrationsPath` lists every migration dir, including the five under `packages/*/database/migrations` | Without a package's migrations Larastan cannot read its model columns and every `$model->column` in that package reports `property.notFound`. A new package with migrations must be added in the same task. |
+| `databaseMigrationsPath` lists every migration dir, including the six under `packages/*/database/migrations` | Without a package's migrations Larastan cannot read its model columns and every `$model->column` in that package reports `property.notFound`. A new package with migrations must be added in the same task. |
 | `treatPhpDocTypesAsCertain: false` | PHPDoc here documents payloads that arrive over HTTP, so treating it as proven turns every defensive `??` and `is_array()` into a false positive. |
 | `ignoreErrors: property.notFound` under `*/Http/Resources/*` | `JsonResource::$this->field` is `__get` on the wrapped model. |
 | `parseModelCastsMethod: true` | Every model here declares `casts()` as a method, not a `$casts` property. With Larastan's default (`false`) the returned array is not read, so an enum-cast column keeps the migration's `string` type and `$model->status->isX()` reports `method.nonObject` — 136 findings that were artifacts, not defects. Turning it on makes the analysed type the type Eloquent actually returns. |

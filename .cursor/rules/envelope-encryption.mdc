@@ -16,6 +16,6 @@ KEK = OCI KMS master key; one DEK per value (AES-256-GCM). Tier 1 (`SESSION_ENCR
 - Never log plaintext, DEKs, `dek_ciphertext`, or `ENCRYPTION_BLIND_INDEX_PEPPER`. Rotating `APP_KEY` or the pepper breaks decrypt and blind-index lookups — rotate with `APP_PREVIOUS_KEYS`, then `config:rebuild`.
 - On KMS IAM failure do **not** retry in a loop: `oci:kms-verify` exits 3 for IAM, 1 config, 2 auth, 4 network, 5 other. Fix the credential, then re-verify.
 - KMS credentials come from `.oci/{production,testing}/` chosen by `APP_ENV` (`OciConfigPath`), never from a copied `.oci/config`; `key_file` stays relative inside the folder. The committed `.env.{profile}.example` pins the vault pair for that folder — keep the pair and the folder aligned (key OCID vault segment == crypto endpoint host).
-- After a secret rewrite or key rotation, run `php artisan encryption:flush-decrypted-cache`; after OCI/encryption env changes, `php artisan config:rebuild`.
+- After a secret rewrite or key rotation, run `php artisan encryption:flush-decrypted-cache {context}` once per context; there is no bulk flush. After OCI/encryption env changes, `php artisan config:rebuild`.
 - New P0 column: migration + envelope cast + `encryption:migrate-p0` backfill, and it must be listed in the P0 table of [docs/platform/reference-envelope-encryption.md](../../docs/platform/reference-envelope-encryption.md).
 - Details: [docs/platform/envelope-encryption.md](../../docs/platform/envelope-encryption.md).

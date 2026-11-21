@@ -246,6 +246,42 @@ class ConsumerScaffoldTest extends TestCase
         );
     }
 
+    /**
+     * A template with an empty suite asserts nothing and proves nothing: the
+     * smoke check would still pass while `createApplication()` rotted.
+     */
+    public function test_the_scaffold_ships_its_own_suite(): void
+    {
+        foreach (['Unit', 'Feature'] as $suite) {
+            $this->assertNotEmpty(
+                glob($this->scaffold.'/tests/'.$suite.'/*Test.php') ?: [],
+                "client-scaffold/tests/{$suite} carries no test — the scaffold must prove its own wiring, not only be read by the monolith's guards.",
+            );
+        }
+
+        $phpunit = (string) file_get_contents($this->scaffold.'/phpunit.xml');
+
+        foreach (['<directory>tests/Unit</directory>', '<directory>tests/Feature</directory>'] as $registered) {
+            $this->assertStringContainsString($registered, $phpunit, "client-scaffold/phpunit.xml must register {$registered}, or the scaffold's own tests never run.");
+        }
+
+        // The monolith suite cannot run the scaffold's suite: those tests boot
+        // the copy's `vendor/`. The smoke check is the only place they execute.
+        $runner = (string) file_get_contents(base_path('scripts/run-consumer-scaffold-check.php'));
+
+        $this->assertStringContainsString(
+            "'scaffold suite'",
+            $runner,
+            'run-consumer-scaffold-check.php must run the scaffold\'s own suite inside the copy — otherwise the tests exist and nothing executes them.',
+        );
+
+        $this->assertStringContainsString(
+            'phpunit',
+            $runner,
+            'The scaffold runner must invoke PHPUnit from the copy\'s own vendor/bin.',
+        );
+    }
+
     public function test_the_scaffold_publishes_every_host_owned_config(): void
     {
         // The kernel ships `platform`, `spa-routes`, `localization`, `services`,

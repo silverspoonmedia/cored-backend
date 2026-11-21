@@ -18,4 +18,4 @@ Known keys and their invalidation owners (settings snapshot, navigation snapshot
 
 `platform.frankfurter.cache_ttl` is a **freshness window**, not a Laravel TTL: the entry stays forever and is forgotten when `fetched_at` ages out.
 
-Recovery commands: `settings:rebuild-cache`, `menu:flush-cache`, `encryption:flush-decrypted-cache`, `permission:cache-reset`.
+Recovery commands: `settings:rebuild-cache`, `menu:flush-cache`, `encryption:flush-decrypted-cache {context}` (per context only — no bulk flush), `permission:cache-reset`.
