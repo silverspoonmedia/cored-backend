@@ -26,7 +26,15 @@ foreach ($args0 as $a) {
     }
 }
 
-$report = json_decode(file_get_contents(__DIR__.'/../backend-locale-report.json'), true);
+$reportPath = __DIR__.'/../backend-locale-report.json';
+
+if (! is_file($reportPath)) {
+    fwrite(STDERR, "backend-locale-report.json is missing — it is generated, not committed.\n");
+    fwrite(STDERR, "Run: php scripts/backend-locale-audit.php backend-locale-report.json\n");
+    exit(1);
+}
+
+$report = json_decode(file_get_contents($reportPath), true);
 $args = array_slice($argv, 1);
 $verbose = in_array('--verbose', $args, true);
 $fileFilter = null;

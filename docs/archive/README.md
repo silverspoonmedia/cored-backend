@@ -24,5 +24,6 @@ The **Status** column exists because several entries are not purely historical: 
 | [blog-sunset-postmortem.md](blog-sunset-postmortem.md) | Why the Blog product domain was removed (2026-10-02), what left, and the restore point | **Live reference** — the restore recipe and tag links are current |
 | [vtual-sunset-postmortem.md](vtual-sunset-postmortem.md) | Why the vTual product domain was removed (2026-10-07), what left, and the restore point | **Live reference** — the restore recipe and tag links are current |
 | [microstock-probes/](microstock-probes/) | One-shot AI probe summaries (2026-07/08); living summary in [domains/microstock/README.md](../domains/microstock/README.md) | **Partly live** — `decoupled_stages_collection_summary.md` justifies the shipped `url` default in [`config/microstock.php`](../../config/microstock.php) |
+| [local-residue-retention.md](local-residue-retention.md) | What a local cleanup kept (live secrets, generated files, bookmark branches) and why; the artifacts it deleted and where their evidence survives | Historical — the retention rule itself is standing (`php artisan test` lock, gitignored generated files) |
 
 Living architecture: [platform/architecture.md](../platform/architecture.md).
