@@ -57,7 +57,7 @@ These are leases, security expiries, or rate limits — **not** source-of-truth 
 |---------|-------|
 | `php artisan settings:rebuild-cache` | Settings snapshot |
 | `php artisan menu:flush-cache` | Navigation snapshot + presented epoch |
-| `php artisan encryption:flush-decrypted-cache` | Decrypt plaintext (per context / documented options) |
+| `php artisan encryption:flush-decrypted-cache {context}` | Decrypt plaintext for one context only (no bulk flush; the argument is required) |
 | `php artisan permission:cache-reset` | Spatie permission cache (if available) / package forget |
 
 ## Related

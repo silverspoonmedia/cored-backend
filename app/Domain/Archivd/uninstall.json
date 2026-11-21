@@ -649,6 +649,10 @@
                 {
                     "path": "tests/Domain/Core/ConsumerScaffoldTest.php",
                     "reason": "consumer guard: asserts the scaffold registry does not name a product domain — the product names are the negative assertion, not a reference to ship"
+                },
+                {
+                    "path": "client-scaffold/tests/Unit/DomainRegistryTest.php",
+                    "reason": "consumer guard: asserts the scaffold registry names no product domain — the product names are the negative assertion, not a reference to ship"
                 }
             ]
         },

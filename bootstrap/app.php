@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\Domain\ListDomainsCommand;
+use App\Console\Commands\EncryptionFlushDecryptedCacheCommand;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Kernel;
 use App\Http\Middleware\AuthenticateWithSpaCookie;
@@ -39,10 +40,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
         __DIR__.'/../app/Domain/Ai/Console/Commands',
         __DIR__.'/../app/Domain/Archivd/Console/Commands',
         __DIR__.'/../app/Domain/Microstock/Console/Commands',
-        // Kernel-owned: it reads the registry and the install paths, edits
-        // nothing, so a consumer install runs the same class from vendor. The
-        // directory above no longer carries a copy.
+        // Kernel-owned: both read state and edit nothing, so a consumer install
+        // runs the same classes from vendor. The directory above carries no
+        // copy of either.
         ListDomainsCommand::class,
+        EncryptionFlushDecryptedCacheCommand::class,
     ])
     ->withRouting(
         api: __DIR__.'/../routes/api.php',

@@ -17,9 +17,9 @@ parameters:
         - config
 
     # Without every migration path Larastan cannot read the model columns, and every
-    # `$model->column` in the five packages reports `property.notFound` — 626 of the
-    # findings on the first run were this, not real defects. A new package with its
-    # own `database/migrations` must be added here in the same task.
+    # `$model->column` in a package reports `property.notFound` — 626 of the findings
+    # on the first run were this, not real defects. A new package with its own
+    # `database/migrations` must be added here in the same task.
     databaseMigrationsPath:
         - database/migrations
         - packages/ai/database/migrations
