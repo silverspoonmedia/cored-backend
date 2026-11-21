@@ -23,7 +23,9 @@
  *     package ones the providers load;
  *  6. the scaffold's own suite (`client-scaffold/tests`), the only place those
  *     tests run: they boot the copy's `bootstrap/app.php` against its `vendor/`;
- *  7. one real request through the kernel: `POST /api/v1/auth/login` with an
+ *  7. `php artisan encryption:flush-decrypted-cache` with no context must fail
+ *     with the per-context sentence — the kernel command reached the consumer;
+ *  8. one real request through the kernel: `POST /api/v1/auth/login` with an
  *     empty body must answer 422 with a translated sentence, never a raw
  *     validation key.
  *
@@ -91,6 +93,8 @@ try {
     $steps[] = ['migrate', ...scaffold_migrate($work)];
 
     $steps[] = ['scaffold suite', ...scaffold_tests($work)];
+
+    $steps[] = ['kernel command', ...scaffold_kernel_command($work)];
 
     $steps[] = ['validation envelope', ...scaffold_validation_probe($work)];
 } finally {
@@ -417,6 +421,36 @@ function scaffold_tests(string $work): array
 }
 
 /**
+ * The kernel's context-scoped flush command must be reachable from a consumer.
+ *
+ * `encryption:flush-decrypted-cache` without a context is the cheapest proof
+ * that the command exists at all: an unregistered command makes `artisan` exit
+ * 1 with "command is not defined", while the real failure path exits 1 with the
+ * per-context sentence. Asserting the sentence separates the two, and proves
+ * the wording a consumer acts on actually arrives.
+ *
+ * @return array{bool, string}
+ */
+function scaffold_kernel_command(string $work): array
+{
+    [$code, $output] = scaffold_artisan_exit($work, ['encryption:flush-decrypted-cache']);
+
+    if ($code === null) {
+        return [false, "the command produced no exit code.\n".scaffold_tail($output)];
+    }
+
+    if ($code === 0) {
+        return [false, 'encryption:flush-decrypted-cache without a context exited 0 — a consumer would read that as a completed bulk flush.'];
+    }
+
+    if (! str_contains($output, 'flushed per context')) {
+        return [false, "the command is missing or its message changed.\n".scaffold_tail($output)];
+    }
+
+    return [true, ''];
+}
+
+/**
  * One real request: an empty login body must answer 422 with a sentence.
  *
  * A raw key (`validation.required`) in the body means the language files never
@@ -470,6 +504,39 @@ PHP;
     }
 
     return [true, ''];
+}
+
+/**
+ * `php artisan` inside the copy, keeping the exit code.
+ *
+ * `scaffold_process` collapses the code into a boolean; the kernel-command
+ * step needs to tell "exit 1 because the command is not defined" from "exit 1
+ * because the command refused a bulk flush".
+ *
+ * @param  list<string>  $arguments
+ * @return array{0: int|null, 1: string}
+ */
+function scaffold_artisan_exit(string $work, array $arguments): array
+{
+    $environment = array_merge(getenv() ?: [], scaffold_probe_environment($work));
+
+    $process = proc_open(
+        array_merge(['php', 'artisan'], $arguments),
+        [1 => ['pipe', 'w'], 2 => ['redirect', 1]],
+        $pipes,
+        $work,
+        $environment,
+    );
+
+    if (! is_resource($process)) {
+        return [null, 'could not start artisan'];
+    }
+
+    $output = stream_get_contents($pipes[1]) ?: '';
+
+    fclose($pipes[1]);
+
+    return [proc_close($process), $output];
 }
 
 /**

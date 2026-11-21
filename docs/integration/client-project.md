@@ -80,7 +80,7 @@ php artisan route:list --path=api/v1
 php artisan migrate --force
 ```
 
-`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` runs that sequence on a temporary copy of `client-scaffold` with path repositories, then runs the scaffold's own `tests/` (the only place they execute — they need the copy's `vendor/`), then asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence, not a raw key. The `standalone-packages` CI job runs it.
+`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` runs that sequence on a temporary copy of `client-scaffold` with path repositories, runs the scaffold's own `tests/` (the only place they execute — they need the copy's `vendor/`), then checks `encryption:flush-decrypted-cache` exits non-zero without a context and asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence, not a raw key. The `standalone-packages` CI job runs it.
 
 ## What is retired
 
