@@ -157,7 +157,7 @@ Notifications on create/update: [notification domain](../notification/README.md)
 
 ## Lookups
 
-Paginated select options: `GET /api/v1/lookups/*` — [platform/list-display-modes.md](../../platform/list-display-modes.md). `users`/`roles` return flat `{id, text}` rows; `menus` returns a nested tree per root group (paginate per root, search keeps ancestors, hydrate `ids[]` stays flat).
+Paginated select options: `GET /api/v1/lookups/*` — [platform/list-display-modes.md](../../platform/list-display-modes.md). `users`/`roles` return flat `{id, text}` rows; `menus` moved with the menu tree to `silverspoonmedia/navigation` and is served at `GET /api/v1/navigation/lookups/menus` as a nested tree per root group (paginate per root, search keeps ancestors, hydrate `ids[]` stays flat).
 
 ## Realtime
 

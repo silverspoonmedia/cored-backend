@@ -147,7 +147,7 @@ SPA components (`confirmDialog`, `SubmitButton`, `FormInput`, loading/error/empt
 
 ### FormSelect2
 
-Wraps jQuery Select2 AJAX against paginated `GET /api/v1/lookups/*` — [list-display-modes.md](../platform/list-display-modes.md).
+Wraps jQuery Select2 AJAX against paginated lookups — identity `GET /api/v1/lookups/{users,roles}` and navigation `GET /api/v1/navigation/lookups/menus` — [list-display-modes.md](../platform/list-display-modes.md).
 
 **Multi-value `ids[]` shape:** the SPA must send repeated params (`ids[]=a&ids[]=b`, i.e. pass the array to `apiUrl()`), not a comma-joined string — `ids.* => uuid` rejects the latter with 422. Batch sub-request failures are **not** uniformly silent; the menu-edit hydrate in particular splits three ways (transport fallback to the standalone loaders / `TerminalBatchError` on 401/403/429, never retried standalone / a recorded `failedLookups` key on any other non-200 that warns the admin and leaves the stored pivots untouched). For ajax-backed selects the pre-selected rows arrive **after** mount, so `FormSelect2` appends late `selectedOptions` in place and re-applies the value (no select2 re-init, which would drop the ajax adapter state), and `applyValue()` suppresses its own `change.select2` echo so a select whose `<option>` rows are not hydrated yet can never clear its parent. Both behaviors are specified in [ui-patterns.md — Select2 values must survive a failed hydrate](../../../monolith-vue-workers/docs/ui-patterns.md).
 
