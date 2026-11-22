@@ -8,7 +8,7 @@ use App\Domain\Archivd\Models\Folder;
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Models\Workspace;
 use App\Domain\Archivd\Support\FolderAncestorChain;
-use App\Support\SpaPublicUrl;
+use App\Domain\Archivd\Support\PublicShareUrl;
 
 /**
  * Drive-lite link sharing: private | anyone_with_link.
@@ -126,7 +126,7 @@ class VisibilityService
             return null;
         }
 
-        return SpaPublicUrl::publicFileShare((string) $file->id);
+        return PublicShareUrl::file((string) $file->id);
     }
 
     public function folderShareUrl(Folder $folder): ?string
@@ -139,7 +139,7 @@ class VisibilityService
             return null;
         }
 
-        return SpaPublicUrl::publicFolderShare((string) $folder->id);
+        return PublicShareUrl::folder((string) $folder->id);
     }
 
     /**

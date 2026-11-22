@@ -28,7 +28,7 @@ class EnvironmentTemplateQuotingTest extends TestCase
     {
         $path = base_path($relativePath);
         $assignments = EnvironmentTemplateParser::parseUniqueAssignments(File::get($path));
-        $catalog = EnvironmentVariableCatalog::types();
+        $catalog = EnvironmentVariableCatalog::all();
 
         $this->assertNotEmpty($assignments, "No assignments parsed from {$relativePath}");
 
@@ -49,7 +49,7 @@ class EnvironmentTemplateQuotingTest extends TestCase
     public function test_catalog_covers_every_assignment_in_master_template(): void
     {
         $assignments = EnvironmentTemplateParser::parseUniqueAssignments(File::get(base_path('.env.example')));
-        $catalogKeys = array_keys(EnvironmentVariableCatalog::types());
+        $catalogKeys = array_keys(EnvironmentVariableCatalog::all());
         $assignmentKeys = array_keys($assignments);
 
         sort($catalogKeys);

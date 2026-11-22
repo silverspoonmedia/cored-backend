@@ -2,6 +2,12 @@
 
 return [
     'title' => 'Archivd',
+    // curated at 2026-11-22T19:30:00+07:00 — boilerplate seam wave (menu nodes)
+    'menu' => [
+        'my_files' => '내 파일',
+        'trash' => '휴지통',
+        'blocklist' => 'DMCA 차단 목록',
+    ],
     'blocklist_title' => '해시 차단 목록 (DMCA)',
     'blocklist_add' => '해시 차단',
     'blocklist_sha256' => 'sha256',

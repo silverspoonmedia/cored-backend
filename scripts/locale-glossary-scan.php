@@ -369,6 +369,7 @@ function collect(string $root, string $spaRoot, string $locale): array
 {
     $rows = [];
     $blobs = ['backend' => '', 'spa' => ''];
+    $seenSpa = [];
     $dir = $root.'/lang/'.$locale;
 
     if (is_dir($dir)) {
@@ -438,14 +439,31 @@ function collect(string $root, string $spaRoot, string $locale): array
         }
     }
 
-    $spaFile = $spaRoot.'/src/i18n/locales/'.str_replace('zh_CN', 'zh-CN', $locale).'.json';
+    // The SPA splits its copy: core keys live in `locales/`, a product's keys in
+    // `features/{name}/`. Both are user-visible strings, so both are scanned —
+    // a floor measured on the merged pack would go red the moment a feature moves.
+    $spaFiles = array_merge(
+        glob($spaRoot.'/src/i18n/locales/*.json') === false ? [] : glob($spaRoot.'/src/i18n/locales/*.json'),
+        glob($spaRoot.'/src/i18n/features/*/*.json') === false ? [] : glob($spaRoot.'/src/i18n/features/*/*.json'),
+    );
 
-    if (is_file($spaFile)) {
+    foreach ($spaFiles as $spaFile) {
+        if (basename($spaFile, '.json') !== str_replace('zh_CN', 'zh-CN', $locale)) {
+            continue;
+        }
+
+        $unique = 'src/i18n/'.(str_contains($spaFile, '/features/') ? 'features/'.basename(dirname($spaFile)).'/' : 'locales/').basename($spaFile);
+
+        if (in_array($unique, $seenSpa, true)) {
+            continue;
+        }
+
+        $seenSpa[] = $unique;
         $raw = (string) file_get_contents($spaFile);
         $blobs['spa'] .= $raw."\n";
 
         foreach (flatten((array) json_decode($raw, true)) as $key => $value) {
-            $rows[] = ['spa:src/i18n/locales/'.basename($spaFile), $key, $value];
+            $rows[] = ['spa:'.$unique, $key, $value];
         }
     }
 

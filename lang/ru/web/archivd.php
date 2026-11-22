@@ -2,6 +2,12 @@
 
 return [
     'title' => 'Archivd',
+    // curated at 2026-11-22T19:30:00+07:00 — boilerplate seam wave (menu nodes)
+    'menu' => [
+        'my_files' => 'Мои файлы',
+        'trash' => 'Корзина',
+        'blocklist' => 'Список блокировки DMCA',
+    ],
     'blocklist_title' => 'Чёрный список хэшей (DMCA)',
     'blocklist_add' => 'Заблокировать хэш',
     'blocklist_sha256' => 'sha256',

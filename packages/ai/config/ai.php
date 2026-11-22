@@ -22,10 +22,42 @@ return [
     // installed, and the dashboard endpoint has no rows to render.
     'usage_event_resource' => '',
 
-    // Per-consumer bindings are Tier B settings (Settings → Microstock):
-    //   microstock.ai.vision.connection
-    //   microstock.ai.thinking.connection
-    // Empty = use the connection flagged `is_default`.
+    /*
+    |--------------------------------------------------------------------------
+    | Consumers
+    |--------------------------------------------------------------------------
+    |
+    | A consumer is a product-side binding: a Tier B setting that selects the
+    | `ai_connections` row used for one purpose (vision, thinking, …). The
+    | package names no consumer; each product publishes the rows it owns from
+    | its provider, so this list is empty on a kernel-only install.
+    |
+    | Each row:
+    |   slug               connection slug this consumer seeds locally
+    |   label              human label for the seeded connection
+    |   connection_setting Tier B key that binds the consumer to a connection
+    |   model_setting      Tier B key consulted when a seeded entry omits test_model
+    |   endpoint_env       env key holding the endpoint for the local seed
+    |   api_key_env        env key holding the API key for the local seed
+    |
+    */
+    'consumers' => [],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ledger foreign keys
+    |--------------------------------------------------------------------------
+    |
+    | The inference pricing catalog points at whichever product owns the AI
+    | ledger. A product publishes the tables and columns its ledger exposes, and
+    | the migration links each one only when the table already exists — a
+    | kernel-only install creates the catalog and skips the link. Each row:
+    |
+    |   table    product-owned table
+    |   columns  columns on that table that reference the catalog
+    |
+    */
+    'ledger_fk_targets' => [],
 
     /*
     |--------------------------------------------------------------------------
@@ -33,16 +65,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | Local-only wiring helper. The connection map (endpoint + API key) lives in
-    | a gitignored data file; `binding_models` maps a consumer's binding setting
-    | to the Tier B model setting consulted when an entry omits `test_model`.
+    | a gitignored data file; the model for a seeded connection's Test probe is
+    | inherited from the consumer row that binds it (see `consumers` above).
     |
     */
     'seed' => [
         'path' => 'database/seeders/data/ai-connections.local.php',
-
-        'binding_models' => [
-            'microstock.ai.vision.connection' => 'microstock.ai.vision.model',
-            'microstock.ai.thinking.connection' => 'microstock.ai.thinking.model',
-        ],
     ],
 ];

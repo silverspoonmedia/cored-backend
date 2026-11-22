@@ -18,8 +18,9 @@ use Throwable;
  *
  * Reads a gitignored data file (endpoint + API key per slug), upserts
  * `ai_connections` rows through {@see AiConnectionService}, probes each new row,
- * binds consumer slug settings (Microstock vision/thinking) and
- * promotes the flagged entry to default.
+ * binds the consumer slug settings the data file lists and promotes the flagged
+ * entry to default. Which products own those consumer settings is published as
+ * `ai.consumers` by the product itself, so this package names no product.
  *
  * Same contract as {@see LocalSettingsSeeder}: `APP_ENV=local` only, idempotent
  * upsert so re-seeding refreshes local values. Staging/production wire
@@ -37,7 +38,7 @@ use Throwable;
  *     return [
  *         'defaults' => ['endpoint' => 'https://…', 'api_key' => 'sk-…'],
  *         'connections' => [
- *             'a' => ['binds' => ['microstock.ai.vision.connection']],   // inherits both
+ *             'a' => ['binds' => ['<product>.ai.vision.connection']],  // inherits both
  *             'b' => ['binds' => […], 'test_model' => 'other-model'],    // overrides one
  *         ],
  *     ];
@@ -124,7 +125,7 @@ class AiConnectionSeeder extends Seeder
             }
 
             if ($testModel === '') {
-                $this->command?->warn("Skipped {$slug}: no test model known. Set 'test_model' here, or the consumer's model setting (Settings → Microstock).");
+                $this->command?->warn("Skipped {$slug}: no test model known. Set 'test_model' here, or the consumer's model setting in Settings.");
 
                 continue;
             }
@@ -340,11 +341,27 @@ class AiConnectionSeeder extends Seeder
     /**
      * Model for the Test probe, inherited from the bound consumer's Tier B setting.
      *
+     * Consumer rows are published by the product that owns them
+     * (`ai.consumers`), so the package names no product.
+     *
      * @param  list<string>  $binds
      */
     private function modelFor(array $binds): string
     {
-        $map = (array) config('ai.seed.binding_models', []);
+        $map = [];
+
+        foreach ((array) config('ai.consumers', []) as $consumer) {
+            if (! is_array($consumer)) {
+                continue;
+            }
+
+            $connectionSetting = $consumer['connection_setting'] ?? null;
+            $modelSetting = $consumer['model_setting'] ?? null;
+
+            if (is_string($connectionSetting) && is_string($modelSetting)) {
+                $map[$connectionSetting] = $modelSetting;
+            }
+        }
 
         foreach ($binds as $setting) {
             $configPath = $map[$setting] ?? null;

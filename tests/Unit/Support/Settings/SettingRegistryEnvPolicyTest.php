@@ -73,7 +73,7 @@ class SettingRegistryEnvPolicyTest extends TestCase
 
     public function test_operational_env_keys_are_not_in_environment_catalog(): void
     {
-        $catalog = array_keys(EnvironmentVariableCatalog::types());
+        $catalog = array_keys(EnvironmentVariableCatalog::all());
 
         foreach ($this->removedOperationalEnvKeys() as $key) {
             $this->assertNotContains(

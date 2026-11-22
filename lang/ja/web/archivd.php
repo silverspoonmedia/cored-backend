@@ -2,6 +2,12 @@
 
 return [
     'title' => 'Archivd',
+    // curated at 2026-11-22T19:30:00+07:00 — boilerplate seam wave (menu nodes)
+    'menu' => [
+        'my_files' => 'マイファイル',
+        'trash' => 'ゴミ箱',
+        'blocklist' => 'DMCA ブロックリスト',
+    ],
     // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
     'blocklist_title' => 'ハッシュのブロックリスト（DMCA）',
     'blocklist_add' => 'ハッシュをブロック',

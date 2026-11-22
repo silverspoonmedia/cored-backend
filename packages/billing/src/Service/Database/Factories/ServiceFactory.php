@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 /**
  * Generic catalog factory — code-agnostic, no product knowledge.
  *
- * Product-specific plans (Archivd storage, Microstock workspaces) live in their
+ * Product-specific plans (a product's storage tiers, workspace sizes) live in their
  * own domain factories so this package never imports a product domain.
  *
  * @extends Factory<Service>

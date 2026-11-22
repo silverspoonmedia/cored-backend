@@ -13,9 +13,14 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
 
 /**
- * One-time transition: pull the legacy Tier A AI env keys into Tier C
+ * One-time transition: pull legacy Tier A AI env keys into Tier C
  * `ai_connections` rows, bind each consumer (Tier B settings), then those env
  * keys are deleted from every `.env*` file.
+ *
+ * Which env keys belong to which consumer is product knowledge: a product
+ * publishes its rows in `ai.consumers` (`slug` / `endpoint_env` / `api_key_env` /
+ * `connection_setting` / `model_setting`) from its own provider, so this command
+ * names no product and imports nothing on a kernel-only install.
  *
  * Idempotent: an existing row with the same slug is refreshed in place.
  */
@@ -27,7 +32,7 @@ class ImportLegacyEnvCommand extends Command
                             {--skip-test : Do not probe the endpoint; import rows as pending}
                             {--actor= : User id credited as creator (defaults to the first Root user)}';
 
-    protected $description = 'Import legacy AI env keys (MICROSTOCK_AI_*) into ai_connections + consumer bindings';
+    protected $description = 'Import legacy per-product AI env keys into ai_connections + consumer bindings';
 
     public function handle(
         AiConnectionService $connections,
@@ -41,7 +46,7 @@ class ImportLegacyEnvCommand extends Command
         $importable = array_filter($sources, fn (array $source): bool => $source['endpoint'] !== '' && $source['api_key'] !== '');
 
         if ($importable === []) {
-            $this->warn('No legacy AI env values found (MICROSTOCK_AI_VISION_*, MICROSTOCK_AI_THINKING_*).');
+            $this->warn('No legacy AI env values found for any published AI consumer.');
 
             return self::SUCCESS;
         }
@@ -123,13 +128,9 @@ class ImportLegacyEnvCommand extends Command
 
         $this->newLine();
         $this->info('Imported '.count($bindings).' binding(s). Now remove the legacy keys from every .env* file:');
-        foreach ([
-            'MICROSTOCK_AI_VISION_ENDPOINT',
-            'MICROSTOCK_AI_VISION_API_KEY',
-            'MICROSTOCK_AI_THINKING_ENDPOINT',
-            'MICROSTOCK_AI_THINKING_API_KEY',
-        ] as $key) {
-            $this->line('  - '.$key);
+        foreach ($sources as $source) {
+            $this->line('  - '.$source['endpoint_env']);
+            $this->line('  - '.$source['api_key_env']);
         }
         $this->line('Then run: php artisan env:curate --sync-snapshot');
 
@@ -137,7 +138,7 @@ class ImportLegacyEnvCommand extends Command
     }
 
     /**
-     * @param  array{label: string, slug: string, endpoint: string, api_key: string, test_model: string, setting: string}  $source
+     * @param  array{label: string, slug: string, endpoint: string, api_key: string, test_model: string, setting: string, endpoint_env: string, api_key_env: string}  $source
      */
     private function upsert(AiConnectionService $connections, array $source, User $actor): AiConnection
     {
@@ -159,28 +160,40 @@ class ImportLegacyEnvCommand extends Command
     }
 
     /**
-     * @return list<array{label: string, slug: string, endpoint: string, api_key: string, test_model: string, setting: string}>
+     * @return list<array{label: string, slug: string, endpoint: string, api_key: string, test_model: string, setting: string, endpoint_env: string, api_key_env: string}>
      */
     private function sources(): array
     {
-        return [
-            [
-                'label' => 'microstock vision',
-                'slug' => 'microstock-vision',
-                'endpoint' => $this->envValue('MICROSTOCK_AI_VISION_ENDPOINT'),
-                'api_key' => $this->envValue('MICROSTOCK_AI_VISION_API_KEY'),
-                'test_model' => (string) setting_config('microstock.ai.vision.model', ''),
-                'setting' => 'microstock.ai.vision.connection',
-            ],
-            [
-                'label' => 'microstock thinking',
-                'slug' => 'microstock-thinking',
-                'endpoint' => $this->envValue('MICROSTOCK_AI_THINKING_ENDPOINT'),
-                'api_key' => $this->envValue('MICROSTOCK_AI_THINKING_API_KEY'),
-                'test_model' => (string) setting_config('microstock.ai.thinking.model', ''),
-                'setting' => 'microstock.ai.thinking.connection',
-            ],
-        ];
+        $sources = [];
+
+        foreach ((array) config('ai.consumers', []) as $consumer) {
+            if (! is_array($consumer)) {
+                continue;
+            }
+
+            $slug = trim((string) ($consumer['slug'] ?? ''));
+            $endpointEnv = trim((string) ($consumer['endpoint_env'] ?? ''));
+            $apiKeyEnv = trim((string) ($consumer['api_key_env'] ?? ''));
+            $setting = trim((string) ($consumer['connection_setting'] ?? ''));
+            $modelSetting = trim((string) ($consumer['model_setting'] ?? ''));
+
+            if ($slug === '' || $endpointEnv === '' || $apiKeyEnv === '' || $setting === '') {
+                continue;
+            }
+
+            $sources[] = [
+                'label' => trim((string) ($consumer['label'] ?? '')) !== '' ? trim((string) $consumer['label']) : $slug,
+                'slug' => $slug,
+                'endpoint' => $this->envValue($endpointEnv),
+                'api_key' => $this->envValue($apiKeyEnv),
+                'test_model' => $modelSetting === '' ? '' : (string) setting_config($modelSetting, ''),
+                'setting' => $setting,
+                'endpoint_env' => $endpointEnv,
+                'api_key_env' => $apiKeyEnv,
+            ];
+        }
+
+        return $sources;
     }
 
     private function envValue(string $key): string

@@ -2,6 +2,12 @@
 
 return [
     'title' => 'Archivd',
+    // curated at 2026-11-22T19:30:00+07:00 — boilerplate seam wave (menu nodes)
+    'menu' => [
+        'my_files' => 'ملفاتي',
+        'trash' => 'سلة المهملات',
+        'blocklist' => 'قائمة حظر DMCA',
+    ],
     'blocklist_title' => 'قائمة حظر التجزئات (DMCA)',
     'blocklist_add' => 'حظر التجزئة',
     'blocklist_sha256' => 'sha256',

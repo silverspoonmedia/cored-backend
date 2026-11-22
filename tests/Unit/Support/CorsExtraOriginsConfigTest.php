@@ -29,7 +29,7 @@ class CorsExtraOriginsConfigTest extends TestCase
 
     public function test_catalog_registers_cors_extra_origins_as_string(): void
     {
-        $types = EnvironmentVariableCatalog::types();
+        $types = EnvironmentVariableCatalog::all();
 
         $this->assertArrayHasKey('CORS_EXTRA_ORIGINS', $types);
         $this->assertSame(

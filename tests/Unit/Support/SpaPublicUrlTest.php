@@ -70,31 +70,6 @@ class SpaPublicUrlTest extends TestCase
     }
 
     #[Test]
-    public function public_shares_fall_back_to_blade_routes(): void
-    {
-        $id = '01900000-0000-7000-8000-000000000001';
-
-        $this->assertSame(
-            route('archivd.public.files.show', ['file' => $id]),
-            SpaPublicUrl::publicFileShare($id),
-        );
-        $this->assertSame(
-            route('archivd.public.folders.show', ['folder' => $id]),
-            SpaPublicUrl::publicFolderShare($id),
-        );
-    }
-
-    #[Test]
-    public function public_shares_use_spa_origin_when_set(): void
-    {
-        config(['services.spa.url' => 'https://spa.test']);
-        $id = '01900000-0000-7000-8000-000000000001';
-
-        $this->assertSame('https://spa.test/s/f/'.$id, SpaPublicUrl::publicFileShare($id));
-        $this->assertSame('https://spa.test/s/d/'.$id, SpaPublicUrl::publicFolderShare($id));
-    }
-
-    #[Test]
     public function payment_bounce_falls_back_to_blade_ipaymu_routes(): void
     {
         $this->assertSame(route('payment.ipaymu.return', [], true), SpaPublicUrl::paymentReturn());

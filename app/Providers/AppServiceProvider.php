@@ -12,6 +12,8 @@ use App\Support\Broadcasting\ChannelRegistrarRegistry;
 use App\Support\Encryption\LegacyColumnMigratorRegistry;
 use App\Support\Http\AllowlistCorsService;
 use Fruitcake\Cors\CorsService;
+use App\Support\Settings\SettingCatalog;
+use App\Support\Navigation\MenuContributorRegistry;
 use Illuminate\Foundation\Console\ConfigCacheCommand;
 use Illuminate\Support\ServiceProvider;
 
@@ -48,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
             LegacyColumnMigratorRegistry::class,
             ChannelRegistrarRegistry::class,
             AiUsageConsolidatorRegistry::class,
+            SettingCatalog::class,
+            MenuContributorRegistry::class,
         ] as $registry) {
             if (! $this->app->bound($registry)) {
                 $this->app->singleton($registry);

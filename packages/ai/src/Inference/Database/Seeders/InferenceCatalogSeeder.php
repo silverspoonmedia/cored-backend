@@ -10,7 +10,7 @@ use Illuminate\Database\Seeder;
 class InferenceCatalogSeeder extends Seeder
 {
     /**
-     * Public list-price models (USD per 1M tokens). Mirrors legacy microstock rate card.
+     * Public list-price models (USD per 1M tokens). Mirrors the legacy rate card.
      *
      * @var array<string, array{input_per_million_usd: float, output_per_million_usd: float}>
      */

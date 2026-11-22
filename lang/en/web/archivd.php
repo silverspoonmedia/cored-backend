@@ -2,6 +2,12 @@
 
 return [
     'title' => 'Archivd',
+    // curated at 2026-11-22T19:30:00+07:00 — boilerplate seam wave (menu nodes)
+    'menu' => [
+        'my_files' => 'My Files',
+        'trash' => 'Trash',
+        'blocklist' => 'DMCA Blocklist',
+    ],
     'blocklist_title' => 'Hash blocklist (DMCA)',
     'blocklist_add' => 'Block hash',
     'blocklist_sha256' => 'sha256',

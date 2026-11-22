@@ -2,6 +2,12 @@
 
 return [
     'title' => 'Archivd',
+    // curated at 2026-11-22T19:30:00+07:00 — boilerplate seam wave (menu nodes)
+    'menu' => [
+        'my_files' => '我的文件',
+        'trash' => '回收站',
+        'blocklist' => 'DMCA 黑名单',
+    ],
     // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
     'blocklist_title' => '哈希黑名单（DMCA）',
     // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave

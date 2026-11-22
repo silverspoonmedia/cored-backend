@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
 /**
  * Package-owned catalog maintenance.
  *
- * Product SKUs (Archivd storage plans, Microstock workspaces) are product
+ * Product SKUs (a product's storage plans and workspace sizes) are product
  * knowledge and are seeded by the owning product domain, which writes through
  * {@see ServiceCatalogWriter}. This seeder stays code-agnostic so the package
  * never imports a product catalog.

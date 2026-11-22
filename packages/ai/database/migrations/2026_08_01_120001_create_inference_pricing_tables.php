@@ -70,33 +70,60 @@ return new class extends Migration
             $table->index(['model_slug', 'captured_at'], 'ai_model_rate_snapshots_slug_captured_idx');
         });
 
-        // Billing-side links. The columns themselves ship with the microstock
-        // tables; the FKs land here because these are the tables they point at.
+        // Billing-side links. The columns themselves ship with whichever product
+        // owns the AI ledger; the FKs land here because these are the catalog's
+        // tables. The product publishes its tables and columns in
+        // `ai.ledger_fk_targets`, so this migration names no product.
         //
         // Guarded on the host owning that table: the ledger is a product-domain
-        // table (it leaves with Microstock's uninstall), so a standalone package
+        // table (it leaves with the product's uninstall), so a standalone package
         // test — or a consumer without that product — creates the pricing catalog
         // and skips the link, instead of failing on a table nothing will use.
-        if (Schema::hasTable('microstock_ai_usage_events')) {
-            Schema::table('microstock_ai_usage_events', function (Blueprint $table): void {
-                $table->foreign('ai_model_rate_snapshot_id')
-                    ->references('id')
-                    ->on('ai_model_rate_snapshots')
-                    ->nullOnDelete();
-                $table->foreign('inference_provider_id')
-                    ->references('id')
-                    ->on('ai_inference_providers')
-                    ->nullOnDelete();
+        foreach ((array) config('ai.ledger_fk_targets', []) as $target) {
+            $table = $target['table'] ?? null;
+
+            if (! is_string($table) || $table === '' || ! Schema::hasTable($table)) {
+                continue;
+            }
+
+            Schema::table($table, function (Blueprint $blueprint) use ($target): void {
+                foreach ((array) ($target['columns'] ?? []) as $column) {
+                    $name = $column['column'] ?? null;
+                    $on = $column['on'] ?? null;
+
+                    if (! is_string($name) || $name === '' || ! is_string($on) || $on === '') {
+                        continue;
+                    }
+
+                    $foreign = $blueprint->foreign($name)
+                        ->references($column['references'] ?? 'id')
+                        ->on($on);
+
+                    ($column['on_delete'] ?? 'null') === 'cascade'
+                        ? $foreign->cascadeOnDelete()
+                        : $foreign->nullOnDelete();
+                }
             });
         }
     }
 
     public function down(): void
     {
-        if (Schema::hasTable('microstock_ai_usage_events')) {
-            Schema::table('microstock_ai_usage_events', function (Blueprint $table): void {
-                $table->dropForeign(['inference_provider_id']);
-                $table->dropForeign(['ai_model_rate_snapshot_id']);
+        foreach ((array) config('ai.ledger_fk_targets', []) as $target) {
+            $table = $target['table'] ?? null;
+
+            if (! is_string($table) || $table === '' || ! Schema::hasTable($table)) {
+                continue;
+            }
+
+            Schema::table($table, function (Blueprint $blueprint) use ($target): void {
+                foreach ((array) ($target['columns'] ?? []) as $column) {
+                    $name = $column['column'] ?? null;
+
+                    if (is_string($name) && $name !== '') {
+                        $blueprint->dropForeign([$name]);
+                    }
+                }
             });
         }
 

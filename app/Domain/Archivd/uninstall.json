@@ -653,368 +653,180 @@
                 {
                     "path": "client-scaffold/tests/Unit/DomainRegistryTest.php",
                     "reason": "consumer guard: asserts the scaffold registry names no product domain — the product names are the negative assertion, not a reference to ship"
+                },
+                {
+                    "path": "packages/platform/config/storage.php",
+                    "reason": "kernel seam docblock: the example publish call names a product as the shape of the seam, not a coupling — the kernel owns the key and ships empty defaults, so removing the product leaves it untouched"
+                },
+                {
+                    "path": "tests/Domain/Core/KernelProductNeutralityTest.php",
+                    "reason": "seam guard: asserts a package names NO product domain, so the product name is the negative assertion — it must stay"
+                },
+                {
+                    "path": "tests/Domain/Core/SettingContributorSeamTest.php",
+                    "reason": "seam guard: proves a product contributor publishes its keys and that a contributor-free catalog is legal — the product names are the fixture that proves the seam"
+                },
+                {
+                    "path": "tests/Domain/Core/MenuContributorSeamTest.php",
+                    "reason": "seam guard: proves an empty menu registry seeds the core tree and that a contributor lands after its anchor — the product names are the fixture that proves the seam"
+                },
+                {
+                    "path": "app/Domain/Microstock/Support/Navigation/MicrostockMenuContributor.php",
+                    "reason": "owned by the Microstock domain: its `after` key names the sibling this product places itself behind; the file leaves with Microstock's own uninstall, nothing to do here"
                 }
             ]
         },
         "spa": {
             "delete": [
-                "src/views/archivd",
-                "src/composables/archivd",
-                "src/components/archivd",
-                "src/router/routes/archivd.ts",
+                "src/features/archivd",
+                "src/i18n/features/archivd",
+                "src/assets/archivd.css",
                 "tests/archivd*"
             ],
             "edits": [
                 {
-                    "file": "src/i18n/locales/ar.json",
-                    "op": "remove_json_keys",
-                    "match": [
-                        "api.archivd.archivd",
-                        "api.archivd.public_share_requires_paid",
-                        "api.archivd.workspace.requires_paid",
-                        "web.settings.groups.archivd",
-                        "web.settings.fields.archivd.max_file_size_bytes",
-                        "web.settings.fields.archivd.max_files_per_batch",
-                        "web.settings.fields.archivd.max_concurrent_uploads",
-                        "web.settings.fields.archivd.max_concurrent_parts",
-                        "web.settings.fields.archivd.chunk_size_bytes",
-                        "web.settings.fields.archivd.multipart_threshold_bytes",
-                        "web.settings.fields.archivd.max_presigned_parts_per_response",
-                        "web.settings.fields.archivd.presign_ttl_minutes",
-                        "web.settings.fields.archivd.session_ttl_hours",
-                        "web.settings.fields.archivd.stale_upload_grace_hours",
-                        "web.settings.fields.archivd.orphan_inactivity_minutes",
-                        "web.settings.fields.archivd.default_quota_bytes",
-                        "web.settings.fields.archivd.base_owned_workspace_slots",
-                        "web.settings.fields.archivd.disabled_regions",
-                        "web.settings.fields.archivd.signed_download_ttl_minutes",
-                        "web.settings.fields.archivd.signed_download_cache_margin_seconds",
-                        "web.settings.fields.archivd.public_download_signature_ttl_minutes",
-                        "web.settings.fields.archivd.allowed_mime_prefixes",
-                        "web.settings.fields.archivd.download_vault.enabled",
-                        "web.archivd.archivd",
-                        "web.archivd.title",
-                        "web.archivd.vue_mount_failed",
-                        "services.microstock.slot_desc"
-                    ]
-                },
-                {
-                    "file": "src/i18n/locales/en.json",
-                    "op": "remove_json_keys",
-                    "match": [
-                        "api.archivd.archivd",
-                        "api.archivd.public_share_requires_paid",
-                        "api.archivd.workspace.requires_paid",
-                        "web.archivd.archivd",
-                        "web.archivd.title",
-                        "web.archivd.vue_mount_failed",
-                        "services.microstock.slot_desc",
-                        "settings.groups.archivd",
-                        "settings.fields.archivd.max_file_size_bytes",
-                        "settings.fields.archivd.max_files_per_batch",
-                        "settings.fields.archivd.max_concurrent_uploads",
-                        "settings.fields.archivd.max_concurrent_parts",
-                        "settings.fields.archivd.chunk_size_bytes",
-                        "settings.fields.archivd.multipart_threshold_bytes",
-                        "settings.fields.archivd.max_presigned_parts_per_response",
-                        "settings.fields.archivd.presign_ttl_minutes",
-                        "settings.fields.archivd.session_ttl_hours",
-                        "settings.fields.archivd.stale_upload_grace_hours",
-                        "settings.fields.archivd.orphan_inactivity_minutes",
-                        "settings.fields.archivd.default_quota_bytes",
-                        "settings.fields.archivd.base_owned_workspace_slots",
-                        "settings.fields.archivd.disabled_regions",
-                        "settings.fields.archivd.signed_download_ttl_minutes",
-                        "settings.fields.archivd.signed_download_cache_margin_seconds",
-                        "settings.fields.archivd.public_download_signature_ttl_minutes",
-                        "settings.fields.archivd.allowed_mime_prefixes",
-                        "settings.fields.archivd.download_vault.enabled"
-                    ]
-                },
-                {
-                    "file": "src/i18n/locales/id.json",
-                    "op": "remove_json_keys",
-                    "match": [
-                        "api.archivd.archivd",
-                        "api.archivd.public_share_requires_paid",
-                        "api.archivd.workspace.requires_paid",
-                        "web.archivd.archivd",
-                        "web.archivd.title",
-                        "web.archivd.vue_mount_failed",
-                        "services.microstock.slot_desc",
-                        "settings.groups.archivd",
-                        "settings.fields.archivd.max_file_size_bytes",
-                        "settings.fields.archivd.max_files_per_batch",
-                        "settings.fields.archivd.max_concurrent_uploads",
-                        "settings.fields.archivd.max_concurrent_parts",
-                        "settings.fields.archivd.chunk_size_bytes",
-                        "settings.fields.archivd.multipart_threshold_bytes",
-                        "settings.fields.archivd.max_presigned_parts_per_response",
-                        "settings.fields.archivd.presign_ttl_minutes",
-                        "settings.fields.archivd.session_ttl_hours",
-                        "settings.fields.archivd.stale_upload_grace_hours",
-                        "settings.fields.archivd.orphan_inactivity_minutes",
-                        "settings.fields.archivd.default_quota_bytes",
-                        "settings.fields.archivd.base_owned_workspace_slots",
-                        "settings.fields.archivd.disabled_regions",
-                        "settings.fields.archivd.signed_download_ttl_minutes",
-                        "settings.fields.archivd.signed_download_cache_margin_seconds",
-                        "settings.fields.archivd.public_download_signature_ttl_minutes",
-                        "settings.fields.archivd.allowed_mime_prefixes",
-                        "settings.fields.archivd.download_vault.enabled"
-                    ]
-                },
-                {
-                    "file": "src/i18n/locales/ja.json",
-                    "op": "remove_json_keys",
-                    "match": [
-                        "api.archivd.archivd",
-                        "api.archivd.public_share_requires_paid",
-                        "api.archivd.workspace.requires_paid",
-                        "web.archivd.archivd",
-                        "web.archivd.title",
-                        "web.archivd.vue_mount_failed",
-                        "services.microstock.slot_desc",
-                        "settings.groups.archivd",
-                        "settings.fields.archivd.max_file_size_bytes",
-                        "settings.fields.archivd.max_files_per_batch",
-                        "settings.fields.archivd.max_concurrent_uploads",
-                        "settings.fields.archivd.max_concurrent_parts",
-                        "settings.fields.archivd.chunk_size_bytes",
-                        "settings.fields.archivd.multipart_threshold_bytes",
-                        "settings.fields.archivd.max_presigned_parts_per_response",
-                        "settings.fields.archivd.presign_ttl_minutes",
-                        "settings.fields.archivd.session_ttl_hours",
-                        "settings.fields.archivd.stale_upload_grace_hours",
-                        "settings.fields.archivd.orphan_inactivity_minutes",
-                        "settings.fields.archivd.default_quota_bytes",
-                        "settings.fields.archivd.base_owned_workspace_slots",
-                        "settings.fields.archivd.disabled_regions",
-                        "settings.fields.archivd.signed_download_ttl_minutes",
-                        "settings.fields.archivd.signed_download_cache_margin_seconds",
-                        "settings.fields.archivd.public_download_signature_ttl_minutes",
-                        "settings.fields.archivd.allowed_mime_prefixes",
-                        "settings.fields.archivd.download_vault.enabled"
-                    ]
-                },
-                {
-                    "file": "src/i18n/locales/ko.json",
-                    "op": "remove_json_keys",
-                    "match": [
-                        "api.archivd.archivd",
-                        "api.archivd.public_share_requires_paid",
-                        "api.archivd.workspace.requires_paid",
-                        "web.settings.groups.archivd",
-                        "web.settings.fields.archivd.max_file_size_bytes",
-                        "web.settings.fields.archivd.max_files_per_batch",
-                        "web.settings.fields.archivd.max_concurrent_uploads",
-                        "web.settings.fields.archivd.max_concurrent_parts",
-                        "web.settings.fields.archivd.chunk_size_bytes",
-                        "web.settings.fields.archivd.multipart_threshold_bytes",
-                        "web.settings.fields.archivd.max_presigned_parts_per_response",
-                        "web.settings.fields.archivd.presign_ttl_minutes",
-                        "web.settings.fields.archivd.session_ttl_hours",
-                        "web.settings.fields.archivd.stale_upload_grace_hours",
-                        "web.settings.fields.archivd.orphan_inactivity_minutes",
-                        "web.settings.fields.archivd.default_quota_bytes",
-                        "web.settings.fields.archivd.base_owned_workspace_slots",
-                        "web.settings.fields.archivd.disabled_regions",
-                        "web.settings.fields.archivd.signed_download_ttl_minutes",
-                        "web.settings.fields.archivd.signed_download_cache_margin_seconds",
-                        "web.settings.fields.archivd.public_download_signature_ttl_minutes",
-                        "web.settings.fields.archivd.allowed_mime_prefixes",
-                        "web.settings.fields.archivd.download_vault.enabled",
-                        "web.archivd.archivd",
-                        "web.archivd.title",
-                        "web.archivd.vue_mount_failed",
-                        "services.microstock.slot_desc"
-                    ]
-                },
-                {
-                    "file": "src/i18n/locales/ru.json",
-                    "op": "remove_json_keys",
-                    "match": [
-                        "api.archivd.archivd",
-                        "api.archivd.public_share_requires_paid",
-                        "api.archivd.workspace.requires_paid",
-                        "web.settings.groups.archivd",
-                        "web.settings.fields.archivd.max_file_size_bytes",
-                        "web.settings.fields.archivd.max_files_per_batch",
-                        "web.settings.fields.archivd.max_concurrent_uploads",
-                        "web.settings.fields.archivd.max_concurrent_parts",
-                        "web.settings.fields.archivd.chunk_size_bytes",
-                        "web.settings.fields.archivd.multipart_threshold_bytes",
-                        "web.settings.fields.archivd.max_presigned_parts_per_response",
-                        "web.settings.fields.archivd.presign_ttl_minutes",
-                        "web.settings.fields.archivd.session_ttl_hours",
-                        "web.settings.fields.archivd.stale_upload_grace_hours",
-                        "web.settings.fields.archivd.orphan_inactivity_minutes",
-                        "web.settings.fields.archivd.default_quota_bytes",
-                        "web.settings.fields.archivd.base_owned_workspace_slots",
-                        "web.settings.fields.archivd.disabled_regions",
-                        "web.settings.fields.archivd.signed_download_ttl_minutes",
-                        "web.settings.fields.archivd.signed_download_cache_margin_seconds",
-                        "web.settings.fields.archivd.public_download_signature_ttl_minutes",
-                        "web.settings.fields.archivd.allowed_mime_prefixes",
-                        "web.settings.fields.archivd.download_vault.enabled",
-                        "web.archivd.archivd",
-                        "web.archivd.title",
-                        "web.archivd.vue_mount_failed",
-                        "services.microstock.slot_desc"
-                    ]
-                },
-                {
-                    "file": "src/i18n/locales/zh-CN.json",
-                    "op": "remove_json_keys",
-                    "match": [
-                        "api.archivd.archivd",
-                        "api.archivd.public_share_requires_paid",
-                        "api.archivd.workspace.requires_paid",
-                        "web.archivd.archivd",
-                        "web.archivd.title",
-                        "web.archivd.vue_mount_failed",
-                        "services.microstock.slot_desc",
-                        "settings.groups.archivd",
-                        "settings.fields.archivd.max_file_size_bytes",
-                        "settings.fields.archivd.max_files_per_batch",
-                        "settings.fields.archivd.max_concurrent_uploads",
-                        "settings.fields.archivd.max_concurrent_parts",
-                        "settings.fields.archivd.chunk_size_bytes",
-                        "settings.fields.archivd.multipart_threshold_bytes",
-                        "settings.fields.archivd.max_presigned_parts_per_response",
-                        "settings.fields.archivd.presign_ttl_minutes",
-                        "settings.fields.archivd.session_ttl_hours",
-                        "settings.fields.archivd.stale_upload_grace_hours",
-                        "settings.fields.archivd.orphan_inactivity_minutes",
-                        "settings.fields.archivd.default_quota_bytes",
-                        "settings.fields.archivd.base_owned_workspace_slots",
-                        "settings.fields.archivd.disabled_regions",
-                        "settings.fields.archivd.signed_download_ttl_minutes",
-                        "settings.fields.archivd.signed_download_cache_margin_seconds",
-                        "settings.fields.archivd.public_download_signature_ttl_minutes",
-                        "settings.fields.archivd.allowed_mime_prefixes",
-                        "settings.fields.archivd.download_vault.enabled"
-                    ]
-                },
-                {
-                    "file": "src/router/index.ts",
+                    "file": "src/features/registry.ts",
                     "op": "remove_lines_matching",
-                    "match": "archivd"
-                },
-                {
-                    "file": "src/utils/settingsGroup.ts",
-                    "op": "remove_quoted_strings",
-                    "match": [
-                        "archivd"
-                    ]
-                },
-                {
-                    "file": "src/views/settings/SettingsView.vue",
-                    "op": "remove_lines_matching",
-                    "match": "(?i)^\\s*'?archivd'?: '"
+                    "match": "(?i)archivd"
                 }
             ],
             "unresolved": [],
             "ignore": [
                 {
+                    "path": "src/features/microstock/composables/useMicrostock.ts",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "src/features/microstock/composables/useMicrostockHydrate.ts",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "src/features/microstock/composables/useMicrostockUsageTabs.ts",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "src/features/microstock/routes/index.ts",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "src/features/microstock/views/MicrostockCredentialsView.vue",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "src/features/microstock/composables/useMicrostock.ts",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "src/features/microstock/types.ts",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "src/i18n/features/microstock/*",
+                    "reason": "owned by the Microstock SPA tree: the whole pack leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "src/features/microstock/*",
+                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
                     "path": "i18n-duplicate-report.json",
-                    "reason": "hand edit (SPA): review the Archivd reference and drop it (line 158, 162, 169, 178, 185, 192)"
+                    "reason": "generated report (not source): rewrite it with `node scripts/i18n-duplicate-report.mjs` after the removal instead of hand-editing"
                 },
                 {
-                    "path": "scripts/check-docs.mjs",
-                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 142)"
+                    "path": "src/features/archivd/routes/feature.ts",
+                    "reason": "feature-owned: the `/apps/archivd/microstock-usage` route and its guard name Microstock, but the route belongs to the Archivd feature and leaves with Archivd's own `src/features/archivd/` delete"
                 },
                 {
-                    "path": "scripts/lib/duplicate-english-allowlist.mjs",
-                    "reason": "hand edit (tooling): review the Archivd reference and drop it (line 25, 26, 27, 28, 29, 30)"
+                    "path": "src/features/archivd/routes/index.ts",
+                    "reason": "feature-owned: the microstock-usage route records and their title keys leave with Archivd's own `src/features/archivd/` delete"
                 },
                 {
-                    "path": "src/api/types.ts",
-                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 1267)"
+                    "path": "src/features/archivd/types.ts",
+                    "reason": "feature-owned: the `microstock` field of the Archivd workspace type leaves with Archivd's own `src/features/archivd/` delete"
+                },
+                {
+                    "path": "src/i18n/features/archivd/*",
+                    "reason": "feature-owned: the `web.archivd.microstock*` copy leaves with Archivd's own `src/i18n/features/archivd/` delete"
+                },
+                {
+                    "path": "src/router/index.ts",
+                    "reason": "docblock: the assembler lists the registered features as examples — prose, not a route record"
                 },
                 {
                     "path": "src/composables/echo/channelRegistry.ts",
-                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 13)"
+                    "reason": "docblock: the channel-name example names a product, not code — keep, or reword the example"
                 },
                 {
                     "path": "src/composables/echo/realtimeChannel.ts",
-                    "reason": "docblock: Archivd named in prose, not in code — keep, or reword the example (line 27)"
+                    "reason": "docblock: the channel-name example names a product, not code — keep, or reword the example"
                 },
                 {
-                    "path": "src/composables/microstock/useMicrostock.ts",
-                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here (line 31, 49, 78, 87, 148)"
+                    "path": "src/router/routes/public.ts",
+                    "reason": "docblock: the 404 module explains that `/s/*` arrives from the Archivd feature — prose, not a route record"
                 },
                 {
-                    "path": "src/composables/microstock/useMicrostockHydrate.ts",
-                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here (line 69)"
+                    "path": "src/router/index.ts",
+                    "reason": "docblock: the assembler explains that feature routes come from the registry — prose, not a route record"
                 },
                 {
-                    "path": "src/composables/microstock/useMicrostockUsageTabs.ts",
-                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here (line 2, 11, 29)"
+                    "path": "scripts/check-docs.mjs",
+                    "reason": "docblock: a product is named in prose as an example, not in code — keep, or reword the example"
+                },
+                {
+                    "path": "scripts/lib/duplicate-english-allowlist.mjs",
+                    "reason": "hand edit (tooling): drop the allowlisted keys the feature pack carried (see the Archivd keys in the list)"
+                },
+                {
+                    "path": "src/api/types.ts",
+                    "reason": "docblock: a product is named in prose, not in code — keep, or reword the example"
                 },
                 {
                     "path": "src/router/legacy.ts",
-                    "reason": "hand edit (SPA): review the Archivd reference and drop it (line 23)"
-                },
-                {
-                    "path": "src/router/routes/microstock.ts",
-                    "reason": "hand edit (SPA): drop the `archivd.*` keys (line 6, 7, 16)"
+                    "reason": "docblock: the legacy-root helper names a product as its example — prose, not a registration"
                 },
                 {
                     "path": "src/views/dashboard/DashboardView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 10, 22, 37, 38, 45, 51)"
+                    "reason": "comment: the dashboard explains which signal the quota refresh listens to — prose, not code"
                 },
                 {
                     "path": "src/views/identity/ConnectionsView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 107)"
+                    "reason": "hand edit (component): review the Archivd reference and drop it"
                 },
                 {
                     "path": "src/views/identity/UsersView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 81)"
+                    "reason": "hand edit (component): review the Archivd reference and drop it"
                 },
                 {
                     "path": "src/views/inference/InferenceModelCardsView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 67)"
+                    "reason": "hand edit (component): review the Archivd reference and drop it"
                 },
                 {
                     "path": "src/views/inference/InferenceProvidersView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 68)"
-                },
-                {
-                    "path": "src/views/microstock/MicrostockCredentialsView.vue",
-                    "reason": "owned by the Microstock SPA tree: this file leaves with Microstock's own uninstall, nothing to do here (line 11, 130, 138, 142)"
+                    "reason": "hand edit (component): review the Archivd reference and drop it"
                 },
                 {
                     "path": "src/views/payment-gateway/InvoicesView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 54)"
+                    "reason": "hand edit (component): review the Archivd reference and drop it"
                 },
                 {
                     "path": "src/views/payment-gateway/PaymentGatewaysView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 32, 59)"
+                    "reason": "hand edit (component): review the Archivd reference and drop it"
                 },
                 {
                     "path": "src/views/payment-gateway/PaymentsIncomeView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 145)"
-                },
-                {
-                    "path": "src/views/public/PublicFileView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 7, 13, 31, 67, 74, 80)"
-                },
-                {
-                    "path": "src/views/public/PublicFolderView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 7, 8, 14, 27, 77, 103)"
+                    "reason": "hand edit (component): review the Archivd reference and drop it"
                 },
                 {
                     "path": "src/views/service/ServicesView.vue",
-                    "reason": "hand edit (component): review the Archivd reference and drop it (line 39, 66)"
+                    "reason": "hand edit (component): review the Archivd reference and drop it"
                 },
                 {
                     "path": "tests/channelRegistry.test.ts",
-                    "reason": "test: review the Archivd reference and drop it (line 166, 168, 172)"
+                    "reason": "test: uses a product channel name as its fixture string — keep, the registry is product-neutral"
                 },
                 {
                     "path": "src/i18n/curation-log.json",
-                    "reason": "hand edit (i18n sidecar): the log names `src/views/archivd/…` and `lang/*/api/archivd.php` as the provenance of curated keys, not code. When the domain leaves, delete every entry whose key the `edits[]` above removed — a logged key that no longer exists in `en.json` fails `check-curation-log.mjs`. Not scanned before 2026-10-07: the file sat above the scanner's 2 MB `MAX_FILE_BYTES` cap and only fell under it when a retired product domain's locale keys were dropped."
+                    "reason": "hand edit (i18n sidecar): the log names the consuming file as provenance, not code. When the domain leaves, delete every entry whose key the feature pack carried — a logged key that no longer exists fails `check-curation-log.mjs`"
                 }
             ]
         },
