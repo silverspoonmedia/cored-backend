@@ -1,17 +1,17 @@
 # Building a client project
 
-A project on the Silverspoon core installs the packages with Composer and keeps only its own `app/`, `config/`, `routes/`, `database/`, `lang/` and `resources/`. The kernel arrives through `vendor/silverspoonmedia/platform` — never a copied `core/` directory. `client-scaffold/` is the template: copy it, install, run.
+A project on the Silverspoon core installs the packages with Composer and keeps only its host directories. The kernel arrives through `vendor/silverspoonmedia/platform` — never a copied `core/`. `client-scaffold/` is the template: copy it, install, run.
 
 | Mode | When | `repositories` |
 |------|------|----------------|
 | **VCS tag** | A real project, no access to this repo | Six `{"type": "vcs", "url": "https://github.com/silverspoonmedia/{slug}.git"}` entries + `"silverspoonmedia/{slug}": "^1.0"` |
 | **path** | A project beside this checkout (a dev sandbox) | `{"type": "path", "url": "../monolith/packages/*", "options": {"symlink": true}}` |
 
-Both install the same code; only where Composer finds it differs. `DomainManager` resolves the install directory, so the registry paths differ per mode and nothing else does. **The mirrors are private** — `composer config --global github-oauth.github.com <token>` once.
+Both install the same code; only Composer's source differs. `DomainManager` resolves the install directory, so registry paths follow the mode and nothing else does. **The mirrors are private** — `composer config --global github-oauth.github.com <token>` once.
 
 ## The registry is the contract
 
-`config/domains.php` names ten core domains and the package each belongs to:
+`config/domains.php` names the ten core domains, each with its package:
 
 ```php
 'Identity' => [
@@ -22,8 +22,7 @@ Both install the same code; only where Composer finds it differs. `DomainManager
     'web' => 'vendor/silverspoonmedia/platform/routes/web-identity-oauth-callback.php',
     'provider' => 'vendor/silverspoonmedia/platform/src/Providers/Domain/IdentityServiceProvider.php',
 ],
-// Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Currency,
-// Service, Inference, Ai …
+// Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Currency, Service, Inference, Ai …
 ```
 
 1. **Paths point at the install, not at this repo.** A consumer has no `packages/`.
@@ -42,12 +41,11 @@ foreach (app(App\Support\Domain\DomainManager::class)->packageApiRoutePaths() as
 require __DIR__.'/v1/client.php';
 ```
 
-`packageApiRoutePaths()` returns every registry `routes` file plus the kernel's cross-domain surface — `vendor/silverspoonmedia/platform/routes/kernel-*.php` (settings, product activations, domain access, broadcast auth, batch), which no registry entry names. `routes/web.php` does the same with `packageWebRoutePaths()` (the iPaymu return, the Discord OAuth callback).
+`packageApiRoutePaths()` returns every registry `routes` file plus the kernel's cross-domain surface — `vendor/silverspoonmedia/platform/routes/kernel-*.php` (settings, product activations, domain access, broadcast auth, batch), unnamed by any registry entry. `routes/web.php` mirrors it with `packageWebRoutePaths()`.
 
 ## Override hooks
 
 The project wins the PSR-4 race: its own `app/` must be declared **before** the package copy.
-
 ```json
 "psr-4": { "App\\": "app/", "App\\Support\\": "app/Support/", "App\\Http\\": "app/Http/",
   "App\\Repositories\\": "app/Repositories/", "App\\Traits\\": "app/Traits/", "App\\Rules\\": "app/Rules/",
@@ -55,11 +53,11 @@ The project wins the PSR-4 race: its own `app/` must be declared **before** the 
   "Database\\Seeders\\": "database/seeders/" }
 ```
 
-Drop a class in `app/Support/Storage/Foo.php` and it replaces the kernel's. Forget the prefix and your file silently loses to the packaged copy. The scaffold declares all nine; `ConsumerScaffoldTest` fails when one goes missing.
+Drop a class in `app/Support/Storage/Foo.php` and it replaces the kernel's; forget the prefix and it loses to the packaged copy. The scaffold declares all nine (`ConsumerScaffoldTest` guards it).
 
 ## The provider a consumer must register
 
-`App\Providers\KernelServiceProvider` carries the kernel runtime: five config merges, four seam registries, the CRUD repository binding, the CORS service, `domain:list`, `encryption:flush-decrypted-cache`, storage directories, the migration publish tag. It is **deliberately absent from `extra.laravel.providers`** — auto-discovery would boot it here too, and a second pass after a registry resolved would drop every registration. The scaffold lists it in `bootstrap/providers.php`; every binding sits behind `! $this->app->bound(...)` on both sides, so whichever provider runs first wins.
+`App\Providers\KernelServiceProvider` carries the kernel runtime: config merges, the seam registries, the CRUD repository binding, the CORS service, `domain:list`, `encryption:flush-decrypted-cache`, storage directories, the migration publish tag. It is **deliberately absent from `extra.laravel.providers`** — auto-discovery would boot it here too and discard a resolved registry. The scaffold lists it in `bootstrap/providers.php`; every binding sits behind `! $this->app->bound(...)` on both sides.
 
 | Owner | Groups |
 |-------|--------|
@@ -69,7 +67,11 @@ Drop a class in `app/Support/Storage/Foo.php` and it replaces the kernel's. Forg
 
 The project groups name a key, connection or transport the kernel cannot invent; a missing one resolves `null` at the first request that reads it. Never copy a kernel group into `config/` — `mergeConfigFrom` is shallow, so the copy shadows the default for every key it omits.
 
-The kernel's tables are **host-owned** (`users`, `password_reset_tokens`, `sessions`, `cache`, `jobs`, `permission_tables`, `system_settings`, `identity_oauth_accounts`, `product_activations`, `product_analytics`, `product_domain_visibilities`): the scaffold ships their migrations, or `php artisan vendor:publish --tag=silverspoon-platform-migrations` once a project has its own baseline. Every other package calls `loadMigrationsFrom`.
+The kernel's tables are **host-owned** (`users`, `sessions`, `cache`, `jobs`, `permission_tables`, `system_settings`, `identity_oauth_accounts`, `product_activations`, `product_analytics`, `product_domain_visibilities` …): the scaffold ships their migrations, or `vendor:publish --tag=silverspoon-platform-migrations` once a project has its own baseline. Every other package calls `loadMigrationsFrom`.
+
+## Extension seams and the fork recipe
+
+A fork runs with **no product domain**: settings and menu contributors, `ai.consumers` / `ai.ledger_fk_targets`, `storage.*`, the share-URL class and the SPA `FeatureModule` are all filled by the product's own provider, so deleting the domain deletes the registration. `KernelProductNeutralityTest` guards `packages/*/{src,config,routes,database}`. Seam table, empty states, `domain:remove` recipe: [reference-fork-seams.md](reference-fork-seams.md).
 
 ## Verification
 
@@ -80,8 +82,8 @@ php artisan route:list --path=api/v1
 php artisan migrate --force
 ```
 
-`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` runs that sequence on a temporary copy of `client-scaffold` with path repositories, runs the scaffold's own `tests/` (the only place they execute — they need the copy's `vendor/`), then checks `encryption:flush-decrypted-cache` exits non-zero without a context and asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence, not a raw key. The `standalone-packages` CI job runs it.
+`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` runs that sequence on a temp copy of `client-scaffold` (path repositories, plus the scaffold's own `tests/`, which need the copy's `vendor/`), checks `encryption:flush-decrypted-cache` exits non-zero without a context, and asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence. CI: `standalone-packages`.
 
 ## What is retired
 
-There is no `core/` subtree: `update-core.sh` and `push-core.sh` are deleted and `CoreScriptTest` fails if either returns. Mirrors come only from `scripts/publish-packages.ps1`; see [core-packages.md](core-packages.md#distribution).
+There is no `core/` subtree: `update-core.sh` and `push-core.sh` are deleted and `CoreScriptTest` fails if either returns. Mirrors come only from `scripts/publish-packages.ps1`; see [reference-package-seams.md](reference-package-seams.md#distribution-rules).

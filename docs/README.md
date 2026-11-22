@@ -85,6 +85,8 @@ The browser UI lives in the sibling SPA. These are historical only; the live lis
 | [vue-workers-spa.md](integration/vue-workers-spa.md) | SPA contract: API shapes, `SPA_URL` minting, i18n runtime, batch hydration, realtime registry, CI; deep dive [reference-vue-workers-spa.md](integration/reference-vue-workers-spa.md) |
 | [client-project.md](integration/client-project.md) | Building a project on the core packages: `client-scaffold` template, registry, route loaders, PSR-4 override hooks, config split, verification |
 | [core-packages.md](integration/core-packages.md) | Core domains shipped as Composer path packages: layout, host wiring, override precedence, kernel contracts, how to add one |
+| [reference-fork-seams.md](integration/reference-fork-seams.md) | Deep dive: the seams a downstream product registers (settings, menu, AI consumers, storage, share URL, SPA feature), their empty states, and the `domain:remove` recipe |
+| [reference-package-seams.md](integration/reference-package-seams.md) | Deep dive: seam inventory a bundled package reads from a product, plus the one-way mirror, release-tag and `KernelServiceProvider` distribution rules |
 
 ## Archive (not daily reading)
 
