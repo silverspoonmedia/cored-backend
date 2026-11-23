@@ -2,6 +2,7 @@
 
 namespace App\Domain\Microstock\Support\Settings;
 
+use App\Providers\Domain\MicrostockServiceProvider;
 use App\Support\Settings\Contracts\SettingContributor;
 use App\Support\Settings\SettingType;
 use Illuminate\Validation\Rule;
@@ -11,7 +12,7 @@ use Illuminate\Validation\Rule;
  *
  * Product knowledge lives in the product: `silverspoonmedia/platform` ships the
  * catalog and the contributor contract, and this class is registered from
- * {@see \App\Providers\Domain\MicrostockServiceProvider::register()}. Removing the
+ * {@see MicrostockServiceProvider::register()}. Removing the
  * product removes the class and its registration, never a package edit.
  *
  * `vision_image.delivery` declares its own enum rule here, so the kernel request

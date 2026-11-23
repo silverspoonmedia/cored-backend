@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Core;
 
+use App\Support\Settings\SettingCatalog;
 use Tests\TestCase;
 
 /**
@@ -86,7 +87,7 @@ class KernelProductNeutralityTest extends TestCase
 
     public function test_the_kernel_settings_catalog_holds_only_kernel_groups(): void
     {
-        $groups = (new \App\Support\Settings\SettingCatalog)->groups();
+        $groups = (new SettingCatalog)->groups();
 
         $this->assertContains('platform', $groups);
 

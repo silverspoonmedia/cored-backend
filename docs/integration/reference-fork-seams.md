@@ -10,6 +10,7 @@ Deep dive for [client-project.md](client-project.md). A fork runs with **no prod
 | Storage | `packages/platform/config/storage.php` — `upload_proxy.*`, `debug_log_requests` | `Support\Storage\S3DirectUploadEngine` reads `storage.*` | `ArchivdServiceProvider::boot()` republishes `config('archivd.*')` | engine inert, no proxy URL |
 | Share URL | kernel keeps `to()`/`passwordReset()`/`emailVerification()`/`paymentReturn()`/`paymentCancel()` | `Support\SpaPublicUrl` | `Support\PublicShareUrl` owns `/s/f/{id}`, `/s/d/{id}` | no share link, `/s/*` 404 |
 | SPA feature | `src/features/types.ts` `FeatureModule` | `src/features/registry.ts` + `src/features/messages.ts` | `src/features/{name}/index.ts` (routes, `boot()`, `messages` loader) | core screens only, core locale pack |
+| SPA cycle leaves | `src/composables/echo/echoBindings.ts` (useEcho registers, registry reads), `src/i18n/featurePacks.ts` (i18n reads, feature modules supply) | core | nothing — a feature reads copy via `useI18n()`, never the `@/i18n` singleton | both leaves stay, both trees empty |
 
 Product copy travels with the product on both sides: menu labels read `trans('web/{domain}.menu.*')` from the domain's own lang files, a setting's validation rules ride on its definition (`rules`), so `UpdateSettingsGroupRequest` keeps no `match ($key)` list, and a feature's locale keys live in `src/i18n/features/{name}/`, never the core pack.
 

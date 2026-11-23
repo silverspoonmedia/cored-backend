@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "96beda02415607787c9b0495ef8645ab",
+    "content-hash": "a5b7eddb56bf215a8c272ec44b2095dd",
     "packages": [
         {
             "name": "archtechx/enums",
@@ -6712,16 +6712,16 @@
         },
         {
             "name": "silverspoonmedia/ai",
-            "version": "1.0.4",
+            "version": "1.1.0",
             "dist": {
                 "type": "path",
                 "url": "packages/ai",
-                "reference": "8af152615bc985b8ab5a388db05ec2c49047566e"
+                "reference": "f86ad6284a7c5dcc1cb3c5377ae00b5e7f3c705a"
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.0",
+                "silverspoonmedia/platform": "^1.1",
                 "symfony/console": "^8.0",
                 "symfony/http-kernel": "^8.0"
             },
@@ -6765,16 +6765,16 @@
         },
         {
             "name": "silverspoonmedia/audit",
-            "version": "1.0.4",
+            "version": "1.1.0",
             "dist": {
                 "type": "path",
                 "url": "packages/audit",
-                "reference": "5ac0b202d3e37d5fc27870f4083fdee9c40fc171"
+                "reference": "8e2a1f10a06928c4d545de9a01ed37edb69c3008"
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.0",
+                "silverspoonmedia/platform": "^1.1",
                 "spatie/laravel-activitylog": "^5.0",
                 "symfony/console": "^8.0"
             },
@@ -6818,11 +6818,11 @@
         },
         {
             "name": "silverspoonmedia/billing",
-            "version": "1.0.4",
+            "version": "1.1.0",
             "dist": {
                 "type": "path",
                 "url": "packages/billing",
-                "reference": "a1ab4887484fa74bd75be69d0c09438273641591"
+                "reference": "34b029f81671ac56b4596f61f9816005b551aabe"
             },
             "require": {
                 "ipaymu/ipaymu-php-api": "^3.0",
@@ -6830,7 +6830,7 @@
                 "midtrans/midtrans-php": "^2.6",
                 "nesbot/carbon": "^3.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.0",
+                "silverspoonmedia/platform": "^1.1",
                 "spatie/laravel-activitylog": "^5.0",
                 "symfony/http-foundation": "^8.0",
                 "symfony/http-kernel": "^8.0",
@@ -6878,16 +6878,16 @@
         },
         {
             "name": "silverspoonmedia/navigation",
-            "version": "1.0.4",
+            "version": "1.1.0",
             "dist": {
                 "type": "path",
                 "url": "packages/navigation",
-                "reference": "e2d2cc86143611efc9a3d1fd8cc43a1a5d3c3783"
+                "reference": "7c0c8847741e4d164b236d3da87b4eec2607c809"
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.0",
+                "silverspoonmedia/platform": "^1.1",
                 "spatie/laravel-activitylog": "^5.0",
                 "spatie/laravel-translatable": "^6.14"
             },
@@ -6931,16 +6931,16 @@
         },
         {
             "name": "silverspoonmedia/notification",
-            "version": "1.0.4",
+            "version": "1.1.0",
             "dist": {
                 "type": "path",
                 "url": "packages/notification",
-                "reference": "7c04c7468dffda431f7232e0055c3af423323dd8"
+                "reference": "c89afd315f16e4e94d4ed426cc32f54caf589322"
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.0"
+                "silverspoonmedia/platform": "^1.1"
             },
             "require-dev": {
                 "orchestra/testbench": "^11.0",
@@ -7092,11 +7092,11 @@
         },
         {
             "name": "silverspoonmedia/platform",
-            "version": "1.0.5",
+            "version": "1.1.0",
             "dist": {
                 "type": "path",
                 "url": "packages/platform",
-                "reference": "88a870e482b1a718149f73200afa0e86b2092d6d"
+                "reference": "4a8ef6ae2a508bb27900d3b71d630d019fab817f"
             },
             "require": {
                 "aws/aws-sdk-php": "^3.0",

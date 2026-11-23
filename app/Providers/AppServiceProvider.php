@@ -11,9 +11,9 @@ use App\Support\Billing\FulfillmentRegistry;
 use App\Support\Broadcasting\ChannelRegistrarRegistry;
 use App\Support\Encryption\LegacyColumnMigratorRegistry;
 use App\Support\Http\AllowlistCorsService;
-use Fruitcake\Cors\CorsService;
-use App\Support\Settings\SettingCatalog;
 use App\Support\Navigation\MenuContributorRegistry;
+use App\Support\Settings\SettingCatalog;
+use Fruitcake\Cors\CorsService;
 use Illuminate\Foundation\Console\ConfigCacheCommand;
 use Illuminate\Support\ServiceProvider;
 

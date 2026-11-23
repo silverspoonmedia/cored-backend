@@ -252,11 +252,6 @@
                     "file": "lang/zh_CN/web/settings.php",
                     "op": "remove_lines_matching",
                     "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
-                },
-                {
-                    "file": "config/settings-local.php",
-                    "op": "remove_lines_matching",
-                    "match": "(?i)^('microstock'|'microstock\\.|// .*microstock)"
                 }
             ],
             "unresolved": [],
@@ -520,6 +515,14 @@
                 {
                     "path": "packages/platform/config/storage.php",
                     "reason": "kernel seam docblock: the example publish call names a product as the shape of the seam, not a coupling — the kernel owns the key and ships empty defaults, so removing the product leaves it untouched"
+                },
+                {
+                    "path": "app/Domain/Archivd/Support/Navigation/ArchivdMenuContributor.php",
+                    "reason": "owned by the Archivd domain: it names Microstock's contributor to place it behind its own node; both files leave together (Microstock first), nothing to edit here"
+                },
+                {
+                    "path": "app/Domain/Archivd/Support/Settings/ArchivdSettingContributor.php",
+                    "reason": "owned by the Archivd domain: it registers Microstock's settings contributor beside its own; both files leave together (Microstock first), nothing to edit here"
                 },
                 {
                     "path": "tests/Domain/Core/KernelProductNeutralityTest.php",

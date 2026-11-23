@@ -2,6 +2,7 @@
 
 namespace App\Domain\Microstock\Support\Navigation;
 
+use App\Providers\Domain\MicrostockServiceProvider;
 use App\Support\Navigation\Contracts\MenuContributor;
 
 /**
@@ -9,7 +10,7 @@ use App\Support\Navigation\Contracts\MenuContributor;
  *
  * Microstock has no sidebar entry of its own — it is reached through the Archivd
  * workspace switcher — so the only node it owns is its settings page. Registered
- * from {@see \App\Providers\Domain\MicrostockServiceProvider::boot()}; removing
+ * from {@see MicrostockServiceProvider::boot()}; removing
  * the product removes this class and its registration.
  */
 final class MicrostockMenuContributor implements MenuContributor

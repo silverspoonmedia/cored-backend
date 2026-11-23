@@ -2,10 +2,13 @@
 
 namespace Tests\Domain\Core;
 
+use App\Domain\Archivd\Support\Settings\ArchivdSettingContributor;
+use App\Domain\Microstock\Support\Settings\MicrostockSettingContributor;
+use App\Support\Settings\Contracts\SettingContributor;
 use App\Support\Settings\SettingCatalog;
 use App\Support\Settings\SettingRegistry;
 use App\Support\Settings\SettingType;
-use App\Support\Settings\Contracts\SettingContributor;
+use Illuminate\Validation\Rule;
 use Tests\TestCase;
 
 /**
@@ -45,8 +48,8 @@ class SettingContributorSeamTest extends TestCase
     {
         $contributors = app(SettingCatalog::class)->contributors();
 
-        $this->assertContains(\App\Domain\Archivd\Support\Settings\ArchivdSettingContributor::class, $contributors);
-        $this->assertContains(\App\Domain\Microstock\Support\Settings\MicrostockSettingContributor::class, $contributors);
+        $this->assertContains(ArchivdSettingContributor::class, $contributors);
+        $this->assertContains(MicrostockSettingContributor::class, $contributors);
     }
 
     public function test_a_catalog_without_contributors_is_a_legal_state(): void
@@ -70,7 +73,7 @@ class SettingContributorSeamTest extends TestCase
                         'type' => SettingType::String,
                         'config' => 'example.mode',
                         'options' => ['a', 'b'],
-                        'rules' => ['string', \Illuminate\Validation\Rule::in(['a', 'b'])],
+                        'rules' => ['string', Rule::in(['a', 'b'])],
                     ],
                 ];
             }

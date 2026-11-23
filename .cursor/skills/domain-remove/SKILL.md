@@ -38,6 +38,14 @@ Do not restate them here — that file is the owner.
      of this step; `domain:remove` refuses to run while it is not empty.
    - Repeat until `--dry-run` reports no unlisted references and no unresolved
      entries.
+   - **An op must still remove something after the product's own files are
+     gone.** Write it against the entry that survives next to them — the kernel's
+     opt-in hook line, the provider's registration — not against the line that
+     used to hold product code. `remove_block` is a selector: `begin` removes the
+     container its anchor opens, otherwise the anchored entry alone, and
+     `begins` removes several anchored entries as one removal. An op credited
+     `0` in the plan is dead: anchor it elsewhere or drop the file into `ignore`
+     with the reason it leaves with a sibling.
 
 4. **Keep the map true while you work.** Any file a domain touches outside
    `app/Domain/{Name}/` is recorded in `uninstall.json` in the same task that

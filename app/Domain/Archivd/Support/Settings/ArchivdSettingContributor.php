@@ -2,6 +2,7 @@
 
 namespace App\Domain\Archivd\Support\Settings;
 
+use App\Providers\Domain\ArchivdServiceProvider;
 use App\Support\Settings\Contracts\SettingContributor;
 use App\Support\Settings\SettingType;
 
@@ -10,7 +11,7 @@ use App\Support\Settings\SettingType;
  *
  * Product knowledge lives in the product: `silverspoonmedia/platform` ships the
  * catalog and the contributor contract, and this class is registered from
- * {@see \App\Providers\Domain\ArchivdServiceProvider::register()}. Removing the
+ * {@see ArchivdServiceProvider::register()}. Removing the
  * product removes the class and its registration, never a package edit.
  */
 final class ArchivdSettingContributor implements SettingContributor

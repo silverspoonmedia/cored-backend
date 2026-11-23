@@ -130,9 +130,9 @@ class S3DirectUploadEngineTest extends TestCase
     public function upload_proxy_disabled_when_base_url_empty(): void
     {
         config([
-            'archivd.upload_proxy.base_url' => '',
-            'archivd.upload_proxy.token' => 'token-long-enough',
-            'archivd.upload_proxy.disk_targets' => [
+            'storage.upload_proxy.base_url' => '',
+            'storage.upload_proxy.token' => 'token-long-enough',
+            'storage.upload_proxy.disk_targets' => [
                 's3ArchivdCe' => 'b2-main',
                 's3ArchivdCe' => 'b2-main',
             ],
@@ -145,9 +145,9 @@ class S3DirectUploadEngineTest extends TestCase
     public function proxy_upload_parts_builds_worker_urls_and_auth_headers(): void
     {
         config([
-            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
-            'archivd.upload_proxy.token' => 'strong-upload-token-16',
-            'archivd.upload_proxy.disk_targets' => [
+            'storage.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
+            'storage.upload_proxy.token' => 'strong-upload-token-16',
+            'storage.upload_proxy.disk_targets' => [
                 's3ArchivdCe' => 'b2-main',
             ],
         ]);
@@ -182,9 +182,9 @@ class S3DirectUploadEngineTest extends TestCase
     public function proxy_upload_parts_single_strategy_omits_multipart_query(): void
     {
         config([
-            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev/',
-            'archivd.upload_proxy.token' => 'strong-upload-token-16',
-            'archivd.upload_proxy.disk_targets' => [
+            'storage.upload_proxy.base_url' => 'https://proxy.example.workers.dev/',
+            'storage.upload_proxy.token' => 'strong-upload-token-16',
+            'storage.upload_proxy.disk_targets' => [
                 's3ArchivdCe' => 'b2-main',
             ],
         ]);
@@ -209,9 +209,9 @@ class S3DirectUploadEngineTest extends TestCase
     public function proxy_upload_parts_fails_closed_when_token_missing(): void
     {
         config([
-            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
-            'archivd.upload_proxy.token' => '',
-            'archivd.upload_proxy.disk_targets' => [
+            'storage.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
+            'storage.upload_proxy.token' => '',
+            'storage.upload_proxy.disk_targets' => [
                 's3ArchivdCe' => 'b2-main',
             ],
         ]);
@@ -233,9 +233,9 @@ class S3DirectUploadEngineTest extends TestCase
     public function proxy_upload_parts_fails_closed_when_disk_alias_missing(): void
     {
         config([
-            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
-            'archivd.upload_proxy.token' => 'strong-upload-token-16',
-            'archivd.upload_proxy.disk_targets' => [],
+            'storage.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
+            'storage.upload_proxy.token' => 'strong-upload-token-16',
+            'storage.upload_proxy.disk_targets' => [],
         ]);
 
         $this->expectException(S3DirectUploadException::class);
@@ -255,9 +255,9 @@ class S3DirectUploadEngineTest extends TestCase
     public function presign_parts_uses_proxy_when_enabled_without_s3_disk(): void
     {
         config([
-            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
-            'archivd.upload_proxy.token' => 'strong-upload-token-16',
-            'archivd.upload_proxy.disk_targets' => [
+            'storage.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
+            'storage.upload_proxy.token' => 'strong-upload-token-16',
+            'storage.upload_proxy.disk_targets' => [
                 's3ArchivdCe' => 'b2-main',
             ],
         ]);

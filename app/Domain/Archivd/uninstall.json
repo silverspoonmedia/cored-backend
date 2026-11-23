@@ -673,6 +673,10 @@
                 {
                     "path": "app/Domain/Microstock/Support/Navigation/MicrostockMenuContributor.php",
                     "reason": "owned by the Microstock domain: its `after` key names the sibling this product places itself behind; the file leaves with Microstock's own uninstall, nothing to do here"
+                },
+                {
+                    "path": "tests/Domain/Core/MenuContributorSeamTest.php",
+                    "reason": "seam guard: proves an empty menu registry seeds the core tree and that a contributor lands after its anchor — the product names are the fixture that proves the seam"
                 }
             ]
         },

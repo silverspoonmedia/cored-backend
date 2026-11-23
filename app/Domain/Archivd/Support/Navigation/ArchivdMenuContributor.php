@@ -2,6 +2,7 @@
 
 namespace App\Domain\Archivd\Support\Navigation;
 
+use App\Providers\Domain\ArchivdServiceProvider;
 use App\Support\Navigation\Contracts\MenuContributor;
 
 /**
@@ -9,7 +10,7 @@ use App\Support\Navigation\Contracts\MenuContributor;
  *
  * The tree's shape is the navigation package's; the product files and settings
  * pages it owns are registered here from
- * {@see \App\Providers\Domain\ArchivdServiceProvider::boot()}. Removing the
+ * {@see ArchivdServiceProvider::boot()}. Removing the
  * product removes this class and its registration, never a package edit.
  *
  * Labels come from `web/` `archivd.menu.*`, one entry per locale; the brand name

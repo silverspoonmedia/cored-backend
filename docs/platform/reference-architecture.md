@@ -130,10 +130,12 @@ Text surgery on line/bracket boundaries — no AST round-trip, so exact indentat
 | `remove_lines_matching` | `match` (regex) | Drop every line matching the regex. |
 | `remove_quoted_strings` | `match` (list) | Remove each listed literal, including inside inline arrays. |
 | `remove_array_keys` | `match` (list of dotted PHP paths) | Remove a balanced `'key' => […]` block; prunes a container left empty. |
-| `remove_block` | `begin` (anchor) | Remove the balanced `[…]` / `{…}` starting at the anchor. |
+| `remove_block` | `begin` (one anchor) **or** `begins` (one anchor per entry) | A selector, not a layout. When the anchor opens a container (`'Key' => [`), remove that balanced `[…]` / `{…}`. Otherwise remove the entry itself: its line, any wrapped continuation lines, and the comment block attached above it — so an import, a `config([...])` line or a commented-out reference leaves without a positional match. `begins` removes several such entries and still credits one removal, which keeps a multi-line registration from reading as dead in the plan. |
 | `remove_json_keys` | `match` (list of dotted JSON paths) | Remove a JSON key; prunes a container left empty. |
 
 Anything the five ops cannot express goes to `notes[]` or an `ignore[]` reason. The vocabulary stays closed so a removal cannot invent a new way to edit files.
+
+**Anchor the entry, never the neighbourhood.** The regression this cost: the kernel seams moved a product's settings, menu nodes and AI bindings out of the packages into `App\Domain\{Product}\Support\*` contributors. The manifests still pointed `remove_lines_matching` / `remove_block` at the package lines that used to hold them, so on a clean plan they removed nothing — green-looking entries that would have left a broken package behind. Write the op against the *thing that remains once the product's own files are gone* (the kernel's opt-in hook line, the provider's registration), or list the file in `ignore[]` with the reason it leaves with a sibling.
 
 ### The scan
 
