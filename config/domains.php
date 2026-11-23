@@ -36,9 +36,22 @@
  * Convention: list core entries first, product entries last. Loaders
  * (routes/api/v1.php, routes/web.php server endpoints, bootstrap/providers.php)
  * follow the same core → product order with comment sections — presentation only.
+ *
+ * siblings => ['spa' => ?, 'docs' => ?] — directory names of the sibling
+ *                      checkouts beside this project, read by
+ *                      UninstallReferenceScanner (domain:remove's cross-repo half).
+ *                      Not a domain: DomainManager's all() skips a non-domain key.
+ *                      Point a fork named differently at its own SPA, or the `spa`
+ *                      section stays unverifiable and the removal never reads it.
  */
 
 return [
+    // Sibling checkouts (not domains). A fork's pair: 'spa' => 'cored-frontend'.
+    'siblings' => [
+        'spa' => 'monolith-vue-workers',
+        'docs' => 'docs',
+    ],
+
     // Core — packaged domains declare where their source, routes, config and
     // translations live. The namespace stays App\Domain\{Name}\, so only the
     // location moved; a host may still override a class in app/Domain/{Name}/.

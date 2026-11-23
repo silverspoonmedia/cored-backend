@@ -4,10 +4,12 @@ A project on the Silverspoon core installs the packages with Composer and keeps 
 
 | Mode | When | `repositories` |
 |------|------|----------------|
-| **VCS tag** | A real project, no access to this repo | Six `{"type": "vcs", "url": "https://github.com/silverspoonmedia/{slug}.git"}` entries + `"silverspoonmedia/{slug}": "^1.0"` |
+| **VCS tag** | A real project, no access to this repo | Six `{"type": "vcs", "url": "https://github.com/silverspoonmedia/{slug}.git"}` entries + `"silverspoonmedia/{slug}": "^1.1"` |
 | **path** | A project beside this checkout (a dev sandbox) | `{"type": "path", "url": "../monolith/packages/*", "options": {"symlink": true}}` |
 
 Both install the same code; only Composer's source differs. `DomainManager` resolves the install directory, so registry paths follow the mode and nothing else does. **The mirrors are private** — `composer config --global github-oauth.github.com <token>` once.
+
+The current release line is **`v1.1.0`**; a consumer's caret range is `^1.1`. `ConsumerScaffoldTest::test_the_scaffold_requires_the_same_caret_line_as_the_root()` fails when the template lags the root, and `scripts/run-vcs-consumer-check.php` proves a real install resolves the tag.
 
 ## The registry is the contract
 
@@ -71,18 +73,17 @@ The kernel's tables are **host-owned** (`users`, `sessions`, `cache`, `jobs`, `p
 
 ## Extension seams and the fork recipe
 
-A fork runs with **no product domain**: settings and menu contributors, `ai.consumers` / `ai.ledger_fk_targets`, `storage.*`, the share-URL class and the SPA `FeatureModule` are all filled by the product's own provider, so deleting the domain deletes the registration. `KernelProductNeutralityTest` guards `packages/*/{src,config,routes,database}`. Seam table, empty states, `domain:remove` recipe: [reference-fork-seams.md](reference-fork-seams.md).
+A fork runs with **no product domain**: settings and menu contributors, `ai.consumers` / `ai.ledger_fk_targets`, `storage.*`, the share-URL class and the SPA `FeatureModule` are all filled by the product's own provider. `KernelProductNeutralityTest` guards package neutrality. Seam table, empty states, `domain:remove` recipe: [reference-fork-seams.md](reference-fork-seams.md). Boilerplate forks: [boilerplate-forks.md](boilerplate-forks.md).
 
 ## Verification
 
 ```sh
-php artisan package:discover   # domain providers auto-discovered
 php artisan domain:list        # ten core, zero product
 php artisan route:list --path=api/v1
 php artisan migrate --force
 ```
 
-`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` runs that sequence on a temp copy of `client-scaffold` (path repositories, plus the scaffold's own `tests/`, which need the copy's `vendor/`), checks `encryption:flush-decrypted-cache` exits non-zero without a context, and asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence. CI: `standalone-packages`.
+`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` runs that sequence on a temp copy of `client-scaffold` (path repositories, plus the scaffold's own `tests/`, which need the copy's `vendor/`), checks `encryption:flush-decrypted-cache` exits non-zero without a context, and asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence. CI: `standalone-packages`. The path-rewriting scaffold run cannot catch a lagging mirror, which is what [scripts/run-vcs-consumer-check.php](../../scripts/run-vcs-consumer-check.php) is for: with a GitHub token it installs from the six VCS mirrors and asserts the lock (`v1.1.x`), the registry, the URIs, that 422, and the extension seams (two colliding contributors, an `ai.consumers` row, a host `UserPresenter` override).
 
 ## What is retired
 

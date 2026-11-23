@@ -198,6 +198,56 @@ class ConsumerScaffoldTest extends TestCase
         }
     }
 
+    /**
+     * The scaffold's caret floor is the release a consumer can install.
+     *
+     * `run-consumer-scaffold-check.php` rewrites the scaffold's repositories to
+     * `path` so it needs no org token, which resolves whatever version this
+     * checkout pins — so a scaffold left on `^1.0` passes that run while a real
+     * consumer cannot install the tag the root requires. Comparing the two
+     * manifests is the only check that notices before the release.
+     */
+    public function test_the_scaffold_requires_the_same_caret_line_as_the_root(): void
+    {
+        $scaffold = (array) ($this->scaffoldManifest()['require'] ?? []);
+        $root = json_decode((string) file_get_contents(base_path('composer.json')), true);
+        $rootRequire = (array) ($root['require'] ?? []);
+
+        $violations = [];
+
+        foreach (['platform', 'navigation', 'notification', 'audit', 'billing', 'ai'] as $slug) {
+            $package = 'silverspoonmedia/'.$slug;
+            $scaffoldFloor = $this->caretFloor((string) ($scaffold[$package] ?? ''));
+            $rootFloor = $this->caretFloor((string) ($rootRequire[$package] ?? ''));
+
+            if ($scaffoldFloor === null) {
+                $violations[] = 'client-scaffold requires '.$package.' as "'.($scaffold[$package] ?? 'nothing').'" — a consumer needs a caret range';
+
+                continue;
+            }
+
+            if ($rootFloor === null) {
+                $violations[] = 'the root requires '.$package.' as "'.($rootRequire[$package] ?? 'nothing').'" — the guard needs a caret range to compare against';
+
+                continue;
+            }
+
+            if ($scaffoldFloor !== $rootFloor) {
+                $violations[] = 'client-scaffold requires '.$package.' as "^'.$scaffoldFloor.'" but the root publishes "^'.$rootFloor.'" — the scaffold lags the release line';
+            }
+        }
+
+        $this->assertSame([], $violations, implode("\n", $violations));
+    }
+
+    /**
+     * `major.minor` of a caret constraint, or null when it is not one.
+     */
+    private function caretFloor(string $constraint): ?string
+    {
+        return preg_match('/^\^(\d+\.\d+)(?:\.\d+)?$/', $constraint, $matches) === 1 ? $matches[1] : null;
+    }
+
     public function test_the_scaffold_carries_no_subtree_artifacts(): void
     {
         $paths = [

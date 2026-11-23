@@ -39,8 +39,33 @@ class PackageStandaloneRunTest extends TestCase
         'tests/Domain/Core/ConsumerScaffoldTest.php',
         'scripts/run-standalone-package-suite.php',
         'scripts/run-consumer-scaffold-check.php',
+        'scripts/run-vcs-consumer-check.php',
         '.github/workflows/ci.yml',
     ];
+
+    /**
+     * The VCS consumer check is the half the scaffold run cannot provide.
+     *
+     * `run-consumer-scaffold-check.php` rewrites the repositories to `path`, so it
+     * resolves whatever this checkout pins and never notices a mirror missing the
+     * released tag. This script installs from the private mirrors and is a release
+     * gate rather than part of the in-memory suite (network plus an org token).
+     */
+    public function test_the_vcs_consumer_runner_exists(): void
+    {
+        $runner = base_path('scripts/run-vcs-consumer-check.php');
+
+        $this->assertFileExists($runner, 'The VCS consumer runner is missing — nothing proves a consumer resolves the published tags.');
+
+        $contents = (string) file_get_contents($runner);
+
+        $this->assertStringContainsString('composer.lock', $contents, 'The VCS consumer check must assert what the install locked, or a path fallback would pass it.');
+        $this->assertStringContainsString('silverspoonmedia/platform', $contents, 'The VCS consumer check must name the release line it holds the mirrors to.');
+
+        $documentation = (string) file_get_contents(base_path('docs/integration/client-project.md'));
+
+        $this->assertStringContainsString('run-vcs-consumer-check.php', $documentation, 'The consumer-side recipe must name the VCS check, or nobody runs it before a release.');
+    }
 
     public function test_every_package_can_run_its_own_suite(): void
     {

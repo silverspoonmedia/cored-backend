@@ -100,6 +100,59 @@ class DomainUninstallManifestTest extends TestCase
     }
 
     /**
+     * A fork's sibling is not named after the original repo.
+     *
+     * `cored-backend` sits beside `cored-frontend`, so the default
+     * `monolith-vue-workers` would leave its `spa` section permanently
+     * unverifiable — `domain:remove` would report "checked" without ever reading
+     * the SPA. The registry's `siblings` key names the directories, and this
+     * proves the scanner honours it instead of the hardcoded default.
+     */
+    public function test_the_scanner_reads_the_configured_sibling_directories(): void
+    {
+        $parent = dirname(base_path());
+        $suffix = 'craft-test-'.bin2hex(random_bytes(4));
+        $spa = $parent.DIRECTORY_SEPARATOR.$suffix.'-frontend';
+        $docs = $parent.DIRECTORY_SEPARATOR.$suffix.'-docs';
+
+        File::makeDirectory($spa, 0777, true);
+        File::makeDirectory($docs, 0777, true);
+
+        try {
+            config(['domains.siblings' => ['spa' => $suffix.'-frontend', 'docs' => $suffix.'-docs']]);
+
+            $scanner = app(UninstallReferenceScanner::class);
+
+            $this->assertSame($spa, $scanner->root(UninstallReferenceScanner::REPO_SPA), 'A configured spa sibling must be the directory the scanner reads.');
+            $this->assertSame($docs, $scanner->root(UninstallReferenceScanner::REPO_DOCS), 'A configured docs sibling must be the directory the scanner reads.');
+            $this->assertTrue($scanner->siblingPresent(UninstallReferenceScanner::REPO_SPA));
+
+            // A configured name with no directory is still unverifiable, not clean.
+            config(['domains.siblings.spa' => $suffix.'-absent']);
+            $this->assertFalse(app(UninstallReferenceScanner::class)->siblingPresent(UninstallReferenceScanner::REPO_SPA), 'An absent configured sibling must not read as present.');
+        } finally {
+            File::deleteDirectory($spa);
+            File::deleteDirectory($docs);
+        }
+    }
+
+    /**
+     * A non-domain registry key is not a domain.
+     *
+     * The `siblings` metadata shares `config/domains.php`; a key without a `kind`
+     * must never surface as a phantom product or core domain in `domain:list`,
+     * or every consumer's registry would report a package that cannot boot.
+     */
+    public function test_registry_metadata_is_not_a_domain(): void
+    {
+        $this->assertArrayNotHasKey(
+            'siblings',
+            app(DomainManager::class)->all(),
+            'config/domains.php `siblings` is registry metadata; DomainManager::all() must skip it.'
+        );
+    }
+
+    /**
      * A manifest target that stopped resolving is the failure this guard exists for,
      * so every finding is collected and asserted at once — an `assertNotSame` in the
      * loop reported only the first and hid the rest.
