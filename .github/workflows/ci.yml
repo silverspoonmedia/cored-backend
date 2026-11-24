@@ -76,12 +76,6 @@ jobs:
       # the runner's default is 80 columns — the log then reads `file_get_contents(/ho…`
       # instead of the path that failed. This gate exists to produce readable findings.
       COLUMNS: '200'
-      # Every job installs `silverspoonmedia/*` from private VCS mirrors. A
-      # repo-scoped `GITHUB_TOKEN` cannot read another repository — the zipball
-      # request answers 404 — so the org credential comes from a secret. Set it once
-      # per repo (`gh secret set COMPOSER_AUTH`); without it the install fails loudly
-      # rather than silently resolving nothing.
-      COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
 
     steps:
       - uses: actions/checkout@v4
@@ -103,6 +97,22 @@ jobs:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
+
+      # Every job resolves `silverspoonmedia/*` from private VCS mirrors. A
+      # repo-scoped `GITHUB_TOKEN` cannot read another repository — the zipball
+      # request answers 404 — so the org credential lives in `COMPOSER_GITHUB_TOKEN`.
+      # Composer wants `COMPOSER_AUTH` as JSON, so it is built here: the secret stays
+      # a bare token, and a missing one fails with a sentence instead of
+      # "COMPOSER_AUTH environment variable is malformed".
+      - name: Composer auth
+        env:
+          COMPOSER_GITHUB_TOKEN: ${{ secrets.COMPOSER_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$COMPOSER_GITHUB_TOKEN" ]; then
+            echo "::error::COMPOSER_GITHUB_TOKEN is not set — the private core package mirrors cannot be read."
+            exit 1
+          fi
+          printf 'COMPOSER_AUTH={"github-oauth":{"github.com":"%s"}}\n' "$COMPOSER_GITHUB_TOKEN" >> "$GITHUB_ENV"
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
@@ -156,6 +166,22 @@ jobs:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
+
+      # Every job resolves `silverspoonmedia/*` from private VCS mirrors. A
+      # repo-scoped `GITHUB_TOKEN` cannot read another repository — the zipball
+      # request answers 404 — so the org credential lives in `COMPOSER_GITHUB_TOKEN`.
+      # Composer wants `COMPOSER_AUTH` as JSON, so it is built here: the secret stays
+      # a bare token, and a missing one fails with a sentence instead of
+      # "COMPOSER_AUTH environment variable is malformed".
+      - name: Composer auth
+        env:
+          COMPOSER_GITHUB_TOKEN: ${{ secrets.COMPOSER_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$COMPOSER_GITHUB_TOKEN" ]; then
+            echo "::error::COMPOSER_GITHUB_TOKEN is not set — the private core package mirrors cannot be read."
+            exit 1
+          fi
+          printf 'COMPOSER_AUTH={"github-oauth":{"github.com":"%s"}}\n' "$COMPOSER_GITHUB_TOKEN" >> "$GITHUB_ENV"
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
@@ -218,6 +244,22 @@ jobs:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
+
+      # Every job resolves `silverspoonmedia/*` from private VCS mirrors. A
+      # repo-scoped `GITHUB_TOKEN` cannot read another repository — the zipball
+      # request answers 404 — so the org credential lives in `COMPOSER_GITHUB_TOKEN`.
+      # Composer wants `COMPOSER_AUTH` as JSON, so it is built here: the secret stays
+      # a bare token, and a missing one fails with a sentence instead of
+      # "COMPOSER_AUTH environment variable is malformed".
+      - name: Composer auth
+        env:
+          COMPOSER_GITHUB_TOKEN: ${{ secrets.COMPOSER_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$COMPOSER_GITHUB_TOKEN" ]; then
+            echo "::error::COMPOSER_GITHUB_TOKEN is not set — the private core package mirrors cannot be read."
+            exit 1
+          fi
+          printf 'COMPOSER_AUTH={"github-oauth":{"github.com":"%s"}}\n' "$COMPOSER_GITHUB_TOKEN" >> "$GITHUB_ENV"
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
