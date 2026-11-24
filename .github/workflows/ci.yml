@@ -76,6 +76,12 @@ jobs:
       # the runner's default is 80 columns — the log then reads `file_get_contents(/ho…`
       # instead of the path that failed. This gate exists to produce readable findings.
       COLUMNS: '200'
+      # Every job installs `silverspoonmedia/*` from private VCS mirrors. A
+      # repo-scoped `GITHUB_TOKEN` cannot read another repository — the zipball
+      # request answers 404 — so the org credential comes from a secret. Set it once
+      # per repo (`gh secret set COMPOSER_AUTH`); without it the install fails loudly
+      # rather than silently resolving nothing.
+      COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
 
     steps:
       - uses: actions/checkout@v4
@@ -217,16 +223,6 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       # The scaffold installs `silverspoonmedia/*` from private VCS mirrors, so the
-      # run needs an org token. A repo-scoped `GITHUB_TOKEN` cannot read another
-      # repository: this step is skipped with a clear message rather than failing the
-      # build on a missing secret, and `monolith`'s own scaffold job (path
-      # repositories, no token) stays the hard gate.
+      # run needs the org credential the job env already carries (`COMPOSER_AUTH`).
       - name: Consumer scaffold
-        env:
-          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
-        run: |
-          if [ -z "$COMPOSER_AUTH" ]; then
-            echo "::warning::COMPOSER_AUTH is not set — skipping the mirror install; monolith's path-repository scaffold run is the hard gate."
-            exit 0
-          fi
-          php -d memory_limit=1G scripts/run-consumer-scaffold-check.php
+        run: php -d memory_limit=1G scripts/run-consumer-scaffold-check.php
