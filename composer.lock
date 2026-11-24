@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bb5bef923af1ca41b8b2fa96acea3156",
+    "content-hash": "60df17590ee23af4b3a76a692f2e4644",
     "packages": [
         {
             "name": "archtechx/enums",
@@ -6640,16 +6640,16 @@
         },
         {
             "name": "silverspoonmedia/ai",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/ai.git",
-                "reference": "72f69b4d598a682d7525790cdc53e749b34b30d3"
+                "reference": "ddcf169fc9ac7e7f44423878c6fc033051af73ef"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/ai/zipball/72f69b4d598a682d7525790cdc53e749b34b30d3",
-                "reference": "72f69b4d598a682d7525790cdc53e749b34b30d3",
+                "url": "https://api.github.com/repos/silverspoonmedia/ai/zipball/ddcf169fc9ac7e7f44423878c6fc033051af73ef",
+                "reference": "ddcf169fc9ac7e7f44423878c6fc033051af73ef",
                 "shasum": ""
             },
             "require": {
@@ -6693,20 +6693,20 @@
                 "source": "https://github.com/silverspoonmedia/ai",
                 "issues": "https://github.com/silverspoonmedia/ai/issues"
             },
-            "time": "2026-11-23T08:56:00+00:00"
+            "time": "2026-11-24T06:26:57+00:00"
         },
         {
             "name": "silverspoonmedia/audit",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/audit.git",
-                "reference": "15d42cc5e1f5b8531add65c67d30511a78ababc1"
+                "reference": "749828fc44341e2873e68eb7b2ffa1b24a5f7597"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/audit/zipball/15d42cc5e1f5b8531add65c67d30511a78ababc1",
-                "reference": "15d42cc5e1f5b8531add65c67d30511a78ababc1",
+                "url": "https://api.github.com/repos/silverspoonmedia/audit/zipball/749828fc44341e2873e68eb7b2ffa1b24a5f7597",
+                "reference": "749828fc44341e2873e68eb7b2ffa1b24a5f7597",
                 "shasum": ""
             },
             "require": {
@@ -6750,20 +6750,20 @@
                 "source": "https://github.com/silverspoonmedia/audit",
                 "issues": "https://github.com/silverspoonmedia/audit/issues"
             },
-            "time": "2026-11-23T08:51:29+00:00"
+            "time": "2026-11-24T06:22:41+00:00"
         },
         {
             "name": "silverspoonmedia/billing",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/billing.git",
-                "reference": "9e628cf4382e09017edc379487ee916367716d3f"
+                "reference": "eb2b24334c668f919c99cb0f245764afa0f5242e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/billing/zipball/9e628cf4382e09017edc379487ee916367716d3f",
-                "reference": "9e628cf4382e09017edc379487ee916367716d3f",
+                "url": "https://api.github.com/repos/silverspoonmedia/billing/zipball/eb2b24334c668f919c99cb0f245764afa0f5242e",
+                "reference": "eb2b24334c668f919c99cb0f245764afa0f5242e",
                 "shasum": ""
             },
             "require": {
@@ -6814,20 +6814,20 @@
                 "source": "https://github.com/silverspoonmedia/billing",
                 "issues": "https://github.com/silverspoonmedia/billing/issues"
             },
-            "time": "2026-11-23T08:53:43+00:00"
+            "time": "2026-11-24T06:24:50+00:00"
         },
         {
             "name": "silverspoonmedia/navigation",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/navigation.git",
-                "reference": "caa42e0b835ee32de20fa91c237469d4332ff4ed"
+                "reference": "d6c50bd29f7eedb88843e7baf7db87b415c72633"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/navigation/zipball/caa42e0b835ee32de20fa91c237469d4332ff4ed",
-                "reference": "caa42e0b835ee32de20fa91c237469d4332ff4ed",
+                "url": "https://api.github.com/repos/silverspoonmedia/navigation/zipball/d6c50bd29f7eedb88843e7baf7db87b415c72633",
+                "reference": "d6c50bd29f7eedb88843e7baf7db87b415c72633",
                 "shasum": ""
             },
             "require": {
@@ -6871,20 +6871,20 @@
                 "source": "https://github.com/silverspoonmedia/navigation",
                 "issues": "https://github.com/silverspoonmedia/navigation/issues"
             },
-            "time": "2026-11-23T08:46:54+00:00"
+            "time": "2026-11-24T06:18:14+00:00"
         },
         {
             "name": "silverspoonmedia/notification",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/notification.git",
-                "reference": "0514dd5b33a0bf65560181ac23c089ce7a64a2a5"
+                "reference": "35380ebe610f5f3761c9f4da90fdc34e8f3da217"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/notification/zipball/0514dd5b33a0bf65560181ac23c089ce7a64a2a5",
-                "reference": "0514dd5b33a0bf65560181ac23c089ce7a64a2a5",
+                "url": "https://api.github.com/repos/silverspoonmedia/notification/zipball/35380ebe610f5f3761c9f4da90fdc34e8f3da217",
+                "reference": "35380ebe610f5f3761c9f4da90fdc34e8f3da217",
                 "shasum": ""
             },
             "require": {
@@ -6926,20 +6926,20 @@
                 "source": "https://github.com/silverspoonmedia/notification",
                 "issues": "https://github.com/silverspoonmedia/notification/issues"
             },
-            "time": "2026-11-23T08:49:09+00:00"
+            "time": "2026-11-24T06:20:31+00:00"
         },
         {
             "name": "silverspoonmedia/platform",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/platform.git",
-                "reference": "4f67c4b876b86464040f781e419d30e6409470d3"
+                "reference": "e046c8e680e74e53d5de1296609ec99c63d6d6f0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/platform/zipball/4f67c4b876b86464040f781e419d30e6409470d3",
-                "reference": "4f67c4b876b86464040f781e419d30e6409470d3",
+                "url": "https://api.github.com/repos/silverspoonmedia/platform/zipball/e046c8e680e74e53d5de1296609ec99c63d6d6f0",
+                "reference": "e046c8e680e74e53d5de1296609ec99c63d6d6f0",
                 "shasum": ""
             },
             "require": {
@@ -7007,7 +7007,7 @@
                 "source": "https://github.com/silverspoonmedia/platform",
                 "issues": "https://github.com/silverspoonmedia/platform/issues"
             },
-            "time": "2026-11-23T08:44:38+00:00"
+            "time": "2026-11-24T06:16:03+00:00"
         },
         {
             "name": "spatie/laravel-activitylog",

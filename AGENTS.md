@@ -2,7 +2,7 @@
 
 **Role:** Laravel 13 backend for a private Cored boilerplate — the ten core domain packages (`silverspoonmedia/{platform,navigation,notification,audit,billing,ai}`), JWT/RBAC, the versioned API (`/api/v1/*`), and minimal server-side `web` routes (OAuth callbacks, payment return). The **sole browser UI** is the sibling `cored-frontend` SPA. The `[frontend]` scope tag here means SPA-facing API/resources/URLs, not Blade views.
 
-This repository is a **fork of `monolith` with both product domains removed** (Microstock first, then Archivd) through `php artisan domain:remove`, and with `packages/` turned into a consumer install of the released `^1.1` line. Nothing product-specific should come back here: [docs/integration/boilerplate-forks.md](docs/integration/boilerplate-forks.md) records what left and why.
+This repository is a **fork of `monolith` with both product domains removed** (Microstock first, then Archivd) through `php artisan domain:remove`, and with `packages/` turned into a consumer install of the released `^1.2` line, and with the language packs pruned to `en` + `id`. Nothing product-specific should come back here: [docs/integration/boilerplate-forks.md](docs/integration/boilerplate-forks.md) records what left and why.
 
 ## Workspace split
 

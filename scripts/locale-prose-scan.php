@@ -42,7 +42,10 @@ locale_scan_require_spa($spaRoot);
 /** @var array{machine_patterns: array<int, string>, machine: array<int, string>, glossary: array<string, array<string, string>>, accepted: array<string, array<string, string>>} $policy */
 $policy = require __DIR__.'/lib/locale-latin-allowlist.php';
 
-$locales = ['ar', 'id', 'ja', 'ko', 'ru', 'zh_CN'];
+// Only locales the application still supports carry a prose policy that matters;
+// a retired one stays in the policy map (it is the wording reference if the
+// language is ever added back) but is skipped by the scan.
+$locales = array_values(array_intersect(['ar', 'id', 'ja', 'ko', 'ru', 'zh_CN'], locale_scan_supported()));
 
 [$requested, $flags] = locale_scan_args($argv);
 $verbose = in_array('--verbose', $flags, true);

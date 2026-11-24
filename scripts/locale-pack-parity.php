@@ -46,12 +46,22 @@ $packs = ['validation', 'http-statuses', 'actions', 'auth', 'passwords', 'pagina
  * here would report a difference that is the intended design.
  */
 $mirroredPacks = ['validation', 'http-statuses', 'auth', 'passwords', 'pagination'];
-$locales = ['ar', 'id', 'ja', 'ko', 'ru', 'zh_CN'];
+// Every supported locale except the reference. `en` is the source, so there is
+// no non-`en` pair to compare once only one translated locale remains — the
+// guard then reports that and exits 0 (archived, see the header).
+$locales = array_values(array_diff(locale_scan_supported(), ['en']));
 
 [$requested, $flags] = locale_scan_args($argv);
 $verbose = in_array('--verbose', $flags, true);
 $jsonOut = locale_scan_flag_value($flags, '--json');
 $locales = locale_scan_select($locales, $requested, 'locale');
+
+if ($locales === []) {
+    echo 'no non-en parity pairs — the only supported locale is the reference (en).', PHP_EOL;
+    echo 'Add a locale (`php artisan locale:add <code>`) and this gate becomes live again.', PHP_EOL;
+
+    exit(0);
+}
 
 /**
  * @return array<string, string>

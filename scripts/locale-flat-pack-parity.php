@@ -40,7 +40,10 @@ require __DIR__.'/lib/locale-scan-support.php';
 
 $root = locale_scan_root();
 
-$locales = ['ar', 'id', 'ja', 'ko', 'ru', 'zh_CN'];
+// Every supported locale except the reference. With a single translated locale
+// the pack-side comparison still runs (`lang/id.json` against the `lang/id/**`
+// owners); it is the cross-`locale` comparison that has nothing left to say.
+$locales = array_values(array_diff(locale_scan_supported(), ['en']));
 
 // Preference order for the canonical owner of an English phrase that exists in
 // more than one PHP file. Lower sorts first.
@@ -63,10 +66,8 @@ const OWNER_OVERRIDES = [
     // `OK` is a dialog button in the pack (`ui.swal.ok`), not the HTTP 200 phrase.
     'OK' => ['ui', 'swal.ok'],
     // The pack `File`/`Files` are noun labels; `actions.php` renders the verb
-    // "to file a document" (`id` `Mengajukan`) and is the wrong copy. The product
-    // namespace that first exposed the split left with its domain, so the owner is
-    // the generic `ui` namespace — the concept, not the file that used to hold it.
-    'File' => ['ui', 'type_file'],
+    // "to file a document" (`id` `Mengajukan`) and is the wrong copy.
+    'File' => ['web/archivd', 'type_file'],
 ];
 
 /**

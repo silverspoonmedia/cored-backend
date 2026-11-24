@@ -47,7 +47,12 @@ function docs_budget_doc_kind(string $relativeToDocs): array
 
     return match (true) {
         $relativeToDocs === 'README.md' => ['name' => 'index', 'budget' => 150],
-        in_array($name, ['billing-edge-cases.md', 'daily-free-trial.md', 'reference-edge-cases.md'], true) => ['name' => 'edge-case', 'budget' => 200],
+        // The suffix wins over the `reference` prefix: a file named
+        // `reference-edge-cases.md` is an edge-case doc that happens to be a
+        // reference, and the pakem already states the kind as `*-edge-cases.md`.
+        // Reading the prefix first would call it a deep dive and hand it a 400-line
+        // budget it has no content for.
+        str_ends_with($name, '-edge-cases.md') || $name === 'daily-free-trial.md' => ['name' => 'edge-case', 'budget' => 200],
         str_starts_with($name, 'reference') => ['name' => 'deep-dive', 'budget' => 400],
         $name === 'naming-conventions.md' => ['name' => 'glossary', 'budget' => 200],
         default => ['name' => 'brief', 'budget' => 90],
@@ -62,15 +67,41 @@ function docs_budget_doc_kind(string $relativeToDocs): array
  * real file of that kind, so the test proves the label, the number and the registry
  * agree rather than only that two integers match.
  *
+ * The samples are the first of each kind that exists here, not a fixed path: a
+ * boilerplate fork has no product domain, so the monolith's `billing-edge-cases.md`
+ * is absent there and the fork's platform reference takes its place. Both are
+ * genuine edge-case docs, so the drift test still proves the label and the number.
+ *
  * @return array<string, array{0: string, 1: string}> human label => [kind name, sample path relative to docs/]
  */
 function docs_budget_kind_samples(): array
 {
+    $edgeCases = ['platform/reference-edge-cases.md', 'domains/microstock/billing-edge-cases.md'];
+
     return [
         'index' => ['index', 'README.md'],
         'brief' => ['brief', 'platform/tooling.md'],
         'deep dive' => ['deep-dive', 'platform/reference-tooling.md'],
         'glossary' => ['glossary', 'platform/naming-conventions.md'],
-        'edge case' => ['edge-case', 'platform/reference-edge-cases.md'],
+        'edge case' => ['edge-case', first_existing_docs_path($edgeCases)],
     ];
+}
+
+/**
+ * The first candidate that exists under `docs/`, else the last one.
+ *
+ * Returning the last candidate when none exists keeps a broken sample a loud
+ * missing-file failure in the drift test instead of a silent pass.
+ *
+ * @param  list<string>  $candidates  paths relative to docs/
+ */
+function first_existing_docs_path(array $candidates): string
+{
+    foreach ($candidates as $candidate) {
+        if (is_file(dirname(__DIR__, 2).'/docs/'.$candidate)) {
+            return $candidate;
+        }
+    }
+
+    return $candidates[count($candidates) - 1];
 }

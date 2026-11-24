@@ -192,18 +192,23 @@ const FORBIDDEN = [
 /**
  * Settled term => the least number of times it must appear, per side.
  *
+ * These are the **monolith** floors: measured over the corpus that carries the
+ * product domains. A consumer install (a boilerplate fork) legitimately drops
+ * every product key, so the same absolute count is unreachable there and the
+ * tripwire would fire on a corpus that never regressed.
+ *
+ * The per-install override is `scripts/locale-glossary-floors.json`, written by
+ * `--dump-floors` and committed beside this script: an install states its own
+ * measured counts instead of inheriting a number that describes someone else's
+ * key set. A locale absent from that file keeps the floors below, so the monolith
+ * (which ships no override) is unchanged.
+ *
  * @var array<string, array<string, array{backend: int, spa: int}>>
  */
 const MIN_OCCURRENCES = [
-    // Re-measured 2026-11-23 for the product-free boilerplate fork (`cored-backend`):
-    // the product domains were removed, so the product locale namespaces — which
-    // carried most of every backstop term — left the corpus. Each floor below is the
-    // measured count of the surviving tree, not a wave lowered to fit. A host that
-    // adds a product domain back re-measures the floors it re-introduces; the
-    // glossary row stays the owner of the *wording* either way.
     'ko' => [
         '체크아웃' => ['backend' => 18, 'spa' => 28],
-        '과금' => ['backend' => 4, 'spa' => 12],
+        '과금' => ['backend' => 11, 'spa' => 22],
     ],
     // `ru` has no single rejected word for most of its collapses — `оплата` is
     // correct outside checkout and `тариф` is correct outside the tier metric — so
@@ -217,9 +222,9 @@ const MIN_OCCURRENCES = [
         // `организац` and `хендл` left the corpus entirely — that domain was
         // their only home — so they are no longer floored. See the sunset
         // post-mortems in docs/archive/.
-        'ИИ' => ['backend' => 7, 'spa' => 15],
+        'ИИ' => ['backend' => 47, 'spa' => 58],
         'оформлени' => ['backend' => 19, 'spa' => 20],
-        'област' => ['backend' => 4, 'spa' => 6],
+        'област' => ['backend' => 45, 'spa' => 65],
         'автор' => ['backend' => 6, 'spa' => 7],
         'проверк' => ['backend' => 6, 'spa' => 16],
         // `Session Has Expired` is `истёк`, not `устарела`; the *messages* keep that
@@ -227,14 +232,14 @@ const MIN_OCCURRENCES = [
         // `Действует до`, so both are floored. The two casings are floored
         // separately: `substr_count` is case-sensitive, and the original single
         // floor of 11 silently summed `истёк` + `Истёк`, so it could never be met.
-        'истёк' => ['backend' => 6, 'spa' => 7],
+        'истёк' => ['backend' => 7, 'spa' => 8],
         'Истёк' => ['backend' => 1, 'spa' => 1],
         'Действует до' => ['backend' => 2, 'spa' => 4],
-        'Источник' => ['backend' => 4, 'spa' => 4],
+        'Источник' => ['backend' => 4, 'spa' => 5],
         // Lowered 19 → 17 on 2026-11-19: the orphaned `web/identity-connections.php`
         // carried both `провайдер` hits (`provider_heading` and the generic
         // `provider_not_configured`, now an SPA-only pack). Measured count.
-        'провайдер' => ['backend' => 12, 'spa' => 31],
+        'провайдер' => ['backend' => 17, 'spa' => 37],
     ],
     // `id` has no single rejected word for most of its collapses — `channel` is
     // correct outside a payment channel, `error` is the ordinary word for a system
@@ -249,19 +254,19 @@ const MIN_OCCURRENCES = [
         // `manajemen` and `kreator` left the corpus entirely — that domain was
         // their only home — so they are no longer floored. See the sunset
         // post-mortems in docs/archive/.
-        'kedaluwarsa' => ['backend' => 9, 'spa' => 9],
-        'Berkas' => ['backend' => 6, 'spa' => 0],
+        'kedaluwarsa' => ['backend' => 11, 'spa' => 11],
+        'Berkas' => ['backend' => 27, 'spa' => 24],
         // Lowered 14 → 12 on 2026-11-19: the orphaned `web/identity-connections.php`
         // carried both `verifikasi` hits (`verified`/`verify` on the connections
         // screen, now an SPA-only pack). Measured count after deletion.
-        'verifikasi' => ['backend' => 12, 'spa' => 20],
-        'kredensial' => ['backend' => 4, 'spa' => 4],
+        'verifikasi' => ['backend' => 12, 'spa' => 23],
+        'kredensial' => ['backend' => 9, 'spa' => 12],
         // Lowered 23 → 18 on 2026-10-02 (a product domain was sunset): the five
         // `slug` SPA keys were the only `Slug` hits that went away. See the
         // sunset post-mortems in docs/archive/.
-        'Slug' => ['backend' => 3, 'spa' => 7],
-        'yatim' => ['backend' => 0, 'spa' => 0],
-        'penagihan' => ['backend' => 4, 'spa' => 8],
+        'Slug' => ['backend' => 6, 'spa' => 10],
+        'yatim' => ['backend' => 1, 'spa' => 1],
+        'penagihan' => ['backend' => 13, 'spa' => 20],
     ],
     'ja' => [
         // Lowered on 2026-10-07 (a product domain was sunset): the deleted
@@ -272,7 +277,7 @@ const MIN_OCCURRENCES = [
         // floored. See the sunset post-mortems in docs/archive/.
         // Lowered 25 → 20 on 2026-10-02 (a product domain was sunset) and again
         // to the surviving 8/12 on 2026-10-07 (the second sunset).
-        'スラッグ' => ['backend' => 5, 'spa' => 9],
+        'スラッグ' => ['backend' => 8, 'spa' => 12],
         // 403 `Forbidden` is `アクセス禁止`, not the validation sentence
         // `…の入力は禁止されています。`, which is why the phrase cannot be banned —
         // the floor is the tripwire instead. Same for 302 `一時的な移動`: `発見` is
@@ -280,8 +285,8 @@ const MIN_OCCURRENCES = [
         'アクセス禁止' => ['backend' => 2, 'spa' => 1],
         '一時的な移動' => ['backend' => 2, 'spa' => 1],
         'チェックアウト' => ['backend' => 20, 'spa' => 25],
-        '課金' => ['backend' => 4, 'spa' => 6],
-        '認証情報' => ['backend' => 3, 'spa' => 3],
+        '課金' => ['backend' => 9, 'spa' => 12],
+        '認証情報' => ['backend' => 13, 'spa' => 22],
     ],
     'zh_CN' => [
         // Lowered on 2026-10-07 (a product domain was sunset): the deleted
@@ -290,19 +295,19 @@ const MIN_OCCURRENCES = [
         // `认领` left the corpus entirely — that domain was their only home —
         // so they are no longer floored. See the sunset post-mortems in
         // docs/archive/.
-        '标识' => ['backend' => 5, 'spa' => 11],
+        '标识' => ['backend' => 8, 'spa' => 14],
         '结账' => ['backend' => 21, 'spa' => 31],
-        '计费' => ['backend' => 5, 'spa' => 14],
-        '归档' => ['backend' => 2, 'spa' => 2],
-        '凭证' => ['backend' => 5, 'spa' => 5],
-        '孤立' => ['backend' => 0, 'spa' => 0],
+        '计费' => ['backend' => 14, 'spa' => 27],
+        '归档' => ['backend' => 7, 'spa' => 8],
+        '凭证' => ['backend' => 15, 'spa' => 24],
+        '孤立' => ['backend' => 1, 'spa' => 1],
         // Lowered 39 → 36 on 2026-11-19: two `验证` hits lived in the orphaned
         // `web/identity-connections.php` and one in `menu.php`
         // (`two_factor` = `双重身份验证`), both Blade-era groups deleted with this
         // change. The remaining 36 are live; the floor is the measured count.
-        '验证' => ['backend' => 36, 'spa' => 79],
+        '验证' => ['backend' => 36, 'spa' => 81],
         '创作者' => ['backend' => 1, 'spa' => 1],
-        '方案' => ['backend' => 7, 'spa' => 12],
+        '方案' => ['backend' => 24, 'spa' => 30],
         '登录' => ['backend' => 22, 'spa' => 33],
         '退出登录' => ['backend' => 6, 'spa' => 7],
     ],
@@ -316,32 +321,62 @@ const MIN_OCCURRENCES = [
         'المعرّف' => ['backend' => 1, 'spa' => 7],
         'فحص' => ['backend' => 1],
         'إتمام الشراء' => ['backend' => 16, 'spa' => 23],
-        'الفوترة' => ['backend' => 2, 'spa' => 6],
-        'أرشفة' => ['backend' => 2, 'spa' => 1],
+        'الفوترة' => ['backend' => 5, 'spa' => 15],
+        'أرشفة' => ['backend' => 5, 'spa' => 9],
         // Lowered 15 → 14 on 2026-11-19: the orphaned `notifications.php`
         // (Blade-era flash messages) held `restored` `تمت استعادة السجل بنجاح.`,
         // the one occurrence this floor was counting. The floor is the measured
         // count after that deletion, not a reverted wave.
-        'استعادة' => ['backend' => 10, 'spa' => 13],
-        'بيانات الاعتماد' => ['backend' => 2, 'spa' => 2],
-        'قائمة الانتظار' => ['backend' => 0, 'spa' => 0],
-        'التخزين' => ['backend' => 3, 'spa' => 8],
-        'يتيم' => ['backend' => 0, 'spa' => 0],
+        'استعادة' => ['backend' => 14, 'spa' => 22],
+        'بيانات الاعتماد' => ['backend' => 10, 'spa' => 14],
+        'قائمة الانتظار' => ['backend' => 7, 'spa' => 4],
+        'التخزين' => ['backend' => 13, 'spa' => 21],
+        'يتيم' => ['backend' => 1, 'spa' => 1],
         'منشئ' => ['backend' => 1, 'spa' => 1],
-        'خطة' => ['backend' => 3, 'spa' => 7],
+        'خطة' => ['backend' => 16, 'spa' => 20],
         // The glossary row used to say `تحقّق` (with a shadda) and the corpus said
         // `تحقق`; the corpus is right and the row was corrected.
-        'تحقق' => ['backend' => 17, 'spa' => 27],
+        'تحقق' => ['backend' => 18, 'spa' => 30],
     ],
 ];
 
 [$requested, $flags] = locale_scan_args($argv);
 $verbose = in_array('--verbose', $flags, true);
+$dumpFloors = in_array('--dump-floors', $flags, true);
 
-$locales = array_keys(FORBIDDEN + MIN_OCCURRENCES);
+$locales = array_values(array_intersect(array_keys(FORBIDDEN + MIN_OCCURRENCES), locale_scan_supported()));
 sort($locales);
 
 $locales = locale_scan_select($locales, $requested, 'locale with a glossary map');
+
+/**
+ * This install's floors, layered over the monolith's.
+ *
+ * A boilerplate fork carries no product keys, so an absolute count measured over
+ * the monolith corpus is unreachable there. The override file states the fork's
+ * own measured numbers; a locale it does not mention keeps the monolith floor, so
+ * an install that ships the full corpus needs no override at all.
+ *
+ * @return array<string, array<string, array{backend: int, spa: int}>>
+ */
+function install_floors(): array
+{
+    $path = locale_scan_root().'/scripts/locale-glossary-floors.json';
+
+    if (! is_file($path)) {
+        return MIN_OCCURRENCES;
+    }
+
+    $data = json_decode((string) file_get_contents($path), true);
+
+    if (! is_array($data)) {
+        fwrite(STDERR, 'locale-glossary-floors.json is not valid JSON; refusing to scan with an unreadable override.'.PHP_EOL);
+
+        exit(1);
+    }
+
+    return array_replace_recursive(MIN_OCCURRENCES, $data);
+}
 
 /**
  * Flat dotted path => value, for both PHP lang arrays and JSON packs.
@@ -478,11 +513,19 @@ function collect(string $root, string $spaRoot, string $locale): array
 
 $violations = [];
 $blind = [];
+$measured = [];
+$floorsByLocale = install_floors();
 
 foreach ($locales as $locale) {
     $forbidden = FORBIDDEN[$locale] ?? [];
-    $floors = MIN_OCCURRENCES[$locale] ?? [];
+    $floors = $floorsByLocale[$locale] ?? [];
 
+    // The dump records what this corpus carries, so it must count every baseline
+    // term — reading the override back would only echo the numbers it wrote.
+    $measuredTerms = array_unique(array_merge(
+        array_keys($floors),
+        array_keys(MIN_OCCURRENCES[$locale] ?? []),
+    ));
     // A locale whose surfaces are absent scans as "0 violations" because there is
     // nothing to read. Say so instead of reporting success.
     $absent = array_keys(array_filter(
@@ -511,11 +554,19 @@ foreach ($locales as $locale) {
         }
     }
 
-    foreach ($floors as $term => $minimum) {
-        foreach ($minimum as $side => $required) {
-            $actual = substr_count($blobs[$side], $term);
+    foreach ($measuredTerms as $term) {
+        $actualBackend = substr_count($blobs['backend'], $term);
+        $actualSpa = substr_count($blobs['spa'], $term);
 
-            if ($actual >= $required) {
+        $measured[$locale][$term] = ['backend' => $actualBackend, 'spa' => $actualSpa];
+
+        foreach ($floors[$term] ?? [] as $side => $required) {
+            $actual = $side === 'backend' ? $actualBackend : $actualSpa;
+
+            // Zero is the override's way of saying "this term left this install's
+            // corpus" (a product-domain term whose only keys were removed). A floor
+            // of zero asserts nothing, so it is skipped rather than always green.
+            if ($required === 0 || $actual >= $required) {
                 continue;
             }
 
@@ -528,13 +579,45 @@ foreach ($locales as $locale) {
     ($found === 0 ? 'ok' : $found.' violation(s)'), PHP_EOL;
 
     if ($verbose) {
-        foreach ($floors as $term => $minimum) {
+        foreach ($measuredTerms as $term) {
             echo '  ', $term, '  backend=', substr_count($blobs['backend'], $term), ' spa=', substr_count($blobs['spa'], $term), PHP_EOL;
         }
     }
 }
 
 echo PHP_EOL, 'total violations: ', count($violations), PHP_EOL;
+
+if ($dumpFloors) {
+    // Only the deltas: a side whose measured count still meets the inherited floor
+    // keeps that floor, so this file stays a short list of "what this corpus really
+    // carries" instead of a frozen copy of every number. A side measured at zero is
+    // written as zero and skipped by the scan — the term left this installation's
+    // corpus, and a floor of zero would assert nothing.
+    $deltas = [];
+
+    foreach ($measured as $locale => $terms) {
+        foreach ($terms as $term => $sides) {
+            foreach ($sides as $side => $actual) {
+                $inherited = MIN_OCCURRENCES[$locale][$term][$side] ?? 0;
+
+                if ($actual < $inherited) {
+                    $deltas[$locale][$term][$side] = $actual;
+                }
+            }
+        }
+    }
+
+    $path = locale_scan_root().'/scripts/locale-glossary-floors.json';
+
+    file_put_contents(
+        $path,
+        json_encode($deltas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).PHP_EOL,
+    );
+
+    echo 'wrote ', count($deltas), ' locale override(s) to ', $path, PHP_EOL;
+
+    exit(0);
+}
 
 if ($blind !== []) {
     fwrite(STDERR, 'cannot read the surfaces of: '.implode('; ', $blind).PHP_EOL);

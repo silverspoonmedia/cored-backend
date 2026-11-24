@@ -43,10 +43,29 @@ class DomainRegistryTest extends TestCase
         'Ai',
     ];
 
+    /**
+     * The registry as `DomainManager::all()` reads it.
+     *
+     * `config/domains.php` also carries registry **metadata** under `siblings`
+     * (the sibling checkout names `domain:remove` scans). It shares the file but
+     * is not a domain, and `DomainManager` skips a key with no `kind` — this
+     * helper applies the same rule so the assertions below measure what boots,
+     * not what the array contains.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private static function domains(): array
+    {
+        /** @var array<string, array<string, mixed>> $raw */
+        $raw = (array) config('domains', []);
+
+        return array_filter($raw, static fn (mixed $entry, mixed $name): bool => is_string($name) && is_array($entry) && array_key_exists('kind', $entry), ARRAY_FILTER_USE_BOTH);
+    }
+
     public function test_it_registers_the_ten_core_domains_and_no_product_domain(): void
     {
         /** @var array<string, array<string, mixed>> $domains */
-        $domains = config('domains', []);
+        $domains = self::domains();
 
         $this->assertSame(
             self::CORE_DOMAINS,
@@ -62,7 +81,7 @@ class DomainRegistryTest extends TestCase
     public function test_every_entry_declares_core_axes_and_a_core_package(): void
     {
         /** @var array<string, array<string, mixed>> $domains */
-        $domains = config('domains', []);
+        $domains = self::domains();
 
         foreach ($domains as $name => $entry) {
             $this->assertSame('core', $entry['kind'] ?? null, "[{$name}] must be kind core: core domains are never removable.");
@@ -80,7 +99,7 @@ class DomainRegistryTest extends TestCase
     public function test_every_declared_path_exists_on_disk(): void
     {
         /** @var array<string, array<string, mixed>> $domains */
-        $domains = config('domains', []);
+        $domains = self::domains();
 
         foreach ($domains as $name => $entry) {
             foreach (['path', 'provider'] as $key) {
@@ -112,7 +131,7 @@ class DomainRegistryTest extends TestCase
     public function test_every_entry_resolves_to_its_package_install_directory(): void
     {
         /** @var array<string, array<string, mixed>> $domains */
-        $domains = config('domains', []);
+        $domains = self::domains();
 
         foreach ($domains as $name => $entry) {
             $package = (string) ($entry['package'] ?? '');

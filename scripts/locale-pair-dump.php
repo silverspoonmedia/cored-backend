@@ -23,7 +23,8 @@
 // Managed (laravel-lang) files are included: they are still user-facing, and the
 // wave needs to see them even though LocaleParityTest excludes them.
 $root = dirname(__DIR__);
-$locales = ['en', 'id', 'ja', 'ko', 'zh_CN', 'ar', 'ru'];
+require __DIR__.'/lib/locale-scan-support.php';
+$locales = locale_scan_supported();
 
 $args = array_slice($argv, 1);
 $locale = null;

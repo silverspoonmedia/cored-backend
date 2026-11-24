@@ -74,16 +74,6 @@ return [
         // Platform — Frankfurter FX
         'platform.frankfurter.cache_ttl' => 'Jendela kesegaran FX Frankfurter (detik)',
         'platform.frankfurter.timeout' => 'Timeout HTTP Frankfurter FX (detik)',
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
     ],
     'hints' => [
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
@@ -91,9 +81,6 @@ return [
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'platform.payment.default_buyer_phone' => 'Telepon cadangan saat profil pembeli belum memiliki nomor (syarat iPaymu).',
         'platform.frankfurter.timeout' => 'Timeout HTTP untuk lookup FX Frankfurter.',
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'platform.jwt.refresh_skew' => 'Refresh token akses beberapa menit sebelum kedaluwarsa.',
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
@@ -103,10 +90,6 @@ return [
         'platform.inference.default_provider_slug' => 'Provider cadangan saat tidak ada yang ditentukan pada permintaan.',
         'platform.inference.default_input_per_million_usd' => 'Tarif penagihan sementara untuk model terdaftar tanpa harga katalog.',
         'platform.inference.unknown_input_per_million_usd' => 'Tarif penagihan sementara untuk model yang belum terdaftar.',
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
-        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'identity.discord.connections_snapshot_max_age_minutes' => 'Berapa lama snapshot koneksi Discord tersimpan dipercaya sebelum kegagalan verifikasi memicu penyegaran langsung melalui Discord API.',
     ],

@@ -1,8 +1,8 @@
-# Monolith
+# Cored Backend
 
-Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; the global surface is health checks (`GET /api/ping`, `GET /whatsup`).
+The Cored boilerplate backend: a Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; the global surface is health checks (`GET /api/ping`, `GET /whatsup`).
 
-It is the **API backend** for the sibling **Monolith-Vue-Workers** SPA — the sole browser UI — which consumes `/api/v1/*` cross-site with HttpOnly cookies and CSRF double-submit. Minimal server `web` routes remain for public share, payment return, and OAuth callbacks. Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,Archivd,Microstock,...}/`.
+It is the **API backend** for the sibling **Cored Frontend** SPA — the sole browser UI — which consumes `/api/v1/*` cross-site with HttpOnly cookies and CSRF double-submit. Minimal server `web` routes remain for payment return and OAuth callbacks. The ten core domains ship as the `silverspoonmedia/*` packages; product surfaces are yours to add under `app/Domain/{Name}/` with `php artisan domain:make`.
 
 ## Documentation
 
@@ -24,11 +24,11 @@ All documentation is written in **English**. Update the owning doc and rule file
 | Composer | 2.x |
 | Database | MySQL (default in profile templates), or PostgreSQL |
 
-PHP 8.4, not 8.3: the locked `silverspoonmedia/pdf-tools` (dev-main) and `symfony/*` 8.1 require `^8.4`, so `composer install` refuses the lock file on 8.3. The same pin is in [.github/workflows/ci.yml](.github/workflows/ci.yml).
+PHP 8.4, not 8.3: `symfony/*` 8.1 requires `^8.4`, so `composer install` refuses the lock file on 8.3. The same pin is in [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
-No Node.js toolchain is needed here — this repo has no frontend stack or `package.json`. On **Laragon** (Windows), enable PHP 8.4+ and create a MySQL database named `monolith` (or adjust `DB_DATABASE`).
+No Node.js toolchain is needed here — this repo has no frontend stack or `package.json`. On **Laragon** (Windows), enable PHP 8.4+ and create a MySQL database named `cored` (or adjust `DB_DATABASE`).
 
-**Windows shells:** chain commands with `;`, not `&&` (PowerShell rejects `&&` on the shipped versions). Example: `cd monolith; php artisan migrate; php artisan db:seed`.
+**Windows shells:** chain commands with `;`, not `&&` (PowerShell rejects `&&` on the shipped versions). Example: `cd cored-backend; php artisan migrate; php artisan db:seed`.
 
 ## Setup
 

@@ -27,6 +27,15 @@ class LocaleUsageTest extends TestCase
     /** Directories that may hold translatable call sites. */
     private const SCAN_DIRECTORIES = ['app', 'routes', 'config', 'packages'];
 
+    /**
+     * Where the core packages' own call sites live in a consumer install.
+     *
+     * A boilerplate fork has no `packages/` tree: the same PHP arrives under
+     * `vendor/silverspoonmedia/{slug}`. Leaving it out here makes every
+     * package-owned key look unresolved in exactly the repo that ships them.
+     */
+    private const VENDOR_SCAN_DIRECTORY = 'vendor/silverspoonmedia';
+
     public function test_every_literal_translation_key_resolves_in_reference_locale(): void
     {
         $known = $this->referenceKeys();
@@ -153,11 +162,18 @@ class LocaleUsageTest extends TestCase
 
         // English namespaces ship from the host `lang/en` tree AND from every
         // packaged core domain's `resources/lang/en`; a key that moved into a
-        // package is still a key the app can resolve.
+        // package is still a key the app can resolve. A consumer install carries
+        // those same trees under `vendor/silverspoonmedia/{slug}` instead of
+        // `packages/{slug}`, so both shapes are read.
         $this->collectPhpKeys(lang_path('en'), '', $keys);
 
-        foreach (glob(base_path('packages/*/resources/lang/en'), GLOB_ONLYDIR) ?: [] as $packageEnglish) {
-            $this->collectPhpKeys($packageEnglish, '', $keys);
+        foreach ([
+            base_path('packages/*/resources/lang/en'),
+            base_path('vendor/silverspoonmedia/*/resources/lang/en'),
+        ] as $packageGlob) {
+            foreach (glob($packageGlob, GLOB_ONLYDIR) ?: [] as $packageEnglish) {
+                $this->collectPhpKeys($packageEnglish, '', $keys);
+            }
         }
 
         $this->collectJsonKeys(lang_path('en.json'), $keys);
@@ -279,7 +295,7 @@ class LocaleUsageTest extends TestCase
     {
         $files = [];
 
-        foreach (self::SCAN_DIRECTORIES as $directory) {
+        foreach ([...self::SCAN_DIRECTORIES, self::VENDOR_SCAN_DIRECTORY] as $directory) {
             $absolute = base_path($directory);
 
             if (! is_dir($absolute)) {

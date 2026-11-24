@@ -6,27 +6,31 @@ parameters:
 
     paths:
         - app
-        - packages/ai/src
-        - packages/audit/src
-        - packages/billing/src
-        - packages/navigation/src
-        - packages/notification/src
-        - packages/platform/src
+        # A consumer install carries the six core packages under `vendor/`; the
+        # monolith carries them under `packages/`. PHPStan fails on a configured
+        # path that does not exist, so this gate names the shape this repo ships —
+        # the fork's own `phpstan.neon` is the fork's contract, not a copy.
+        - vendor/silverspoonmedia/ai/src
+        - vendor/silverspoonmedia/audit/src
+        - vendor/silverspoonmedia/billing/src
+        - vendor/silverspoonmedia/navigation/src
+        - vendor/silverspoonmedia/notification/src
+        - vendor/silverspoonmedia/platform/src
         - database
         - routes
         - config
 
     # Without every migration path Larastan cannot read the model columns, and every
     # `$model->column` in a package reports `property.notFound` — 626 of the findings
-    # on the first run were this, not real defects. A new package with its own
-    # `database/migrations` must be added here in the same task.
+    # on the monolith's first run were this, not real defects.
     databaseMigrationsPath:
         - database/migrations
-        - packages/ai/database/migrations
-        - packages/audit/database/migrations
-        - packages/billing/database/migrations
-        - packages/navigation/database/migrations
-        - packages/notification/database/migrations
+        - vendor/silverspoonmedia/ai/database/migrations
+        - vendor/silverspoonmedia/audit/database/migrations
+        - vendor/silverspoonmedia/billing/database/migrations
+        - vendor/silverspoonmedia/navigation/database/migrations
+        - vendor/silverspoonmedia/notification/database/migrations
+        - vendor/silverspoonmedia/platform/database/migrations
 
     # `tests/**` is deliberately outside the analysed surface. A suite is a
     # scaffold, not shipped code: its helpers lean on `$this->get()`, factories and
@@ -48,12 +52,19 @@ parameters:
     tmpDir: .phpstan.cache
 
     ignoreErrors:
-        # The kernel's testing concerns exist only for package test suites, and
-        # `tests/**` is outside the analysed surface (see above), so PHPStan sees
-        # zero uses. They are exercised by every package suite, not dead code.
+        # The kernel's testing concerns are used only by the package suites, which
+        # run from the mirrors against their own Testbench harness — `tests/**` and
+        # `app/**` never reference them, so PHPStan sees zero uses. Exercised by
+        # every package suite; not dead code.
         - identifier: trait.unused
           paths:
-              - packages/platform/src/Support/Testing/Concerns/*
+              - vendor/silverspoonmedia/platform/src/Support/Testing/Concerns/*
+        # `SerializesDirectUploadSession` is a product-domain seam: the monolith's
+        # Archivd upload controller is its only user, and this fork ships no product
+        # domain. The trait stays in the kernel package so a fork that adds an
+        # upload surface keeps the same serialisation contract.
+        -
+            message: '#Trait App\\Support\\Storage\\SerializesDirectUploadSession is used zero times#'
         # `JsonResource::$this->field` is `__get` on the wrapped model, not a
         # property of the resource class. PHPStan cannot see the model's columns
         # through it, so every resource field reports `property.notFound`.

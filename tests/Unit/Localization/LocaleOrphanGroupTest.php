@@ -34,6 +34,17 @@ class LocaleOrphanGroupTest extends TestCase
     /** Directories that may hold a translatable call site. */
     private const SCAN_DIRECTORIES = ['app', 'routes', 'config', 'database', 'packages', 'bootstrap', 'resources', 'tests'];
 
+    /**
+     * Where the core packages' own call sites live when this repo installs them
+     * from Composer instead of carrying a `packages/` tree.
+     *
+     * A consumer install (a boilerplate fork) renders `list_actions.*`,
+     * `settings.*`, `ui.*` and `domain-access.*` from `vendor/silverspoonmedia/*`,
+     * so scanning only the monolith's directories would report every one of those
+     * groups as an orphan and invite someone to delete live copy.
+     */
+    private const VENDOR_SCAN_DIRECTORY = 'vendor/silverspoonmedia';
+
     public function test_every_host_translation_file_is_addressed_from_code(): void
     {
         $references = $this->references();
@@ -163,7 +174,7 @@ class LocaleOrphanGroupTest extends TestCase
     {
         $files = [];
 
-        foreach (self::SCAN_DIRECTORIES as $directory) {
+        foreach ([...self::SCAN_DIRECTORIES, self::VENDOR_SCAN_DIRECTORY] as $directory) {
             $absolute = base_path($directory);
 
             if (! is_dir($absolute)) {

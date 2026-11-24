@@ -17,19 +17,7 @@
  *
  * These are plain functions, not a class: the guards are standalone scripts run by
  * `php scripts/…` and by `LocaleGuardTest`, and a `require` keeps them dependency-free.
- *
- * **A removed domain takes its floors with it.** In a product-free tree the product
- * locale files are gone, so every floor that was measured with those files in the
- * corpus sits above the real count and the gate can never go green. A floor is
- * re-measured — not lowered to fit a reverted wave — in the same change that deletes
- * the keys it counted: run `--report-floors`, confirm the *drop* is explained by the
- * deleted files (`--verbose`), then write the measured count.
  */
-
-/**
- * Where the term maps are read from when `--report-floors` re-measures them.
- */
-const GLOSSARY_SOURCE = __DIR__.'/../locale-glossary-scan.php';
 
 /**
  * Absolute path to the backend repo root (this file lives in `scripts/lib/`).
@@ -48,6 +36,11 @@ function locale_scan_root(): string
  * lived in `lang/`. A guard that only walked `lang/` would silently stop
  * checking every packaged domain's copy.
  *
+ * A **consumer** install (a boilerplate fork, `client-scaffold`) has no
+ * `packages/` directory: the same trees arrive from the VCS mirrors under
+ * `vendor/silverspoonmedia/{slug}/resources/lang`. Both shapes are scanned, so
+ * the guards keep working when the repo they run in is not the monolith.
+ *
  * @return list<string>
  */
 function locale_scan_lang_roots(): array
@@ -55,8 +48,10 @@ function locale_scan_lang_roots(): array
     $root = locale_scan_root();
     $roots = [$root.'/lang'];
 
-    foreach (glob($root.'/packages/*/resources/lang', GLOB_ONLYDIR) ?: [] as $packageLang) {
-        $roots[] = $packageLang;
+    foreach (['packages', 'vendor/silverspoonmedia'] as $tree) {
+        foreach (glob($root.'/'.$tree.'/*/resources/lang', GLOB_ONLYDIR) ?: [] as $packageLang) {
+            $roots[] = $packageLang;
+        }
     }
 
     return array_values(array_filter($roots, static fn (string $path): bool => is_dir($path)));
@@ -65,68 +60,64 @@ function locale_scan_lang_roots(): array
 /**
  * Absolute path to the sibling SPA repo, whether or not it exists.
  *
- * A fork names its pair differently (`cored-backend` + `cored-frontend`). The name is
- * read from the backend's own `config/domains.php` `siblings.spa` entry — the same key
- * `UninstallReferenceScanner` uses for the cross-repo half of `domain:remove` — so one
- * declaration points every guard at the right sibling. Falls back to the monolith's
- * `monolith-vue-workers` when the config cannot be read (a guard run from a bare
- * checkout that has no app bootstrap).
+ * The directory name is read from `config/domains.php` `siblings.spa`, the same
+ * key `UninstallReferenceScanner` uses: a boilerplate fork pairs `cored-backend`
+ * with `cored-frontend`, and a hardcoded `monolith-vue-workers` would make every
+ * cross-repo locale guard report "SPA absent" in the one repo that needs them
+ * most. The monolith's default keeps every existing path unchanged.
  */
 function locale_scan_spa_root(): string
 {
-    static $root = null;
-
-    if ($root !== null) {
-        return $root;
-    }
-
-    $sibling = locale_scan_spa_sibling_name();
-
-    return $root = dirname(locale_scan_root()).'/'.$sibling;
+    return dirname(locale_scan_root()).'/'.locale_scan_sibling('spa', 'monolith-vue-workers');
 }
 
 /**
- * Directory name of the sibling SPA checkout (`siblings.spa` in `config/domains.php`).
+ * A sibling checkout's directory name, from `config/domains.php`.
+ *
+ * Read without booting the application, like `locale_scan_supported()`: the
+ * config file is a plain array return.
  */
-function locale_scan_spa_sibling_name(): string
+function locale_scan_sibling(string $repo, string $default): string
 {
-    static $name = null;
+    static $cache = [];
 
-    if ($name !== null) {
-        return $name;
+    $key = $repo.'|'.$default;
+
+    if (isset($cache[$key])) {
+        return $cache[$key];
     }
 
-    // Read once per process: the guards are standalone scripts, so a second include
-    // is impossible, but a guard that calls the helper twice must not re-parse.
-    static $domains = false;
+    $config = locale_scan_root().'/config/domains.php';
+    $data = is_file($config) ? include $config : null;
+    $configured = is_array($data) ? ($data['siblings'][$repo] ?? null) : null;
 
-    if ($domains === false) {
-        $config = locale_scan_root().'/config/domains.php';
-
-        try {
-            $domains = is_file($config) ? include $config : null;
-        } catch (Throwable) {
-            $domains = null;
-        }
-
-        if (! is_array($domains)) {
-            $domains = null;
-        }
-    }
-
-    $spa = $domains['siblings']['spa'] ?? null;
-
-    return $name = is_string($spa) && $spa !== '' ? $spa : 'monolith-vue-workers';
+    return $cache[$key] = is_string($configured) && $configured !== '' ? $configured : $default;
 }
 
 /**
  * Locales the application supports, reference locale first.
  *
+ * Read from `config/localization.php` rather than restated here: a second hard
+ * copy is how a guard ends up scanning a locale the application retired (or
+ * missing one it added). The config file is a plain array return, so it can be
+ * read without booting the application.
+ *
  * @return array<int, string>
  */
 function locale_scan_supported(): array
 {
-    return ['en', 'id', 'ja', 'ko', 'zh_CN', 'ar', 'ru'];
+    $config = locale_scan_root().'/config/localization.php';
+
+    if (is_file($config)) {
+        $data = include $config;
+        $locales = $data['supported_locales'] ?? null;
+
+        if (is_array($locales) && $locales !== []) {
+            return array_values(array_filter($locales, 'is_string'));
+        }
+    }
+
+    return ['en'];
 }
 
 /**
@@ -175,7 +166,7 @@ function locale_scan_require_spa(string $spaRoot): void
 
     fwrite(STDERR, 'cannot see the SPA repo: '.$spaRoot.PHP_EOL);
     fwrite(STDERR, 'This guard compares the backend packs with the SPA packs, so a run without it proves nothing.'.PHP_EOL);
-    fwrite(STDERR, 'Check out '.locale_scan_spa_sibling_name().' as a sibling of this repo and retry.'.PHP_EOL);
+    fwrite(STDERR, 'Check out monolith-vue-workers as a sibling of this repo and retry.'.PHP_EOL);
 
     exit(1);
 }

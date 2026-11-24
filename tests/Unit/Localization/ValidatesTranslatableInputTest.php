@@ -10,18 +10,18 @@ use Illuminate\Validation\Validator;
 use Tests\TestCase;
 
 /**
- * The trait must accept SPA locale aliases (`zh-CN`) in translatable maps,
- * canonicalize them to backend codes (`zh_CN`) in the request payload, and
- * still reject unknown locale keys.
+ * The trait must tell a supported locale from an unknown key in a translatable
+ * map: `en` and `id` are accepted, a locale the application no longer supports
+ * (`zh_CN`) or one it never had (`fr`) is rejected rather than silently stored.
  */
 class ValidatesTranslatableInputTest extends TestCase
 {
-    public function test_alias_keys_are_canonicalized_in_request_payload(): void
+    public function test_supported_locale_keys_are_accepted(): void
     {
         $request = TranslatableTestRequest::create('/', 'POST', [
             'name' => [
                 'en' => 'Label',
-                'zh-CN' => '中文标签',
+                'id' => 'Label Indonesia',
             ],
         ]);
 
@@ -31,28 +31,25 @@ class ValidatesTranslatableInputTest extends TestCase
 
         $validated = $validator->validated();
 
-        $this->assertSame('中文标签', $validated['name']['zh_CN']);
-        $this->assertArrayNotHasKey('zh-CN', $validated['name']);
+        $this->assertSame(['en' => 'Label', 'id' => 'Label Indonesia'], $validated['name']);
     }
 
-    public function test_mixed_keys_merge_with_alias_winning_last(): void
+    public function test_a_retired_locale_is_rejected_like_any_unknown_key(): void
     {
         $request = TranslatableTestRequest::create('/', 'POST', [
             'name' => [
                 'en' => 'Label',
-                'zh_CN' => '旧标签',
-                'zh-CN' => '新标签',
+                'zh_CN' => '中文标签',
             ],
         ]);
 
         $validator = ValidatorFacade::make($request->all(), $request->rules());
         $request->withValidator($validator);
-        $this->assertTrue($validator->passes(), $validator->errors()->toJson());
 
-        $validated = $validator->validated();
-
-        $this->assertSame('新标签', $validated['name']['zh_CN']);
-        $this->assertArrayNotHasKey('zh-CN', $validated['name']);
+        // `zh_CN` left supported_locales; the route must not persist a translation
+        // nobody can read back.
+        $this->assertTrue($validator->fails());
+        $this->assertStringContainsString('zh_CN', (string) data_get($validator->errors()->toArray(), 'name.0'));
     }
 
     public function test_unknown_locale_keys_are_rejected(): void

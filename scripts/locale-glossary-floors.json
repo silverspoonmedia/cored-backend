@@ -1,0 +1,32 @@
+{
+    "id": {
+        "kedaluwarsa": {
+            "backend": 3,
+            "spa": 9
+        },
+        "Berkas": {
+            "backend": 6,
+            "spa": 0
+        },
+        "verifikasi": {
+            "backend": 5,
+            "spa": 20
+        },
+        "kredensial": {
+            "backend": 2,
+            "spa": 4
+        },
+        "Slug": {
+            "backend": 1,
+            "spa": 7
+        },
+        "yatim": {
+            "backend": 0,
+            "spa": 0
+        },
+        "penagihan": {
+            "backend": 2,
+            "spa": 8
+        }
+    }
+}

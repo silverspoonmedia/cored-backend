@@ -7,7 +7,7 @@
 |
 | Symbolic Vue Router route names stored in navigation menus. These are NOT
 | registered Laravel routes after Blade removal; the SPA resolves them
-| client-side. Keep in sync with monolith-vue-workers/src/router/index.ts
+| client-side. Keep in sync with cored-frontend/src/router/index.ts
 | (parent names that do not end in `.view`).
 |
 | `deny` wins over both the allowlist and Laravel Route::has() so auth /

@@ -31,6 +31,7 @@
 require __DIR__.'/lib/docs-anchor-support.php';
 require __DIR__.'/lib/docs-budget-support.php';
 require __DIR__.'/lib/docs-cross-repo-support.php';
+require __DIR__.'/lib/docs-install-support.php';
 
 $root = dirname(__DIR__);
 $repo = null;
@@ -200,7 +201,15 @@ function docs_guard_repo(string $root, string $label): array
         }
 
         foreach (docs_guard_globs($contents) as $glob) {
-            if (! docs_guard_glob_matches($root, $glob)) {
+            $resolution = docs_guard_glob_resolution($root, $glob);
+
+            if ($resolution === 'unverifiable') {
+                $unverifiable++;
+
+                continue;
+            }
+
+            if ($resolution === 'miss') {
                 $findings[] = "[{$label}] .cursor/rules/{$name} globs: {$glob} matches no file — the rule never fires";
             }
         }
@@ -286,9 +295,19 @@ function docs_guard_repo(string $root, string $label): array
             }
 
             if (! file_exists($resolved)) {
-                $findings[] = "[{$label}] {$rel($source)} links to {$link}, which does not exist";
+                // A brief written for the monolith links `../../packages/{slug}/…`;
+                // the same brief in a consumer checkout resolves against the Composer
+                // install. Mapping is only attempted when the link names a package, so
+                // a typo is still a finding.
+                $installed = docs_install_link_target($root, $resolved);
 
-                continue;
+                if ($installed !== null && file_exists($installed)) {
+                    $resolved = $installed;
+                } else {
+                    $findings[] = "[{$label}] {$rel($source)} links to {$link}, which does not exist";
+
+                    continue;
+                }
             }
 
             if ($anchor === null || ! preg_match('/\.mdc?$/i', $resolved)) {
@@ -435,17 +454,55 @@ function docs_guard_root_files(string $root): array
 
 function docs_guard_glob_matches(string $root, string $glob): bool
 {
-    $regex = '#^'.str_replace(
-        ['\*\*/', '\*\*', '\*', '\?'],
-        ['.*/', '.*', '[^/]*', '[^/]'],
-        preg_quote($glob, '#')
-    ).'$#';
+    return docs_guard_glob_resolution($root, $glob) === 'match';
+}
 
-    foreach (docs_guard_root_files($root) as $relative) {
-        if (preg_match($regex, $relative) === 1) {
-            return true;
+/**
+ * Resolve a rule glob against this checkout: `match`, `miss`, or `unverifiable`.
+ *
+ * `unverifiable` is the consumer-without-`vendor/` case: the glob names a core
+ * package file, the manifest requires that package, and CI has no install to look
+ * in. Reporting it as a miss would fail every run on a machine that has not
+ * `composer install`ed; reporting it as a match would be a claim nobody checked.
+ * The caller counts it, exactly as the link check counts a cross-repo link.
+ */
+function docs_guard_glob_resolution(string $root, string $glob): string
+{
+    $mapped = docs_install_map_path($root, $glob);
+
+    if (! str_starts_with($mapped, 'vendor/')) {
+        $regex = '#^'.str_replace(
+            ['\*\*/', '\*\*', '\*', '\?'],
+            ['.*/', '.*', '[^/]*', '[^/]'],
+            preg_quote($mapped, '#')
+        ).'$#';
+
+        foreach (docs_guard_root_files($root) as $relative) {
+            if (preg_match($regex, $relative) === 1) {
+                return 'match';
+            }
         }
+
+        return 'miss';
     }
 
-    return false;
+    // A `vendor/silverspoonmedia` + `/**` glob names no single package, so there is
+    // no manifest line to answer it: it matches exactly when the install is there.
+    $slug = docs_install_vendor_slug($mapped);
+
+    if ($slug === null) {
+        return docs_install_vendor_present($root) ? 'match' : 'unverifiable';
+    }
+
+    if (is_dir($root.'/vendor/silverspoonmedia/'.$slug)) {
+        foreach (docs_install_vendor_files($root) as $relative) {
+            if (fnmatch($mapped, $relative)) {
+                return 'match';
+            }
+        }
+
+        return 'miss';
+    }
+
+    return docs_install_requires_package($root, $slug) ? 'unverifiable' : 'miss';
 }

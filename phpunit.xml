@@ -5,50 +5,21 @@
          colors="true"
 >
     <testsuites>
-        <!-- The host tree and the package trees migrate differently: `tests/**`
-             boots the monolith application (`Tests\TestCase`), every package runs
-             its own Testbench harness (`App\Support\Testing\PackageTestCase`).
-             PHPUnit caches ONE reflection list for the whole process, so the two
-             must not share a process — `tests/bootstrap.php` then re-runs the
-             process per suite. Splitting `tests/**` into several processes keeps
-             Focused and Feature independent. -->
+        <!-- `tests/**` boots this host application (`Tests\TestCase`). The core
+             packages ship their own Testbench harness in their mirrors, so a
+             consumer install runs only the host suites. -->
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
-        <testsuite name="Domain">
-            <directory>tests/Domain</directory>
-        </testsuite>
-        <!-- One suite per core package, so a package's tests can be run alone
-             while the full run still covers every tree: PHPUnit runs all suites
-             in this file by default. A directory may appear in exactly one
-             suite — listing it twice makes PHPUnit warn per file and turns a
-             green run's exit code to 1. -->
-        <testsuite name="Package:audit">
-            <directory>packages/audit/tests</directory>
-        </testsuite>
-        <testsuite name="Package:ai">
-            <directory>packages/ai/tests</directory>
-        </testsuite>
-        <testsuite name="Package:billing">
-            <directory>packages/billing/tests</directory>
-        </testsuite>
-        <testsuite name="Package:navigation">
-            <directory>packages/navigation/tests</directory>
-        </testsuite>
-        <testsuite name="Package:notification">
-            <directory>packages/notification/tests</directory>
-        </testsuite>
-        <testsuite name="Package:platform">
-            <directory>packages/platform/tests</directory>
-        </testsuite>
+        <!-- The core packages are Composer dependencies here, not a `packages/` tree: -->
+        <!-- their suites run in their own mirrors (`composer test`), not in this host. -->
     </testsuites>
     <source>
         <include>
             <directory>app</directory>
-            <directory>packages</directory>
         </include>
     </source>
     <php>

@@ -86,7 +86,7 @@ class EnvInstallCommand extends Command
         $this->newLine();
         $this->line('Next steps:');
         $this->line('  • Set APP_URL, DB_* credentials, and any integration secrets.');
-        $this->line('  • For staging/production: configure MAIL_*, PUSHER_*, ARCHIVD_S3_CE_*, HCAPTCHA_*.');
+        $this->line('  • For staging/production: configure MAIL_*, PUSHER_*, the S3_* storage keys, HCAPTCHA_*.');
         $this->line('  • Run: php artisan migrate');
         $this->line('  • See docs/platform/environment.md for the full checklist.');
 
