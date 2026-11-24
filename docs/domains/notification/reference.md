@@ -64,7 +64,7 @@ After persistence, `NotificationService` resolves every recipient and broadcasts
 
 **Not this bus:**
 
-- Archivd live listing uses dedicated private channels (`archivd.user.*` / `archivd.workspace.*`) and domain events under `App\Domain\Archivd\Events\` — no `NotificationType`, no `table_id`. See [archivd/reference.md](../archivd/reference.md).
+- A product's live listing uses its own private channels and domain events — no `NotificationType`, no `table_id`. A product registers its channels through `ChannelRegistrarRegistry`, so this file never names one.
 - Payment Gateway invoice checkout uses private `payments.invoice.{invoiceId}` + `InvoiceStatusChanged` / `PaymentRealtime` — no `NotificationType`, independent of platform notification delivery mode. See [payment-gateway/reference.md](../payment-gateway/reference.md).
 
 Those features share the SPA Echo singleton (`useEcho.ts` / `getEcho()`); they do not ride the activity-notification event.

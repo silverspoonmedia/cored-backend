@@ -54,8 +54,8 @@ class DomainRegistryTest extends TestCase
             'The registry order is route load order: keep the monolith core order, never alphabetize.',
         );
 
-        foreach (['Archivd', 'Microstock'] as $product) {
-            $this->assertArrayNotHasKey($product, $domains, "[{$product}] is this repository's own product surface; an entry would make domain:list report a domain the install cannot boot.");
+        foreach (['ExampleProduct', 'AnotherProduct'] as $product) {
+            $this->assertArrayNotHasKey($product, $domains, "[{$product}] is the monolith's own product surface; an entry would make domain:list report a domain the install cannot boot.");
         }
     }
 

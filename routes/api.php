@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\API\PingController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('ping', PingController::class);
+Route::middleware('api')->group(function (): void {
+    // Add client-specific global API routes here.
+});

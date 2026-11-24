@@ -16,4 +16,4 @@ Pricing is **provider-first**: the customer pays provider cost × markup from th
 | Tests | `packages/ai/tests/Inference/` (`php artisan test --filter=Inference`) |
 | Pakem | [.cursor/rules/inference.mdc](../../../.cursor/rules/inference.mdc) |
 | Deep dive | [reference.md](reference.md) — pricing layers, snapshots, seeded rates, unknown-model workflow, admin UI |
-| Related | [ai](../ai/README.md) (transport and key) · [microstock](../microstock/README.md) (billing consumer) · [platform/configuration-policy.md](../../platform/configuration-policy.md) (tiers) |
+| Related | [ai](../ai/README.md) (transport and key) · [platform/configuration-policy.md](../../platform/configuration-policy.md) (tiers) |

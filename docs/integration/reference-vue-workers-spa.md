@@ -17,7 +17,7 @@ Monolith web stack → server-only redirects (share, payment return, OAuth callb
 
 Cross-origin requests can also fail client-side with a bare `TypeError` (a cross-tab `Set-Cookie` collision on the shared CSRF nonce, which the browser reports as a CORS error) — that is a SPA retry concern, not a CORS misconfiguration; policy: sibling `monolith-vue-workers/docs/api-client.md#cross-tab-cookie-race-retry`.
 
-Still naked (browser talks to these hosts directly): Pusher/Reverb, Discord OAuth + Monolith web callback, Archivd presigned/gateway URLs, hCaptcha JS.
+Still naked (browser talks to these hosts directly): Pusher/Reverb, Discord OAuth + Monolith web callback, a product's presigned/gateway URLs, hCaptcha JS.
 
 Local: Vite `.env.local` overrides `.env`. Empty `VITE_API_BASE_URL` = same-origin dev. Discord return is **not** a Vite var — set Monolith `SPA_URL`.
 
@@ -31,7 +31,7 @@ Data traffic does not hit this Worker. Remaining controls trim Laravel load:
 
 - **`POST /api/v1/batch`** — up to 10 read-only (`GET`/`HEAD`) sub-requests; throttle `30,1`; mutations `422` per entry. SPA `batch()` in `src/api/client.ts`. Rules: [api-aggregation.md](../platform/api-aggregation.md).
 - **Shell hydrate** — `GET auth/me` then, on success, one batch (me, sidebar, navbar, unread-count, recent notifications). Guests never `POST /batch`. Echo starts **after** that batch. Sibling [auth-session.md](../../../monolith-vue-workers/docs/auth-session.md).
-- **Per-domain hydrates** — Archivd browse/workspaces; navigation/notification/user/service/payment/inference/microstock edit screens. Failed subs `null` → individual loader; terminal `401`/`403`/`429` skip fallback (`TerminalBatchError`).
+- **Per-domain hydrates** — navigation/notification/user/service/payment/inference edit screens (a product adds its own hydrate). Failed subs `null` → individual loader; terminal `401`/`403`/`429` skip fallback (`TerminalBatchError`).
 - **JWT TTL 240** — `setting_config('jwt.ttl')`. Realtime only (no polling); reconnect fires a resync bus.
 
 ## Local dogfood checklist
@@ -46,7 +46,6 @@ Daily driver: SPA `npm run dev` at `http://localhost:5173`, Monolith `SPA_URL="h
 |---------|-----------------|---------------|
 | Password reset email | `{APP_URL}/reset-password?token=&email=` | `{SPA_URL}/reset-password?token=&email=` |
 | Email verify email | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — SPA GETs the signed API path. HMAC stays on `APP_URL`. |
-| Archivd `share_url` | `{APP_URL}/s/f/{id}` / `/s/d/{id}` | Same paths on `SPA_URL` |
 | iPaymu hosted return/cancel | `{APP_URL}/payment/ipaymu/return\|cancel` | `{SPA_URL}/payment/return` and `/payment/cancel` |
 
 OAuth `return_to` allowlist is that origin plus `APP_URL`; empty `SPA_URL` disables SPA OAuth return. Channel checkout still sends empty `ureturn`. Guest verify is **not** `guestOnly`.
@@ -57,7 +56,7 @@ API `action_route` + `action_params` use symbolic names from `config/spa-routes.
 
 ## Production checklist
 
-Ops (not code): pair `SPA_URL` with the matching Worker origin (production / staging / sandbox — one `SPA_URL` per Monolith instance); bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` / `.env.staging` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; Archivd/Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../monolith-vue-workers/README.md) + [deployment.md](../../../monolith-vue-workers/docs/deployment.md). The mode-file values are guarded by the sibling `npm run check:env` (fails a build on a placeholder, a missing key, a shared origin, or production/staging pointing at a sandbox host) — see sibling [deployment.md — Mode file values](../../../monolith-vue-workers/docs/deployment.md#mode-file-values).
+Ops (not code): pair `SPA_URL` with the matching Worker origin (production / staging / sandbox — one `SPA_URL` per Monolith instance); bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` / `.env.staging` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; a product's Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../monolith-vue-workers/README.md) + [deployment.md](../../../monolith-vue-workers/docs/deployment.md). The mode-file values are guarded by the sibling `npm run check:env` (fails a build on a placeholder, a missing key, a shared origin, or production/staging pointing at a sandbox host) — see sibling [deployment.md — Mode file values](../../../monolith-vue-workers/docs/deployment.md#mode-file-values).
 
 `X-SPA-Origin: 1` is a public anti-noise marker, not auth.
 
@@ -67,18 +66,13 @@ Sibling `.github/workflows/ci.yml`: `type-check` → `check:i18n` → `check:doc
 
 ## API contract reference
 
-Per-domain APIs: [payment-gateway](../domains/payment-gateway/README.md), [microstock](../domains/microstock/README.md), [notification](../domains/notification/README.md), [product-activations](../domains/product-activations/README.md), [identity](../domains/identity/README.md), [navigation](../domains/navigation/README.md), [archivd](../domains/archivd/README.md), [inference](../domains/inference/README.md), [service](../domains/service/README.md).
+Per-domain APIs: [payment-gateway](../domains/payment-gateway/README.md), [notification](../domains/notification/README.md), [product-activations](../domains/product-activations/README.md), [identity](../domains/identity/README.md), [navigation](../domains/navigation/README.md), [inference](../domains/inference/README.md), [ai](../domains/ai/README.md), [service](../domains/service/README.md). A product's endpoints are its own brief.
 
 ### Endpoint path gotchas
 
 | SPA composable | Correct API path | Common mistake |
 |----------------|------------------|----------------|
 | `usePaymentsIncome.fetchOverview` | `GET payments/income` | `payments/income/overview` |
-| `useMicrostockBilling.fetchBilling` | `GET microstock/billing` | `archivd/microstock/billing` |
-| `useMicrostockBilling.fetchLedger` | `GET microstock/billing/ledger` | extra `archivd/` prefix |
-| `useMicrostockBilling.fetchUsageEvents` | `GET microstock/billing/usage-events` | extra `archivd/` prefix |
-| `useMicrostockBilling.fetchAdminOverview` | `GET admin/microstock/billing/overview` | web-shaped path |
-| `useMicrostockBilling.fetchAdminUsageEvents` | `GET admin/microstock/billing/usage-events` | web-shaped path |
 | `usePaymentChannels.syncPolicy` | `POST payment-channels/sync-policy` | missing API route (exists in `payment-gateway.php`) |
 | `useRatePlanAdmin.saveRates` | `PUT inference/providers/{id}/rates` | Body `{ rates: [...] }` is a **full replace**. `manage inference catalog`. |
 | `useConnections.fetchConnections` | `GET profile/connections` | Not under `auth/` |
@@ -93,7 +87,6 @@ Canonical envelope: [api-envelope.md](../platform/api-envelope.md). Deviations:
 | Endpoint | Returns | Gotcha |
 |----------|---------|--------|
 | `GET notifications/unread-count` | `{ unread: number }` | Field is `unread`, not `count` |
-| `GET microstock/billing` | `balance_micro_usd`, `balance_usd`, `estimated_per_analysis_*`, `daily_free: { enabled, limit, used, remaining, resets_at }` | Not `balance_formatted` / `slots_consumed_today` |
 | `GET admin/product-activations` (index) | Flat `ProductActivationResource[]` in `data` | No `{ data, pagination }` wrapper |
 | `GET admin/product-activations/products/{productKey}` | `{ summary, activations, pagination }` in `data` | Opposite of index |
 | `GET payment-channels?subtotal=` | Flattened quote fields at top level | Not nested under `checkout_quote` |
@@ -155,7 +148,6 @@ Nested tree selects: ajax `navigation/lookups/menus` (Dynamic Menu CRUD — pare
 
 ### Blob / CSV downloads
 
-`getBlob()` + `src/utils/download.ts` `saveBlob()`. Wired for `GET invoices/export` and `GET microstock/collections/{folder}/download`.
 
 ### hCaptcha
 
@@ -173,11 +165,10 @@ Authenticated `AppLayout` routes are prefixed `/apps/*`. Route **names** stay un
 
 Do not load this contract for screen-level UX. Use the domain README (Agent entry first) plus SPA views:
 
-- Archivd Drive-lite, trash, workspaces, public share — [archivd README](../domains/archivd/README.md)
-- Microstock collection lifecycle on Archivd workspaces — [microstock README](../domains/microstock/README.md)
+- A product's own screens (its feature pack, its realtime channels) ship with the product; this boilerplate has none.
 - Inference rate editor: `PUT inference/providers/{id}/rates` full replace (`manage inference catalog`).
 - AI connections: SPA `/apps/ai/connections` (`ai.connections.index` / `.create` / `.edit`, sibling of Inference under Administration — not Monitoring). API `/api/v1/ai/connections` CRUD + `POST {id}/test` + `POST {id}/default` (`view`/`manage ai connections`); response carries `secret_hint` + `has_secret` only — never the key. PATCH is partial: blank text = keep, blank `api_key` = keep, explicit `null` on the numeric/header overrides = clear. Detail: [domains/ai README](../domains/ai/README.md).
-- Settings: `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`). MenuSeeder children `settings.platform|archivd|microstock` are named SPA routes **before** parameterized `settings.group.view`.
+- Settings: `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`). MenuSeeder children (`settings.platform` plus each product group) are named SPA routes **before** parameterized `settings.group.view`.
 - Navigation menus: `POST/PATCH navigation/menus` send `audience` (`all` | `auth` | `role` | `guest`, default `auth` when omitted) and `roles` **only** with `audience=role`; rows return `audience` + `role_ids`. `is_authenticate` / `is_guest_only` were removed — breaking for older SPA builds, so both repos deploy together. Admin surface: [navigation README](../domains/navigation/README.md).
 ## Mimic doctrine
 
@@ -236,7 +227,6 @@ SPA implementation: sibling [auth-session.md](../../../monolith-vue-workers/docs
 | RBAC admin lists | `rbac.roles`, `rbac.users` (legacy: `rbac`) | `.rbac.role.list.changed`, `.rbac.user.list.changed`, `.rbac.role.permission.changed` | `useAdminRealtime.ts` |
 | Activity log | `logs.activity` | `.log.activity.appended` | `useActivityLogRealtime.ts` |
 | Error log | `logs.errors` | `.log.error.recorded` | `useLogsRealtime.ts` |
-| Archivd | `archivd.user.{userId}` + `archivd.workspace.{workspaceId}` | `.listing.changed`, `.quota.changed` (user only), `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress`, `.microstock.billing.changed`, `.microstock.credentials.changed` | `useArchivdRealtime.ts` — user channel always; workspace channel follows `route.query.workspace_id` |
 | Payments invoice | `payments.invoice.{invoiceId}` | `.invoice.status.changed` | `usePaymentRealtime.ts` |
 | Payments admin | `payments.admin` | `.invoice.list.changed`, `.payments.gateway.changed`, `.payments.channel.changed`, `.payments.subscription.changed` | `usePaymentRealtime.ts` |
 | Payments routing | `payments.routing` | `.routing.catalog.changed` | `usePaymentRealtime.ts` |

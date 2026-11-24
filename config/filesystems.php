@@ -52,18 +52,6 @@ $s3CompatibleDisk = static function (array $primary, array $fallback = []) use (
     ];
 };
 
-// Archivd CE credentials (disk s3ArchivdCe).
-$archivdCeDisk = $s3CompatibleDisk([
-    'bucket' => 'ARCHIVD_S3_CE_BUCKET',
-    'region' => 'ARCHIVD_S3_CE_REGION',
-    'key' => 'ARCHIVD_S3_CE_KEY',
-    'secret' => 'ARCHIVD_S3_CE_SECRET',
-    'endpoint' => 'ARCHIVD_S3_CE_ENDPOINT',
-    'domain' => 'ARCHIVD_S3_CE_DOMAIN',
-    'path_style' => 'ARCHIVD_S3_CE_USE_PATH_STYLE',
-    'path_style_default' => true,
-]);
-
 return [
 
     /*
@@ -125,21 +113,18 @@ return [
         ],
 
         /*
-        | Archivd — Central European (primary). Env: ARCHIVD_S3_CE_*.
+        | A private S3-compatible bucket for the host's own direct uploads.
+        | A product that owns its storage publishes its own disks from its
+        | provider; this one template disk is what the upload proxy targets.
         */
-        's3ArchivdCe' => $archivdCeDisk,
-
-        /*
-        | Archivd — United States (optional; leave env empty until provisioned).
-        */
-        's3ArchivdUs' => $s3CompatibleDisk([
-            'bucket' => 'ARCHIVD_S3_US_BUCKET',
-            'region' => 'ARCHIVD_S3_US_REGION',
-            'key' => 'ARCHIVD_S3_US_KEY',
-            'secret' => 'ARCHIVD_S3_US_SECRET',
-            'endpoint' => 'ARCHIVD_S3_US_ENDPOINT',
-            'domain' => 'ARCHIVD_S3_US_DOMAIN',
-            'path_style' => 'ARCHIVD_S3_US_USE_PATH_STYLE',
+        's3Private' => $s3CompatibleDisk([
+            'bucket' => 'S3_PRIVATE_BUCKET',
+            'region' => 'S3_PRIVATE_REGION',
+            'key' => 'S3_PRIVATE_KEY',
+            'secret' => 'S3_PRIVATE_SECRET',
+            'endpoint' => 'S3_PRIVATE_ENDPOINT',
+            'domain' => 'S3_PRIVATE_DOMAIN',
+            'path_style' => 'S3_PRIVATE_USE_PATH_STYLE',
             'path_style_default' => true,
         ]),
 

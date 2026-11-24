@@ -1,20 +1,24 @@
 <?php
 
-use App\Providers\AppServiceProvider;
-use App\Providers\Domain\ArchivdServiceProvider;
-use App\Providers\Domain\MicrostockServiceProvider;
+use App\Providers\KernelServiceProvider;
+
+/*
+|--------------------------------------------------------------------------
+| Application service providers
+|--------------------------------------------------------------------------
+| `KernelServiceProvider` is the kernel's runtime surface: config merges, the
+| seam registries a package publishes into, the shared repository and the CORS
+| service. It is registered here rather than auto-discovered, because the
+| monolith vendors the same package and boots `AppServiceProvider` for that
+| surface instead — running both would replace a resolved registry.
+|
+| `extra.laravel.providers` in each `silverspoonmedia/*` manifest carries the
+| domain providers (Identity, Navigation, Notification, Audit, Billing, AI);
+| Laravel's package discovery registers those, so do not repeat them here.
+|
+| Client-specific providers belong below the kernel.
+*/
 
 return [
-    // Kernel
-    AppServiceProvider::class,
-
-    // Core domains (config/domains.php kind=core)
-    // Navigation, Notification, Audit, Billing, AI and the platform kernel
-    // (Identity, Support, Http, Repositories, platform providers) are Composer
-    // packages: their providers are auto-discovered from packages/*/composer.json
-    // extra.laravel.providers.
-
-    // Product domains (kind=product). domain:make appends; keep product last.
-    ArchivdServiceProvider::class,
-    MicrostockServiceProvider::class,
+    KernelServiceProvider::class,
 ];

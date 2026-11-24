@@ -8,9 +8,10 @@ use Database\Seeders\Concerns\SeedsBetaTesterRole;
 use Illuminate\Database\Seeder;
 
 /**
- * Seeds domain-access visibility + Beta tester roles for the existing product
- * domains (Archivd). New domains created via domain:make get their
- * own generated {Name}RoleSeeder instead.
+ * Seeds domain-access visibility + Beta tester roles for the product domains a host
+ * installs. The boilerplate ships none, so the loop body never runs; `domain:make`
+ * generates a `{Name}RoleSeeder` per product instead, and this seeder is the place a
+ * host lists the products whose visibility and tester role it wants at install time.
  *
  * Existing domains default to Public so current behavior is unchanged.
  */
@@ -19,11 +20,14 @@ class DomainAccessSeeder extends Seeder
     use SeedsBetaTesterRole;
 
     /** @var list<string> */
-    private const PRODUCT_DOMAINS = ['Archivd'];
+    private const PRODUCT_DOMAINS = [];
 
     public function run(): void
     {
-        foreach (self::PRODUCT_DOMAINS as $productKey) {
+        /** @var list<string> $productDomains */
+        $productDomains = self::PRODUCT_DOMAINS;
+
+        foreach ($productDomains as $productKey) {
             $this->seedBetaTesterRole($productKey);
 
             ProductDomainVisibility::query()->updateOrCreate(

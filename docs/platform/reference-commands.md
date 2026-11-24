@@ -77,24 +77,11 @@ Domain data caches are forever + rebuild-on-miss + invalidate-on-change — [cac
 | `service:process-entitlements` | Enter grace for ended subscriptions; expire grace and purge free-tier excess storage | [domains/service/README.md](../domains/service/README.md) |
 | `service:process-addon-renewals` | Create pending full-stack addon renewal invoices for due anniversaries | [domains/service/README.md](../domains/service/README.md) |
 
-## Archivd
-
-| Command | Purpose | Details |
-|---------|---------|---------|
-| `archivd:prune-stale-uploads` | Abort expired/S3-inactive pending multipart sessions; reclaim orphaned storage | [domains/archivd/README.md](../domains/archivd/README.md) |
-| `archivd:blocklist-hash` | Add/remove a sha256 from the DMCA hash blocklist | [domains/archivd/README.md](../domains/archivd/README.md) |
-
 ## AI
 
 | Command | Purpose | Details |
 |---------|---------|---------|
-| `ai:import-legacy-env` | One-time import of the former `MICROSTOCK_AI_*` env pairs into `ai_connections` rows + consumer slug bindings (`--dry-run`, `--skip-test`, `--actor=`). Read-only alias helpers (not Artisan): `php scripts/ai/list_models.php`, `php scripts/ai/probe_models.php` | [domains/ai/README.md](../domains/ai/README.md) |
-
-## Microstock
-
-| Command | Purpose | Details |
-|---------|---------|---------|
-| `microstock:queue-work` | Run a queue worker for all Microstock queues, paid → free → `default` (`--listen` respawn-per-job on Windows, `--once` debug) | [domains/microstock/README.md](../domains/microstock/README.md) |
+| `ai:import-legacy-env` | One-time import of a product's legacy AI env pairs into `ai_connections` rows + consumer slug bindings (`--dry-run`, `--skip-test`, `--actor=`). Walks `ai.consumers`, so it names no product. Read-only alias helpers (not Artisan): `php scripts/ai/list_models.php`, `php scripts/ai/probe_models.php` | [domains/ai/README.md](../domains/ai/README.md) |
 
 ## Maintenance & cleanup
 

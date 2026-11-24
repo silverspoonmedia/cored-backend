@@ -2,23 +2,24 @@
 
 use App\Support\Domain\DomainManager;
 
-// Core domains (config/domains.php kind=core). Order matches PLATFORM_CORE + Service.
-//
-// Packaged core domains (Identity, Navigation, Notification, Audit, Billing, AI) keep
-// their routes inside their Composer package — including the kernel's cross-domain
-// surface (`routes/kernel-*.php`: settings, product activations, domain access,
-// broadcast auth, batch) — so the path comes from the registry rather than a literal
-// this checkout happens to have. `packageApiRoutePaths()` resolves it through
-// Composer, so the same loader works here and in a consumer install.
-//
-// Domains still living in app/Domain/* keep their require line: the loader stays the
-// single place a version's endpoint set is assembled.
+/*
+|--------------------------------------------------------------------------
+| API v1 — core packages, then client routes
+|--------------------------------------------------------------------------
+| Every core domain ships its endpoints inside its Composer package, including
+| the kernel's cross-domain surface (`vendor/silverspoonmedia/platform/routes/
+| kernel-*.php`: settings, product activations, domain access, broadcast auth,
+| batch). `config/domains.php` names the package paths; `DomainManager` resolves
+| them through Composer, so this loader is the whole assembly step and needs no
+| per-package `require`.
+|
+| Client-specific endpoints belong at the bottom, after the packages, so a route
+| this project adds never shadows a kernel one.
+*/
 
 foreach (app(DomainManager::class)->packageApiRoutePaths() as $packageRouteFile) {
     require $packageRouteFile;
 }
 
-// Product domains (kind=product). domain:make appends here; keep product requires last.
-require __DIR__.'/v1/archivd.php';
-require __DIR__.'/v1/microstock.php';
-require __DIR__.'/v1/admin-microstock.php';
+// Client-specific versioned API v1 routes.
+require __DIR__.'/v1/client.php';

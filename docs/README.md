@@ -1,4 +1,4 @@
-# Documentation index — Monolith
+# Documentation index — Cored Backend
 
 Two surfaces, one owner per topic (see [.cursor/rules/docs-pakem.mdc](../.cursor/rules/docs-pakem.mdc)):
 
@@ -6,6 +6,8 @@ Two surfaces, one owner per topic (see [.cursor/rules/docs-pakem.mdc](../.cursor
 - **Agent pakem** lives in [`.cursor/rules/*.mdc`](../.cursor/rules/) — imperative rules, glob-scoped, self-sufficient. [`AGENTS.md`](../AGENTS.md) is the always-on map.
 
 Every living brief is listed in this index; narrative, audits and progress trackers belong in [archive/](archive/). **Language: English only.**
+
+This repository is the product-free Cored boilerplate: the ten core domains and nothing else. Former product briefs (Archivd, Microstock) live only in the upstream `monolith` checkout; [integration/boilerplate-forks.md](integration/boilerplate-forks.md) records the removal.
 
 ## Start here
 
@@ -47,7 +49,7 @@ Every living brief is listed in this index; narrative, audits and progress track
 | [envelope-encryption.md](platform/envelope-encryption.md) | Tiered crypto, OCI KMS, decrypt cache, P0 columns |
 | [tooling.md](platform/tooling.md) | Pint usage, gate list |
 
-**Platform deep dives:** [reference-architecture.md](platform/reference-architecture.md) · [reference-api-routing.md](platform/reference-api-routing.md) · [reference-commands.md](platform/reference-commands.md) · [reference-crud.md](platform/reference-crud.md) · [reference-environment.md](platform/reference-environment.md) · [reference-configuration-policy.md](platform/reference-configuration-policy.md) · [reference-settings.md](platform/reference-settings.md) · [reference-security.md](platform/reference-security.md) · [reference-localization.md](platform/reference-localization.md) · [reference-envelope-encryption.md](platform/reference-envelope-encryption.md) · [reference-tooling.md](platform/reference-tooling.md)
+**Platform deep dives:** [reference-architecture.md](platform/reference-architecture.md) · [reference-api-routing.md](platform/reference-api-routing.md) · [reference-commands.md](platform/reference-commands.md) · [reference-crud.md](platform/reference-crud.md) · [reference-environment.md](platform/reference-environment.md) · [reference-configuration-policy.md](platform/reference-configuration-policy.md) · [reference-settings.md](platform/reference-settings.md) · [reference-security.md](platform/reference-security.md) · [reference-localization.md](platform/reference-localization.md) · [reference-envelope-encryption.md](platform/reference-envelope-encryption.md) · [reference-tooling.md](platform/reference-tooling.md) · [reference-edge-cases.md](platform/reference-edge-cases.md)
 
 ## Domains (`app/Domain/*`)
 
@@ -63,8 +65,6 @@ Every living brief is listed in this index; narrative, audits and progress track
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, FX→IDR, product fulfillment (`silverspoonmedia/billing`); deep dive [reference.md](domains/service/reference.md) |
 | Inference | [domains/inference/README.md](domains/inference/README.md) — model catalog, provider rates, rate snapshots; deep dive [reference.md](domains/inference/reference.md) |
 | Ai | [domains/ai/README.md](domains/ai/README.md) — central AI transport, connections, slug binding; deep dive [reference.md](domains/ai/reference.md) |
-| Archivd | [domains/archivd/README.md](domains/archivd/README.md) — nested folders, multi-disk S3, Gateway upload, paid share, workspaces; base of the Microstock subproduct; deep dive [reference.md](domains/archivd/reference.md) · [reference-upload.md](domains/archivd/reference-upload.md) · [reference-realtime.md](domains/archivd/reference-realtime.md) |
-| Microstock | [domains/microstock/README.md](domains/microstock/README.md) — AI metadata on an Archivd system workspace (subproduct, `parent => Archivd`); deep dive [reference.md](domains/microstock/reference.md) · [reference-pipeline.md](domains/microstock/reference-pipeline.md) · [reference-api.md](domains/microstock/reference-api.md) · [reference-marketplace-upload.md](domains/microstock/reference-marketplace-upload.md); [daily-free-trial.md](domains/microstock/daily-free-trial.md) · [billing-edge-cases.md](domains/microstock/billing-edge-cases.md) |
 | Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — runtime-access registry; deep dive [reference.md](domains/product-activations/reference.md) |
 | Domain Access | [domains/domain-access/README.md](domains/domain-access/README.md) — Public/Private gate + Beta roles |
 

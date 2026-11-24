@@ -50,32 +50,6 @@ return [
     // re-Test needed because nothing about the identity changed).
     'connections' => [
 
-        'microstock-vision' => [
-            'label' => 'Microstock vision (local)',
-            // Tier B settings bound to this slug. Leave a binding out to keep
-            // the consumer on the default connection.
-            'binds' => ['microstock.ai.vision.connection'],
-            // First entry flagged true becomes the single default connection,
-            // so consumers without a binding keep working.
-            'is_default' => true,
-            // `test_model` is inherited from the consumer's Tier B model setting
-            // when omitted (microstock.ai.vision.model locally). Override it
-            // here when this connection needs a different probe model.
-            // Aliases must exist at the endpoint — list the live ones with
-            // `php scripts/ai/list_models.php`, then verify with
-            // `php scripts/ai/probe_models.php microstock-vision <alias>`.
-            // 'test_model' => 'internal.sspn_vision',
-            // 'timeout_seconds' => 300,
-            // 'connect_timeout_seconds' => 10,
-            // 'max_retries' => 1,
-            // 'extra_headers' => [],
-        ],
-
-        'microstock-thinking' => [
-            'label' => 'Microstock thinking (local)',
-            'binds' => ['microstock.ai.thinking.connection'],
-        ],
-
     ],
 
 ];

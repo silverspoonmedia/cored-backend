@@ -6,6 +6,7 @@ Developer tooling that is not a test: formatting, static analysis, and the two-j
 |------|------|
 | Pint and PHPStan usage, `composer check` | below |
 | CI job steps, why each one exists, expected skip/risky counts | [reference-tooling.md](reference-tooling.md) |
+| Why a gate reports a finding that is not a defect, and what to do when it is | [reference-edge-cases.md](reference-edge-cases.md) |
 | Which docs gates CI runs, and which need both checkouts | [reference-tooling.md — the docs gates](reference-tooling.md#the-docs-gates) |
 | What each `locale` job step covers | [localization.md](localization.md) + [reference-localization.md — CI coverage](reference-localization.md#ci-coverage-vs-manual-runs) |
 | PR & merge process, and the gap left for SPA-only pull requests | [reference-localization.md — PR & merge process](reference-localization.md#pr--merge-process) |

@@ -1,6 +1,6 @@
 # Ai — central AI transport
 
-Core domain that answers *where* we call AI, *with which key*, and *with which timeout and retry*. It owns the connection and never the price — token rates and the model catalog stay in [inference](../inference/README.md). It exists because Microstock (vision + thinking) and other consumers all speak the same `openai_compatible` chat-completions shape, and per-consumer env keys made a key rotation a five-file redeploy. Code: `packages/ai/src/Ai/` (package `silverspoonmedia/ai`, bundled with Inference). Invariants: [.cursor/rules/ai.mdc](../../../.cursor/rules/ai.mdc).
+Core domain that answers *where* we call AI, *with which key*, and *with which timeout and retry*. It owns the connection and never the price — token rates and the model catalog stay in [inference](../inference/README.md). It exists because consumers (vision, thinking, …) all speak the same `openai_compatible` chat-completions shape, and per-consumer env keys made a key rotation a five-file redeploy. Code: `packages/ai/src/Ai/` (package `silverspoonmedia/ai`, bundled with Inference). Invariants: [.cursor/rules/ai.mdc](../../../.cursor/rules/ai.mdc).
 
 | Need | Path |
 |------|------|
@@ -15,4 +15,4 @@ Core domain that answers *where* we call AI, *with which key*, and *with which t
 | Tests | `packages/ai/tests/Ai/` (`composer test -- --filter=Ai`) · `tests/Concerns/BindsAiConnection.php` |
 | Pakem | [.cursor/rules/ai.mdc](../../../.cursor/rules/ai.mdc) |
 | Deep dive | [reference.md](reference.md) — schema, test gate, resolution, import, local seeding |
-| Related | [inference](../inference/README.md) (pricing) · [platform/configuration-policy.md](../../platform/configuration-policy.md) (tiers) · [microstock](../microstock/README.md) (consumer) |
+| Related | [inference](../inference/README.md) (pricing) · [platform/configuration-policy.md](../../platform/configuration-policy.md) (tiers) · `ai.consumers` (a product publishes its rows) |

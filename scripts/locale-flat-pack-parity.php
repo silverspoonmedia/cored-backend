@@ -63,8 +63,10 @@ const OWNER_OVERRIDES = [
     // `OK` is a dialog button in the pack (`ui.swal.ok`), not the HTTP 200 phrase.
     'OK' => ['ui', 'swal.ok'],
     // The pack `File`/`Files` are noun labels; `actions.php` renders the verb
-    // "to file a document" (`id` `Mengajukan`) and is the wrong copy.
-    'File' => ['web/archivd', 'type_file'],
+    // "to file a document" (`id` `Mengajukan`) and is the wrong copy. The product
+    // namespace that first exposed the split left with its domain, so the owner is
+    // the generic `ui` namespace — the concept, not the file that used to hold it.
+    'File' => ['ui', 'type_file'],
 ];
 
 /**

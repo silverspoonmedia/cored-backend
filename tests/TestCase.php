@@ -2,34 +2,29 @@
 
 namespace Tests;
 
-use App\Http\Middleware\RequireSpaRequestHeader;
-use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
+/**
+ * Base test case for a project built on the core packages.
+ *
+ * The application is booted from `bootstrap/app.php` exactly as a request would
+ * boot it, so a test exercises the same providers, middleware aliases and route
+ * loader the deployed project uses. That is the point of this scaffold: prove
+ * the package wiring, not a test-only arrangement of it.
+ */
 abstract class TestCase extends BaseTestCase
 {
-    protected function setUp(): void
+    /**
+     * Creates the application.
+     */
+    public function createApplication(): Application
     {
-        parent::setUp();
+        $app = require __DIR__.'/../bootstrap/app.php';
 
-        config([
-            'encryption.kms_enabled' => false,
-            'encryption.blind_index_pepper' => 'testing-blind-index-pepper',
-            'encryption.encrypt_sessions' => false,
-        ]);
+        $app->make(Kernel::class)->bootstrap();
 
-        $this->withoutMiddleware(PreventRequestForgery::class);
-
-        // API feature tests model the sanctioned SPA caller by default. Tests
-        // covering the perimeter explicitly remove this marker.
-        $this->withHeader(RequireSpaRequestHeader::HEADER, RequireSpaRequestHeader::VALUE);
-
-        if (config('database.default') !== 'sqlite') {
-            $this->fail(
-                'Tests must use the sqlite connection (see phpunit.xml). '
-                .'Run `composer test` or `php artisan config:clear` before `php artisan test` '
-                .'so cached MySQL config does not target the dev database.'
-            );
-        }
+        return $app;
     }
 }

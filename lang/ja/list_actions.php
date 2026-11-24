@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 return [
     'view_detail' => '表示',
@@ -13,12 +13,9 @@ return [
         'delete_inference' => 'このレコードを削除しますか？元に戻せません。',
         'delete_named_title' => '「:name」を削除',
         'delete_menu' => '「:name」を削除してもよろしいですか？',
-        'delete_microstock_credential' => 'この認証情報を削除しますか？',
         // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
         'delete_ai_connection_title' => '接続を削除',
         // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
         'delete_ai_connection' => 'この AI 接続を完全に削除しますか？このスラッグに紐づいているコンシューマーは、別の接続を紐づけるまでエンドポイントを利用できなくなります。',
-        'remove_blocklist_title' => 'エントリを削除',
-        'remove_blocklist' => 'このハッシュをブロックリストから削除しますか？同じチェックサムのファイルは再び公開共有できるようになります。',
     ],
 ];

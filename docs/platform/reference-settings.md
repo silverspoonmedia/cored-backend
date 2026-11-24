@@ -23,18 +23,16 @@ After changing `.env` directly (Tier A only), run `php artisan config:rebuild`. 
 | `view settings` | Read settings groups |
 | `manage settings` | Update operational settings |
 
-Root and Admin receive both via `RoleSeeder`. After adding a core permission, re-run `RoleSeeder` **and** `ArchivdRoleSeeder` (which `givePermissionTo`s product perms back onto Admin after the core `syncPermissions`), then `php artisan permission:cache-reset`. Do **not** run full `DatabaseSeeder` on an existing database — it tries to recreate `admin@example.com`. Log out/in so `auth/me` picks up the new list. The SPA manage form is gated on `manage settings` in that payload.
+Root and Admin receive both via `RoleSeeder`. After adding a core permission, re-run `RoleSeeder` **and** any host/product role seeder that `givePermissionTo`s its own perms back onto Admin after the core `syncPermissions`, then `php artisan permission:cache-reset`. Do **not** run full `DatabaseSeeder` on an existing database — it tries to recreate `admin@example.com`. Log out/in so `auth/me` picks up the new list. The SPA manage form is gated on `manage settings` in that payload.
 
 ## Web surface (hybrid)
 
 | Surface | Route | Group key |
 |---------|-------|-----------|
 | Platform hub | `/apps/settings/platform` | `platform` |
-| Archivd | `/apps/archivd/settings` | `archivd` |
-| Microstock | `/apps/microstock/settings` | `microstock` |
 | Notification audiences | `/apps/notification-audiences` | (separate table) |
 
-Menu: **Administration → Settings** — single hub for all groups (`settings.platform`, `settings.archivd`, `settings.microstock`, plus notification audiences and currencies). Root/Admin via `view settings` / `manage settings`.
+Menu: **Administration → Settings** — single hub for all groups (`settings.platform`, plus notification audiences and currencies). Root/Admin via `view settings` / `manage settings`. A host that installs a product domain gets one more entry per contributing group; the boilerplate ships `platform` only.
 
 ### Localization
 
@@ -57,8 +55,8 @@ Enum-like string keys may declare an optional `options` list on the registry def
 | Database / Redis | `DB_*`, `REDIS_*` | Infra binding |
 | OCI KMS | `OCI_*` | Cloud credentials |
 | Payment secrets | `MIDTRANS_*`, `IPAYMU_*`, … | PCI-adjacent |
-| S3 / proxy | `ARCHIVD_S3_*`, `ARCHIVD_UPLOAD_PROXY_TOKEN` | Cloud credentials |
-| AI connection keys | _(none — Tier C `ai_connections`, Administration → AI connections)_ | Provider secrets moved out of `.env`; `MICROSTOCK_AI_*_QUEUE*` stay Tier A |
+| S3 / proxy | `S3_PRIVATE_*`, upload-proxy token | Cloud credentials |
+| AI connection keys | _(none — Tier C `ai_connections`, Administration → AI connections)_ | Provider secrets live in the encrypted table; per-consumer queue names stay Tier A |
 | Mail / broadcast secrets | `MAIL_PASSWORD`, `PUSHER_APP_SECRET` | Standard secret hygiene |
 | Public origins | `APP_URL`, `SPA_URL`, `CORS_EXTRA_ORIGINS` | Laravel API origin + Vue-Workers origin + extra comma-separated origins (preview URLs, localhost dev). `SPA_URL` is OAuth `return_to` allowlist, `SpaPublicUrl` mint origin, and CORS allowlist with `APP_URL` (+ `CORS_EXTRA_ORIGINS` for extras). Empty `SPA_URL` falls back to `APP_URL` + server endpoints and disables SPA OAuth return. |
 
@@ -110,15 +108,15 @@ Platform settings page shows **read-only secret status** via `php artisan config
 
 ## Tier C — Domain groups
 
-### Archivd (`archivd.*`)
+A domain that owns settings registers its own group through a `SettingContributor`
+(`SettingRegistry` entries plus a `config/{domain}.php` fallback). The boilerplate
+ships **no** product group: `platform` is the only group in the hub. When you add a
+domain, its group appears in the same hub (`settings.{domain}`), gated by the same
+`view settings` / `manage settings` permissions, and its field labels need entries in
+all seven locale files under `web/settings.fields` / `.hints`.
 
-Upload limits, multipart tuning, TTL/cleanup, quota defaults, region policy, download TTLs, MIME allowlist, vault download flag. See `config/archivd.php` and [archivd README](../domains/archivd/README.md).
-
-SKU codes and free-tier bytes stay in `ArchivdCatalog` (deploy + seeder).
-
-### Microstock (`microstock.*`)
-
-Daily free tier, AI billing markup, pipeline batch/watchdog, image prep, retries, vision delivery / variant kind, stage models + timeouts, inference provider slug, upstream window/budget/concurrency. **Queue names stay env**; AI endpoints and API keys moved to core Ai `ai_connections` (Tier C) and are bound per stage via `microstock.ai.vision.connection` / `microstock.ai.thinking.connection` (empty = default connection).
+See [reference-package-seams.md](../integration/reference-package-seams.md#seams-a-bundled-package-needs)
+for the contributor contract.
 
 ## Already UI-manageable (DB, not system_settings)
 

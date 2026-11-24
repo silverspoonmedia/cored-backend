@@ -9,9 +9,9 @@
  * resolves every path through it, so `routes/api/v1.php`, `routes/web.php` and
  * the console commands never hardcode a location.
  *
- * Product domains (Archivd, Microstock, …) are this repository's own sellable
- * surface and are not part of a consumer install. Adding one here would make
- * `domain:list` report a domain whose code is absent.
+ * Product domains are the monolith's own sellable surface and are not part of a
+ * consumer install. Adding one here would make `domain:list` report a domain
+ * whose code is absent.
  *
  * Axes (see docs/platform/architecture.md in the monolith):
  *

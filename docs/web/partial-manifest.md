@@ -28,16 +28,6 @@ The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came 
 | inference/providers | `$isEdit`, `$provider` | create, edit |
 | inference/model-cards | `$isEdit`, `$card` | create, edit |
 
-## Archivd
-
-### Live partials (index/public)
-
-`workspace-modals`, `microstock-review-panel`, `usage-offcanvas`, `file-folder-modals`, `team-offcanvas`, `move-modal`, `file-icon`, `visibility-badge`, `microstock-badge`, `quota-bar`, `workspace-switcher` — DOM `data-ar-*` / modal ids are JS API; do not rename without updating `resources/js/archivd/*` and Vue island.
-
-### Archived (no active caller)
-
-`toolbar-zone`, `browse-views`, `trash-show-panels` — superseded by Vue island first paint. Location: `resources/views/_archive/adminlte4/archivd/partials/`. See [archivd README](../domains/archivd/README.md).
-
 ## Payments
 
 | Partial | Callers |
@@ -50,4 +40,3 @@ The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came 
 
 - [blade-admin.md](blade-admin.md) — what remains on the `web` stack after removal
 - [archive/ui-patterns-blade.md](../archive/ui-patterns-blade.md) — **archived** UX patterns referencing these partials
-- [domains/archivd/README.md](../domains/archivd/README.md) — removed Blade island history

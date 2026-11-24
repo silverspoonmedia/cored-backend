@@ -1,6 +1,6 @@
 ---
 description: Development-phase migration baseline — change the migration that owns the table instead of adding an alter or data migration
-globs: database/**,packages/**/Models/**,app/Domain/**/Models/**,tests/**,phpunit.xml,composer.json
+globs: database/**,packages/**/Models/**,packages/**/src/**/Models/**,tests/**,phpunit.xml,composer.json
 alwaysApply: false
 ---
 

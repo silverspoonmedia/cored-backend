@@ -7,12 +7,12 @@ Core platform domain for the SaaS services this project sells (subscriptions and
 | Code | `packages/billing/src/Service/` — `MainPlanChangeCalculator`, `ServiceFulfillmentService`, `ServiceEntitlementService`, `Support/BillingPeriod`, `Support/ServiceCatalogWriter` (FX lives in [currency](../currency/README.md): `App\Domain\Currency\Services\ExchangeRateService`) |
 | Config | [`packages/billing/config/service.php`](../../../packages/billing/config/service.php) (`grace_days`, `settlement_currency`) · Settings → Platform (`platform.service.*`, `platform.frankfurter.*`) |
 | Tables | `services`, `service_prices`, `service_purchases`, `service_entitlements`, `service_addon_renewals` (`currencies` + `exchange_rate_snapshots` belong to [currency](../currency/README.md)) |
-| Seeders | `packages/billing/src/Service/Database/Seeders/ServiceCatalogSeeder` · `packages/billing/src/Currency/Database/Seeders/CurrencySeeder` · `packages/billing/src/PaymentGateway/Database/Seeders/{PaymentGateway,PaymentChannel}Seeder` (package-generic) · product SKUs by `ArchivdCatalogSeeder` / `MicrostockCatalogSeeder` through `ServiceCatalogWriter` |
+| Seeders | `packages/billing/src/Service/Database/Seeders/ServiceCatalogSeeder` · `packages/billing/src/Currency/Database/Seeders/CurrencySeeder` · `packages/billing/src/PaymentGateway/Database/Seeders/{PaymentGateway,PaymentChannel}Seeder` (package-generic) · product SKUs by a product's own catalog seeder through `ServiceCatalogWriter` |
 | API | [`packages/billing/routes/service.php`](../../../packages/billing/routes/service.php) — `/api/v1/services`, `/api/v1/service-purchases` |
 | Commands | `service:process-entitlements` · `service:process-addon-renewals` (both hourly) |
 | SPA | Vue Router `services.*`, `service-purchases.show`, `currencies.*` |
 | Realtime | `services.catalog` (permission `view service`) — the currency channel belongs to [currency](../currency/README.md) |
-| Tests | `packages/billing/tests/Service/` (`composer test -- --filter=Service`); product scenarios in `tests/Domain/Archivd/Unit/Billing/` |
+| Tests | `packages/billing/tests/Service/` (`composer test -- --filter=Service`); this boilerplate ships no product scenario |
 | Pakem | [.cursor/rules/service.mdc](../../../.cursor/rules/service.mdc) |
 | Deep dive | [reference.md](reference.md) — data model, catalog, plan-change math, addon anniversary, FX, lifecycle, API, config, manual verify |
-| Related | [currency](../currency/README.md) (catalogue + FX) · [payment-gateway](../payment-gateway/README.md) (settle IDR) · [archivd](../archivd/README.md) (quota + purge) · [notification](../notification/README.md) (grace/expired types) · [product-activations](../product-activations/README.md) (fulfillment hook) |
+| Related | [currency](../currency/README.md) (catalogue + FX) · [payment-gateway](../payment-gateway/README.md) (settle IDR) · [notification](../notification/README.md) (grace/expired types) · [product-activations](../product-activations/README.md) (fulfillment hook) |

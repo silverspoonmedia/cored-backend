@@ -9,8 +9,8 @@ Do **not** collapse taxonomy, lifecycle and composition into one label.
 | Term | Axis | Meaning |
 |------|------|---------|
 | **Core domain** | Taxonomy (`kind`) | Foundation. Without it the app does not run well (Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service, Inference, Ai). |
-| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (Archivd, Microstock). Extends core (Identity, H-RBAC, payments, …). |
-| **Subproduct domain** | Composition (`parent`) | A product domain that extends another **product** domain: `'parent' => 'Archivd'` (Microstock is the only one). It is **not** a third `kind` value — a subproduct is still a full product with its own key, activation, RBAC, SKU, namespace and `uninstall.json`. Only the removal order changes: `domain:remove` refuses a parent while a registered child points at it. |
+| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface built on the core (Identity, H-RBAC, payments, …). This boilerplate ships none: its two former products were removed through `domain:remove` — see [boilerplate-forks.md](../integration/boilerplate-forks.md). |
+| **Subproduct domain** | Composition (`parent`) | A product domain that extends another **product** domain: `'parent' => '{BaseProduct}'`. It is **not** a third `kind` value — a subproduct is still a full product with its own key, activation, RBAC, SKU, namespace and `uninstall.json`. Only the removal order changes: `domain:remove` refuses a parent while a registered child points at it. |
 | **`locked`** | Lifecycle (product only) | `domain:remove` refuses until you set `'locked' => false` in [`config/domains.php`](../../config/domains.php). |
 | **Removable** | Derived | Product with `locked => false`. Not a config key. |
 | **`DomainManager::PLATFORM_CORE`** | Hard guard | Never-remove list. Config cannot override. |
@@ -24,9 +24,9 @@ Do **not** collapse taxonomy, lifecycle and composition into one label.
 | Kind | Examples | `domain:remove` |
 |------|----------|-----------------|
 | **Core** | Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service, Inference, Ai + Kernel | **Always refused** — `PLATFORM_CORE`; flipping `kind` in config does nothing |
-| **Product + locked** | Default for `domain:make`; Archivd | Refused until `'locked' => false` in config |
+| **Product + locked** | Default for `domain:make` | Refused until `'locked' => false` in config |
 | **Product + removable** | `domain:make --removable` | Allowed (`--force`) |
-| **Subproduct + locked** | `'parent' => 'Archivd'`; Microstock | Same as product **plus** a composition guard: refused while a registered child points here |
+| **Subproduct + locked** | `'parent' => '{BaseProduct}'` | Same as product **plus** a composition guard: refused while a registered child points here |
 
 There is **no** `domain:unlock` command — unlock is a deliberate config edit.
 
@@ -37,8 +37,8 @@ Removal then reads that domain's [`uninstall.json`](#domain-uninstall-manifest).
 ```php
 // config/domains.php
 'Identity' => ['kind' => 'core'],
-'Archivd' => ['kind' => 'product', 'locked' => true],
-'Microstock' => ['kind' => 'product', 'locked' => true, 'parent' => 'Archivd'],
+'ExampleProduct' => ['kind' => 'product', 'locked' => true],
+'ExampleSubproduct' => ['kind' => 'product', 'locked' => true, 'parent' => 'ExampleProduct'],
 // removable product: ['kind' => 'product', 'locked' => false]
 ```
 
@@ -46,9 +46,9 @@ Core entries omit `locked` (N/A). Product entries always carry `locked`. Only a 
 
 ### Parent / subproduct
 
-`parent` is the composition axis: it records that one product domain builds on another (Microstock stores its assets in Archivd workspaces, and reaches the user through Archivd's quota and workspace switcher). It is orthogonal to `kind` and `locked` — a subproduct is a full product with its own product key, activation row, RBAC, SKU, namespace and `uninstall.json`; only the **removal order** is constrained. `domain:remove` refuses the parent while a registered child still points at it, so a subproduct can never outlive the base it extends. `DomainManager::parentOf()` / `childrenOf()` expose the relation; `domain:list` prints it in the `Parent` column.
+`parent` is the composition axis: it records that one product domain builds on another (a subproduct stores its assets in its base product's workspaces, and reaches the user through the base product's quota and workspace switcher). It is orthogonal to `kind` and `locked` — a subproduct is a full product with its own product key, activation row, RBAC, SKU, namespace and `uninstall.json`; only the **removal order** is constrained. `domain:remove` refuses the parent while a registered child still points at it, so a subproduct can never outlive the base it extends. `DomainManager::parentOf()` / `childrenOf()` expose the relation; `domain:list` prints it in the `Parent` column.
 
-The cross-domain coupling itself (Microstock's `WorkspaceKind::Microstock`, collection columns on `ARCHIVD_folders`, the Archivd quota pool) is unchanged by this axis — see the Archivd manifest `notes[]` and the [Microstock brief](../domains/microstock/README.md).
+The cross-domain coupling itself (extra columns on the base product's tables, a shared quota pool) is unchanged by this axis — it lives in the subproduct manifest `notes[]`.
 
 ## Day-2 commands
 
@@ -73,34 +73,33 @@ Implementation: [`DomainManager`](../../packages/platform/src/Support/Domain/Dom
 
 ## Domain uninstall manifest
 
-A product domain records everything it touched outside `app/Domain/{Name}/` in **one file inside the domain**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. `domain:make` scaffolds it, it dies with the domain, and `domain:remove` executes it — so removing a domain is reading one reviewed map instead of re-auditing the tree. Only product domains have one; core domains are refused before a manifest is ever read. The sample below is abridged from the live `Archivd` manifest — the two current manifests are Archivd and Microstock, and the real files are far longer (`edits[]` and `ignore[]` carry hundreds of entries each).
+A product domain records everything it touched outside `app/Domain/{Name}/` in **one file inside the domain**: `app/Domain/{Name}/uninstall.json`, schema `domain-uninstall/v1`. `domain:make` scaffolds it, it dies with the domain, and `domain:remove` executes it — so removing a domain is reading one reviewed map instead of re-auditing the tree. Only product domains have one; core domains are refused before a manifest is ever read. The sample below is illustrative and abridged — the upstream `monolith` still carries the real manifests, far longer (`edits[]` and `ignore[]` carry hundreds of entries each).
 
 ```json
 {
   "schema": "domain-uninstall/v1",
-  "domain": "Archivd",
+  "domain": "{Name}",
   "repos": {
     "backend": {
-      "delete": ["app/Domain/Archivd", "app/Providers/Domain/ArchivdServiceProvider.php", "routes/api/v1/archivd.php", "routes/web/archivd-public.php", "config/archivd.php", "lang/*/api/archivd.php", "tests/Domain/Archivd", "docs/domains/archivd"],
+      "delete": ["app/Domain/{Name}", "app/Providers/Domain/{Name}ServiceProvider.php", "routes/api/v1/{slug}.php", "config/{slug}.php", "lang/*/api/{slug}.php", "tests/Domain/{Name}", "docs/domains/{slug}"],
       "edits": [
-        { "file": ".env.example", "op": "remove_lines_matching", "match": "^(?:ARCHIVD_S3_CE_REGION|ARCHIVD_DISK|ARCHIVD_DIRECTORY)=" },
-        { "file": "config/products.php", "op": "remove_block", "begin": "'Archivd' =>" },
-        { "file": "config/spa-routes.php", "op": "remove_quoted_strings", "match": ["archivd.index", "archivd.trash", "archivd.workspaces"] },
-        { "file": "lang/*/list_actions.php", "op": "remove_array_keys", "match": ["archivd."] }
+        { "file": ".env.example", "op": "remove_lines_matching", "match": "^({SLUG}_DISK|{SLUG}_DIRECTORY)=" },
+        { "file": "config/spa-routes.php", "op": "remove_quoted_strings", "match": ["{slug}.index"] },
+        { "file": "lang/*/list_actions.php", "op": "remove_array_keys", "match": ["{slug}."] }
       ],
       "unresolved": [],
       "ignore": []
     },
-    "spa": { "delete": ["src/views/archivd", "src/composables/archivd"], "edits": [], "unresolved": [], "ignore": [] },
-    "docs": { "delete": ["docs/archivd"], "edits": [], "unresolved": [], "ignore": [] }
+    "spa": { "delete": ["src/features/{slug}", "src/i18n/features/{slug}"], "edits": [], "unresolved": [], "ignore": [] },
+    "docs": { "delete": ["docs/domains/{slug}"], "edits": [], "unresolved": [], "ignore": [] }
   },
   "data": {
-    "tables": ["archivd_files", "archivd_folders", "archivd_uploads"],
-    "migrations": ["database/migrations/2026_07_15_100001_create_archivd_tables.php"],
-    "rbac": { "permissions": ["access archivd product"], "roles": ["Beta tester Archivd"] },
+    "tables": ["{slug}_files", "{slug}_folders"],
+    "migrations": ["database/migrations/*_create_{slug}_tables.php"],
+    "rbac": { "permissions": ["access {slug} product"], "roles": ["Beta tester {Name}"] },
     "rows": [
-      { "table": "product_activations", "key": { "product_key": "Archivd" } },
-      { "table": "menus", "match": { "column": "route", "operator": "like", "value": "archivd.%" } }
+      { "table": "product_activations", "key": { "product_key": "{Name}" } },
+      { "table": "menus", "match": { "column": "route", "operator": "like", "value": "{slug}.%" } }
     ]
   },
   "needles": [],
@@ -111,7 +110,7 @@ A product domain records everything it touched outside `app/Domain/{Name}/` in *
 | Section | Meaning |
 |---------|---------|
 | `repos.backend` / `repos.spa` / `repos.docs` | One section per checkout. `backend` is this repo; `spa` and `docs` are sibling checkouts. |
-| `delete[]` | Repo-relative file or directory paths; `*` globs allowed (`lang/*/api/archivd.php`). A path that matches nothing is a plan warning, not a failure — the domain may never have added it. |
+| `delete[]` | Repo-relative file or directory paths; `*` globs allowed (`lang/*/api/{slug}.php`). A path that matches nothing is a plan warning, not a failure — the domain may never have added it. |
 | `edits[]` | Shared-file surgery: `file` (may glob) + `op` + its spec. |
 | `unresolved[]` | Draft-time worklist — `{file, reason}`. `domain:remove` refuses to run while it is not empty (unless `--force`) and the drift guard fails on it. |
 | `ignore[]` | Reviewed survivor references — `{path, reason}`. The reason is mandatory and may not start with `TODO`; it says why the reference survives **or** spells out the hand edit the closed op vocabulary cannot express. |
@@ -147,7 +146,7 @@ The scan runs in both directions: `--draft-manifest` turns it into a candidate m
 
 Machine-local files are out of scope. A `.gitignore`d override (for example `database/seeders/data/*.local.php`) exists on one machine and not in a clean checkout, so scanning it would make the manifest — and the guard — depend on who runs them; a backend path has no "unverifiable" escape the way an absent sibling checkout does. The reference is neither scanned nor recorded, and a hand edit such an override still needs goes in `notes[]`.
 
-**Size is a silent blind spot.** The scanner reads files up to `UninstallReferenceScanner::MAX_FILE_BYTES` (2 MB) and skips anything larger without a warning, so a big sidecar can sit unscanned for months and then surface the moment a removal shrinks it under the cap. That happened when a domain removal dropped the SPA `src/i18n/curation-log.json` from 2.06 MB to 1.44 MB: the drift guard started reporting Archivd and Microstock references in it for the first time. Both manifests now carry an `ignore` entry for it. Treat a large generated sidecar as **unscanned, not clean** — either add the `ignore` entry up front with the reason, or raise the cap deliberately.
+**Size is a silent blind spot.** The scanner reads files up to `UninstallReferenceScanner::MAX_FILE_BYTES` (2 MB) and skips anything larger without a warning, so a big sidecar can sit unscanned for months and then surface the moment a removal shrinks it under the cap. That happened when a domain removal dropped the SPA `src/i18n/curation-log.json` from 2.06 MB to 1.44 MB: the drift guard started reporting product references in it for the first time. Both manifests carry an `ignore` entry for it. Treat a large generated sidecar as **unscanned, not clean** — either add the `ignore` entry up front with the reason, or raise the cap deliberately.
 
 ### Day-2 workflow
 
@@ -160,7 +159,7 @@ php artisan domain:remove {Name} --purge-data --force  # …and drop tables/rows
 
 `--dry-run` is read-only and is allowed while the domain is locked. `--force` skips the confirmation prompt but **not** the `unresolved` check. Without `--purge-data` the migrations stay, matching the historical `domain:remove` behaviour; `--purge-data` is refused unless `DestructiveDatabaseCommandGuard` allows it (`ALLOW_DESTRUCTIVE_DB=true` outside sqlite/local). After a run the command flushes the navigation and permission caches, because menus and RBAC moved.
 
-Sibling checkouts resolve as `dirname(base_path()).'/monolith-vue-workers'` and `'/docs'`. An absent sibling is reported **unverifiable** — never clean — and its section is skipped, so a CI that checks out one repo cannot silently pass a cross-repo removal.
+Sibling checkouts resolve from `config/domains.php` `siblings` (`'spa'` / `'docs'` directory names beside this project) — a fork points `spa` at its own frontend. An absent sibling is reported **unverifiable** — never clean — and its section is skipped, so a CI that checks out one repo cannot silently pass a cross-repo removal.
 
 The AI-facing procedure is [.cursor/skills/domain-remove/SKILL.md](../../.cursor/skills/domain-remove/SKILL.md); this section owns the schema and the op vocabulary.
 
@@ -174,8 +173,6 @@ app/
 │   ├── Identity/       # Auth, User, RBAC, lookups (core)
 │   ├── ActivityLog/    # Spatie audit trail (core)
 │   ├── ErrorLog/       # Grouped persistent app errors (core)
-│   ├── Archivd/        # Nested files, chunk S3 upload, Drive-lite share (product, locked)
-│   ├── Microstock/     # Microstock asset mgmt on Archivd system workspace (product, locked; subproduct of Archivd)
 │   ├── Inference/      # AI model catalog + provider model rates + snapshots (core)
 │   └── Ai/             # Central AI transport: ai_connections (core; not pricing)
 ├── Http/Middleware/    # Kernel
@@ -208,7 +205,7 @@ Tests: `tests/Domain/{Domain}/` (PHPUnit suite `Domain`) and `packages/*/tests/`
 
 API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainManager::packageApiRoutePaths()` for packaged domains (`packages/*/routes/{domain}.php`, one file per domain even when two share a package). Web: `routes/web.php` → `routes/web/{domain}.php`, plus `DomainManager::packageWebRoutePaths()` for a packaged domain's registry `web` key (`packages/billing/routes/web-ipaymu-return.php`), so the `web` middleware group still wraps it.
 
-**Web URI layout:** The Blade admin is removed. Authenticated UI lives in the SPA under `/apps/*` paths (Vue Router symbolic names like `dashboard`, `archivd.index` — stored in menu rows, validated via `config/spa-routes.php`). Monolith `web` routes are **server endpoints only**: `GET /` → SPA redirect; public share `/s/*`; iPaymu return; Discord OAuth callback. API paths (`/api/v1/*`) are unchanged. See [blade-admin.md](../web/blade-admin.md) and [vue-workers-spa.md](../integration/vue-workers-spa.md).
+**Web URI layout:** The Blade admin is removed. Authenticated UI lives in the SPA under `/apps/*` paths (Vue Router symbolic names stored in menu rows, validated via `config/spa-routes.php`). Monolith `web` routes are **server endpoints only**: `GET /` → SPA redirect; a product's public share `/s/*`; iPaymu return; Discord OAuth callback. API paths (`/api/v1/*`) are unchanged. See [blade-admin.md](../web/blade-admin.md) and [vue-workers-spa.md](../integration/vue-workers-spa.md).
 
 **Loader convention (presentation only):** list **core** requires first, **product** last, with short `// Core` / `// Product` comment sections. Same order in `bootstrap/providers.php` and `config/domains.php`. Does **not** change API URL paths or route names. `domain:make` still appends into the `/apps` auth group; re-order once if a new product lands mid-file. Guest/public web specials stay outside kind sections — those groups are auth surface, not taxonomy.
 
@@ -224,8 +221,6 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainM
 | `packages/billing/routes/payment-gateway.php` | Gateways, invoices, subscriptions | core (package `silverspoonmedia/billing`) |
 | `packages/billing/routes/service.php` | Service catalog, checkout, service purchases | core (package `silverspoonmedia/billing`) |
 | `packages/billing/routes/web-ipaymu-return.php` | iPaymu hosted return/cancel (public web) | core (package `silverspoonmedia/billing`) |
-| `archivd.php` | Archivd (auth + public share) folders/files/uploads | product |
-| `microstock.php` | Microstock (API + thin web entry; Archivd mounts most UI) | product — subproduct of Archivd |
 
 Kernel product registry (`packages/platform/src/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
 

@@ -47,9 +47,9 @@ function docs_budget_doc_kind(string $relativeToDocs): array
 
     return match (true) {
         $relativeToDocs === 'README.md' => ['name' => 'index', 'budget' => 150],
+        in_array($name, ['billing-edge-cases.md', 'daily-free-trial.md', 'reference-edge-cases.md'], true) => ['name' => 'edge-case', 'budget' => 200],
         str_starts_with($name, 'reference') => ['name' => 'deep-dive', 'budget' => 400],
         $name === 'naming-conventions.md' => ['name' => 'glossary', 'budget' => 200],
-        in_array($name, ['billing-edge-cases.md', 'daily-free-trial.md'], true) => ['name' => 'edge-case', 'budget' => 200],
         default => ['name' => 'brief', 'budget' => 90],
     };
 }
@@ -71,6 +71,6 @@ function docs_budget_kind_samples(): array
         'brief' => ['brief', 'platform/tooling.md'],
         'deep dive' => ['deep-dive', 'platform/reference-tooling.md'],
         'glossary' => ['glossary', 'platform/naming-conventions.md'],
-        'edge case' => ['edge-case', 'domains/microstock/billing-edge-cases.md'],
+        'edge case' => ['edge-case', 'platform/reference-edge-cases.md'],
     ];
 }

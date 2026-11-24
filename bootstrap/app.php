@@ -2,7 +2,6 @@
 
 use App\Console\Commands\Domain\ListDomainsCommand;
 use App\Console\Commands\EncryptionFlushDecryptedCacheCommand;
-use App\Exceptions\BusinessRuleException;
 use App\Http\Kernel;
 use App\Http\Middleware\AuthenticateWithSpaCookie;
 use App\Http\Middleware\OptionalJwtAuthenticate;
@@ -31,15 +30,21 @@ use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+/**
+ * Cored boots the same perimeter the monolith does, from the same kernel
+ * classes: the SPA is the only browser, it calls the API cross-site, and every
+ * data request is gated by origin, request header and the double-submit nonce.
+ *
+ * The one difference is location: a consumer install resolves every kernel and
+ * domain class through Composer (`vendor/silverspoonmedia/*`), so no path here
+ * points into this checkout.
+ */
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withEvents(discover: [
-        __DIR__.'/../packages/platform/src/Domain/Identity/Listeners',
+        __DIR__.'/../vendor/silverspoonmedia/platform/src/Domain/Identity/Listeners',
     ])
     ->withCommands([
         __DIR__.'/../app/Console/Commands',
-        __DIR__.'/../app/Domain/Ai/Console/Commands',
-        __DIR__.'/../app/Domain/Archivd/Console/Commands',
-        __DIR__.'/../app/Domain/Microstock/Console/Commands',
         // Kernel-owned: both read state and edit nothing, so a consumer install
         // runs the same classes from vendor. The directory above carries no
         // copy of either.
@@ -100,9 +105,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // lives on the SPA origin.
         $middleware->redirectGuestsTo(fn (Request $request) => null);
 
-        // The Blade app is gone; the only remaining web routes are server-side
-        // endpoints (guest share, iPaymu return, Discord OAuth callback). No JWT
-        // cookie bridge runs here any more - locale + security headers only.
+        // No Blade surface ships here; the only web routes are server-side
+        // endpoints (iPaymu return, Discord OAuth callback). Locale + security
+        // headers only.
         $middleware->web(append: [
             SetLocale::class,
             SecurityHeaders::class,

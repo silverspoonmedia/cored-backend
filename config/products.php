@@ -19,9 +19,10 @@
  *
  *   fulfillment_target => string|null
  *     Maps this product to a Service catalog fulfillment_target
- *     (e.g. 'archivd'). Wired in ServiceFulfillmentService so
- *     paid entitlement activations can keep the activation row in
- *     sync. Null when the product has no paid SKU backing.
+ *     (e.g. 'files' for a file-hosting product). Wired in
+ *     ServiceFulfillmentService so paid entitlement activations can
+ *     keep the activation row in sync. Null when the product has no
+ *     paid SKU backing.
  *
  *   menu_routes        => list<string>
  *     Named menu routes that should be hidden from the dynamic
@@ -33,21 +34,4 @@
  */
 
 return [
-    'Archivd' => [
-        'activation_type' => 'implicit',
-        'fulfillment_target' => 'archivd',
-        'menu_routes' => ['archivd.index'],
-    ],
-    'Microstock' => [
-        'activation_type' => 'implicit',
-        // Subproduct of Archivd (config/domains.php: 'parent' => 'Archivd').
-        // Standalone paid SKUs (free registration + compounding slot addon)
-        // activate this product via Service fulfillment_target 'microstock'.
-        // Storage still meters into the shared Archivd quota pool, but Microstock
-        // workspace slots are accounted separately (MicrostockCatalog).
-        'fulfillment_target' => 'microstock',
-        // No dedicated sidebar menu (removed) — reached via /services and the
-        // Archivd workspace switcher. Empty menu_routes: nothing to hide.
-        'menu_routes' => [],
-    ],
 ];

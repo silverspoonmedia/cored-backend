@@ -269,7 +269,12 @@ function scaffold_artisan(string $work, array $arguments): array
 }
 
 /**
- * `domain:list` must report the ten core domains and no product domain.
+ * `domain:list` must report the ten core domains and no other domain.
+ *
+ * Nothing product-specific is named here: the scaffold install carries zero products,
+ * so the check is "every core domain is reported" and "the table has exactly that
+ * many domain rows". Naming a product would make the guard monolith-only and let it
+ * pass in a fork that quietly carries a product.
  *
  * @return array{bool, string}
  */
@@ -288,17 +293,11 @@ function scaffold_domains(string $work): array
     }
 
     $missing = [];
-    $product = [];
+    $domains = ['Identity', 'Navigation', 'Notification', 'ActivityLog', 'ErrorLog', 'PaymentGateway', 'Currency', 'Service', 'Inference', 'Ai'];
 
-    foreach (['Identity', 'Navigation', 'Notification', 'ActivityLog', 'ErrorLog', 'PaymentGateway', 'Currency', 'Service', 'Inference', 'Ai'] as $domain) {
+    foreach ($domains as $domain) {
         if (! str_contains($output, $domain)) {
             $missing[] = $domain;
-        }
-    }
-
-    foreach (['Archivd', 'Microstock'] as $domain) {
-        if (str_contains($output, $domain)) {
-            $product[] = $domain;
         }
     }
 
@@ -306,8 +305,18 @@ function scaffold_domains(string $work): array
         return [false, 'domain:list does not report: '.implode(', ', $missing)."\n".scaffold_tail($output)];
     }
 
-    if ($product !== []) {
-        return [false, 'the scaffold registry reports a product domain the install does not carry: '.implode(', ', $product)];
+    // Every table row is a domain; the header, the separator and the four legend
+    // lines are not. One row per core domain, no more.
+    $rows = 0;
+
+    foreach (explode("\n", $output) as $line) {
+        if (preg_match('/^\|\s*\S+\s*\|\s*(core|product)\s*\|/', $line) === 1) {
+            $rows++;
+        }
+    }
+
+    if ($rows !== count($domains)) {
+        return [false, "the scaffold registry lists {$rows} domain row(s); the install carries ".count($domains)."\n".scaffold_tail($output)];
     }
 
     return [true, ''];

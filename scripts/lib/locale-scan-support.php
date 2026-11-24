@@ -17,7 +17,19 @@
  *
  * These are plain functions, not a class: the guards are standalone scripts run by
  * `php scripts/…` and by `LocaleGuardTest`, and a `require` keeps them dependency-free.
+ *
+ * **A removed domain takes its floors with it.** In a product-free tree the product
+ * locale files are gone, so every floor that was measured with those files in the
+ * corpus sits above the real count and the gate can never go green. A floor is
+ * re-measured — not lowered to fit a reverted wave — in the same change that deletes
+ * the keys it counted: run `--report-floors`, confirm the *drop* is explained by the
+ * deleted files (`--verbose`), then write the measured count.
  */
+
+/**
+ * Where the term maps are read from when `--report-floors` re-measures them.
+ */
+const GLOSSARY_SOURCE = __DIR__.'/../locale-glossary-scan.php';
 
 /**
  * Absolute path to the backend repo root (this file lives in `scripts/lib/`).
@@ -52,10 +64,59 @@ function locale_scan_lang_roots(): array
 
 /**
  * Absolute path to the sibling SPA repo, whether or not it exists.
+ *
+ * A fork names its pair differently (`cored-backend` + `cored-frontend`). The name is
+ * read from the backend's own `config/domains.php` `siblings.spa` entry — the same key
+ * `UninstallReferenceScanner` uses for the cross-repo half of `domain:remove` — so one
+ * declaration points every guard at the right sibling. Falls back to the monolith's
+ * `monolith-vue-workers` when the config cannot be read (a guard run from a bare
+ * checkout that has no app bootstrap).
  */
 function locale_scan_spa_root(): string
 {
-    return dirname(locale_scan_root()).'/monolith-vue-workers';
+    static $root = null;
+
+    if ($root !== null) {
+        return $root;
+    }
+
+    $sibling = locale_scan_spa_sibling_name();
+
+    return $root = dirname(locale_scan_root()).'/'.$sibling;
+}
+
+/**
+ * Directory name of the sibling SPA checkout (`siblings.spa` in `config/domains.php`).
+ */
+function locale_scan_spa_sibling_name(): string
+{
+    static $name = null;
+
+    if ($name !== null) {
+        return $name;
+    }
+
+    // Read once per process: the guards are standalone scripts, so a second include
+    // is impossible, but a guard that calls the helper twice must not re-parse.
+    static $domains = false;
+
+    if ($domains === false) {
+        $config = locale_scan_root().'/config/domains.php';
+
+        try {
+            $domains = is_file($config) ? include $config : null;
+        } catch (Throwable) {
+            $domains = null;
+        }
+
+        if (! is_array($domains)) {
+            $domains = null;
+        }
+    }
+
+    $spa = $domains['siblings']['spa'] ?? null;
+
+    return $name = is_string($spa) && $spa !== '' ? $spa : 'monolith-vue-workers';
 }
 
 /**
@@ -114,7 +175,7 @@ function locale_scan_require_spa(string $spaRoot): void
 
     fwrite(STDERR, 'cannot see the SPA repo: '.$spaRoot.PHP_EOL);
     fwrite(STDERR, 'This guard compares the backend packs with the SPA packs, so a run without it proves nothing.'.PHP_EOL);
-    fwrite(STDERR, 'Check out monolith-vue-workers as a sibling of this repo and retry.'.PHP_EOL);
+    fwrite(STDERR, 'Check out '.locale_scan_spa_sibling_name().' as a sibling of this repo and retry.'.PHP_EOL);
 
     exit(1);
 }

@@ -3,12 +3,10 @@
 namespace Database\Seeders;
 
 use App\Domain\Ai\Database\Seeders\AiConnectionSeeder;
-use App\Domain\Archivd\Database\Seeders\ArchivdCatalogSeeder;
 use App\Domain\Currency\Database\Seeders\CurrencySeeder;
 use App\Domain\Identity\Database\Seeders\RoleSeeder;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inference\Database\Seeders\InferenceCatalogSeeder;
-use App\Domain\Microstock\Database\Seeders\MicrostockCatalogSeeder;
 use App\Domain\Navigation\Database\Seeders\MenuSeeder;
 use App\Domain\Notification\Database\Seeders\NotificationTypeSettingSeeder;
 use App\Domain\PaymentGateway\Database\Seeders\PaymentChannelSeeder;
@@ -21,13 +19,13 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
 
 /**
- * The monolith's full seed.
+ * The boilerplate's full seed: the core catalogs plus four demo users, one per
+ * core role.
  *
- * Product catalogs, product role ladders and the demo users live here, not in a
- * package: this seeder runs against the host database the products extend. The
- * core role ladder moved into the kernel
- * (`App\Domain\Identity\Database\Seeders\RoleSeeder`) so a package test can seed
- * it without this tree.
+ * Product catalogs, product role ladders and demo product data belong to a host
+ * that installs a product — they extend this seed from their own seeder. What
+ * runs here is exactly what the core packages supply, so a fresh clone boots a
+ * usable workspace with no product installed.
  */
 class DatabaseSeeder extends Seeder
 {
@@ -36,8 +34,6 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RoleSeeder::class);
-        $this->call(ArchivdRoleSeeder::class);
-        $this->call(MicrostockRoleSeeder::class);
         $this->call(DomainAccessSeeder::class);
         $this->call(NotificationTypeSettingSeeder::class);
         $this->call(SettingsSeeder::class);
@@ -82,8 +78,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CurrencySeeder::class);
         $this->call(InferenceCatalogSeeder::class);
         $this->call(ServiceCatalogSeeder::class);
-        $this->call(ArchivdCatalogSeeder::class);
-        $this->call(MicrostockCatalogSeeder::class);
 
         if (app()->environment('local')) {
             // Tier C wiring: `ai_connections` rows + consumer slug bindings from the
@@ -96,6 +90,9 @@ class DatabaseSeeder extends Seeder
     /**
      * Activate implicit products for seeded users so the registry has rows
      * out of the box (mirrors what happens on register for real users).
+     *
+     * `config/products.php` is empty here, so this is a no-op until a host
+     * registers a product — the call stays so the wiring is exercised either way.
      */
     private function seedProductActivations(User ...$users): void
     {

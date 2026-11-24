@@ -48,7 +48,7 @@
 return [
     // Sibling checkouts (not domains). A fork's pair: 'spa' => 'cored-frontend'.
     'siblings' => [
-        'spa' => 'monolith-vue-workers',
+        'spa' => 'cored-frontend',
         'docs' => 'docs',
     ],
 
@@ -58,24 +58,24 @@ return [
     'Identity' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/platform',
-        'path' => 'packages/platform/src/Domain/Identity',
-        'routes' => 'packages/platform/routes/identity.php',
-        'web' => 'packages/platform/routes/web-identity-oauth-callback.php',
-        'provider' => 'packages/platform/src/Providers/Domain/IdentityServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/platform/src/Domain/Identity',
+        'routes' => 'vendor/silverspoonmedia/platform/routes/identity.php',
+        'web' => 'vendor/silverspoonmedia/platform/routes/web-identity-oauth-callback.php',
+        'provider' => 'vendor/silverspoonmedia/platform/src/Providers/Domain/IdentityServiceProvider.php',
     ],
     'Navigation' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/navigation',
-        'path' => 'packages/navigation/src',
-        'routes' => 'packages/navigation/routes/api.php',
-        'provider' => 'packages/navigation/src/NavigationServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/navigation/src',
+        'routes' => 'vendor/silverspoonmedia/navigation/routes/api.php',
+        'provider' => 'vendor/silverspoonmedia/navigation/src/NavigationServiceProvider.php',
     ],
     'Notification' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/notification',
-        'path' => 'packages/notification/src',
-        'routes' => 'packages/notification/routes/api.php',
-        'provider' => 'packages/notification/src/NotificationServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/notification/src',
+        'routes' => 'vendor/silverspoonmedia/notification/routes/api.php',
+        'provider' => 'vendor/silverspoonmedia/notification/src/NotificationServiceProvider.php',
     ],
     // One package, two core domains: ActivityLog + ErrorLog are one operational
     // surface (what happened vs what broke) and are consumed together, so they
@@ -83,16 +83,16 @@ return [
     'ActivityLog' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/audit',
-        'path' => 'packages/audit/src',
-        'routes' => 'packages/audit/routes/activity-log.php',
-        'provider' => 'packages/audit/src/ActivityLog/AuditServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/audit/src',
+        'routes' => 'vendor/silverspoonmedia/audit/routes/activity-log.php',
+        'provider' => 'vendor/silverspoonmedia/audit/src/ActivityLog/AuditServiceProvider.php',
     ],
     'ErrorLog' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/audit',
-        'path' => 'packages/audit/src',
-        'routes' => 'packages/audit/routes/error-log.php',
-        'provider' => 'packages/audit/src/ActivityLog/AuditServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/audit/src',
+        'routes' => 'vendor/silverspoonmedia/audit/routes/error-log.php',
+        'provider' => 'vendor/silverspoonmedia/audit/src/ActivityLog/AuditServiceProvider.php',
     ],
     // One package, three core domains: Currency is the money vocabulary, Service
     // prices in it and settles through it, PaymentGateway collects the invoice —
@@ -101,26 +101,26 @@ return [
     'PaymentGateway' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/billing',
-        'path' => 'packages/billing/src',
-        'routes' => 'packages/billing/routes/payment-gateway.php',
-        'web' => 'packages/billing/routes/web-ipaymu-return.php',
-        'provider' => 'packages/billing/src/PaymentGateway/BillingServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/billing/src',
+        'routes' => 'vendor/silverspoonmedia/billing/routes/payment-gateway.php',
+        'web' => 'vendor/silverspoonmedia/billing/routes/web-ipaymu-return.php',
+        'provider' => 'vendor/silverspoonmedia/billing/src/PaymentGateway/BillingServiceProvider.php',
     ],
     // Route file loads before `service.php` so the currency endpoints keep the
     // URI order they had when they shared that file.
     'Currency' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/billing',
-        'path' => 'packages/billing/src',
-        'routes' => 'packages/billing/routes/currency.php',
-        'provider' => 'packages/billing/src/PaymentGateway/BillingServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/billing/src',
+        'routes' => 'vendor/silverspoonmedia/billing/routes/currency.php',
+        'provider' => 'vendor/silverspoonmedia/billing/src/PaymentGateway/BillingServiceProvider.php',
     ],
     'Service' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/billing',
-        'path' => 'packages/billing/src',
-        'routes' => 'packages/billing/routes/service.php',
-        'provider' => 'packages/billing/src/PaymentGateway/BillingServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/billing/src',
+        'routes' => 'vendor/silverspoonmedia/billing/routes/service.php',
+        'provider' => 'vendor/silverspoonmedia/billing/src/PaymentGateway/BillingServiceProvider.php',
     ],
     // One package, two core domains: Inference owns the catalog and the rates,
     // Ai owns the endpoints and keys that reach them; a rate is meaningless
@@ -129,21 +129,19 @@ return [
     'Inference' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/ai',
-        'path' => 'packages/ai/src',
-        'routes' => 'packages/ai/routes/inference.php',
-        'provider' => 'packages/ai/src/Ai/AiServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/ai/src',
+        'routes' => 'vendor/silverspoonmedia/ai/routes/inference.php',
+        'provider' => 'vendor/silverspoonmedia/ai/src/Ai/AiServiceProvider.php',
     ],
     'Ai' => [
         'kind' => 'core',
         'package' => 'silverspoonmedia/ai',
-        'path' => 'packages/ai/src',
-        'routes' => 'packages/ai/routes/ai.php',
-        'provider' => 'packages/ai/src/Ai/AiServiceProvider.php',
+        'path' => 'vendor/silverspoonmedia/ai/src',
+        'routes' => 'vendor/silverspoonmedia/ai/routes/ai.php',
+        'provider' => 'vendor/silverspoonmedia/ai/src/Ai/AiServiceProvider.php',
     ],
 
     // Product
-    'Archivd' => ['kind' => 'product', 'locked' => true],
 
     // Subproduct (product with a parent)
-    'Microstock' => ['kind' => 'product', 'locked' => true, 'parent' => 'Archivd'],
 ];
