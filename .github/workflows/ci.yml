@@ -1,15 +1,15 @@
 name: CI
 
-# Two gates, both sibling-free — neither job carries credentials or checks out
-# `monolith-vue-workers`:
+# Three gates, all sibling-free — none of them checks out `monolith-vue-workers`:
 #
-#   `locale`  — the localization guards.
-#   `backend` — Pint, PHPStan level 5, and the backend test suite (`php artisan test`),
-#               which is where the domain suites live. Before these steps existed,
-#               `ci.yml` ran only `--filter=Locale`, so a change that broke
-#               `tests/Domain/**` could merge green: a single product domain alone is
-#               60+ feature test files that never executed on the runner. Style and
-#               types had no gate at all — a drift landed in the next commit.
+#   `locale`   — the localization guards.
+#   `backend`  — Pint, PHPStan level 5, and the backend test suite (`php artisan test`),
+#                which is where the domain suites live. Before these steps existed,
+#                `ci.yml` ran only `--filter=Locale`, so a change that broke
+#                `tests/Domain/**` could merge green: a single product domain alone is
+#                60+ feature test files that never executed on the runner. Style and
+#                types had no gate at all — a drift landed in the next commit.
+#   `consumer-scaffold` — the published mirrors install and the template assembles.
 #
 # An earlier version of `locale` checked out `monolith-vue-workers` as a sibling so
 # the four cross-repo guards (`locale-prose-scan`, `locale-rawkey-scan`,
@@ -181,17 +181,17 @@ jobs:
       - name: Backend test suite
         run: php artisan test
 
-  # The one check that proves a package's published toolchain works: copy
-  # `packages/{slug}` to a temporary directory, resolve `silverspoonmedia/*` from
-  # the sibling sources, `composer install`, `composer test`. Without it a package
-  # can green the monolith's suite while a consumer who clones its mirror tag
-  # cannot run a single test — the exact debt the Testbench harness closed.
+  # The one check that proves the consumer path works: copy `client-scaffold`, let
+  # Composer resolve `silverspoonmedia/*` from the tagged private mirrors (this repo
+  # has no `packages/` tree — that is the whole point of the fork), publish the
+  # host-owned kernel migrations, list the domains and routes, migrate on sqlite, and
+  # assert one real 422 carries a translated sentence.
   #
-  # Scheduled on the same triggers as the rest, because a Composer install per
-  # package is minutes of network; path filters would let a change to
-  # `packages/platform/src` skip it while still changing what the siblings resolve.
-  standalone-packages:
-    name: Standalone package suites
+  # The counterpart job in `monolith` swaps the mirrors for path repositories, which
+  # skips the network but also skips the one thing a consumer depends on: that the
+  # published tags install. Both runs are needed; neither is a substitute.
+  consumer-scaffold:
+    name: Consumer scaffold (published mirrors)
     runs-on: ubuntu-latest
     env: *test-env
 
@@ -216,16 +216,17 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      # Each package installs its own `require` + `require-dev` (Laravel, Testbench,
-      # the sibling kernel) into its temporary copy, so the copy's PHP needs the same
-      # extensions the suite does.
-      - name: Standalone package suites
-        run: composer test:standalone
-
-      # The packages each pass alone; this proves the template assembles them.
-      # `run-consumer-scaffold-check.php` copies `client-scaffold`, swaps the private
-      # VCS mirrors for path repositories to `packages/*`, installs, lists domains and
-      # routes, migrates on sqlite, and asserts one real 422 carries a translated
-      # sentence. It shares the install above, so it costs minutes, not more.
+      # The scaffold installs `silverspoonmedia/*` from private VCS mirrors, so the
+      # run needs an org token. A repo-scoped `GITHUB_TOKEN` cannot read another
+      # repository: this step is skipped with a clear message rather than failing the
+      # build on a missing secret, and `monolith`'s own scaffold job (path
+      # repositories, no token) stays the hard gate.
       - name: Consumer scaffold
-        run: php -d memory_limit=1G scripts/run-consumer-scaffold-check.php
+        env:
+          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
+        run: |
+          if [ -z "$COMPOSER_AUTH" ]; then
+            echo "::warning::COMPOSER_AUTH is not set — skipping the mirror install; monolith's path-repository scaffold run is the hard gate."
+            exit 0
+          fi
+          php -d memory_limit=1G scripts/run-consumer-scaffold-check.php
