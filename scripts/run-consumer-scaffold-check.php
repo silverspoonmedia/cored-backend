@@ -15,17 +15,22 @@
  *  1. copy `client-scaffold` (no `vendor`, no `node_modules`);
  *  2. rewrite the copy's `composer.json` — path repositories to
  *     `packages/*` instead of the private VCS mirrors, so no org token is
- *     needed — then `composer install`;
+ *     needed — then `composer install`. A consumer checkout has no `packages/`
+ *     tree, so there the VCS mirrors stay and the token comes from
+ *     `COMPOSER_AUTH`;
  *  3. `php artisan package:discover` and `php artisan domain:list`: the registry
  *     must report the ten core domains and no product domain;
- *  4. `php artisan route:list --json`: the pinned core URI set must be present;
- *  5. `php artisan migrate --force` on sqlite: host-owned migrations plus the
+ *  4. `php artisan vendor:publish --tag=silverspoon-platform-migrations`: the
+ *     kernel's tables are host-owned, so a consumer install publishes them
+ *     instead of loading them from the package;
+ *  5. `php artisan route:list --json`: the pinned core URI set must be present;
+ *  6. `php artisan migrate --force` on sqlite: host-owned migrations plus the
  *     package ones the providers load;
- *  6. the scaffold's own suite (`client-scaffold/tests`), the only place those
+ *  7. the scaffold's own suite (`client-scaffold/tests`), the only place those
  *     tests run: they boot the copy's `bootstrap/app.php` against its `vendor/`;
- *  7. `php artisan encryption:flush-decrypted-cache` with no context must fail
+ *  8. `php artisan encryption:flush-decrypted-cache` with no context must fail
  *     with the per-context sentence — the kernel command reached the consumer;
- *  8. one real request through the kernel: `POST /api/v1/auth/login` with an
+ *  9. one real request through the kernel: `POST /api/v1/auth/login` with an
  *     empty body must answer 422 with a translated sentence, never a raw
  *     validation key.
  *
@@ -87,6 +92,16 @@ try {
     $steps[] = ['package:discover', ...scaffold_artisan($work, ['package:discover', '--ansi'])];
 
     $steps[] = ['domain:list', ...scaffold_domains($work)];
+
+    // The kernel's tables are host-owned, so a consumer install carries them as
+    // published migrations instead of loading them from the package. Publishing
+    // is part of the documented fork recipe; the check runs it exactly as a
+    // consumer would and then fails if the migration is still missing.
+    $steps[] = ['vendor:publish', ...scaffold_artisan($work, ['vendor:publish', '--tag=silverspoon-platform-migrations', '--force', '--no-interaction'])];
+
+    if (! is_file($work.DIRECTORY_SEPARATOR.'database'.DIRECTORY_SEPARATOR.'migrations'.DIRECTORY_SEPARATOR.'0001_01_01_000001_create_users_table.php')) {
+        $steps[] = ['kernel migrations', false, 'the kernel migrations were not published — a consumer install cannot migrate without them.'];
+    }
 
     $steps[] = ['route:list', ...scaffold_routes($work)];
 
@@ -162,29 +177,37 @@ function scaffold_composer_arguments(): array
 /**
  * A manifest the scaffold can install from, then `composer install`.
  *
- * The copy lives outside the monolith, so the private VCS mirrors are replaced by
- * path repositories to this checkout's `packages/`. Each path package pins its
- * `version`, which is what keeps `minimum-stability: stable` resolvable without
- * tag history beside the copy.
+ * In the monolith the copy lives outside the source tree, so the private VCS
+ * mirrors are replaced by path repositories to `packages/`. Each path package
+ * pins its `version`, which is what keeps `minimum-stability: stable`
+ * resolvable without tag history beside the copy.
+ *
+ * A consumer checkout (a fork, `cored-backend`) has no `packages/` tree: its
+ * packages come from the tagged mirrors, so the manifest stays as shipped and
+ * the run needs `COMPOSER_AUTH` for the private org.
  *
  * @param  list<string>  $composer
  * @return array{bool, string}
  */
 function scaffold_composer_install(string $root, string $work, array $composer): array
 {
+    $slugs = ['platform', 'navigation', 'notification', 'audit', 'billing', 'ai'];
+
+    $hasPathPackages = true;
+
+    foreach ($slugs as $slug) {
+        if (! is_dir($root.'/packages/'.$slug)) {
+            $hasPathPackages = false;
+
+            break;
+        }
+    }
+
     $manifestPath = $work.DIRECTORY_SEPARATOR.'composer.json';
     $manifest = json_decode((string) file_get_contents($manifestPath), true);
 
     if (! is_array($manifest)) {
         return [false, 'composer.json is not valid JSON.'];
-    }
-
-    $repositories = [];
-
-    foreach ((array) ($manifest['repositories'] ?? []) as $repository) {
-        if (($repository['type'] ?? null) !== 'vcs') {
-            $repositories[] = $repository;
-        }
     }
 
     // `pdf-tools` lives in its own private repo and is not one of the six core
@@ -197,17 +220,28 @@ function scaffold_composer_install(string $root, string $work, array $composer):
     // force the network to fetch a PDF stack.
     unset($manifest['require']['spatie/laravel-pdf']);
 
-    foreach (['platform', 'navigation', 'notification', 'audit', 'billing', 'ai'] as $slug) {
-        $repositories[] = [
-            'type' => 'path',
-            'url' => $root.'/packages/'.$slug,
-            'options' => ['symlink' => false],
-        ];
+    if ($hasPathPackages) {
+        $repositories = [];
+
+        foreach ((array) ($manifest['repositories'] ?? []) as $repository) {
+            if (($repository['type'] ?? null) !== 'vcs') {
+                $repositories[] = $repository;
+            }
+        }
+
+        foreach ($slugs as $slug) {
+            $repositories[] = [
+                'type' => 'path',
+                'url' => $root.'/packages/'.$slug,
+                'options' => ['symlink' => false],
+            ];
+        }
+
+        $manifest['repositories'] = $repositories;
     }
 
-    $manifest['repositories'] = $repositories;
-    // Stability stays `stable`: each path package pins its own `version`, so a
-    // `dev` floor would only widen the resolver's search for no gain.
+    // Stability stays `stable`: each package pins its own `version` (path) or
+    // ships a tag (VCS), so a `dev` floor would only widen the resolver's search.
     $manifest['prefer-stable'] = true;
     $manifest['config'] = array_merge(
         (array) ($manifest['config'] ?? []),
