@@ -19,7 +19,18 @@ require __DIR__.'/../../vendor/autoload.php';
 $app = require_once __DIR__.'/../../bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
 
-$slug = $argv[1] ?? 'microstock-vision';
+$slug = $argv[1] ?? null;
+
+if ($slug === null || $slug === '') {
+    $slugs = AiConnection::query()->orderBy('slug')->pluck('slug')->all();
+
+    echo 'Usage: php scripts/ai/probe_models.php <slug> [model…]'.PHP_EOL;
+    echo $slugs === []
+        ? 'No ai_connections rows stored yet.'.PHP_EOL
+        : 'Stored connections: '.implode(', ', $slugs).PHP_EOL;
+
+    exit(1);
+}
 
 // Read the row directly: the resolver refuses `pending` rows on purpose, and
 // diagnosing a pending row is exactly the point of this script.
@@ -47,17 +58,7 @@ echo 'key hint : …'.substr($apiKey, -4).PHP_EOL.PHP_EOL;
 
 $models = array_values(array_filter(array_unique(array_merge(
     array_slice($argv, 2),
-    [
-        $connection->test_model,
-        setting_config('microstock.ai.vision.model'),
-        setting_config('microstock.ai.vision.free_model'),
-        setting_config('microstock.ai.thinking.model'),
-        setting_config('microstock.ai.thinking.free_model'),
-        'sspn_vision',
-        'sspn_thinking',
-        'internal.sspn_pro_vision',
-        'internal.sspn_pro_thinking',
-    ],
+    [$connection->test_model],
 ))));
 
 echo str_pad('model', 32).' status  body'.PHP_EOL;

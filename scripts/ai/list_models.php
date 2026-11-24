@@ -18,7 +18,18 @@ require __DIR__.'/../../vendor/autoload.php';
 $app = require_once __DIR__.'/../../bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
 
-$slug = $argv[1] ?? 'microstock-vision';
+$slug = $argv[1] ?? null;
+
+if ($slug === null || $slug === '') {
+    $slugs = AiConnection::query()->orderBy('slug')->pluck('slug')->all();
+
+    echo 'Usage: php scripts/ai/list_models.php <slug>'.PHP_EOL;
+    echo $slugs === []
+        ? 'No ai_connections rows stored yet.'.PHP_EOL
+        : 'Stored connections: '.implode(', ', $slugs).PHP_EOL;
+
+    exit(1);
+}
 
 $connection = AiConnection::query()->where('slug', $slug)->first();
 
