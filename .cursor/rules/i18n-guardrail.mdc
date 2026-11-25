@@ -10,7 +10,7 @@ Translation is the first thing a user sees. A perfectly built feature nobody can
 
 ## Definition of done (all three, or the task is not done)
 
-1. **Applied to every locale.** `en`, `id`, `ja`, `ko`, `zh_CN`/`zh-CN`, `ar`, `ru` in the same change. Backend `lang/{locale}/**`, flat `lang/{locale}.json`, and SPA `src/i18n/locales/*.json` are three separate surfaces — a change to one is a change to the others. English is the source, never the destination.
+1. **Applied to every supported locale.** `en`, `id` — the whole list, in the same change. Backend `lang/{locale}/**`, flat `lang/{locale}.json`, and SPA `src/i18n/locales/*.json` are three separate surfaces — a change to one is a change to the others. English is the source, never the destination. The canonical list is `config('localization.supported_locales')`; adding a language is `php artisan locale:add <code>`, never a hand-written file (see "Adding a locale back").
 2. **Contextual, not generic.** The wording is chosen for the surface it renders on (button, heading, toast, validation, status badge, table header, empty state, mail) and for the audience. Two surfaces that need different wording get two keys.
 3. **Usable and readable.** A native speaker reads it in that locale, on that surface, without noticing it was translated.
 
@@ -27,22 +27,24 @@ Translation is the first thing a user sees. A perfectly built feature nobody can
 Before finishing, read the string back as a native speaker of the target locale, **on that surface**:
 
 - Would a product in that language actually say this? If it reads like a translation, it is not done.
-- Does the register match? `id` Anda (formal neutral) — `ja` ??/?? — `ko` ??? `-???` for instructions and ??? `-???` for declaratives, never one level for both — `zh-CN` ? — `ar` MSA formal — `ru` ??, lowercase except at sentence start.
+- Does the register match? `id` Anda (formal neutral). A retired locale is not a wrong answer, only an unscoped one: read its register from [archive/localization-retired-locales.md](../../docs/archive/localization-retired-locales.md) when you bring it back.
 - Buttons are plain verb forms. Toasts and messages are full sentences. A table header is a stable label, not a participle agreeing with a hidden noun.
-- No filler the target language does not use in product UI (`??????????` in `ru` is banned).
+- No filler the target language does not use in product UI.
 
 ## Anti-patterns (each one shipped once, with the real fix)
 
-- **Calque.** `id` `403 Forbidden` = `Dilarang` ? `Terlarang`; `401` = `Tidak Diizinkan` ? `Tidak sah`.
-- **False friend.** `ja` `claim` = `????` reads as "complaint", not an ownership claim ? `??`.
-- **Literal rendering of a metaphor.** `zh_CN` `slug` = `??` ("bullet") ? `??`; `ar` `410 Gone` = `???` ("he went") ? `????? ????? ???????`; `ja` `302 Found` = `??` ("discovery") ? `??????`.
-- **English left inside non-English prose.** `id` `management`/`creator` stayed English in 26 backend keys ? `manajemen`/`kreator`. Invisible to every structural guard: the value differs from `en`, so the duplicate check skips it; the locale is Latin-script, so a script scan finds nothing.
+- **Calque.** `id` `403 Forbidden` = `Dilarang` → `Terlarang`; `401` = `Tidak Diizinkan` → `Tidak sah`.
+- **English left inside non-English prose.** `id` `management`/`creator` stayed English in 26 backend keys → `manajemen`/`kreator`. Invisible to every structural guard: the value differs from `en`, so the duplicate check skips it; the locale is Latin-script, so a script scan finds nothing.
 - **One source phrase, two contexts, one key.** Split the key instead of writing a sentence that is wrong on both surfaces.
-- **Term drift between namespaces.** `zh_CN` `credential` was `??` in four files and `??` in a fifth. One term per concept, or the glossary says why two senses are kept.
+- **Term drift between namespaces.** One term per concept, or the glossary says why two senses are kept.
+
+## Adding a locale back
+
+`php artisan locale:add <code>` writes the framework packs, `locale:add --skip-lang` the application tree; the SPA needs `src/i18n/locales/<code>.json` plus its rows in `src/i18n/index.ts` and the guard lists. Every retired locale kept its settled register, glossary terms and the defects that already shipped — [archive/localization-retired-locales.md](../../docs/archive/localization-retired-locales.md) — so a comeback starts from that page, not from a machine translation.
 
 ## Never
 
-- `Read` a whole locale file (thousands of lines). Grep the key, patch all seven.
+- `Read` a whole locale file (thousands of lines). Grep the key, patch every supported locale.
 - Re-add a nested group to `lang/{locale}.json` — it shadows the PHP namespaces.
 - Ship a key no locale defines. A raw key rendered to a user is a defect, not a fallback.
 - Add a key to the duplicate-English allowlist to silence a failure. Brands and machine-contract text only.
@@ -59,9 +61,9 @@ php scripts/locale-pack-parity.php         # framework packs, both repos
 php scripts/locale-flat-pack-parity.php    # flat pack vs its PHP owners
 php scripts/locale-curation-flag-scan.php  # a deleted key left its `// curated at` flag behind
 php artisan test --filter=Locale
-cd ../monolith-vue-workers; npm run check:i18n; npm run check:env   # `;` not `&&` — PowerShell rejects `&&`
+cd ../cored-frontend; npm run check:i18n; npm run check:env   # `;` not `&&` — PowerShell rejects `&&`
 ```
 
 `check:env` is the sibling's mode-file guard (`scripts/check-mode-env.mjs`): it fails a build when a required `VITE_*` key is missing or empty, a value is a placeholder, production/staging points at a sandbox host, two environments share an API origin, or an unresolved `TODO` remains. Run it whenever a task touches a `.env.<mode>` file or adds an environment.
 
-Details: [localization.md](../../docs/platform/localization.md) + [naming-conventions.md](../../docs/platform/naming-conventions.md) (backend), [i18n.md](../../../monolith-vue-workers/docs/i18n.md) (SPA).
+Details: [localization.md](../../docs/platform/localization.md) + [naming-conventions.md](../../docs/platform/naming-conventions.md) (backend), [i18n.md](../../../cored-frontend/docs/i18n.md) (SPA).

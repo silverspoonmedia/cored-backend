@@ -32,7 +32,7 @@ Migrations run in filename order. When table B needs an FK to table A and B's cr
 ALLOW_DESTRUCTIVE_DB=true php artisan migrate:fresh --seed
 ```
 
-Prove the schema, never eyeball it: `mysqldump --no-data --skip-comments --skip-dump-date --skip-add-drop-table --databases monolith` before and after must differ **only** in the `migrations` table, and `information_schema.columns` / `.statistics` / `.key_column_usage` must match column-for-column. `composer test` (SQLite) covers `MigrationPortabilityTest` and `DomainUninstallManifestTest`.
+Prove the schema, never eyeball it: `mysqldump --no-data --skip-comments --skip-dump-date --skip-add-drop-table --databases cored` before and after must differ **only** in the `migrations` table, and `information_schema.columns` / `.statistics` / `.key_column_usage` must match column-for-column. `composer test` (SQLite) covers `MigrationPortabilityTest` and `DomainUninstallManifestTest`.
 
 ## Product domains
 

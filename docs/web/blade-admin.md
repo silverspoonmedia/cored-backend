@@ -1,6 +1,6 @@
 # Web frontend (removed)
 
-The in-repo **Blade + AdminLTE 4 admin has been removed**. Monolith-Vue-Workers is the sole browser UI; it consumes `/api/v1/*` via cross-site HttpOnly cookies and CSRF double-submit — see [integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
+The in-repo **Blade + AdminLTE 4 admin has been removed**. Cored Frontend is the sole browser UI; it consumes `/api/v1/*` via cross-site HttpOnly cookies and CSRF double-submit — see [integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
 
 ## What remains on the Laravel `web` stack
 
@@ -16,4 +16,4 @@ The in-repo **Blade + AdminLTE 4 admin has been removed**. Monolith-Vue-Workers 
 
 JWT bridge middleware (`AuthenticateWithJwtCookie`, `RefreshJwtCookie`, `web.auth`, `web.guest`) and view composers are gone. API auth uses `AuthenticateWithSpaCookie` + `VerifySpaCsrf` on the `api` group.
 
-Historical Blade patterns (partial manifest, UI conventions) lived here before removal; do not recreate them in Monolith — port UI to the SPA instead.
+Historical Blade patterns (partial manifest, UI conventions) lived here before removal; do not recreate them in this backend — port UI to the SPA instead.

@@ -6,7 +6,10 @@ if ($argc < 2) {
 }
 
 $root = dirname(__DIR__);
-$locales = ['en', 'id', 'ja', 'ko', 'zh_CN', 'ar', 'ru'];
+require __DIR__.'/lib/locale-scan-support.php';
+
+// One source of truth; a literal list here outlives the locales it names.
+$locales = locale_scan_supported();
 $managed = [
     'actions.php',
     'auth.php',

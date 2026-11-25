@@ -60,7 +60,7 @@ Logout sets persistent barrier before API call. Subsequent cold-boot `auth/me` c
 
 The SPA authenticates cross-site with HttpOnly `__Host-spa_jwt` cookie instead of Bearer header, so `AuthService::refresh()` falls back to cookie when no `Authorization` header exists — cookie-mode session refreshes same way (otherwise hard-expires at `jwt.ttl`). On login/register/refresh/2FA-login raw JWT is set as `__Host-spa_jwt` cookie and **stripped from JSON body** (`data.token` removed), so SPA JS never reads it and XSS cannot exfiltrate it; `TwoFactorController` applies same strip. Logout blacklists current JWT and expires `__Host-spa_jwt`; later `auth/me` carrying same Bearer token or stale cookie must return `401`. The `__Host-` prefix enforces `Secure`, `Path=/`, and no `Domain`.
 
-The SPA-side session lifecycle (logout barrier/epoch, `BroadcastChannel` cross-tab sync, post-login cookie-settle serialization, guest cold-boot single `auth/me` probe) is owned by sibling `monolith-vue-workers/docs/auth-session.md`. Contract pointer: [vue-workers-spa.md — Cross-tab auth](../../integration/reference-vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
+The SPA-side session lifecycle (logout barrier/epoch, `BroadcastChannel` cross-tab sync, post-login cookie-settle serialization, guest cold-boot single `auth/me` probe) is owned by sibling `cored-frontend/docs/auth-session.md`. Contract pointer: [vue-workers-spa.md — Cross-tab auth](../../integration/reference-vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
 
 The removed Blade admin used a separate first-party JWT cookie bridge; that middleware is gone — see [web/blade-admin.md](../../web/blade-admin.md).
 
@@ -72,11 +72,11 @@ The removed Blade admin used a separate first-party JWT cookie bridge; that midd
 2. `rm` custom claim on the original token (set at login: `1` = remember, `0` = normal; persisted across refreshes via `jwt.persistent_claims`).
 3. Fallback `false`.
 
-Login, 2FA login, and register all inject the `rm` claim via `AuthService::customClaims()`. The Vue SPA cross-tab auth layer relies on this — sibling `monolith-vue-workers/docs/auth-session.md`; contract [vue-workers-spa — Cross-tab auth](../../integration/reference-vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
+Login, 2FA login, and register all inject the `rm` claim via `AuthService::customClaims()`. The Vue SPA cross-tab auth layer relies on this — sibling `cored-frontend/docs/auth-session.md`; contract [vue-workers-spa — Cross-tab auth](../../integration/reference-vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
 
 ### hCaptcha
 
-When enabled: login, register, forgot-password, reset-password, and two-factor login require `h-captcha-response`. Server: `HcaptchaVerifier` + Form Request trait (`ValidatesHcaptcha`, merged into `ResetPasswordRequest` for parity with forgot-password). SPA: hCaptcha widget on auth views in `monolith-vue-workers`.
+When enabled: login, register, forgot-password, reset-password, and two-factor login require `h-captcha-response`. Server: `HcaptchaVerifier` + Form Request trait (`ValidatesHcaptcha`, merged into `ResetPasswordRequest` for parity with forgot-password). SPA: hCaptcha widget on auth views in `cored-frontend`.
 
 ### Login throttle (identity-scoped, failure-only)
 
@@ -189,7 +189,7 @@ The path parameter is `{oauth_provider}` constrained with `whereIn` `OAuthProvid
 
 Each `providers[]` row: `key` (enum value), `connected`, `oauth_configured`, `supports_sync`, `synced_at` / `synced_at_formatted` / `synced_at_human`, `connections[]` (`type`, `id`, `name`, `verified`, `revoked`). `connections` is empty when disconnected.
 
-OAuth **callback** stays Monolith web (`auth.discord.callback` at `/apps/auth/discord/callback`) — identity is the encrypted state, not a session cookie. SPA starts OAuth via the authorize-url endpoint, then `window.location` to Discord.
+OAuth **callback** stays Cored web (`auth.discord.callback` at `/apps/auth/discord/callback`) — identity is the encrypted state, not a session cookie. SPA starts OAuth via the authorize-url endpoint, then `window.location` to Discord.
 
 Scopes: `identify` + `connections`. Table `identity_oauth_accounts` stores envelope-encrypted tokens + **full** Discord connection snapshot (`connections_snapshot` JSON: all connection types, documented safe fields — no secrets).
 

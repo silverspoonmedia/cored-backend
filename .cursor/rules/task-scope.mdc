@@ -6,7 +6,7 @@ Default is `[fullstack]` when no tag is given. The tag affects **layer coverage 
 |-----|-------|
 | `[fullstack]` | API + SPA (sibling repo) + translations + menu route registry parity + user-facing page |
 | `[backend]` | API layer only: routes, controllers, form requests, policies, repositories, resources, migrations, models, tests |
-| `[frontend]` | SPA layer in `monolith-vue-workers` only (assumes the API already exists) |
+| `[frontend]` | SPA layer in `cored-frontend` only (assumes the API already exists) |
 | `[docs]` | User-facing page in the sibling `docs` site (Docusaurus) — the customer's manual, no code layer |
 
 ## `[fullstack]` layer table
@@ -15,7 +15,7 @@ Default is `[fullstack]` when no tag is given. The tag affects **layer coverage 
 |-------|----------------|
 | API | Versioned routes `/api/v1/*`, controllers, form requests, policies, repositories, resources |
 | Web (server) | `routes/web/*.php` only — public share, payment return, OAuth callback. No Blade views |
-| SPA | Screens, forms, listings in `monolith-vue-workers` |
+| SPA | Screens, forms, listings in `cored-frontend` |
 | Docs (user-facing) | The page in the sibling `docs` site that teaches the capability — a customer-visible change without it is incomplete (that repo's `docs-sync.mdc`) |
 | Navigation | Menu `route` column = SPA Vue Router symbolic name; keep `config/spa-routes.php` ↔ `MenuSeeder` ↔ SPA router in sync |
 | Translation | All user-facing strings, every supported locale |

@@ -1,4 +1,4 @@
-# Cache policy — Monolith
+# Cache policy — Cored Backend
 
 Canonical rules for Laravel `Cache` usage. Agent protocol: [AGENTS.md](../../AGENTS.md); core rule: [cache-policy.mdc](../../.cursor/rules/cache-policy.mdc). Tier B settings snapshot is a special case of this contract — see [configuration-policy.md](reference-configuration-policy.md#cache-contract-tier-b).
 

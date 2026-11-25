@@ -1,6 +1,6 @@
 # Docs & rules ownership (mandatory)
 
-Three documentation surfaces, **one owner per topic**. Never state the same rule twice — a duplicated rule drifts. SPA twin: `monolith-vue-workers/.cursor/rules/docs-pakem.mdc`; third twin: the user-facing `docs` site repo. The three repos' always-on rules are **twins, not copies**: each states its own repo's scope, so a difference is expected and a *contradiction* is the defect.
+Three documentation surfaces, **one owner per topic**. Never state the same rule twice — a duplicated rule drifts. SPA twin: `cored-frontend/.cursor/rules/docs-pakem.mdc`; third twin: the user-facing `docs` site repo. The three repos' always-on rules are **twins, not copies**: each states its own repo's scope, so a difference is expected and a *contradiction* is the defect.
 
 | Surface | Owns | Shape |
 |---------|------|-------|

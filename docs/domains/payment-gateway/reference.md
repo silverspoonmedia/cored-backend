@@ -35,7 +35,7 @@ When `checkout_quote` is set on the model (via `PaymentChannelService::listAvail
 
 ### Webhooks
 
-Provider notify URLs should hit Monolith public webhook routes (or a trusted reverse proxy that forwards to them). Verify signatures in Monolith. Set `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` to the public paths providers can reach.
+Provider notify URLs should hit the backend public webhook routes (or a trusted reverse proxy that forwards to them). Verify signatures in the backend. Set `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` to the public paths providers can reach.
 
 ## Routing policy (the YAML contract)
 
@@ -244,7 +244,7 @@ iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `def
 
 **Sidebar:** **Administration → Payments** contains Payment income (`payments.income.index`), Invoices (`invoices.index`), Subscriptions (`subscriptions.index`), Payment channels (`payment-channels.index`), and Payment gateways (`payment-gateways.index`). Parent and children are visible to Root, Admin, Moderator, and Management; endpoint permissions remain authoritative.
 
-All authenticated admin/checkout UI is Monolith-Vue-Workers under `/apps/*` — Vue Router names registered in [`config/spa-routes.php`](../../../config/spa-routes.php): `payment-channels.index`, `payment-gateways.*`, `subscriptions.*`, `invoices.index` / `invoices.show`, `payments.income.index`, and `service-purchases.show` (primary payment surface for service sales). Query-mode list rows emit `actions[]` (gateways `edit`/`delete`; invoices `view` only; subscriptions `view`/`edit`). Invoice **show** (not the list View button) still resolves through `InvoiceWebDestination`, which points service-purchase morphs at the purchase hub. Breadcrumbs are SPA-side (`src/composables/useBreadcrumbs.ts`), not a Laravel breadcrumb registry. The QR helper route and its `window.monolithQrBaseUrl` injection were deleted with Blade — the SPA renders provider QR payloads from the invoice response.
+All authenticated admin/checkout UI is Cored Frontend under `/apps/*` — Vue Router names registered in [`config/spa-routes.php`](../../../config/spa-routes.php): `payment-channels.index`, `payment-gateways.*`, `subscriptions.*`, `invoices.index` / `invoices.show`, `payments.income.index`, and `service-purchases.show` (primary payment surface for service sales). Query-mode list rows emit `actions[]` (gateways `edit`/`delete`; invoices `view` only; subscriptions `view`/`edit`). Invoice **show** (not the list View button) still resolves through `InvoiceWebDestination`, which points service-purchase morphs at the purchase hub. Breadcrumbs are SPA-side (`src/composables/useBreadcrumbs.ts`), not a Laravel breadcrumb registry. The QR helper route and its `window.monolithQrBaseUrl` injection were deleted with Blade — the SPA renders provider QR payloads from the invoice response.
 
 ### Checkout UI architecture
 

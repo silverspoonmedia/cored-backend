@@ -7,36 +7,36 @@ Deep dive for the cross-repo contract. Brief: [vue-workers-spa.md](vue-workers-s
 Browser → SPA origin (static Worker) → **direct** `/api/v1/*` on the Laravel API origin. JWT is the HttpOnly `__Host-spa_jwt` cookie (`SameSite=None; Secure`). JS never stores the JWT. Mutations send `X-CSRF-Token` (double-submit `__Host-spa_csrf`). Every versioned API call sends public `X-SPA-Origin: 1` (`RequireSpaRequestHeader`; not auth). `RequireSpaOrigin` is audit-only.
 
 ```
-Browser → Monolith-Vue-Workers SPA → /api/v1/* (cookie + CSRF + marker)
-Monolith web stack → server-only redirects (share, payment return, OAuth callback)
+Browser → Cored Frontend SPA → /api/v1/* (cookie + CSRF + marker)
+Cored web stack → server-only redirects (share, payment return, OAuth callback)
 ```
 
 ## Direct API
 
 `AuthenticateWithSpaCookie` binds the cookie to the `api` guard. `VerifySpaCsrf` accepts header==cookie (`419` JSON envelope on mismatch). Auth-session paths skip CSRF: login, register, refresh, logout, forgot/reset password, two-factor login. Bearer requests skip CSRF. CORS: `config/cors.php` `supports_credentials` + allowlist `APP_URL` + `SPA_URL` + `CORS_EXTRA_ORIGINS` (no `*`); `exposed_headers` is `Content-Disposition` so SPA blob downloads can read the server filename. Preflight `max_age` 600. `OPTIONS` and provider webhooks bypass the SPA marker. Auth-error responses still get CORS stamps (`StampApiCors`), and `AllowlistCorsService` (bound over `Fruitcake\Cors\CorsService`) makes the allowlist — not the library's single-origin shortcut — decide whether an allow-origin header is emitted. Probe: `tests/Feature/Http/CorsOnAuthErrorProbeTest.php`, regression `tests/Feature/Http/CorsOriginsTest.php`. Full perimeter notes: [security.md — CORS](../platform/security.md).
 
-Cross-origin requests can also fail client-side with a bare `TypeError` (a cross-tab `Set-Cookie` collision on the shared CSRF nonce, which the browser reports as a CORS error) — that is a SPA retry concern, not a CORS misconfiguration; policy: sibling `monolith-vue-workers/docs/api-client.md#cross-tab-cookie-race-retry`.
+Cross-origin requests can also fail client-side with a bare `TypeError` (a cross-tab `Set-Cookie` collision on the shared CSRF nonce, which the browser reports as a CORS error) — that is a SPA retry concern, not a CORS misconfiguration; policy: sibling `cored-frontend/docs/api-client.md#cross-tab-cookie-race-retry`.
 
-Still naked (browser talks to these hosts directly): Pusher/Reverb, Discord OAuth + Monolith web callback, a product's presigned/gateway URLs, hCaptcha JS.
+Still naked (browser talks to these hosts directly): Pusher/Reverb, Discord OAuth + Cored web callback, a product's presigned/gateway URLs, hCaptcha JS.
 
-Local: Vite `.env.local` overrides `.env`. Empty `VITE_API_BASE_URL` = same-origin dev. Discord return is **not** a Vite var — set Monolith `SPA_URL`.
+Local: Vite `.env.local` overrides `.env`. Empty `VITE_API_BASE_URL` = same-origin dev. Discord return is **not** a Vite var — set the backend `SPA_URL`.
 
 ## Worker invocation vs static assets
 
-The SPA Worker serves HTML/JS/CSS and a hardened 404 for stray `/api/*`. It does **not** proxy API or auth. Do not add cron, queues, Durable Objects, or API proxy paths. Details: sibling [worker.md](../../../monolith-vue-workers/docs/worker.md).
+The SPA Worker serves HTML/JS/CSS and a hardened 404 for stray `/api/*`. It does **not** proxy API or auth. Do not add cron, queues, Durable Objects, or API proxy paths. Details: sibling [worker.md](../../../cored-frontend/docs/worker.md).
 
 ## Invocation budget controls
 
 Data traffic does not hit this Worker. Remaining controls trim Laravel load:
 
 - **`POST /api/v1/batch`** — up to 10 read-only (`GET`/`HEAD`) sub-requests; throttle `30,1`; mutations `422` per entry. SPA `batch()` in `src/api/client.ts`. Rules: [api-aggregation.md](../platform/api-aggregation.md).
-- **Shell hydrate** — `GET auth/me` then, on success, one batch (me, sidebar, navbar, unread-count, recent notifications). Guests never `POST /batch`. Echo starts **after** that batch. Sibling [auth-session.md](../../../monolith-vue-workers/docs/auth-session.md).
+- **Shell hydrate** — `GET auth/me` then, on success, one batch (me, sidebar, navbar, unread-count, recent notifications). Guests never `POST /batch`. Echo starts **after** that batch. Sibling [auth-session.md](../../../cored-frontend/docs/auth-session.md).
 - **Per-domain hydrates** — navigation/notification/user/service/payment/inference edit screens (a product adds its own hydrate). Failed subs `null` → individual loader; terminal `401`/`403`/`429` skip fallback (`TerminalBatchError`).
 - **JWT TTL 240** — `setting_config('jwt.ttl')`. Realtime only (no polling); reconnect fires a resync bus.
 
 ## Local dogfood checklist
 
-Daily driver: SPA `npm run dev` at `http://localhost:5173`, Monolith `SPA_URL="http://localhost:5173"`. Login JSON has **no** `token`. Cookie-authenticated mutations carry `__Host-spa_jwt` + `X-CSRF-Token`. Two tabs, one logout → the other dies. Login lockout: identity-scoped **429** envelope + `Retry-After` — [identity — Login throttle](../domains/identity/reference.md#login-throttle-identity-scoped-failure-only).
+Daily driver: SPA `npm run dev` at `http://localhost:5173`, backend `SPA_URL="http://localhost:5173"`. Login JSON has **no** `token`. Cookie-authenticated mutations carry `__Host-spa_jwt` + `X-CSRF-Token`. Two tabs, one logout → the other dies. Login lockout: identity-scoped **429** envelope + `Retry-After` — [identity — Login throttle](../domains/identity/reference.md#login-throttle-identity-scoped-failure-only).
 
 ## Production URL minting (`SPA_URL`)
 
@@ -56,7 +56,7 @@ API `action_route` + `action_params` use symbolic names from `config/spa-routes.
 
 ## Production checklist
 
-Ops (not code): pair `SPA_URL` with the matching Worker origin (production / staging / sandbox — one `SPA_URL` per Monolith instance); bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` / `.env.staging` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; a product's Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../monolith-vue-workers/README.md) + [deployment.md](../../../monolith-vue-workers/docs/deployment.md). The mode-file values are guarded by the sibling `npm run check:env` (fails a build on a placeholder, a missing key, a shared origin, or production/staging pointing at a sandbox host) — see sibling [deployment.md — Mode file values](../../../monolith-vue-workers/docs/deployment.md#mode-file-values).
+Ops (not code): pair `SPA_URL` with the matching Worker origin (production / staging / sandbox — one `SPA_URL` per backend instance); bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` / `.env.staging` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; a product's Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../cored-frontend/README.md) + [deployment.md](../../../cored-frontend/docs/deployment.md). The mode-file values are guarded by the sibling `npm run check:env` (fails a build on a placeholder, a missing key, a shared origin, or production/staging pointing at a sandbox host) — see sibling [deployment.md — Mode file values](../../../cored-frontend/docs/deployment.md#mode-file-values).
 
 `X-SPA-Origin: 1` is a public anti-noise marker, not auth.
 
@@ -120,11 +120,11 @@ Guest/public endpoints use dedicated Resources. Staff-only fields are optional i
 
 ## Status badges
 
-One renderer, many maps: SPA `StatusBadge.vue` + `src/utils/statusBadge.ts`. Domain maps merge over defaults. Do not add per-view `statusClass()` or one mega-badge. Details: sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md). AI connection statuses map through `AI_CONNECTION_STATUS_BADGE` (`active`/`pending`/`disabled`).
+One renderer, many maps: SPA `StatusBadge.vue` + `src/utils/statusBadge.ts`. Domain maps merge over defaults. Do not add per-view `statusClass()` or one mega-badge. Details: sibling [ui-patterns.md](../../../cored-frontend/docs/ui-patterns.md). AI connection statuses map through `AI_CONNECTION_STATUS_BADGE` (`active`/`pending`/`disabled`).
 
 ## i18n porting notes
 
-Runtime, RTL, lazy chunks, `useI18n()` vs `i18n.global.t`: sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md). Backend locales: [localization.md](../platform/localization.md). **Agents: never `Read` whole locale JSON files** — Grep the key, patch all seven, run `npm run check:i18n`.
+Runtime, RTL, lazy chunks, `useI18n()` vs `i18n.global.t`: sibling [i18n.md](../../../cored-frontend/docs/i18n.md). Backend locales: [localization.md](../platform/localization.md). **Agents: never `Read` whole locale JSON files** — Grep the key, patch every supported locale, run `npm run check:i18n`.
 
 Conversion: PHP `trans('web/settings.title')` → `t('web.settings.title')`; `:variable` → `{variable}`. `zh_CN` backend ↔ `zh-CN` SPA.
 
@@ -132,19 +132,19 @@ Translatable **payload** maps (menu `name`/`description`, locale-keyed `Record<s
 
 ## Notifications & confirmations (Sweetalert2)
 
-Swal-only via SPA `src/lib/swal.ts`. Sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md). Shared keys `ui.swal.*` / `ui.dialog.*`.
+Swal-only via SPA `src/lib/swal.ts`. Sibling [ui-patterns.md](../../../cored-frontend/docs/ui-patterns.md). Shared keys `ui.swal.*` / `ui.dialog.*`.
 
 ## Component conventions
 
-SPA components (`confirmDialog`, `SubmitButton`, `FormInput`, loading/error/empty, breadcrumbs, page titles, DataTable, row actions) are documented in sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md). Query-mode `actions[]`: [list-display-modes.md](../platform/list-display-modes.md).
+SPA components (`confirmDialog`, `SubmitButton`, `FormInput`, loading/error/empty, breadcrumbs, page titles, DataTable, row actions) are documented in sibling [ui-patterns.md](../../../cored-frontend/docs/ui-patterns.md). Query-mode `actions[]`: [list-display-modes.md](../platform/list-display-modes.md).
 
 ### FormSelect2
 
 Wraps jQuery Select2 AJAX against paginated lookups — identity `GET /api/v1/lookups/{users,roles}` and navigation `GET /api/v1/navigation/lookups/menus` — [list-display-modes.md](../platform/list-display-modes.md).
 
-**Multi-value `ids[]` shape:** the SPA must send repeated params (`ids[]=a&ids[]=b`, i.e. pass the array to `apiUrl()`), not a comma-joined string — `ids.* => uuid` rejects the latter with 422. Batch sub-request failures are **not** uniformly silent; the menu-edit hydrate in particular splits three ways (transport fallback to the standalone loaders / `TerminalBatchError` on 401/403/429, never retried standalone / a recorded `failedLookups` key on any other non-200 that warns the admin and leaves the stored pivots untouched). For ajax-backed selects the pre-selected rows arrive **after** mount, so `FormSelect2` appends late `selectedOptions` in place and re-applies the value (no select2 re-init, which would drop the ajax adapter state), and `applyValue()` suppresses its own `change.select2` echo so a select whose `<option>` rows are not hydrated yet can never clear its parent. Both behaviors are specified in [ui-patterns.md — Select2 values must survive a failed hydrate](../../../monolith-vue-workers/docs/ui-patterns.md).
+**Multi-value `ids[]` shape:** the SPA must send repeated params (`ids[]=a&ids[]=b`, i.e. pass the array to `apiUrl()`), not a comma-joined string — `ids.* => uuid` rejects the latter with 422. Batch sub-request failures are **not** uniformly silent; the menu-edit hydrate in particular splits three ways (transport fallback to the standalone loaders / `TerminalBatchError` on 401/403/429, never retried standalone / a recorded `failedLookups` key on any other non-200 that warns the admin and leaves the stored pivots untouched). For ajax-backed selects the pre-selected rows arrive **after** mount, so `FormSelect2` appends late `selectedOptions` in place and re-applies the value (no select2 re-init, which would drop the ajax adapter state), and `applyValue()` suppresses its own `change.select2` echo so a select whose `<option>` rows are not hydrated yet can never clear its parent. Both behaviors are specified in [ui-patterns.md — Select2 values must survive a failed hydrate](../../../cored-frontend/docs/ui-patterns.md).
 
-Nested tree selects: ajax `navigation/lookups/menus` (Dynamic Menu CRUD — parent & reference in `MenuEditView`) returns **nested trees, one node per top-level root menu**. Roots are paginated (lazy load = next root group; a group is never split across pages); each root carries its entire subtree as recursive `children`, with `level` per node (0 = root) for indentation. Select2 renders only one `<optgroup>` level natively, so the SPA flattens the tree via `flattenTreeForSelect2()` (`src/utils/select2-lookup.ts`): each root becomes an optgroup whose first selectable leaf is the root itself, followed by descendants indented by `level`. Search (`q`) returns matching branches with their ancestors retained. The hydrate path (`ids[]` for pre-selection) still returns flat rows with `group`/`parent_text`/`level` metadata — see [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md).
+Nested tree selects: ajax `navigation/lookups/menus` (Dynamic Menu CRUD — parent & reference in `MenuEditView`) returns **nested trees, one node per top-level root menu**. Roots are paginated (lazy load = next root group; a group is never split across pages); each root carries its entire subtree as recursive `children`, with `level` per node (0 = root) for indentation. Select2 renders only one `<optgroup>` level natively, so the SPA flattens the tree via `flattenTreeForSelect2()` (`src/utils/select2-lookup.ts`): each root becomes an optgroup whose first selectable leaf is the root itself, followed by descendants indented by `level`. Search (`q`) returns matching branches with their ancestors retained. The hydrate path (`ids[]` for pre-selection) still returns flat rows with `group`/`parent_text`/`level` metadata — see [ui-patterns.md](../../../cored-frontend/docs/ui-patterns.md).
 
 ### Blob / CSV downloads
 
@@ -155,7 +155,7 @@ Nested tree selects: ajax `navigation/lookups/menus` (Dynamic Menu CRUD — pare
 
 ## Payment return URLs
 
-SPA `/payment/return` and `/payment/cancel` (`requiresAuth`, site root, not under `/apps`). Monolith keeps `/payment/ipaymu/return|cancel` as **server** redirects. `SpaPublicUrl::paymentReturn/Cancel` mints the SPA paths when `SPA_URL` is set.
+SPA `/payment/return` and `/payment/cancel` (`requiresAuth`, site root, not under `/apps`). The backend keeps `/payment/ipaymu/return|cancel` as **server** redirects. `SpaPublicUrl::paymentReturn/Cancel` mints the SPA paths when `SPA_URL` is set.
 
 ## `/apps` shell
 
@@ -176,7 +176,7 @@ Mimic is **appearance + behavior + intent**, not a pixel clone of Blade. List en
 
 ## Realtime
 
-No polling. Echo auto-reconnect is recovery; reconnect fires a resync bus. SPA private channels are owned by `src/composables/echo/channelRegistry.ts` (ref-counted per channel name, attach deferred until Echo exists) through the declarative `createRealtimeChannel` / `createKeyedRealtimeChannel` wrappers — domain `use*Realtime` files are bindings over it, never raw `echo.private()` callers. Outage refetch is `onEchoResync` (one line per view). Sibling [auth-session.md](../../../monolith-vue-workers/docs/auth-session.md), [api-client.md](../../../monolith-vue-workers/docs/api-client.md).
+No polling. Echo auto-reconnect is recovery; reconnect fires a resync bus. SPA private channels are owned by `src/composables/echo/channelRegistry.ts` (ref-counted per channel name, attach deferred until Echo exists) through the declarative `createRealtimeChannel` / `createKeyedRealtimeChannel` wrappers — domain `use*Realtime` files are bindings over it, never raw `echo.private()` callers. Outage refetch is `onEchoResync` (one line per view). Sibling [auth-session.md](../../../cored-frontend/docs/auth-session.md), [api-client.md](../../../cored-frontend/docs/api-client.md).
 
 ### Env vars
 
@@ -184,10 +184,10 @@ No polling. Echo auto-reconnect is recovery; reconnect fires a resync bus. SPA p
 |-----|---------|
 | `MONOLITH_API_ORIGIN` | Legacy. Current Worker does not read it. Not bundled. |
 | `VITE_API_BASE_URL` | Laravel API origin plus `/api/v1`. Empty only for local same-origin. |
-| `VITE_PUSHER_*` | Echo; must match Monolith `PUSHER_*` literals. Unset key → no live updates. |
+| `VITE_PUSHER_*` | Echo; must match the backend `PUSHER_*` literals. Unset key → no live updates. |
 | `VITE_HCAPTCHA_SITE_KEY` | Public sitekey; empty = no widget. |
 
-Discord return is Monolith `SPA_URL`, not a Vite var. Tracked mode files (`.env.production` / `.env.sandbox` / `.env.staging`) win over `.env.local` during `vite build --mode`. Sibling [README.md](../../../monolith-vue-workers/README.md).
+Discord return is the backend `SPA_URL`, not a Vite var. Tracked mode files (`.env.production` / `.env.sandbox` / `.env.staging`) win over `.env.local` during `vite build --mode`. Sibling [README.md](../../../cored-frontend/README.md).
 
 ### Self-hosted websocket (Sockudo)
 
@@ -203,7 +203,7 @@ Private-channel lifecycle on the SPA side goes through `src/composables/echo/cha
 
 ## Cross-tab auth (multi-tab session sync)
 
-SPA implementation: sibling [auth-session.md](../../../monolith-vue-workers/docs/auth-session.md). Messages never carry JWT or CSRF nonce.
+SPA implementation: sibling [auth-session.md](../../../cored-frontend/docs/auth-session.md). Messages never carry JWT or CSRF nonce.
 
 ### Cross-tab notification read-state sync
 

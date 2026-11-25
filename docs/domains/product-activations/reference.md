@@ -4,7 +4,7 @@ Config, state machine, access flow, API, analytics, menu visibility, tests. Inva
 
 ## Why a separate registry
 
-Monolith already had two registries; neither tracks runtime access:
+The backend already had two registries; neither tracks runtime access:
 
 | Registry | Scope | Tracks per-user access? |
 |----------|-------|--------------------------|
@@ -244,7 +244,7 @@ Helpers on `ProductRegistry`:
 
 ## SPA UI
 
-Two-level admin in Monolith-Vue-Workers:
+Two-level admin in Cored Frontend:
 
 - **Index** (`product-activations.index`, `/apps/product-activations`) — product cards grid. Each card: product key, type badge, state count chips, product metric summary, "View Insights" link. Consumes `GET /api/v1/admin/product-activations/products`.
 - **Show** (`product-activations.show`) — per-product dashboard: insight cards, state filter, per-user activations table with action buttons (suspend/reactivate/approve/reject).

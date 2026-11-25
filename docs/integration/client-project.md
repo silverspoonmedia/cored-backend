@@ -5,11 +5,11 @@ A project on the Silverspoon core installs the packages with Composer and keeps 
 | Mode | When | `repositories` |
 |------|------|----------------|
 | **VCS tag** | A real project, no access to this repo | Six `{"type": "vcs", "url": "https://github.com/silverspoonmedia/{slug}.git"}` entries + `"silverspoonmedia/{slug}": "^1.1"` |
-| **path** | A project beside this checkout (a dev sandbox) | `{"type": "path", "url": "../monolith/packages/*", "options": {"symlink": true}}` |
+| **path** | An extracted package tree (a dev sandbox — a fork has no `packages/`) | `{"type": "path", "url": "../cored-backend/vendor/silverspoonmedia/*", "options": {"symlink": true}}` |
 
 Both install the same code; only Composer's source differs. `DomainManager` resolves the install directory, so registry paths follow the mode and nothing else does. **The mirrors are private** — `composer config --global github-oauth.github.com <token>` once.
 
-The current release line is **`v1.1.0`**; a consumer's caret range is `^1.1`. `ConsumerScaffoldTest::test_the_scaffold_requires_the_same_caret_line_as_the_root()` fails when the template lags the root, and `scripts/run-vcs-consumer-check.php` proves a real install resolves the tag.
+The current release line is **`v1.2.1`**; a consumer's caret range is `^1.2`. `ConsumerScaffoldTest::test_the_scaffold_requires_the_same_caret_line_as_the_root()` fails when the template lags the root, and `scripts/run-vcs-consumer-check.php` proves a real install resolves the tag.
 
 ## The registry is the contract
 

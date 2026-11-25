@@ -18,8 +18,8 @@ Operational knobs live in `system_settings` (Tier B) — never in `.env`. Tier b
 ## New Tier B knob
 
 1. Add the `SettingRegistry` definition; `SettingsSeeder` picks it up (`firstOrCreate` from the config literal).
-2. Add `fields.<dotted-key>` to `lang/{en,id,ja,ko,zh_CN,ar,ru}/web/settings.php` — dotted keys are **literal** quoted keys, not nested arrays. Keep `SettingRegistryTranslationTest` green.
-3. Enum-like keys declare registry `options` (values only) and ship `web/settings.options.{key}.{value}` labels in all seven locales.
+2. Add `fields.<dotted-key>` to `lang/{en,id}/web/settings.php` — dotted keys are **literal** quoted keys, not nested arrays. Keep `SettingRegistryTranslationTest` green.
+3. Enum-like keys declare registry `options` (values only) and ship `web/settings.options.{key}.{value}` labels in both locales.
 4. **No new `.env` key.** Local-only dev defaults go to `config/settings-local.php` + `LocalSettingsSeeder`, never config literals.
 5. Update [docs/platform/reference-settings.md](../../docs/platform/reference-settings.md).
 

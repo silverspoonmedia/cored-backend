@@ -67,7 +67,7 @@ Notes:
 
 ## SPA UI
 
-Authenticated screens live in Monolith-Vue-Workers: `/apps/activity-logs` (`activity-logs.index`), `/apps/activity-logs/{activity}` (`activity-logs.show`). Query-mode list rows emit `actions[]` (`view` → `activity-logs.show`); SPA maps into `RowActions`.
+Authenticated screens live in Cored Frontend: `/apps/activity-logs` (`activity-logs.index`), `/apps/activity-logs/{activity}` (`activity-logs.show`). Query-mode list rows emit `actions[]` (`view` → `activity-logs.show`); SPA maps into `RowActions`.
 
 **Sidebar:** **Administration → Monitoring → Activity log** (`activity-logs.index`), visible to Root and Admin.
 

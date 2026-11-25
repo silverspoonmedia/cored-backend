@@ -1,19 +1,19 @@
-# Leading SPA frontend — Monolith-Vue-Workers
+# Leading SPA frontend — Cored Frontend
 
-Monolith-Vue-Workers is the **sole browser UI**: a Vue 3 + Vite SPA deployed to Cloudflare Workers as static assets, talking straight to the Laravel API origin — never through a proxy.
+Cored Frontend is the **sole browser UI**: a Vue 3 + Vite SPA deployed to Cloudflare Workers as static assets, talking straight to the Laravel API origin — never through a proxy.
 
 This file is the **cross-repo contract**: cookies, CSRF, headers, envelopes, `SPA_URL` minting, route-name sync, type alignment and realtime channels. Screen-level UX lives in the sibling repo's topic docs — open those first. Open this brief only when the contract moves; the tables, gotchas and channel inventory live in the deep dive.
 
-| Topic | SPA doc (sibling `monolith-vue-workers/docs/`) |
+| Topic | SPA doc (sibling `cored-frontend/docs/`) |
 |-------|-----------------------------------------------|
-| Layout, direct-to-API, `src/` map | [architecture.md](../../../monolith-vue-workers/docs/architecture.md) |
-| Cookie, CSRF, hydrate, logout, BroadcastChannel | [auth-session.md](../../../monolith-vue-workers/docs/auth-session.md) |
-| `client.ts`, headers, 401/419, batch helper | [api-client.md](../../../monolith-vue-workers/docs/api-client.md) |
-| Locales, RTL, `check:i18n` | [i18n.md](../../../monolith-vue-workers/docs/i18n.md) |
-| AdminLTE4 layout, Swal, skeletons, loading/error/empty states | [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md) |
-| Vue Router names ↔ `config/spa-routes.php` | [routes.md](../../../monolith-vue-workers/docs/routes.md) |
-| Worker guard-only stub | [worker.md](../../../monolith-vue-workers/docs/worker.md) |
-| Deploy / Wrangler envs | [deployment.md](../../../monolith-vue-workers/docs/deployment.md) |
+| Layout, direct-to-API, `src/` map | [architecture.md](../../../cored-frontend/docs/architecture.md) |
+| Cookie, CSRF, hydrate, logout, BroadcastChannel | [auth-session.md](../../../cored-frontend/docs/auth-session.md) |
+| `client.ts`, headers, 401/419, batch helper | [api-client.md](../../../cored-frontend/docs/api-client.md) |
+| Locales, RTL, `check:i18n` | [i18n.md](../../../cored-frontend/docs/i18n.md) |
+| AdminLTE4 layout, Swal, skeletons, loading/error/empty states | [ui-patterns.md](../../../cored-frontend/docs/ui-patterns.md) |
+| Vue Router names ↔ `config/spa-routes.php` | [routes.md](../../../cored-frontend/docs/routes.md) |
+| Worker guard-only stub | [worker.md](../../../cored-frontend/docs/worker.md) |
+| Deploy / Wrangler envs | [deployment.md](../../../cored-frontend/docs/deployment.md) |
 
 | Need | Path |
 |------|------|
