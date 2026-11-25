@@ -6640,22 +6640,22 @@
         },
         {
             "name": "silverspoonmedia/ai",
-            "version": "v1.2.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/ai.git",
-                "reference": "ddcf169fc9ac7e7f44423878c6fc033051af73ef"
+                "reference": "2b55575d71fcf0ec576536e7f9256b285da19aa1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/ai/zipball/ddcf169fc9ac7e7f44423878c6fc033051af73ef",
-                "reference": "ddcf169fc9ac7e7f44423878c6fc033051af73ef",
+                "url": "https://api.github.com/repos/silverspoonmedia/ai/zipball/2b55575d71fcf0ec576536e7f9256b285da19aa1",
+                "reference": "2b55575d71fcf0ec576536e7f9256b285da19aa1",
                 "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.1",
+                "silverspoonmedia/platform": "^1.2",
                 "symfony/console": "^8.0",
                 "symfony/http-kernel": "^8.0"
             },
@@ -6693,26 +6693,26 @@
                 "source": "https://github.com/silverspoonmedia/ai",
                 "issues": "https://github.com/silverspoonmedia/ai/issues"
             },
-            "time": "2026-11-24T06:26:57+00:00"
+            "time": "2026-11-25T03:38:09+00:00"
         },
         {
             "name": "silverspoonmedia/audit",
-            "version": "v1.2.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/audit.git",
-                "reference": "749828fc44341e2873e68eb7b2ffa1b24a5f7597"
+                "reference": "c9d78fa253114ff907078dafc813580cdc91b49b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/audit/zipball/749828fc44341e2873e68eb7b2ffa1b24a5f7597",
-                "reference": "749828fc44341e2873e68eb7b2ffa1b24a5f7597",
+                "url": "https://api.github.com/repos/silverspoonmedia/audit/zipball/c9d78fa253114ff907078dafc813580cdc91b49b",
+                "reference": "c9d78fa253114ff907078dafc813580cdc91b49b",
                 "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.1",
+                "silverspoonmedia/platform": "^1.2",
                 "spatie/laravel-activitylog": "^5.0",
                 "symfony/console": "^8.0"
             },
@@ -6750,20 +6750,20 @@
                 "source": "https://github.com/silverspoonmedia/audit",
                 "issues": "https://github.com/silverspoonmedia/audit/issues"
             },
-            "time": "2026-11-24T06:22:41+00:00"
+            "time": "2026-11-25T03:33:46+00:00"
         },
         {
             "name": "silverspoonmedia/billing",
-            "version": "v1.2.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/billing.git",
-                "reference": "eb2b24334c668f919c99cb0f245764afa0f5242e"
+                "reference": "10cceb1e2301b94a597c05115c3094fec539a263"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/billing/zipball/eb2b24334c668f919c99cb0f245764afa0f5242e",
-                "reference": "eb2b24334c668f919c99cb0f245764afa0f5242e",
+                "url": "https://api.github.com/repos/silverspoonmedia/billing/zipball/10cceb1e2301b94a597c05115c3094fec539a263",
+                "reference": "10cceb1e2301b94a597c05115c3094fec539a263",
                 "shasum": ""
             },
             "require": {
@@ -6772,7 +6772,7 @@
                 "midtrans/midtrans-php": "^2.6",
                 "nesbot/carbon": "^3.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.1",
+                "silverspoonmedia/platform": "^1.2",
                 "spatie/laravel-activitylog": "^5.0",
                 "symfony/http-foundation": "^8.0",
                 "symfony/http-kernel": "^8.0",
@@ -6814,26 +6814,26 @@
                 "source": "https://github.com/silverspoonmedia/billing",
                 "issues": "https://github.com/silverspoonmedia/billing/issues"
             },
-            "time": "2026-11-24T06:24:50+00:00"
+            "time": "2026-11-25T03:35:58+00:00"
         },
         {
             "name": "silverspoonmedia/navigation",
-            "version": "v1.2.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/navigation.git",
-                "reference": "d6c50bd29f7eedb88843e7baf7db87b415c72633"
+                "reference": "de4f9ce445d090290ee7872914e4277de0ce0154"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/navigation/zipball/d6c50bd29f7eedb88843e7baf7db87b415c72633",
-                "reference": "d6c50bd29f7eedb88843e7baf7db87b415c72633",
+                "url": "https://api.github.com/repos/silverspoonmedia/navigation/zipball/de4f9ce445d090290ee7872914e4277de0ce0154",
+                "reference": "de4f9ce445d090290ee7872914e4277de0ce0154",
                 "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.1",
+                "silverspoonmedia/platform": "^1.2",
                 "spatie/laravel-activitylog": "^5.0",
                 "spatie/laravel-translatable": "^6.14"
             },
@@ -6871,26 +6871,26 @@
                 "source": "https://github.com/silverspoonmedia/navigation",
                 "issues": "https://github.com/silverspoonmedia/navigation/issues"
             },
-            "time": "2026-11-24T06:18:14+00:00"
+            "time": "2026-11-25T03:29:26+00:00"
         },
         {
             "name": "silverspoonmedia/notification",
-            "version": "v1.2.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/notification.git",
-                "reference": "35380ebe610f5f3761c9f4da90fdc34e8f3da217"
+                "reference": "fa02fe5ca46bb105023d0adf47cde9a6e92cac44"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/notification/zipball/35380ebe610f5f3761c9f4da90fdc34e8f3da217",
-                "reference": "35380ebe610f5f3761c9f4da90fdc34e8f3da217",
+                "url": "https://api.github.com/repos/silverspoonmedia/notification/zipball/fa02fe5ca46bb105023d0adf47cde9a6e92cac44",
+                "reference": "fa02fe5ca46bb105023d0adf47cde9a6e92cac44",
                 "shasum": ""
             },
             "require": {
                 "laravel/framework": "^13.0",
                 "php": "^8.4",
-                "silverspoonmedia/platform": "^1.1"
+                "silverspoonmedia/platform": "^1.2"
             },
             "require-dev": {
                 "orchestra/testbench": "^11.0",
@@ -6926,20 +6926,20 @@
                 "source": "https://github.com/silverspoonmedia/notification",
                 "issues": "https://github.com/silverspoonmedia/notification/issues"
             },
-            "time": "2026-11-24T06:20:31+00:00"
+            "time": "2026-11-25T03:31:36+00:00"
         },
         {
             "name": "silverspoonmedia/platform",
-            "version": "v1.2.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "git@github.com:silverspoonmedia/platform.git",
-                "reference": "e046c8e680e74e53d5de1296609ec99c63d6d6f0"
+                "reference": "83e285cd17be0ed025529b61fc90f76c93ae1585"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/silverspoonmedia/platform/zipball/e046c8e680e74e53d5de1296609ec99c63d6d6f0",
-                "reference": "e046c8e680e74e53d5de1296609ec99c63d6d6f0",
+                "url": "https://api.github.com/repos/silverspoonmedia/platform/zipball/83e285cd17be0ed025529b61fc90f76c93ae1585",
+                "reference": "83e285cd17be0ed025529b61fc90f76c93ae1585",
                 "shasum": ""
             },
             "require": {
@@ -7007,7 +7007,7 @@
                 "source": "https://github.com/silverspoonmedia/platform",
                 "issues": "https://github.com/silverspoonmedia/platform/issues"
             },
-            "time": "2026-11-24T06:16:03+00:00"
+            "time": "2026-11-25T03:27:19+00:00"
         },
         {
             "name": "spatie/laravel-activitylog",

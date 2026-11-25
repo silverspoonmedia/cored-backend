@@ -1,7 +1,9 @@
 <?php
 
 $root = dirname(__DIR__);
-$locales = ['en', 'id', 'ja', 'ko', 'zh_CN', 'ar', 'ru'];
+require __DIR__.'/lib/locale-scan-support.php';
+
+$locales = locale_scan_supported();
 $out = [];
 
 function flattenLocaleValue(mixed $value, string $prefix = '', array &$out = []): void

@@ -24,7 +24,7 @@ Steps, and why each one is there:
 
 ### `backend` job
 
-Runs `php artisan test` — every testsuite in `phpunit.xml` (`tests/Unit`, `tests/Feature`, `tests/Domain`, and one `Package:{slug}` per package), not a `--testsuite` subset. It exists because `--filter=Locale` was the only thing the workflow ran: a change that broke `tests/Domain/**` merged green, and a single product domain can be 60+ feature test files. `--testsuite=Domain` was the alternative and was rejected: the other suites boot the same app and cost little, and a subset invites "which suite was that in?" as a permanent question.
+Runs `php artisan test` — the host suites this `phpunit.xml` declares (`Unit`, `Feature`, and the documentation/localization guards), not a `--testsuite` subset. Package suites run in the package mirrors (`composer test`); this fork has no `packages/` tree to wire a `Package:{slug}` suite to. It exists because `--filter=Locale` was the only thing the workflow ran: a change that broke `tests/Domain/**` merged green, and a single product domain can be 60+ feature test files. `--testsuite=Domain` was the alternative and was rejected: the other suites boot the same app and cost little, and a subset invites "which suite was that in?" as a permanent question.
 
 The job reuses the `locale` job's environment through a YAML alias (`env: &test-env` / `env: *test-env`), so the two cannot drift into different database settings. It repeats the PHP pin, the Composer cache, the install, and the empty `.env` step for the same reasons as `locale`.
 
@@ -33,7 +33,7 @@ Two steps before the suite are the quality gates, both added 2026-11-19:
 | Step | Why it is a job step |
 |---|---|
 | `vendor/bin/pint --test` | The whole tree was formatted once, by hand, before this step existed. From then on `--test` fails only on drift a diff introduced — the check is cheap and the failure names the file. |
-| `vendor/bin/phpstan analyse` | Level 5 over `app/`, the packages' `src/`, `database/`, `routes/`, `config/`; there is no baseline, so the step fails on any finding. `JWT_SECRET` is in the job `env:` because Larastan boots the app: without a secret the JWT guard extension is absent and `JWTAuth::parser()` analyses as an undefined static method — three findings that do not exist locally. |
+| `vendor/bin/phpstan analyse` | Level 5 over `app/`, `database/`, `routes/`, `config/` (the packaged code arrives as `vendor/silverspoonmedia/*` and is analysed in the mirrors); there is no baseline, so the step fails on any finding. `JWT_SECRET` is in the job `env:` because Larastan boots the app: without a secret the JWT guard extension is absent and `JWTAuth::parser()` analyses as an undefined static method — three findings that do not exist locally. |
 
 Two properties make a full-suite run possible on a bare runner, and both are pinned in `phpunit.xml` rather than in the workflow:
 
@@ -46,14 +46,9 @@ The job is the slow half of the workflow (the `locale` job is seconds). That is 
 
 ## A green run is `failed: 0`
 
-**A green run is `failed: 0`, not `passed == tests`.** The suite is `1759` tests either way; the only thing that moves is the split between `passed` and `skipped`, because seven cross-repo cases skip when the sibling checkout is absent. The local row is quoted exactly as that environment prints it. The runner row is the same run with those seven cases moved from `passed` to `skipped`, so it is derived, not quoted:
+**A green run is `failed: 0`, not `passed == tests`.** The split between `passed` and `skipped` is the only figure that moves, because the cross-repo cases skip on a runner with no sibling checkout. This fork quotes no totals: its corpus is measured by running it, and a number copied here from another checkout is the stale reading this section exists to prevent. The runner rows below name the seven cases that move from `passed` to `skipped`:
 
-| Source | Result |
-|---|---|
-| Local `php artisan test`, both siblings present (re-measured 2026-11-22) | JSON report: `"tests":1759, "passed":1758, "skipped":1, "risky":1, "assertions":18301` (~7 min) |
-| `backend` CI job, sibling-free | console summary: `1 risky, 8 skipped, 1751 passed` — derived: the same `1759` total with the seven cross-repo cases skipped |
-
-Both are green: `failed: 0` is the contract, and the total is `1759` in both. The seven extra skips on the runner are the cross-repo cases below; the single `risky` test is counted inside `passed` by the JSON report and as its own count by the console summary, so the two `passed` figures are not directly comparable.
+Both are green: `failed: 0` is the contract — the split, measured per checkout, is not.
 
 The `1759` is the current corpus. It moved from `1698` when the packaged core domains' suites (`packages/*/tests`, one `Package:{slug}` suite each, 466 cases) were added to the runner, then to `1711` with the quality-gate and dependency-direction tests, to `1718` with the subject-label seam tests, to `1756` with the consumer-contract guards (`ConsumerScaffoldTest`, `KernelConfigSelfSufficiencyTest`, `DomainUninstallManifestTest`) and the flush-command cases, and to `1759` with the kernel console-command guard (`KernelConsoleCommandsTest`, proving a consumer inherits `domain:list` and `encryption:flush-decrypted-cache` from the package). The pre-removal figure was `2454`, and the 2026-10-07 product-domain removal plus the migration squash are what took that difference. `client-scaffold/tests` is **not** part of this total: it boots the copy's own `vendor/`, so `run-consumer-scaffold-check.php` runs it inside the temporary install. Re-measure this pair whenever a product domain is removed, a testsuite is added, or a `config/*.php` file appears or disappears — a stale total here reads as a corpus failure in the next session that touches it.
 
@@ -63,9 +58,8 @@ The `assertions` field is the one number here that moves while the corpus does n
 |---|---|---|
 | `skipped: 1` (any checkout) | `tests/Feature/Oci/OciKmsConnectionIntegrationTest.php` | Live OCI KMS connectivity check; it skips unless `OCI_KMS_INTEGRATION_TEST=true` is exported. Never enable it in CI — it needs real cloud credentials and the network. |
 | `skipped: +7` (sibling-free only) | `LocaleGuardTest` ×4 — `locale-prose-scan.php`, `locale-rawkey-scan.php`, `locale-pack-parity.php`, `locale-glossary-scan.php` — and `DocsStructureGuardTest`, `DocsCrossRepoLinkTest`, `DocsBudgetGuardTest` | Each cross-repo case first asserts the guard **fails loudly** without the sibling (`exit 1`, `cannot see the SPA repo`) and only then marks itself skipped. A pass would claim coverage the run never had, so the skip is the honest summary — see [reference-localization.md — CI coverage vs manual runs](reference-localization.md#ci-coverage-vs-manual-runs). |
-| `risky: 1` | `tests/Domain/Archivd/Unit/Billing/ArchivdAdminJourneyScenarioTest.php` | The test prints its scenario report (a JSON journey dump) to stdout, which PHPUnit reports as risky output. Pre-existing since 2026-09-08; it pollutes the job log but does not fail the run. |
 
-Do not "fix" either by adding `--fail-on-risky` or by deleting the skip: the first turns a cosmetic warning into a red build, the second removes the only coverage of the live-cloud path. If the Archivd report output ever needs silencing, capture it with `ob_start()` / `ob_get_clean()` inside that test rather than suppressing the whole suite's output.
+Do not "fix" either by adding ``--fail-on-risky`` or by deleting the skip: the first turns a cosmetic warning into a red build, the second removes the only coverage of the live-cloud path.
 
 ## One suite at a time
 
@@ -91,7 +85,7 @@ Local scratch under `storage/logs/`, `.phpstan.cache/`, `.phpunit.result.cache`,
 | `php artisan test --filter=Documentation` | `backend` job | No; `DocsCrossRepoLinkTest` and `DocsBudgetGuardTest` skip the sibling half |
 | `php scripts/docs-cross-repo-links.php` | **nothing** — developer machine only | Yes |
 
-The third row is the honest gap. Links that leave this repo (`../../../monolith-vue-workers/…`, `../../../../gateway/…`) cannot be resolved on the runner: both repos are private, so `GITHUB_TOKEN` cannot read the sibling, and an earlier attempt to check it out failed at the step before any test ran (see the `locale` job note above). The guard therefore treats an absent sibling as **unverifiable, not broken** — correct, but it means a green run proves nothing about those links.
+The third row is the honest gap. Links that leave this repo (`../../../cored-frontend/…`, `../../../../gateway/…`) cannot be resolved on the runner: both repos are private, so `GITHUB_TOKEN` cannot read the sibling, and an earlier attempt to check it out failed at the step before any test ran (see the `locale` job note above). The guard therefore treats an absent sibling as **unverifiable, not broken** — correct, but it means a green run proves nothing about those links.
 
 Two things narrow the gap without a credential:
 
@@ -104,9 +98,9 @@ The guard resolves each rule's `globs:` by walking the checkout, so the walk is 
 
 ## The sibling's CI job
 
-`monolith-vue-workers/.github/workflows/ci.yml` runs `type-check` → `check:i18n` → `check:docs` → **`check:env`** → `test` → `build-only`, and the deploy workflow repeats the same gates before a build so a deploy can never bypass them.
+`cored-frontend/.github/workflows/ci.yml` runs `type-check` → `check:i18n` → `check:docs` → **`check:env`** → `test` → `build-only`, and the deploy workflow repeats the same gates before a build so a deploy can never bypass them.
 
-`npm run check:env` (`scripts/check-mode-env.mjs`) guards the **values** of the three tracked Vite mode files, which the branch→mode→env mapping never did — `.env.production` once shipped pointing at the sandbox API origin. It fails on a missing or empty required `VITE_*` key, a placeholder value, production or staging pointing at a host containing `sandbox`, two environments sharing an API origin, and a leftover `TODO`. A non-origin credential shared between environments (hCaptcha sitekey, Pusher app key) is a **warning**, not a failure: it is drift worth fixing, but it does not send traffic to the wrong backend. Adding an environment means adding it to `MODES` in that script; the operator-facing write-up is sibling [deployment.md](../../../monolith-vue-workers/docs/deployment.md), section *Mode file values*.
+`npm run check:env` (`scripts/check-mode-env.mjs`) guards the **values** of the three tracked Vite mode files, which the branch→mode→env mapping never did — `.env.production` once shipped pointing at the sandbox API origin. It fails on a missing or empty required `VITE_*` key, a placeholder value, production or staging pointing at a host containing `sandbox`, two environments sharing an API origin, and a leftover `TODO`. A non-origin credential shared between environments (hCaptcha sitekey, Pusher app key) is a **warning**, not a failure: it is drift worth fixing, but it does not send traffic to the wrong backend. Adding an environment means adding it to `MODES` in that script; the operator-facing write-up is sibling [deployment.md](../../../cored-frontend/docs/deployment.md), section *Mode file values*.
 
 ## Job-level `env:`
 
@@ -128,4 +122,4 @@ env:
 
 `COLUMNS: '200'` widens Collision's output. The runner's default is 80 columns, which truncated findings to `file_get_contents(/ho…` — the opposite of a readable gate.
 
-**No branch protection.** Both repos are private on the GitHub **free** plan, so required status checks are unavailable: `gh api repos/silverspoonmedia/monolith/branches/main/protection` answers `403 Upgrade to GitHub Pro or make this repository public`. Nothing on GitHub blocks a merge with a red run. The day-to-day process, and the gap this leaves for SPA-only pull requests, is in [reference-localization.md — PR & merge process](reference-localization.md#pr--merge-process).
+**No branch protection.** Both repos are private on the GitHub **free** plan, so required status checks are unavailable: `gh api repos/silverspoonmedia/cored-backend/branches/main/protection` answers `403 Upgrade to GitHub Pro or make this repository public`. Nothing on GitHub blocks a merge with a red run. The day-to-day process, and the gap this leaves for SPA-only pull requests, is in [reference-localization.md — PR & merge process](reference-localization.md#pr--merge-process).

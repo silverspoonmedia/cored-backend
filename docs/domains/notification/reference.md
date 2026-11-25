@@ -128,7 +128,7 @@ Viewer API endpoints:
 | `POST /api/v1/notifications/{id}/read` | Idempotent single-read |
 | `POST /api/v1/notifications/read-all` | Returns `{ marked, unread: 0 }` |
 
-Bell UI, inbox (`/apps/notifications`), and audience admin live in Monolith-Vue-Workers. Blade `NotificationBellComposer` and web proxies are removed — see [blade-admin.md](../../web/blade-admin.md).
+Bell UI, inbox (`/apps/notifications`), and audience admin live in Cored Frontend. Blade `NotificationBellComposer` and web proxies are removed — see [blade-admin.md](../../web/blade-admin.md).
 
 ## Implementation map
 
@@ -138,7 +138,7 @@ Bell UI, inbox (`/apps/notifications`), and audience admin live in Monolith-Vue-
 | Emit service | `packages/notification/src/Services/NotificationService.php` | Persist audience, calculate per-recipient unread count, dispatch realtime event |
 | Realtime event | `packages/notification/src/Events/UserActivityNotificationReceived.php` | Private channel/name and `type`/`table_id`/`unread_count` payload |
 | Audience settings | `NotificationTypeSettingRepository` + seeder | Resolve role/user/subject audience; primitive cached snapshot |
-| SPA bell / inbox | `monolith-vue-workers` (`useNotificationsHydrate`, Echo) | Badge, list, WS, mark-read |
+| SPA bell / inbox | `cored-frontend` (`useNotificationsHydrate`, Echo) | Badge, list, WS, mark-read |
 | Users list live reload | SPA `UsersView` | Register `users-table` via Pattern A |
 
 ## Workflows (agents)
@@ -206,7 +206,7 @@ php artisan test packages/notification/tests
 php artisan test tests/Unit/Support/Broadcasting/BroadcastConnectionTest.php
 ```
 
-SPA: `npm test` in `monolith-vue-workers` (includes `tests/echo.test.ts` and `tests/client.test.ts` CSRF/419/settle cases).
+SPA: `npm test` in `cored-frontend` (includes `tests/echo.test.ts` and `tests/client.test.ts` CSRF/419/settle cases).
 
 Minimum manual browser verification:
 

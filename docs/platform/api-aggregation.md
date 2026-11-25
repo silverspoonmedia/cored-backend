@@ -6,9 +6,9 @@ Canonical rules for when and how multiple API reads are aggregated into one call
 
 1. **Endpoints always stand alone.** Every resource keeps its own directly-callable endpoint. No endpoint may exist *only* inside an aggregated result. Aggregation is an optimization layered on top of standalone endpoints, never a replacement for them — the standalone endpoint stays the source of truth.
 
-2. **Aggregation exists for the SPA.** The aggregation endpoint (`/api/v1/batch`) is built for the "Monolith-Vue-Workers" SPA. It is not a public contract for other consumers. Third-party / machine clients call the standalone endpoints.
+2. **Aggregation exists for the SPA.** The aggregation endpoint (`/api/v1/batch`) is built for the "Cored Frontend" SPA. It is not a public contract for other consumers. Third-party / machine clients call the standalone endpoints.
 
-3. **Aggregation lives in the Monolith backend.** Fan-in and dispatch happen in `BatchController` on the server. The SPA is a thin client: a hydrate composable sends a list of API-relative paths and unwraps positional results (`bodyOf`/`dataOf`). No response-merging or aggregation logic may live in the SPA.
+3. **Aggregation lives in the Cored backend.** Fan-in and dispatch happen in `BatchController` on the server. The SPA is a thin client: a hydrate composable sends a list of API-relative paths and unwraps positional results (`bodyOf`/`dataOf`). No response-merging or aggregation logic may live in the SPA.
 
 ## Gate condition — aggregate only when safe
 

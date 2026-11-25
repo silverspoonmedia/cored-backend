@@ -7,7 +7,8 @@
 // `lang/<locale>.json` (the laravel-lang JSON pack that Laravel consults
 // *before* the PHP namespaces for any key without a `/`).
 //
-//   <locale>     en | id | ja | ko | zh_CN | ar | ru
+//   <locale>     a supported locale: `config('localization.supported_locales')`
+//                (`en`, `id` today) — never a hand-written list
 //   <map.json>   { "English source string": "translated value", ... }
 //                Unknown keys are refused — the pack is package-owned, so this
 //                tool only rewrites values that already exist. Adding a key is a
@@ -27,7 +28,10 @@
 // only the matched lines change and the surrounding formatting (order, indent,
 // EOL, trailing newline) is preserved.
 $root = dirname(__DIR__);
-$locales = ['en', 'id', 'ja', 'ko', 'zh_CN', 'ar', 'ru'];
+require __DIR__.'/lib/locale-scan-support.php';
+
+// One source of truth; a literal list here outlives the locales it names.
+$locales = locale_scan_supported();
 
 $args = array_slice($argv, 1);
 $positional = array_values(array_filter($args, fn (string $a): bool => ! str_starts_with($a, '--')));

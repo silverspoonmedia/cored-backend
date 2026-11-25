@@ -10,6 +10,8 @@ Canonical term choices across locales. Use these for every translation wave; do 
 
 | English | id | ja | ko | zh_CN | ar | ru |
 |---------|----|----|----|-------|----|----|
+
+> **Only `en` and `id` are live locales (Nov 2026).** The `ja` / `ko` / `zh_CN` / `ar` / `ru` columns are kept as the settled wording for a locale that may return — they are not shipped copy. A term added today needs an `en` value and an `id` value; the other columns are filled in only by a locale re-introduction, from these notes and [archive/localization-retired-locales.md](../archive/localization-retired-locales.md).
 | workspace | workspace | ワークスペース | 워크스페이스 | 工作区 | مساحة العمل | рабочая область |
 | orphan (unowned entity) | yatim | オーファン / 孤立 | 고아 | 孤立 | يتيم | сирота |
 | verify (a proof) | verifikasi | 検証 | 검증 | 验证 | تحقق | проверка |

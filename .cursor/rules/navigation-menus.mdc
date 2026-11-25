@@ -10,7 +10,7 @@ Before creating or changing dynamic menus, read [docs/domains/navigation/README.
 
 This domain is a **Composer path package**: code in `packages/navigation/src`, routes in `packages/navigation/routes/api.php`, migrations/seeders/factories/lang/tests inside the package. Its `App\Domain\Navigation\` namespace does not change, so every rule below still applies; a host may override a class by placing the same namespace path under `app/Domain/Navigation/` (root `app/` wins in the PSR-4 map).
 
-- Every menu `route` is a SPA Vue Router **symbolic name** listed in `config/spa-routes.php` (and present in `monolith-vue-workers/src/router`). Never a URL. Validation goes through `App\Support\Navigation\SpaRouteRegistry`: the `menu` allow-list plus any remaining Laravel `Route::has()` name, minus `deny` (auth/public-utility names are rejected even when `Route::has()` would pass).
+- Every menu `route` is a SPA Vue Router **symbolic name** listed in `config/spa-routes.php` (and present in `cored-frontend/src/router`). Never a URL. Validation goes through `App\Support\Navigation\SpaRouteRegistry`: the `menu` allow-list plus any remaining Laravel `Route::has()` name, minus `deny` (auth/public-utility names are rejected even when `Route::has()` would pass).
 - Each product parent route appears in `config/products.php` `menu_routes`. Every referenced role must already be seeded.
 - Every `MenuSeeder` run **force-deletes all active and trashed rows** and rebuilds the canonical tree inside one transaction; a failure restores the prior tree. After commit it flushes the snapshot and bumps the epoch — no separate cache command. Never seed debug/test/probe nodes.
 - Structure: `h` root → `p` under `h` → `c` under `p`, contiguous sibling `order` within `(layout, parent_id, type)`. The flat template layout (`navbar`) also accepts parentless `p` roots; `sidebar` requires the header root. Parent and child share a layout; layout is fixed after create.
@@ -22,7 +22,7 @@ This domain is a **Composer path package**: code in `packages/navigation/src`, r
 - Two-tier forever cache: `menus.navigation.snapshot` (primitives, never hydrated Eloquent) + `menus.navigation.tree_epoch`, then `menus.navigation.presented.{epoch}.{locale}.{layout}.{viewer}`. A presented-tree hit must **not** query the `menus` table.
 - Invalidate exactly as wide as the change: menu/role writes and `menu:flush-cache` forget the snapshot **and** bump the epoch (all presented keys miss); a Domain Access upsert bumps the epoch; a product-activation change or a menu-RBAC role sync forgets only that user's presented keys. Flush navigation cache only after commit.
 - `Menus are a UX tree only` — no `domain` / `domain_kind` column. Never add menu schema just to mirror the module registry or the RBAC catalog.
-- Menu CRUD, `MenuSeeder` and `monolith-vue-workers/src/router` must stay in sync; a route that leaves `config/spa-routes.php` breaks validation for every node using it.
+- Menu CRUD, `MenuSeeder` and `cored-frontend/src/router` must stay in sync; a route that leaves `config/spa-routes.php` breaks validation for every node using it.
 - Lock the tree and visibility with tests. Update this brief, the deep dive, and every affected domain brief in the same task.
 
 Detail: [docs/domains/navigation/reference.md](../../docs/domains/navigation/reference.md).

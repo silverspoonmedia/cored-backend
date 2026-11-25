@@ -36,13 +36,13 @@ Menu: **Administration → Settings** — single hub for all groups (`settings.p
 
 ### Localization
 
-Field labels resolve dynamically from `SettingRegistry` keys. Backend copy lives in `lang/{en,id,ja,ko,zh_CN,ar,ru}/web/settings.php` under `fields` (dot-containing keys such as `platform.auth.default_role` are literal PHP/JSON keys, not nested paths). Optional helper copy lives under `hints` with the same key. The SPA `SettingsFormView` loads `web.settings.fields` / `hints` via vue-i18n `tm()`, looks up each registry key as that literal dotted key (nested walk if needed), then `rt()` so runtime-compiled message ASTs become text — never `String(object)`. `t('web.settings.fields.' + key)` is the wrong lookup: vue-i18n splits on `.` and misses the literal JSON key. Each registry key must exist in all seven locale files.
+Field labels resolve dynamically from `SettingRegistry` keys. Backend copy lives in `lang/{en,id}/web/settings.php` under `fields` (dot-containing keys such as `platform.auth.default_role` are literal PHP/JSON keys, not nested paths). Optional helper copy lives under `hints` with the same key. The SPA `SettingsFormView` loads `web.settings.fields` / `hints` via vue-i18n `tm()`, looks up each registry key as that literal dotted key (nested walk if needed), then `rt()` so runtime-compiled message ASTs become text — never `String(object)`. `t('web.settings.fields.' + key)` is the wrong lookup: vue-i18n splits on `.` and misses the literal JSON key. Each registry key must exist in both locale files.
 
 The manage form renders each field with the shared `FormInput` / `FormSelect` / `FormTextarea` / `FormCheckbox` (`switch` for bools) stack. The registry key and `web.settings.source` stay a muted identifier under the control (`FormField` / `FormCheckbox` hint) — not inside Bootstrap `form-check` (that class is a flex row for the toggle + label only).
 
 `PUT /api/v1/admin/settings/{group}` field names are **underscore aliases** of the registry key (`platform.jwt.ttl` → `platform_jwt_ttl`). Laravel `Request::input('a.b.c')` is nested-array lookup, so a JSON body that uses the dotted GET keys would validate as empty (`sometimes` rules) and 422 `settings.empty_payload`. `UpdateSettingsGroupRequest` also copies a literal dotted key onto the underscore alias when the alias is absent, so either shape is accepted. GET still returns dotted registry keys. The SPA `SettingsFormView` submits `fieldId(key)` (underscores), matching the HTML `name` attributes.
 
-When adding a new `SettingRegistry` entry, update all seven locale files in the same task and keep `SettingRegistryTranslationTest` green (field labels **and** any registry `options` value labels). API flash messages for settings live in `lang/{locale}/settings.php`.
+When adding a new `SettingRegistry` entry, update both locale files in the same task and keep `SettingRegistryTranslationTest` green (field labels **and** any registry `options` value labels). API flash messages for settings live in `lang/{locale}/settings.php`.
 
 Enum-like string keys may declare an optional `options` list on the registry definition (values only). `SettingsService::presentGroup` exposes those values; `SettingsFormView` renders `FormSelect` and labels come from `web.settings.options.{key}.{value}` (nested lang keys, same dotted-key walk plus `rt()`). First use: `platform.notifications.delivery` → `polling` | `realtime`.
 
@@ -113,7 +113,7 @@ A domain that owns settings registers its own group through a `SettingContributo
 ships **no** product group: `platform` is the only group in the hub. When you add a
 domain, its group appears in the same hub (`settings.{domain}`), gated by the same
 `view settings` / `manage settings` permissions, and its field labels need entries in
-all seven locale files under `web/settings.fields` / `.hints`.
+both locale files under `web/settings.fields` / `.hints`.
 
 See [reference-package-seams.md](../integration/reference-package-seams.md#seams-a-bundled-package-needs)
 for the contributor contract.

@@ -9,8 +9,8 @@ MySQL 8.x for local development, PostgreSQL 16 for deployment parity; **SQLite i
 Run fresh migration and rollback verification against isolated MySQL 8.x and PostgreSQL 16 databases. Use separate credentials/databases or containers. Never point matrix variables at development or production data.
 
 ```bash
-DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=monolith_migration_mysql DB_USERNAME=... DB_PASSWORD=... php artisan migrate --force
-DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=monolith_migration_pgsql DB_USERNAME=... DB_PASSWORD=... php artisan migrate --force
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=cored_migration_mysql DB_USERNAME=... DB_PASSWORD=... php artisan migrate --force
+DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=cored_migration_pgsql DB_USERNAME=... DB_PASSWORD=... php artisan migrate --force
 ```
 
 After each run, verify `php artisan db:migration-diagnose menus`, foreign-key metadata, UUID column types, nullable composite unique behavior, JSON round trips, and representative seed/backfill data. Roll back only disposable databases:

@@ -6,7 +6,8 @@
 // Applies a contextual translation batch to one backend PHP lang file without
 // reformatting the rest of the file (line-surgical: only the touched keys change).
 //
-//   <locale>     en | id | ja | ko | zh_CN | ar | ru
+//   <locale>     a supported locale: `config('localization.supported_locales')`
+//                (`en`, `id` today) — never a hand-written list
 //   <file>       path relative to lang/<locale>/, e.g. api/archivd.php
 //   <map.json>   { "dotted.key": "translated value", ... }
 //                Keys that already exist are replaced in place; unknown keys are
@@ -24,7 +25,10 @@
 // file the string lives in. Re-running replaces the existing flag for that key
 // instead of stacking duplicates.
 $root = dirname(__DIR__);
-$locales = ['en', 'id', 'ja', 'ko', 'zh_CN', 'ar', 'ru'];
+require __DIR__.'/lib/locale-scan-support.php';
+
+// One source of truth; a literal list here outlives the locales it names.
+$locales = locale_scan_supported();
 
 // The flag marker, matched exactly as `scripts/locale-curation-flag-scan.php` does.
 const FLAG_PREFIX = '// curated at ';

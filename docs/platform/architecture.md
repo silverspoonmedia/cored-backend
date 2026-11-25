@@ -45,7 +45,7 @@ Each product domain owns an **uninstall manifest** — `app/Domain/{Name}/uninst
 | Config | `config/domains.php`, `bootstrap/providers.php`, `packages/*/config/*` |
 | Routes | `routes/api/v1.php` → `routes/api/v1/{domain}.php` or `packages/*/routes/{domain}.php`; `routes/web.php` → `routes/web/{domain}.php` or a packaged registry `web` key |
 | Commands | `domain:list` (kernel — `packages/platform/src/Console/Commands/Domain/ListDomainsCommand.php`, registered by `KernelServiceProvider` for a consumer), `domain:make` / `domain:remove` (host — they rewrite host trees) |
-| Tests | `tests/Domain/{Domain}/` (suite `Domain`) for host-bound tests; `packages/*/tests/` (suite `Package:{slug}`) for each package's standalone tree |
+| Tests | `tests/Domain/` (living line, host-bound) · `tests/Unit` · `tests/Feature`; a package's own tree runs in its mirror (`composer test`), since `tests/` is `export-ignore`d from the tag |
 | Pakem | [architecture.mdc](../../.cursor/rules/architecture.mdc) |
 | Package contract | [core-packages.md](../integration/core-packages.md) |
 | Removal procedure | [.cursor/skills/domain-remove/SKILL.md](../../.cursor/skills/domain-remove/SKILL.md) |

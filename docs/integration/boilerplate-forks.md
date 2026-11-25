@@ -32,7 +32,7 @@ The SPA half is the same manifest (`spa:` entries). The backend's scan reads the
 | AI consumer / ledger FK | `config(['ai.consumers' => …, 'ai.ledger_fk_targets' => …])` from the fork's provider |
 | Upload proxy | `config(['storage.upload_proxy' => …])` |
 | Kernel behavior | a class under the fork's `app/Support/...` — its PSR-4 prefix wins the race |
-| SPA screen | `src/features/{name}/` implementing `FeatureModule`, one `registry.ts` line, seven locale packs |
+| SPA screen | `src/features/{name}/` implementing `FeatureModule`, one `registry.ts` line, one pack per live locale |
 
 Two forks registering the same field keys do not collide: `SettingCatalog` merges definitions by registry key and the serialized path config carries the fork's own namespace. `scripts/run-vcs-consumer-check.php` proves all of it on a throwaway copy, including two colliding contributors, before each release.
 

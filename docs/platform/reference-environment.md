@@ -30,7 +30,7 @@ php artisan db:seed
 
 **PHP 8.4 is required, not 8.3.** `composer.json` declares `php: ^8.4` and the lock file enforces it: `silverspoonmedia/pdf-tools` (dev-main) and `symfony/*` 8.1 both require `^8.4`, so `composer install` on 8.3 stops with `Your lock file does not contain a compatible set of packages`. `.github/workflows/ci.yml` pins the same version on the runner ([reference-tooling.md — CI](reference-tooling.md#ci-github-actions)).
 
-`env:install` copies the template, seeds the snapshot, sets profile, and generates `APP_KEY`, `JWT_SECRET`, and `ENCRYPTION_BLIND_INDEX_PEPPER` (filled, double-quoted via Monolith writers — not bare `jwt:secret`).
+`env:install` copies the template, seeds the snapshot, sets profile, and generates `APP_KEY`, `JWT_SECRET`, and `ENCRYPTION_BLIND_INDEX_PEPPER` (filled, double-quoted via the guarded env writers — not bare `jwt:secret`).
 
 ## Value types
 
@@ -53,12 +53,12 @@ Empty secrets or optional string overrides use `KEY=""`. When adding keys: updat
 |----------|------|
 | `APP_KEY` | Active Laravel encryption key |
 | `APP_PREVIOUS_KEYS` | Retired keys after rotation (decrypt still works) |
-| `SPA_URL` | Public origin of Monolith-Vue-Workers (no trailing slash). OAuth `return_to` allowlist (with `APP_URL`), `SpaPublicUrl` mint origin, and a CORS origin (`config/cors.php`). Empty falls back to `APP_URL` + the surviving server endpoints and disables SPA OAuth return. Minting matrix: [vue-workers-spa — Production URL minting](../integration/reference-vue-workers-spa.md#production-url-minting-spa_url). Local dev with the Vite SPA at `http://localhost:5173` and the API via a Cloudflare Tunnel host: set `SPA_URL=http://localhost:5173` so the browser origin is in the CORS allowlist (staging shares one domain, so it is already covered). |
+| `SPA_URL` | Public origin of Cored Frontend (no trailing slash). OAuth `return_to` allowlist (with `APP_URL`), `SpaPublicUrl` mint origin, and a CORS origin (`config/cors.php`). Empty falls back to `APP_URL` + the surviving server endpoints and disables SPA OAuth return. Minting matrix: [vue-workers-spa — Production URL minting](../integration/reference-vue-workers-spa.md#production-url-minting-spa_url). Local dev with the Vite SPA at `http://localhost:5173` and the API via a Cloudflare Tunnel host: set `SPA_URL=http://localhost:5173` so the browser origin is in the CORS allowlist (staging shares one domain, so it is already covered). |
 | `CORS_EXTRA_ORIGINS` | Comma-separated extra browser origins appended to the CORS allowlist (`config/cors.php` `allowed_origins`) on top of `APP_URL` + `SPA_URL`. Use for Cloudflare Workers preview URLs, localhost dev, or any additional SPA origin the API should accept. Each entry is trimmed and trailing-slash-normalized; empty segments are dropped and duplicates collapsed. Empty string = no extras. Keep explicit — `supports_credentials = true` forbids a wildcard origin. |
 
 `key:generate --force` appends current key to previous, writes new key. Implementation: `EnvironmentKeyWriter` (file-based, not broken by quoted values).
 
-`env:install` / profile secret seeding writes `JWT_SECRET` via Monolith's quoted writer (`EnvironmentProfileManager::writeJwtSecret`). Do **not** rely on standalone `jwt:secret` for on-disk writes — the package writes unquoted `JWT_SECRET` / `JWT_ALGO` and is not mutation-guarded.
+`env:install` / profile secret seeding writes `JWT_SECRET` via the guarded quoted writer (`EnvironmentProfileManager::writeJwtSecret`). Do **not** rely on standalone `jwt:secret` for on-disk writes — the package writes unquoted `JWT_SECRET` / `JWT_ALGO` and is not mutation-guarded.
 
 ## Switching profiles (local)
 
@@ -171,7 +171,7 @@ Retention and enable/disable are in **Settings → Platform** (`errorlog.*` regi
 
 Operational knobs (JWT TTLs, upload limits, notification delivery, etc.) live in **`system_settings`** and are edited via **Administration → Settings**. They are **not** `.env` variables — see [configuration-policy.md](configuration-policy.md). Runtime reads use a forever-cached snapshot (`setting_config()`). Full inventory: [reference-settings.md](reference-settings.md).
 
-Monolith no longer carries any `VITE_*` keys. Vite belongs to the SPA build, so `VITE_PUSHER_*` / `VITE_API_BASE_URL` / `VITE_HCAPTCHA_SITE_KEY` live in `monolith-vue-workers/.env` — see [vue-workers-spa.md](../integration/reference-vue-workers-spa.md#env-vars). They must still be **literals** mirroring Monolith's `PUSHER_*` values, because Vite does not expand `${PUSHER_*}` at build time. If an old `.env` still has them, `env:curate` will surface them under `Extra keys (not in template)`; delete them.
+The backend no longer carries any `VITE_*` keys. Vite belongs to the SPA build, so `VITE_PUSHER_*` / `VITE_API_BASE_URL` / `VITE_HCAPTCHA_SITE_KEY` live in `cored-frontend/.env` — see [vue-workers-spa.md](../integration/reference-vue-workers-spa.md#env-vars). They must still be **literals** mirroring Monolith's `PUSHER_*` values, because Vite does not expand `${PUSHER_*}` at build time. If an old `.env` still has them, `env:curate` will surface them under `Extra keys (not in template)`; delete them.
 
 After the env→settings migration, `php artisan env:curate` may leave **orphan** operational keys in a local `.env` (moved to the orphans section) when `.env` still contains Tier B vars removed from templates. Safe to delete them — live values are in `system_settings`. After template sync (`env:curate --sync-snapshot`), a clean local `.env` should show **0 orphans**; do not re-add Tier B keys. Upload proxy vars (`ARCHIVD_UPLOAD_PROXY_*`) are **Tier A** and belong as live assignments in the Archivd env section of **all** templates (empty URL = browser-direct; local profile may ship gateway defaults).
 

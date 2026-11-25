@@ -21,7 +21,7 @@ Query-paging lists: users, invoices, payment-gateways, subscriptions, services, 
 
 DTO: `App\Support\ListActions\QueryRowAction`. Builders live under `App\Support\ListActions\Builders\` for host domains, or `App\Domain\{Domain}\Support\ListActions\` when the domain ships as a package (a kernel that renders domain rows is a domain dependency in disguise). Attach with `QueryRowActionAttacher` on resolved Resource arrays (zip with models).
 
-Each item: `key`, `label` (`__()` `en`/`id`/`ja` via `lang/*/list_actions.php` plus existing `ui.*` / `web/*` confirms), `icon` (Bootstrap Icons, no `bi-` prefix), `variant`, plus **exactly one** of:
+Each item: `key`, `label` (`__()` `en`/`id` via `lang/*/list_actions.php` plus existing `ui.*` / `web/*` confirms), `icon` (Bootstrap Icons, no `bi-` prefix), `variant`, plus **exactly one** of:
 
 | Kind | Fields | SPA mapping |
 |------|--------|-------------|
@@ -51,7 +51,7 @@ Response `data` for `users` / `roles`: flat `{ results: [{ id, text }], paginati
 
 Implementation: Identity `LookupService` / `LookupController` for `users`/`roles`; `MenuLookupService` / `MenuLookupController` in `silverspoonmedia/navigation` for `menus`, because the kernel cannot import `Menu`. The SPA calls these directly.
 
-Consumer: the SPA `FormSelect2` component wraps jQuery Select2 and unwraps this envelope in `src/utils/select2-lookup.ts` — see [vue-workers-spa.md](../integration/reference-vue-workers-spa.md#formselect2) and [ui-patterns.md — Nested selects](../../../monolith-vue-workers/docs/ui-patterns.md) for how the nested `menus` tree is flattened into one-level optgroups.
+Consumer: the SPA `FormSelect2` component wraps jQuery Select2 and unwraps this envelope in `src/utils/select2-lookup.ts` — see [vue-workers-spa.md](../integration/reference-vue-workers-spa.md#formselect2) and [ui-patterns.md — Nested selects](../../../cored-frontend/docs/ui-patterns.md) for how the nested `menus` tree is flattened into one-level optgroups.
 
 ## Related
 

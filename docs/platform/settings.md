@@ -2,7 +2,7 @@
 
 Operational configuration that changes application behavior **without** redeploying secrets or infra profiles. Secrets and infrastructure bindings stay in `.env`.
 
-Values live in `system_settings` and are edited at **Administration → Settings**, a single SPA hub that renders one group per surface (`platform`, `archivd`, `microstock`) plus notification audiences. Runtime reads go through `App\Support\Settings\SettingsReader` against a forever-cached snapshot; a key with no DB row yet falls back to the owning `config/*.php` **PHP literal** default, then to the caller default. Never `config()->set()` or `env()` outside config files. Field labels resolve dynamically from `SettingRegistry` keys, so every registry key must exist in all seven locale files.
+Values live in `system_settings` and are edited at **Administration → Settings**, a single SPA hub that renders one group per surface (`platform`, `archivd`, `microstock`) plus notification audiences. Runtime reads go through `App\Support\Settings\SettingsReader` against a forever-cached snapshot; a key with no DB row yet falls back to the owning `config/*.php` **PHP literal** default, then to the caller default. Never `config()->set()` or `env()` outside config files. Field labels resolve dynamically from `SettingRegistry` keys, so every registry key must exist in both locale files.
 
 | | |
 |---|---|

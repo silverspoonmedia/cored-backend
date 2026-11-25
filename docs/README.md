@@ -15,11 +15,11 @@ This repository is the product-free Cored boilerplate: the ten core domains and 
 |------|------|
 | Agent pakem map | [AGENTS.md](../AGENTS.md) · rules in [.cursor/rules/](../.cursor/rules/) |
 | User-facing docs site | [help.silverspoon.me](https://help.silverspoon.me) — sibling `docs` repo (Docusaurus, customer manual); agent pakem in that repo's `AGENTS.md` + `.cursor/rules/` |
-| IDE workspace | [Monolith-Backend.code-workspace](../Monolith-Backend.code-workspace) · sibling `Monolith-SPA.code-workspace` · [Monolith-Fullstack.code-workspace](../Monolith-Fullstack.code-workspace) for contract work; all three load the `docs` repo as a peer root |
+| IDE workspace | [Monolith-Backend.code-workspace](../Monolith-Backend.code-workspace) (this repo + `docs`) · sibling `cored-frontend/Cored-Frontend.code-workspace` · [Monolith-Fullstack.code-workspace](../Monolith-Fullstack.code-workspace) for contract work; all of them load the `docs` repo as a peer root |
 | Domain layout, `domain:*`, namespaces, path packages | [platform/architecture.md](platform/architecture.md) · [integration/core-packages.md](integration/core-packages.md) |
 | Removing a product domain (ordered procedure) | [.cursor/skills/domain-remove/SKILL.md](../.cursor/skills/domain-remove/SKILL.md) |
 | Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [platform/configuration-policy.md](platform/configuration-policy.md) |
-| Project overview (Monolith + Vue-Workers) | [integration/project-overview.md](integration/project-overview.md) |
+| Project overview (Cored Backend + Cored Frontend) | [integration/project-overview.md](integration/project-overview.md) |
 | SPA frontend contract | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) (contract changes only) |
 | Auth URI layout | Authenticated SPA under **`/apps/*`** (Vue Router names unprefixed); guest/public at site root; API `/api/v1/*` unchanged — [architecture — Routes](platform/reference-architecture.md#routes) |
 
@@ -81,7 +81,7 @@ The browser UI lives in the sibling SPA. These are historical only; the live lis
 
 | Document | Topic |
 |----------|-------|
-| [project-overview.md](integration/project-overview.md) | Monolith and Monolith-Vue-Workers — architecture and relationship |
+| [project-overview.md](integration/project-overview.md) | Cored Backend and Cored Frontend — architecture and relationship |
 | [vue-workers-spa.md](integration/vue-workers-spa.md) | SPA contract: API shapes, `SPA_URL` minting, i18n runtime, batch hydration, realtime registry, CI; deep dive [reference-vue-workers-spa.md](integration/reference-vue-workers-spa.md) |
 | [client-project.md](integration/client-project.md) | Building a project on the core packages: `client-scaffold` template, registry, route loaders, PSR-4 override hooks, config split, verification |
 | [core-packages.md](integration/core-packages.md) | Core domains shipped as Composer path packages: layout, host wiring, override precedence, kernel contracts, how to add one |
@@ -91,7 +91,7 @@ The browser UI lives in the sibling SPA. These are historical only; the live lis
 
 ## Archive (not daily reading)
 
-[archive/](archive/) holds historical assessments, one-shot audits, the [security audit](archive/security-audit-2026-06-16.md), the [archived Blade UI patterns](archive/ui-patterns-blade.md), the [SPA consumer decision findings](archive/spa-consumer-decision-findings.md), [microstock probe summaries](archive/microstock-probes/), and the sunset post-mortems ([Blog](archive/blog-sunset-postmortem.md), [vTual](archive/vtual-sunset-postmortem.md)) that carry the restore recipe for each retired product domain. Archive files may mention a former three-repo workflow; that model is dissolved.
+[archive/](archive/) holds historical assessments, one-shot audits, the [security audit](archive/security-audit-2026-06-16.md), the [archived Blade UI patterns](archive/ui-patterns-blade.md), the [SPA consumer decision findings](archive/spa-consumer-decision-findings.md), [microstock probe summaries](archive/microstock-probes/), the [retired-locale wording notes](archive/localization-retired-locales.md) that a locale re-introduction starts from, and the sunset post-mortems ([Blog](archive/blog-sunset-postmortem.md), [vTual](archive/vtual-sunset-postmortem.md)) that carry the restore recipe for each retired product domain. Archive files may mention a former three-repo workflow; that model is dissolved.
 
 ## Writing docs
 

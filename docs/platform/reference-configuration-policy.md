@@ -99,7 +99,7 @@ Mirrors [`config/settings-local.php`](../../config/settings-local.php) — updat
 ## Agent checklist — new operational knob
 
 1. Classify tier (A / B / C).
-2. **Tier B:** add `SettingRegistry` entry → `SettingsSeeder` picks it up → translations in `lang/{en,id,ja,ko,zh_CN,ar,ru}/web/settings.php` (`fields` + optional `hints`) → `SettingRegistryTranslationTest` green → **no** new env key. For enum-like strings, declare registry `options`, ship `web/settings.options.{key}.{value}` labels in all seven locales, and rely on `presentGroup` + SPA `SettingsFormView` `FormSelect` — see [reference-settings.md](reference-settings.md). For **local-only** dev defaults, add to `config/settings-local.php` (not config literals).
+2. **Tier B:** add `SettingRegistry` entry → `SettingsSeeder` picks it up → translations in `lang/{en,id}/web/settings.php` (`fields` + optional `hints`) → `SettingRegistryTranslationTest` green → **no** new env key. For enum-like strings, declare registry `options`, ship `web/settings.options.{key}.{value}` labels in both locales, and rely on `presentGroup` + SPA `SettingsFormView` `FormSelect` — see [reference-settings.md](reference-settings.md). For **local-only** dev defaults, add to `config/settings-local.php` (not config literals).
 3. **Tier C:** dedicated migration + model with envelope cast; admin UI; never registry. For local wiring, add a slug entry to the gitignored `database/seeders/data/ai-connections.local.php` — never a new `.env` key and never a config literal.
 4. Domain code reads via `setting_config()` only — never `config()` for registry paths.
 5. Update [reference-settings.md](reference-settings.md) and this doc if tier boundaries change.
