@@ -1,6 +1,6 @@
 ---
 description: Any user-facing copy change — all locales, contextual, readable
-globs: lang/**,packages/**,app/**,routes/**,database/seeders/**,docs/platform/localization.md,docs/platform/naming-conventions.md
+globs: lang/**,vendor/silverspoonmedia/**,app/**,routes/**,database/seeders/**,docs/platform/localization.md,docs/platform/naming-conventions.md
 alwaysApply: true
 ---
 

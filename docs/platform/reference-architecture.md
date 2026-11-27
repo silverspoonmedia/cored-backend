@@ -65,11 +65,11 @@ php artisan domain:remove Scratch --force       # executes the manifest
 
 | Command | Effect |
 |---------|--------|
-| `domain:list` | Name, **Kind** (`core`\|`product`), **Parent** (the product it extends, `—` = none), **Removal** (`never`\|`locked`\|`removable`), whether the domain directory exists (`yes`/`missing`), and **Package** (`package` = Composer package — `packages/{slug}` here, `vendor/silverspoonmedia/{slug}` in a consumer install | `—` = `app/Domain/`) |
+| `domain:list` | Name, **Kind** (`core`\|`product`), **Parent** (the product it extends, `—` = none), **Removal** (`never`\|`locked`\|`removable`), whether the domain directory exists (`yes`/`missing`), and **Package** (`package` = Composer package — always `vendor/silverspoonmedia/{slug}` in this consumer install) | `—` = `app/Domain/` |
 | `domain:make` | Scaffold folders, provider, route stubs, tests, **`{Name}RoleSeeder`** (Beta tester role + `access {domain} product` permission + Public visibility row) and a starter **`uninstall.json`**; register as **product** (locked by default) and wire the seeder into `DatabaseSeeder`. `--parent={Name}` registers a **subproduct** instead — the parent must already be a registered product domain. |
 | `domain:remove` | Execute the domain's `uninstall.json`: delete paths (backend/SPA/docs), apply shared-file edits, optionally purge data. Refuses core and locked product, and refuses a product while a registered **subproduct** still points at it. Migrations stay without `--purge-data`. |
 
-Implementation: [`DomainManager`](../../packages/platform/src/Support/Domain/DomainManager.php), `domain:list` in [`packages/platform/src/Console/Commands/Domain/`](../../packages/platform/src/Console/Commands/Domain/) (kernel — a consumer install runs the same class from `vendor`), `domain:make` / `domain:remove` in `app/Console/Commands/Domain/` (host — they rewrite host trees).
+Implementation: [`DomainManager`](../../vendor/silverspoonmedia/platform/src/Support/Domain/DomainManager.php), `domain:list` in [`vendor/silverspoonmedia/platform/src/Console/Commands/Domain/`](../../vendor/silverspoonmedia/platform/src/Console/Commands/Domain/) (kernel — a consumer install runs the same class from `vendor`), `domain:make` / `domain:remove` in `app/Console/Commands/Domain/` (host — they rewrite host trees).
 
 ## Domain uninstall manifest
 
@@ -163,7 +163,7 @@ Sibling checkouts resolve from `config/domains.php` `siblings` (`'spa'` / `'docs
 
 The AI-facing procedure is [.cursor/skills/domain-remove/SKILL.md](../../.cursor/skills/domain-remove/SKILL.md); this section owns the schema and the op vocabulary.
 
-Implementation: [`UninstallManifest`](../../packages/platform/src/Support/Domain/UninstallManifest.php), [`UninstallFileEditor`](../../packages/platform/src/Support/Domain/UninstallFileEditor.php), [`UninstallReferenceScanner`](../../packages/platform/src/Support/Domain/UninstallReferenceScanner.php).
+Implementation: [`UninstallManifest`](../../vendor/silverspoonmedia/platform/src/Support/Domain/UninstallManifest.php), [`UninstallFileEditor`](../../vendor/silverspoonmedia/platform/src/Support/Domain/UninstallFileEditor.php), [`UninstallReferenceScanner`](../../vendor/silverspoonmedia/platform/src/Support/Domain/UninstallReferenceScanner.php).
 
 ## Directory layout
 
@@ -183,27 +183,28 @@ app/
     ├── AppServiceProvider.php
     └── Domain/*ServiceProvider.php
 
-packages/                  # Core domains shipped as Composer path packages
-├── navigation/            # Menu tree (core) — src, routes, config, database, resources/lang, tests
-├── notification/          # Activity notifications (core) — same shape
-├── audit/                 # ActivityLog + ErrorLog (core) — two namespaces, one provider,
-│                          #   routes/{activity-log,error-log}.php, config/errorlog.php,
-│                          #   database/migrations, resources/lang, tests/{ActivityLog,ErrorLog}
-└── billing/               # PaymentGateway + Currency + Service (core) — three namespaces, one provider,
-                           #   routes/{payment-gateway,currency,service}.php + web-ipaymu-return.php (registry `web` key),
-                           #   config/{payment,payment-routing,service}.php, resources/routing/price.yaml,
-                           #   database/{migrations,seeders,factories}, resources/lang, tests/{PaymentGateway,Currency,Service}
+vendor/silverspoonmedia/     # Core domains, installed from the released tags (never edited)
+├── platform/             # Kernel — App\Support\*, Identity, HTTP glue, providers, kernel routes
+├── navigation/           # Menu tree (core) — src, routes, config, database, resources/lang
+├── notification/         # Activity notifications (core) — same shape
+├── audit/                # ActivityLog + ErrorLog (core) — two namespaces, one provider,
+│                         #   routes/{activity-log,error-log}.php, config/errorlog.php,
+│                         #   database/migrations, resources/lang
+└── billing/              # PaymentGateway + Currency + Service (core) — three namespaces, one provider,
+                          #   routes/{payment-gateway,currency,service}.php + web-ipaymu-return.php (registry `web` key),
+                          #   config/{payment,payment-routing,service}.php, resources/routing/price.yaml,
+                          #   database/{migrations,seeders,factories}, resources/lang
 ```
 
-A packaged domain keeps namespace `App\Domain\{Domain}\*`; see [core-packages.md](../integration/core-packages.md). The host `app/` prefix resolves first, so an override at `app/Domain/Navigation/...` shadows the package.
+No package ships `tests/` in its tag (`export-ignore`), so the tree above has no test directory. A packaged domain keeps namespace `App\Domain\{Domain}\*`; see [core-packages.md](../integration/core-packages.md). The host `app/` prefix resolves first, so an override at `app/Domain/Navigation/...` shadows the package.
 
 Typical domain folders: `Http/Controllers/{API,Web}/`, `Http/Requests`, `Http/Resources`, `Services`, `Repositories`, `Models`, `Exceptions`, Events/Listeners as needed.
 
-Tests: `tests/Domain/{Domain}/` (PHPUnit suite `Domain`) and `packages/*/tests/` (suite `Packages`).
+Tests: `tests/Unit/` + `tests/Feature/` (this checkout's own suite — see [reference-tooling.md](reference-tooling.md)). A package's suite is not installed: it runs from a clone of its mirror.
 
 ## Routes
 
-API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainManager::packageApiRoutePaths()` for packaged domains (`packages/*/routes/{domain}.php`, one file per domain even when two share a package). Web: `routes/web.php` → `routes/web/{domain}.php`, plus `DomainManager::packageWebRoutePaths()` for a packaged domain's registry `web` key (`packages/billing/routes/web-ipaymu-return.php`), so the `web` middleware group still wraps it.
+API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainManager::packageApiRoutePaths()` for packaged domains (`vendor/silverspoonmedia/*/routes/{domain}.php`, one file per domain even when two share a package). Web: `routes/web.php` → `routes/web/{domain}.php`, plus `DomainManager::packageWebRoutePaths()` for a packaged domain's registry `web` key (`vendor/silverspoonmedia/billing/routes/web-ipaymu-return.php`), so the `web` middleware group still wraps it.
 
 **Web URI layout:** The Blade admin is removed. Authenticated UI lives in the SPA under `/apps/*` paths (Vue Router symbolic names stored in menu rows, validated via `config/spa-routes.php`). The backend `web` routes are **server endpoints only**: `GET /` → SPA redirect; a product's public share `/s/*`; iPaymu return; Discord OAuth callback. API paths (`/api/v1/*`) are unchanged. See [blade-admin.md](../web/blade-admin.md) and [vue-workers-spa.md](../integration/vue-workers-spa.md).
 
@@ -212,17 +213,17 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`, plus `DomainM
 | API / web file | Domain | Kind |
 |----------------|--------|------|
 | `identity.php` | Auth, users, lookups, admin | core |
-| `packages/navigation/routes/api.php` | Menus | core (package) |
-| `packages/notification/routes/api.php` | Notifications | core (package) |
-| `packages/audit/routes/activity-log.php` | Activity logs | core (package `silverspoonmedia/audit`) |
-| `packages/audit/routes/error-log.php` | Grouped persistent app errors | core (package `silverspoonmedia/audit`) |
-| `packages/ai/routes/inference.php` | AI model catalog, provider rates, usage | core (package `silverspoonmedia/ai`) |
-| `packages/ai/routes/ai.php` | AI connections (Tier C transport) | core (package `silverspoonmedia/ai`) |
-| `packages/billing/routes/payment-gateway.php` | Gateways, invoices, subscriptions | core (package `silverspoonmedia/billing`) |
-| `packages/billing/routes/service.php` | Service catalog, checkout, service purchases | core (package `silverspoonmedia/billing`) |
-| `packages/billing/routes/web-ipaymu-return.php` | iPaymu hosted return/cancel (public web) | core (package `silverspoonmedia/billing`) |
+| `vendor/silverspoonmedia/navigation/routes/api.php` | Menus | core (package) |
+| `vendor/silverspoonmedia/notification/routes/api.php` | Notifications | core (package) |
+| `vendor/silverspoonmedia/audit/routes/activity-log.php` | Activity logs | core (package `silverspoonmedia/audit`) |
+| `vendor/silverspoonmedia/audit/routes/error-log.php` | Grouped persistent app errors | core (package `silverspoonmedia/audit`) |
+| `vendor/silverspoonmedia/ai/routes/inference.php` | AI model catalog, provider rates, usage | core (package `silverspoonmedia/ai`) |
+| `vendor/silverspoonmedia/ai/routes/ai.php` | AI connections (Tier C transport) | core (package `silverspoonmedia/ai`) |
+| `vendor/silverspoonmedia/billing/routes/payment-gateway.php` | Gateways, invoices, subscriptions | core (package `silverspoonmedia/billing`) |
+| `vendor/silverspoonmedia/billing/routes/service.php` | Service catalog, checkout, service purchases | core (package `silverspoonmedia/billing`) |
+| `vendor/silverspoonmedia/billing/routes/web-ipaymu-return.php` | iPaymu hosted return/cancel (public web) | core (package `silverspoonmedia/billing`) |
 
-Kernel product registry (`packages/platform/src/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
+Kernel product registry (`vendor/silverspoonmedia/platform/src/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
 
 Global: `routes/api.php` — `GET /api/ping` only (`App\Http\Controllers\API\PingController`).
 
@@ -252,13 +253,13 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 3. Fill `routes/api/v1/{slug}.php` and `routes/web/{slug}.php` — gate the product group with `domain.access:{Name}` **before** `product.active:{Name}` / `permission:` (see [Domain Access](../domains/domain-access/README.md))
 4. Run `php artisan db:seed --class={Name}RoleSeeder` to create the Beta tester role + Public visibility row
 5. Bind repos/policies in the generated ServiceProvider
-6. Tests under `tests/Domain/{Name}/`
+6. Tests under `tests/Domain/{Name}/` (living line — this fork has no product domain to add)
 7. If the product needs its own H-RBAC (beyond core roles/permissions): seed product roles/permissions (`domain_kind = product`), unique names, optional product level ladder — see [Core vs product RBAC](../domains/identity/reference.md#core-vs-product-rbac)
 8. Update this doc and [docs/README.md](../README.md) if the domain map changes
 
 ## Deliberately not done
 
-- No new Composer path package until a core domain is proven to need one — the POC covers Navigation + Notification only, and product domains never become packages
+- No new Composer package until a core domain is proven to need one, and product domains never become packages. *(living line:)* no new **path** package either — the POC covers Navigation + Notification only
 - No `nwidart/laravel-modules`
 - No dynamic provider auto-discovery beyond `extra.laravel.providers` in a package — `bootstrap/providers.php` stays explicit for everything that is not packaged
 - No `routes/api/v1/core|product/` subfolders — kind is registry + comment sections, not filesystem trees

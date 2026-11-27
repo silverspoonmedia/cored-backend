@@ -1,11 +1,11 @@
 # Building a client project
 
-A project on the Silverspoon core installs the packages with Composer and keeps only its host directories. The kernel arrives through `vendor/silverspoonmedia/platform` — never a copied `core/`. `client-scaffold/` is the template: copy it, install, run.
+A project on the Silverspoon core installs the packages with Composer and keeps only its host directories. The kernel arrives through `vendor/silverspoonmedia/platform` — never a copied `core/`. `client-scaffold/` is the template: copy it, install, run. This repo is one such project already built: it has the six VCS repositories, the nine host PSR-4 prefixes and the consumer registry.
 
 | Mode | When | `repositories` |
 |------|------|----------------|
-| **VCS tag** | A real project, no access to this repo | Six `{"type": "vcs", "url": "https://github.com/silverspoonmedia/{slug}.git"}` entries + `"silverspoonmedia/{slug}": "^1.1"` |
-| **path** | An extracted package tree (a dev sandbox — a fork has no `packages/`) | `{"type": "path", "url": "../cored-backend/vendor/silverspoonmedia/*", "options": {"symlink": true}}` |
+| **VCS tag** | A real project, no access to the source repo — the normal case | Six `{"type": "vcs", "url": "https://github.com/silverspoonmedia/{slug}.git"}` entries + `"silverspoonmedia/{slug}": "^1.2"` |
+| **path** | A dev sandbox consuming a local checkout's install (a fork has no `packages/`) | `{"type": "path", "url": "../cored-backend/vendor/silverspoonmedia/*", "options": {"symlink": true}}` |
 
 Both install the same code; only Composer's source differs. `DomainManager` resolves the install directory, so registry paths follow the mode and nothing else does. **The mirrors are private** — `composer config --global github-oauth.github.com <token>` once.
 
@@ -27,9 +27,9 @@ The current release line is **`v1.2.1`**; a consumer's caret range is `^1.2`. `C
 // Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Currency, Service, Inference, Ai …
 ```
 
-1. **Paths point at the install, not at this repo.** A consumer has no `packages/`.
+1. **Paths point at the install, not at the source repo.** A consumer has no `packages/`.
 2. **Order is route load order.** `packageApiRoutePaths()` walks the registry; alphabetizing moves URIs.
-3. **No product domain.** Archivd and Microstock are this repo's sellable surface; an entry would make `domain:list` report a domain that cannot boot.
+3. **No product domain.** Archivd and Microstock are the source repo's sellable surface; an entry would make `domain:list` report a domain that cannot boot.
 
 ## Route assembly
 
@@ -59,7 +59,7 @@ Drop a class in `app/Support/Storage/Foo.php` and it replaces the kernel's; forg
 
 ## The provider a consumer must register
 
-`App\Providers\KernelServiceProvider` carries the kernel runtime: config merges, the seam registries, the CRUD repository binding, the CORS service, `domain:list`, `encryption:flush-decrypted-cache`, storage directories, the migration publish tag. It is **deliberately absent from `extra.laravel.providers`** — auto-discovery would boot it here too and discard a resolved registry. The scaffold lists it in `bootstrap/providers.php`; every binding sits behind `! $this->app->bound(...)` on both sides.
+`App\Providers\KernelServiceProvider` carries the kernel runtime: config merges, the seam registries, the CRUD repository binding, the CORS service, `domain:list`, `encryption:flush-decrypted-cache`, storage directories, the migration publish tag. It is **deliberately absent from `extra.laravel.providers`** — auto-discovery would boot it in the source repo too and discard a resolved registry. The scaffold lists it in `bootstrap/providers.php`; every binding sits behind `! $this->app->bound(...)` on both sides.
 
 | Owner | Groups |
 |-------|--------|
@@ -73,7 +73,7 @@ The kernel's tables are **host-owned** (`users`, `sessions`, `cache`, `jobs`, `p
 
 ## Extension seams and the fork recipe
 
-A fork runs with **no product domain**: settings and menu contributors, `ai.consumers` / `ai.ledger_fk_targets`, `storage.*`, the share-URL class and the SPA `FeatureModule` are all filled by the product's own provider. `KernelProductNeutralityTest` guards package neutrality. Seam table, empty states, `domain:remove` recipe: [reference-fork-seams.md](reference-fork-seams.md). Boilerplate forks: [boilerplate-forks.md](boilerplate-forks.md).
+A fork runs with **no product domain**: settings and menu contributors, `ai.consumers` / `ai.ledger_fk_targets`, `storage.*`, the share-URL class and the SPA `FeatureModule` are all filled by the product's own provider. `KernelProductNeutralityTest` guards package neutrality in the source repo. Seam table, empty states, `domain:remove` recipe: [reference-fork-seams.md](reference-fork-seams.md). Boilerplate forks: [boilerplate-forks.md](boilerplate-forks.md).
 
 ## Verification
 
@@ -83,7 +83,7 @@ php artisan route:list --path=api/v1
 php artisan migrate --force
 ```
 
-`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` runs that sequence on a temp copy of `client-scaffold` (path repositories, plus the scaffold's own `tests/`, which need the copy's `vendor/`), checks `encryption:flush-decrypted-cache` exits non-zero without a context, and asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence. CI: `standalone-packages`. The path-rewriting scaffold run cannot catch a lagging mirror, which is what [scripts/run-vcs-consumer-check.php](../../scripts/run-vcs-consumer-check.php) is for: with a GitHub token it installs from the six VCS mirrors and asserts the lock (`v1.1.x`), the registry, the URIs, that 422, and the extension seams (two colliding contributors, an `ai.consumers` row, a host `UserPresenter` override).
+`php -d memory_limit=1G scripts/run-consumer-scaffold-check.php` (source repo) runs that sequence on a temp copy of `client-scaffold` (path repositories, plus the scaffold's own `tests/`, which need the copy's `vendor/`), checks `encryption:flush-decrypted-cache` exits non-zero without a context, and asserts one real `POST /api/v1/auth/login` answers 422 with a translated sentence. The path-rewriting scaffold run cannot catch a lagging mirror, which is what `scripts/run-vcs-consumer-check.php` is for: with a GitHub token it installs from the six VCS mirrors and asserts the lock (`^1.2`, currently `v1.2.1`), the registry, the URIs, that 422, and the extension seams (two colliding contributors, an `ai.consumers` row, a host `UserPresenter` override).
 
 ## What is retired
 

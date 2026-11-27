@@ -1,6 +1,6 @@
 ---
 description: Envelope encryption tiers, decrypt cache, KMS connectivity
-globs: packages/platform/src/Support/Encryption/**,packages/platform/src/Support/Oci/**,config/encryption.php
+globs: vendor/silverspoonmedia/platform/src/Support/Encryption/**,vendor/silverspoonmedia/platform/src/Support/Oci/**,config/encryption.php
 alwaysApply: false
 ---
 

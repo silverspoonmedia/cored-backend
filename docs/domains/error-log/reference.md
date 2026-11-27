@@ -132,4 +132,4 @@ php artisan db:seed --class=MenuSeeder   # authoritative rebuild; removes custom
 composer test -- --filter=ErrorLog
 ```
 
-Coverage: fingerprint stability, redaction, grouping, `Log::error`, kill-switch, API RBAC, status update, `errorlog:clean`.
+Coverage: fingerprint stability, redaction, grouping, `Log::error`, kill-switch, API RBAC, status update, `errorlog:clean`. These cases live in the `silverspoonmedia/audit` mirror under `tests/ErrorLog/`, which is `export-ignore`d from the tag: `composer test -- --filter=ErrorLog` on this host matches no package test, so run the suite from a clone (`composer install`, then `composer test`).

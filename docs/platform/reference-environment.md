@@ -161,7 +161,7 @@ PHPUnit: `APP_ENV=testing` (`phpunit.xml` `force="true"`), sqlite, CSRF bypass f
 
 The suite does not need a populated `.env`: every value it depends on comes from `phpunit.xml` or the process environment. CI creates an empty `.env` anyway, because Laravel's `LoadEnvironmentVariables` otherwise asks phpdotenv for a missing file on every boot and PHPUnit reports the suppressed read as a warning — 36 of them, one per test, which hides the four `skipped` cross-repo locale guards. Do not read that warning as a corpus defect. Details: [reference-tooling.md — CI](reference-tooling.md#ci-github-actions).
 
-Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). After editing the routing policy YAML (`packages/billing/resources/routing/price.yaml`), run `php artisan payments:sync-routing-policy` (or use the admin **Sync routing policy** button). Channel fee bearer and reporting timezone are in **Settings → Platform**. Encryption env: [envelope-encryption.md](envelope-encryption.md).
+Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). After editing the routing policy YAML (`vendor/silverspoonmedia/billing/resources/routing/price.yaml`), run `php artisan payments:sync-routing-policy` (or use the admin **Sync routing policy** button). Channel fee bearer and reporting timezone are in **Settings → Platform**. Encryption env: [envelope-encryption.md](envelope-encryption.md).
 
 ## Persistent error log
 

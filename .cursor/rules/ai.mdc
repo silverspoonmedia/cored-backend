@@ -1,6 +1,6 @@
 ---
 description: Ai connection transport, slug binding, Test gate invariants
-globs: packages/ai/src/Ai/**,packages/ai/routes/ai.php,packages/ai/config/ai.php,packages/ai/src/Ai/Database/Seeders/AiConnectionSeeder.php,docs/domains/ai/**
+globs: vendor/silverspoonmedia/ai/src/Ai/**,vendor/silverspoonmedia/ai/routes/ai.php,vendor/silverspoonmedia/ai/config/ai.php,vendor/silverspoonmedia/ai/src/Ai/Database/Seeders/AiConnectionSeeder.php,docs/domains/ai/**
 alwaysApply: false
 ---
 

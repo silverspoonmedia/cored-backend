@@ -6,10 +6,10 @@ A standard five-action resource routes through `Route::apiResource(...)->except(
 
 | | |
 |---|---|
-| Code | `packages/platform/src/Repositories/Eloquent/EloquentCrudRepository.php`, `App\Domain\{Domain}\{Services,Repositories,Models}`, `App\Domain\{Domain}\Http\{Controllers,Requests,Resources}` |
+| Code | `vendor/silverspoonmedia/platform/src/Repositories/Eloquent/EloquentCrudRepository.php`, `App\Domain\{Domain}\{Services,Repositories,Models}`, `App\Domain\{Domain}\Http\{Controllers,Requests,Resources}` |
 | Config | — |
 | API | `routes/api/v1/{slug}.php` |
 | SPA | consumes `*_formatted` / `*_human` only — no view-layer reformatting |
-| Tests | `tests/Domain/{Domain}/`, `tests/Unit/Support/Presentation/*` |
+| Tests | `tests/Unit/Support/Presentation/*` (host) · the owning package's suite in its mirror — this checkout wires no `tests/Domain/{Domain}/` |
 | Pakem | [crud.mdc](../../.cursor/rules/crud.mdc) · [api-resources.mdc](../../.cursor/rules/api-resources.mdc) |
 | Deep dive | [reference-crud.md](reference-crud.md) |

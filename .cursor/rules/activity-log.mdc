@@ -1,6 +1,6 @@
 ---
 description: ActivityLog log names, PII envelope encryption, redaction invariants
-globs: packages/audit/src/ActivityLog/**,packages/audit/routes/activity-log.php,packages/audit/config/errorlog.php,config/activitylog.php,config/encryption.php,docs/domains/activity-log/**
+globs: vendor/silverspoonmedia/audit/src/ActivityLog/**,vendor/silverspoonmedia/audit/routes/activity-log.php,vendor/silverspoonmedia/audit/config/errorlog.php,config/activitylog.php,config/encryption.php,docs/domains/activity-log/**
 alwaysApply: false
 ---
 
@@ -18,12 +18,12 @@ Immutable forensic log of domain mutations (`activity_log`). It is **not** the n
 - **PII keys apply to every log name**, including `crypto` rows. A KMS failure during an audit write **drops** that key instead of failing the request (login must never break because the audit row could not be encrypted) and reports the exception.
 - Keep `ENCRYPTION_AUDIT_DECRYPTS=cache_miss` (default). `always` defeats the decrypt cache and wraps a DEK on every audited read.
 - `attribute_changes`, `error_logs.context` and the file log under `storage/logs/` are **not** enveloped today. Do not claim otherwise.
-- **Redaction:** `properties` and `attribute_changes` are redacted with the same key list as error-log (`ErrorContextRedactor` / `packages/audit/config/errorlog.php` `redact_keys`) for every log name; crypto rows additionally mask `kms_key_id`. Adding a sensitive key means updating both domains.
+- **Redaction:** `properties` and `attribute_changes` are redacted with the same key list as error-log (`ErrorContextRedactor` / `vendor/silverspoonmedia/audit/config/errorlog.php` `redact_keys`) for every log name; crypto rows additionally mask `kms_key_id`. Adding a sensitive key means updating both domains.
 - Backfill legacy plaintext rows with `php artisan encryption:migrate-activity-log` (`--dry-run` first). Idempotent; rows already holding envelopes are skipped, and un-migrated rows are still returned as-is.
 - Retention: `php artisan activitylog:clean` (default 365 days).
 - Realtime pings `logs.activity` (permission `view activity log`) as `.log.activity.appended` with `{log_name, event}` — never entry content. A `POST /api/v1/broadcasting/auth` "CORS error" is a transport problem (missing `/api/v1`, or the authorize racing the `__Host-spa_csrf` write), not a channel-permission problem; invariant test `tests/Feature/Http/CorsBroadcastAuthTest.php`.
 - API is `auth:api` + `permission:view activity log` (Root/Admin).
-- **Packaged with ErrorLog.** Both domains ship as `silverspoonmedia/audit` under `packages/audit/` (one provider, two namespaces, two route files). The decrypt-audit hook reaches the kernel through `App\Support\Encryption\DecryptionAuditRecorder`; never import a package class from `app/Support/**`.
+- **Packaged with ErrorLog.** Both domains ship as `silverspoonmedia/audit` under `vendor/silverspoonmedia/audit/` (one provider, two namespaces, two route files). The decrypt-audit hook reaches the kernel through `App\Support\Encryption\DecryptionAuditRecorder`; never import a package class from `app/Support/**`.
 - Subject filter aliases are a **registry** behind the kernel contract `App\Support\ActivityLog\SubjectAliasRegistrar` (seeded only with `user`) — a domain that owns a new subject type registers its alias from its own provider (`NavigationServiceProvider` owns `menu`); never edit this package to add one.
 
 Detail: [docs/domains/activity-log/reference.md](../../docs/domains/activity-log/reference.md).

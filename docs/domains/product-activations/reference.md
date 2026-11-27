@@ -143,7 +143,7 @@ Self-service endpoints authorize via the `ProductActivationPolicy::view` method:
 
 ## Per-product insights (v2)
 
-`ProductInsightService` aggregates per-product metrics for the admin dashboard. Lives in the host at `app/Support/Product/Services/ProductInsightService.php` (a product-coupled override; the rest of the registry ships in `packages/platform/src/Support/Product/`).
+`ProductInsightService` aggregates per-product metrics for the admin dashboard. Lives in the host at `app/Support/Product/Services/ProductInsightService.php` (a product-coupled override; the rest of the registry ships in `vendor/silverspoonmedia/platform/src/Support/Product/`).
 
 Reads from the stored `product_analytics` table (kept in sync on domain mutations by `ProductAnalyticsService`) and caches the aggregate read forever. Cache is invalidated on every write — no stale windows. See [cache-policy.md](../../platform/cache-policy.md).
 

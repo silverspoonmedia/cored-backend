@@ -1,6 +1,6 @@
 ---
 description: Destructive DB commands, test bootstrap, migration portability, UUID v7 identifiers
-globs: database/**,packages/**/Models/**,packages/**/src/**/Models/**,tests/**,phpunit.xml,composer.json
+globs: database/**,vendor/silverspoonmedia/**/Models/**,vendor/silverspoonmedia/**/src/**/Models/**,tests/**,phpunit.xml,composer.json
 alwaysApply: false
 ---
 

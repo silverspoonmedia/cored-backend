@@ -68,7 +68,7 @@ translation defects:
 |---|---|---|
 | a link to `domains/{product}/…` no longer resolves | the page left with the domain | delete the link, or re-point it at the core owner of the behaviour |
 | a `#anchor` no longer exists | the heading was product-only | re-point at the surviving heading |
-| a rule `globs:` matches no file | `app/Domain/**` is empty in a packaged tree; product paths left | widen the glob to the package path (`packages/**/src/…)` or drop the dead alternative |
+| a rule `globs:` matches no file | `vendor/silverspoonmedia/**` in the `globs:` is a placeholder copy-pasted from the living line, where the same rule points at `app/Domain/**` or the package path | point the glob at the write surface this repo actually has (`vendor/silverspoonmedia/**` is fine for a whole-tree rule; a per-domain rule names the package dir) or drop the dead alternative |
 | a doc-budget sample path is missing | the sample was a product doc | point the sample at a surviving doc of the same kind |
 
 The doc-size budgets are stated twice on purpose — in `scripts/lib/docs-budget-support.php`

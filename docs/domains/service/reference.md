@@ -219,8 +219,8 @@ Frankfurter base URL stays in `.env.example`; timeout/freshness window and servi
 ## Tests
 
 ```powershell
-composer test -- --filter=Service        # package: packages/billing/tests/Service
+composer test -- --filter=Service        # this host's suite; the billing tests live in its mirror
 composer test -- --filter=EnforceFreeTierQuota
 ```
 
-Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, grace/expire. Package-level keys live in `packages/billing/tests/Service/`: `MainPlanChangeCalculatorTest`, `ServiceCheckoutZeroChargeTest`, `ServiceEntitlementServiceTest`. A product's own scenarios (its `FulfillmentHandler`, quota matrix, perk gate) live in that product's tests — this boilerplate installs no product, so it carries none.
+Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, grace/expire. Those cases ship in the `silverspoonmedia/billing` mirror under `tests/Service/` (`MainPlanChangeCalculatorTest`, `ServiceCheckoutZeroChargeTest`, `ServiceEntitlementServiceTest`), which is `export-ignore`d — run them from a clone (`composer install`, then `composer test`), never from `vendor/`. A product's own scenarios (its `FulfillmentHandler`, quota matrix, perk gate) live in that product's tests — this boilerplate installs no product, so it carries none.

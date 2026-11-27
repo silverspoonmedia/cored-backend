@@ -6,7 +6,7 @@ Tier **A** is `.env` plus `config/*.php` `env()` bindings (app crypto, JWT signi
 
 | | |
 |---|---|
-| Code | `packages/platform/src/Support/Settings/**`, `packages/platform/src/Support/Encryption/**`, `config/*.php` |
+| Code | `vendor/silverspoonmedia/platform/src/Support/Settings/**`, `vendor/silverspoonmedia/platform/src/Support/Encryption/**`, `config/*.php` |
 | Config | `config/settings-local.php` (local dev overrides) |
 | Commands | `settings:rebuild-cache`, `env:curate`, `ai:import-legacy-env` |
 | Tests | `SettingRegistryTranslationTest`, `EnvProfileSyncTest` |

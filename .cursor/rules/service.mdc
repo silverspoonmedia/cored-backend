@@ -1,12 +1,12 @@
 ---
 description: Service catalog, FX checkout, entitlement lifecycle invariants
-globs: packages/billing/src/Service/**,packages/billing/routes/service.php,packages/billing/config/service.php,packages/billing/src/Service/Database/Seeders/ServiceCatalogSeeder.php,docs/domains/service/**
+globs: vendor/silverspoonmedia/billing/src/Service/**,vendor/silverspoonmedia/billing/routes/service.php,vendor/silverspoonmedia/billing/config/service.php,vendor/silverspoonmedia/billing/src/Service/Database/Seeders/ServiceCatalogSeeder.php,app/Support/**,docs/domains/service/**
 alwaysApply: false
 ---
 
 # Service
 
-Core domain that sells the product: catalog, multi-currency FX checkout that settles **IDR**, entitlement lifecycle, and fulfillment into product domains. Ships inside `silverspoonmedia/billing` together with [payment-gateway.mdc](payment-gateway.mdc) and [currency.mdc](currency.mdc) — three namespaces, three route files, one provider; code is `packages/billing/src/Service/`. The currency catalogue and the Frankfurter rate pipeline belong to `Currency` (`App\Domain\Currency\`) — Service consumes `ExchangeRateService` and never owns a rate, a rounding rule, or the FX error message. It is the primary invoiceable source (`service_purchase`). It is **not** the PaymentGateway `Subscription` model — that table is a free-text demo morph.
+Core domain that sells the product: catalog, multi-currency FX checkout that settles **IDR**, entitlement lifecycle, and fulfillment into product domains. Ships inside `silverspoonmedia/billing` together with [payment-gateway.mdc](payment-gateway.mdc) and [currency.mdc](currency.mdc) — three namespaces, three route files, one provider; code is `vendor/silverspoonmedia/billing/src/Service/`. The currency catalogue and the Frankfurter rate pipeline belong to `Currency` (`App\Domain\Currency\`) — Service consumes `ExchangeRateService` and never owns a rate, a rounding rule, or the FX error message. It is the primary invoiceable source (`service_purchase`). It is **not** the PaymentGateway `Subscription` model — that table is a free-text demo morph.
 
 - **Entitlement is separate from product activation.** `service_entitlements` (Active/Grace/Expired + `quantity`) is the paid layer; `product_activations` answers "may this user use the product at all". `hasActivePaidFor($userId, $target)` gates paid features inside a product (collaborative workspaces), never product access. Never make one gate the other.
 - **Money is `decimal(15,2)`** everywhere (same as invoices). Settlement currency is `platform.service.settlement_currency` (IDR).
@@ -27,6 +27,6 @@ Core domain that sells the product: catalog, multi-currency FX checkout that set
 - Permissions: `view service` (all roles incl. User), `manage service` (Root/Admin), `purchase service` (also accepts `initiate payment`).
 - Realtime after successful persist (`ServiceRealtime`, gated on `BroadcastConnection::isConfigured()`): `services.catalog` (permission `view service`) → `.service.catalog.changed` / `.service.purchase.changed`. The currency channel (`settings.currencies` → `.service.currency.changed`) belongs to Currency, not Service.
 - Deploy order: migrate through `2026_07_18_110002` → `CurrencySeeder` → `ServiceCatalogSeeder` (package-generic) → product catalog seeders (`ArchivdCatalogSeeder`, `MicrostockCatalogSeeder`) which write through `ServiceCatalogWriter`.
-- Tests: `composer test -- --filter=Service` runs `packages/billing/tests/Service`; product scenarios live in `tests/Domain/Archivd/Unit/Billing/` (`--filter=ArchivdBilling`, `ArchivdPlanQuotaMatrixTest`, `AddonAnniversaryTest`, `MainPlanFairnessFulfillmentTest`, `ServiceEntitlementLifecycleTest`) because they exercise `ArchivdFulfillmentHandler`. A moved test that still passes with the handler deleted was moved for the wrong reason.
+- Tests: `composer test -- --filter=Service` in the host. The calculator/entitlement suite lives in the `silverspoonmedia/billing` mirror (`composer install && composer test` there); this checkout installs no product, so it carries no product scenario. A moved test that still passes with the handler deleted was moved for the wrong reason.
 
 Detail: [docs/domains/service/reference.md](../../docs/domains/service/reference.md).
