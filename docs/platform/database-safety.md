@@ -50,7 +50,7 @@ Default sign-in: `admin@example.com` / `123456789`. Invoices are **not** recreat
 
 | | |
 |---|---|
-| Code | `packages/platform/src/Support/Database/DestructiveDatabaseCommandGuard.php`, `app/Console/ConsoleSafetyServiceProvider.php`, `tests/bootstrap.php`, `tests/TestCase.php` |
+| Code | `vendor/silverspoonmedia/platform/src/Support/Database/DestructiveDatabaseCommandGuard.php`, `app/Console/ConsoleSafetyServiceProvider.php`, `tests/bootstrap.php`, `tests/TestCase.php` |
 | Config | `config/database.php`, `phpunit.xml`, `ALLOW_DESTRUCTIVE_DB` |
 | Commands | `composer test`, `db:migration-diagnose`, `db:seed`, `migrate:rollback` |
 | Tests | `tests/Unit/Database/MigrationPortabilityTest.php` |

@@ -6,7 +6,7 @@ Cookie- or user-preference-driven locale for API and DB content, with **no route
 
 | | |
 |---|---|
-| Code | `packages/platform/src/Support/Localization/**`, `packages/platform/src/Http/Middleware/SetLocale.php`, `app/Domain/*/Http/Requests/Concerns/*` |
+| Code | `vendor/silverspoonmedia/platform/src/Support/Localization/**`, `vendor/silverspoonmedia/platform/src/Http/Middleware/SetLocale.php`, `app/Domain/*/Http/Requests/Concerns/*` |
 | Config | `config/localization.php`, `config/app.php` (`locale`) |
 | API | `POST /api/v1/auth/locale`; `X-SPA-Locale` request header |
 | SPA | `cored-frontend/src/i18n/locales/*.json`, `src/i18n/curation-log.json` |

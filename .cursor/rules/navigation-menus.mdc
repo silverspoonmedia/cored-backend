@@ -1,6 +1,6 @@
 ---
 description: Dynamic menu construction — MenuSeeder, spa-routes, RBAC, visibility, cache
-globs: packages/navigation/**,config/spa-routes.php,config/products.php,docs/domains/navigation/**
+globs: vendor/silverspoonmedia/navigation/**,config/spa-routes.php,config/products.php,docs/domains/navigation/**
 alwaysApply: false
 ---
 
@@ -8,7 +8,7 @@ alwaysApply: false
 
 Before creating or changing dynamic menus, read [docs/domains/navigation/README.md](../../docs/domains/navigation/README.md).
 
-This domain is a **Composer path package**: code in `packages/navigation/src`, routes in `packages/navigation/routes/api.php`, migrations/seeders/factories/lang/tests inside the package. Its `App\Domain\Navigation\` namespace does not change, so every rule below still applies; a host may override a class by placing the same namespace path under `app/Domain/Navigation/` (root `app/` wins in the PSR-4 map).
+This domain is a **Composer path package**: code in `vendor/silverspoonmedia/navigation/src`, routes in `vendor/silverspoonmedia/navigation/routes/api.php`, migrations/seeders/factories/lang/tests inside the package. Its `App\Domain\Navigation\` namespace does not change, so every rule below still applies; a host may override a class by placing the same namespace path under `app/Domain/Navigation/` (root `app/` wins in the PSR-4 map).
 
 - Every menu `route` is a SPA Vue Router **symbolic name** listed in `config/spa-routes.php` (and present in `cored-frontend/src/router`). Never a URL. Validation goes through `App\Support\Navigation\SpaRouteRegistry`: the `menu` allow-list plus any remaining Laravel `Route::has()` name, minus `deny` (auth/public-utility names are rejected even when `Route::has()` would pass).
 - Each product parent route appears in `config/products.php` `menu_routes`. Every referenced role must already be seeded.

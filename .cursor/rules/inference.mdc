@@ -1,6 +1,6 @@
 ---
 description: Inference model catalog, provider rates, rate-snapshot billing invariants
-globs: packages/ai/src/Inference/**,packages/ai/routes/inference.php,packages/ai/config/inference.php,packages/ai/src/Inference/Database/Seeders/InferenceCatalogSeeder.php,docs/domains/inference/**
+globs: vendor/silverspoonmedia/ai/src/Inference/**,vendor/silverspoonmedia/ai/routes/inference.php,vendor/silverspoonmedia/ai/config/inference.php,vendor/silverspoonmedia/ai/src/Inference/Database/Seeders/InferenceCatalogSeeder.php,docs/domains/inference/**
 alwaysApply: false
 ---
 

@@ -39,7 +39,7 @@ routes/
     └── identity-oauth-callback.php # Discord OAuth callback
 ```
 
-Packaged core domains load from their own tree — `packages/navigation/routes/api.php`, `packages/notification/routes/api.php`, and `packages/audit/routes/{activity-log,error-log}.php` — through `DomainManager::packageApiRoutePaths()`, so they have no entry under `routes/`.
+Packaged core domains load from their own tree — `vendor/silverspoonmedia/navigation/routes/api.php`, `vendor/silverspoonmedia/notification/routes/api.php`, and `vendor/silverspoonmedia/audit/routes/{activity-log,error-log}.php` — through `DomainManager::packageApiRoutePaths()`, so they have no entry under `routes/`.
 
 Paths inside version files are relative to the version prefix.
 

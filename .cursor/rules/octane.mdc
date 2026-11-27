@@ -1,6 +1,6 @@
 ---
 description: Octane/Swoole long-lived worker safety
-globs: packages/**,app/**
+globs: vendor/silverspoonmedia/**,app/**
 alwaysApply: false
 ---
 

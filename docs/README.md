@@ -16,7 +16,7 @@ This repository is the product-free Cored boilerplate: the ten core domains and 
 | Agent pakem map | [AGENTS.md](../AGENTS.md) · rules in [.cursor/rules/](../.cursor/rules/) |
 | User-facing docs site | [help.silverspoon.me](https://help.silverspoon.me) — sibling `docs` repo (Docusaurus, customer manual); agent pakem in that repo's `AGENTS.md` + `.cursor/rules/` |
 | IDE workspace | [Monolith-Backend.code-workspace](../Monolith-Backend.code-workspace) (this repo + `docs`) · sibling `cored-frontend/Cored-Frontend.code-workspace` · [Monolith-Fullstack.code-workspace](../Monolith-Fullstack.code-workspace) for contract work; all of them load the `docs` repo as a peer root |
-| Domain layout, `domain:*`, namespaces, path packages | [platform/architecture.md](platform/architecture.md) · [integration/core-packages.md](integration/core-packages.md) |
+| Domain layout, `domain:*`, namespaces, Composer consumer install | [platform/architecture.md](platform/architecture.md) · [integration/core-packages.md](integration/core-packages.md) |
 | Removing a product domain (ordered procedure) | [.cursor/skills/domain-remove/SKILL.md](../.cursor/skills/domain-remove/SKILL.md) |
 | Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [platform/configuration-policy.md](platform/configuration-policy.md) |
 | Project overview (Cored Backend + Cored Frontend) | [integration/project-overview.md](integration/project-overview.md) |
@@ -29,7 +29,7 @@ This repository is the product-free Cored boilerplate: the ten core domains and 
 
 | Document | Topic |
 |----------|-------|
-| [architecture.md](platform/architecture.md) | Logical monorepo + Composer path packages, kind core\|product + locked lifecycle + parent composition, routes, namespaces |
+| [architecture.md](platform/architecture.md) | Host overrides + Composer consumer install of the core packages, kind core\|product + locked lifecycle + parent composition, routes, namespaces |
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
 | [api-envelope.md](platform/api-envelope.md) | Canonical JSON envelope, error mapping, `/batch` partial-failure contract |
 | [commands.md](platform/commands.md) | Artisan command index |
@@ -84,7 +84,7 @@ The browser UI lives in the sibling SPA. These are historical only; the live lis
 | [project-overview.md](integration/project-overview.md) | Cored Backend and Cored Frontend — architecture and relationship |
 | [vue-workers-spa.md](integration/vue-workers-spa.md) | SPA contract: API shapes, `SPA_URL` minting, i18n runtime, batch hydration, realtime registry, CI; deep dive [reference-vue-workers-spa.md](integration/reference-vue-workers-spa.md) |
 | [client-project.md](integration/client-project.md) | Building a project on the core packages: `client-scaffold` template, registry, route loaders, PSR-4 override hooks, config split, verification |
-| [core-packages.md](integration/core-packages.md) | Core domains shipped as Composer path packages: layout, host wiring, override precedence, kernel contracts, how to add one |
+| [core-packages.md](integration/core-packages.md) | Core domains installed as versioned Composer packages: layout, host wiring, override precedence, kernel contracts, how to extend one |
 | [reference-fork-seams.md](integration/reference-fork-seams.md) | Deep dive: the seams a downstream product registers (settings, menu, AI consumers, storage, share URL, SPA feature), their empty states, and the `domain:remove` recipe |
 | [reference-package-seams.md](integration/reference-package-seams.md) | Deep dive: seam inventory a bundled package reads from a product, plus the one-way mirror, release-tag and `KernelServiceProvider` distribution rules |
 | [boilerplate-forks.md](integration/boilerplate-forks.md) | The product-free pair (`cored-backend`, `cored-frontend`): what was removed, how it extends a package, how it takes a later release |

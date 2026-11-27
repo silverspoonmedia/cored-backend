@@ -24,7 +24,7 @@ Steps, and why each one is there:
 
 ### `backend` job
 
-Runs `php artisan test` — the host suites this `phpunit.xml` declares (`Unit`, `Feature`, and the documentation/localization guards), not a `--testsuite` subset. Package suites run in the package mirrors (`composer test`); this fork has no `packages/` tree to wire a `Package:{slug}` suite to. It exists because `--filter=Locale` was the only thing the workflow ran: a change that broke `tests/Domain/**` merged green, and a single product domain can be 60+ feature test files. `--testsuite=Domain` was the alternative and was rejected: the other suites boot the same app and cost little, and a subset invites "which suite was that in?" as a permanent question.
+Runs `php artisan test` — the host suites this `phpunit.xml` declares (`Unit`, `Feature`, and the documentation/localization guards), not a `--testsuite` subset. Package suites run in the package mirrors (`composer test`); this fork has no `packages/` tree and no `tests/` in the install to wire a `Package:{slug}` suite to. It exists because `--filter=Locale` was the only thing the workflow ran: a change that broke a host feature test merged green. `--testsuite=Domain` was the alternative and was rejected: the other suites boot the same app and cost little, and a subset invites "which suite was that in?" as a permanent question.
 
 The job reuses the `locale` job's environment through a YAML alias (`env: &test-env` / `env: *test-env`), so the two cannot drift into different database settings. It repeats the PHP pin, the Composer cache, the install, and the empty `.env` step for the same reasons as `locale`.
 
@@ -42,24 +42,28 @@ Two properties make a full-suite run possible on a bare runner, and both are pin
 | `DB_CONNECTION=sqlite` / `DB_DATABASE=:memory:` | Every domain test migrates an in-memory database. The job `env:` sets the same values because `composer install` runs `package:discover` before PHPUnit reads `phpunit.xml`. |
 | `BROADCAST_CONNECTION=null`, `QUEUE_CONNECTION=sync`, `MAIL_MAILER=array`, `CACHE_STORE=array` | No Redis, no queue worker, no mail service on the runner. Realtime assertions use `Event::fake()`, so a null broadcaster is enough. |
 
-The job is the slow half of the workflow (the `locale` job is seconds). That is the price of not having `tests/Domain/**` unguarded, and it is why the suite must stay service-free: the moment a test needs MySQL, Redis, or the network, the job either grows a service container or starts failing intermittently, and a flaky gate gets ignored — which is worse than no gate.
+The job is the slow half of the workflow (the `locale` job is seconds). That is why the suite must stay service-free: the moment a test needs MySQL, Redis, or the network, the job either grows a service container or starts failing intermittently, and a flaky gate gets ignored — which is worse than no gate.
 
 ## A green run is `failed: 0`
 
-**A green run is `failed: 0`, not `passed == tests`.** The split between `passed` and `skipped` is the only figure that moves, because the cross-repo cases skip on a runner with no sibling checkout. This fork quotes no totals: its corpus is measured by running it, and a number copied here from another checkout is the stale reading this section exists to prevent. The runner rows below name the seven cases that move from `passed` to `skipped`:
+**A green run is `failed: 0`, not `passed == tests`.** This fork's suite is small — host suites only — and every count below is measured in *this* checkout, not copied from the living line:
 
-Both are green: `failed: 0` is the contract — the split, measured per checkout, is not.
+| Source | Result |
+|---|---|
+| Local `php artisan test`, siblings present (re-measured 2026-11-28) | `"tests":77, "passed":77, "assertions":716, "skipped":0, "risky":0` (~1 min) |
+| `backend` CI job, sibling-free | same total; the cross-repo cases in `LocaleGuardTest` ×4 and `Docs*Test` ×3 report as skipped instead of reading the sibling |
 
-The `1759` is the current corpus. It moved from `1698` when the packaged core domains' suites (`packages/*/tests`, one `Package:{slug}` suite each, 466 cases) were added to the runner, then to `1711` with the quality-gate and dependency-direction tests, to `1718` with the subject-label seam tests, to `1756` with the consumer-contract guards (`ConsumerScaffoldTest`, `KernelConfigSelfSufficiencyTest`, `DomainUninstallManifestTest`) and the flush-command cases, and to `1759` with the kernel console-command guard (`KernelConsoleCommandsTest`, proving a consumer inherits `domain:list` and `encryption:flush-decrypted-cache` from the package). The pre-removal figure was `2454`, and the 2026-10-07 product-domain removal plus the migration squash are what took that difference. `client-scaffold/tests` is **not** part of this total: it boots the copy's own `vendor/`, so `run-consumer-scaffold-check.php` runs it inside the temporary install. Re-measure this pair whenever a product domain is removed, a testsuite is added, or a `config/*.php` file appears or disappears — a stale total here reads as a corpus failure in the next session that touches it.
+Both are green: `failed: 0` is the contract. There is no `skipped: 1` OCI row here — the live-cloud integration test lives in the kernel's own suite, which runs in the `silverspoonmedia/platform` mirror, not in this install.
 
-The `assertions` field is the one number here that moves while the corpus does not. `SettingRegistryEnvPolicyTest::test_operational_env_keys_are_not_used_in_config_files` asserts once per (config file × the `45` keys in `removedOperationalEnvKeys()`), so deleting `config/purifier.php` on 2026-10-12 took exactly `45` off the total — `18392` → `18347`, the packaged suites brought it to `18095`, the quality gates to `18108`, the consumer-contract and flush-command cases to `18288`, and the kernel console guard to `18301` — with `tests` unchanged at `1759`. `tests`, `skipped` and `risky` are the fields that track the corpus; `assertions` tracks the corpus plus the config surface.
+**Why the fork total is `77` and not the living line's four-figure corpus.** The packaged core domains' suites (`packages/*/tests` in the source repo, one `Package:{slug}` suite each) are not wired here and cannot be: `tests/` is `export-ignore`d from every tag, so `vendor/silverspoonmedia/*/tests/` does not exist and this `phpunit.xml` lists only host suites. There is also no product domain, so `tests/Domain/**` is empty. What remains is real coverage of *this* checkout: `KernelBootTest` (the kernel and every package provider boot, registry resolves, routes mount), `DomainRegistryTest`, `RemoveLocaleCommandTest`, the six localization guards and the five documentation guards. A package's own suite runs from a clone of its mirror (`composer install && composer test`); the living line's `standalone-packages` job proves that path.
+
+`assertions: 716` tracks the same thing relative to this corpus — a config file added or removed moves it without moving `tests`. Re-measure both numbers whenever a suite is added, a guard is added, or a `config/*.php` file appears or disappears; a stale total here reads as a corpus failure in the next session that touches it. The living line's own history (and the unexplained assertion drop it went through) is its archive's business, not this page's.
 
 | Count | Source | Why it is expected |
 |---|---|---|
-| `skipped: 1` (any checkout) | `tests/Feature/Oci/OciKmsConnectionIntegrationTest.php` | Live OCI KMS connectivity check; it skips unless `OCI_KMS_INTEGRATION_TEST=true` is exported. Never enable it in CI — it needs real cloud credentials and the network. |
 | `skipped: +7` (sibling-free only) | `LocaleGuardTest` ×4 — `locale-prose-scan.php`, `locale-rawkey-scan.php`, `locale-pack-parity.php`, `locale-glossary-scan.php` — and `DocsStructureGuardTest`, `DocsCrossRepoLinkTest`, `DocsBudgetGuardTest` | Each cross-repo case first asserts the guard **fails loudly** without the sibling (`exit 1`, `cannot see the SPA repo`) and only then marks itself skipped. A pass would claim coverage the run never had, so the skip is the honest summary — see [reference-localization.md — CI coverage vs manual runs](reference-localization.md#ci-coverage-vs-manual-runs). |
 
-Do not "fix" either by adding ``--fail-on-risky`` or by deleting the skip: the first turns a cosmetic warning into a red build, the second removes the only coverage of the live-cloud path.
+Do not delete a skip to make the numbers tidy: it removes the only honest statement that the guard ran and could not see half its input.
 
 ## One suite at a time
 
@@ -118,7 +122,7 @@ env:
   COLUMNS: '200'
 ```
 
-`SettingsServiceProvider::boot()` calls `Schema::hasTable('system_settings')` ([SettingsServiceProvider.php](../../packages/platform/src/Providers/SettingsServiceProvider.php)). Without `DB_CONNECTION=sqlite`, `config/database.php` defaults to `mysql`, the runner has no MySQL, and the install step fails. `sqlite :memory:` answers `hasTable()` with `false` and needs no service. These are real environment variables and Laravel's dotenv repository is immutable, so a populated `.env` could not override them either.
+`SettingsServiceProvider::boot()` calls `Schema::hasTable('system_settings')` ([SettingsServiceProvider.php](../../vendor/silverspoonmedia/platform/src/Providers/SettingsServiceProvider.php)). Without `DB_CONNECTION=sqlite`, `config/database.php` defaults to `mysql`, the runner has no MySQL, and the install step fails. `sqlite :memory:` answers `hasTable()` with `false` and needs no service. These are real environment variables and Laravel's dotenv repository is immutable, so a populated `.env` could not override them either.
 
 `COLUMNS: '200'` widens Collision's output. The runner's default is 80 columns, which truncated findings to `file_get_contents(/ho…` — the opposite of a readable gate.
 

@@ -127,4 +127,4 @@ Catalog mutations (model cards, providers, rate sync) and usage events ping the 
 
 ## Tests
 
-`php artisan test --filter=Inference` — includes `InferenceRateServiceTest` (provisional rates, `isRegisteredOnProvider`), `InferenceCatalogApiTest` (provider rate sync clears classification flag), and Microstock `UnknownModelBillingTest` (consolidation refund/debit, negative balance).
+`php artisan test --filter=Inference` on this host matches nothing: the Inference suite is in the `silverspoonmedia/ai` mirror and is `export-ignore`d from the tag. Run it from a clone (`composer install`, then `composer test -- --filter=Inference`) — it covers `InferenceRateServiceTest` (provisional rates, `isRegisteredOnProvider`) and `InferenceCatalogApiTest` (provider rate sync clears the classification flag). The Microstock `UnknownModelBillingTest` (consolidation refund/debit, negative balance) belongs to that product's suite in the source repo; this host ships no product.

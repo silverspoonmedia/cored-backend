@@ -1,13 +1,13 @@
 # Reference — a fork's product seams and removal recipe
 
-Deep dive for [client-project.md](client-project.md). A fork runs with **no product domain**: every seam below is a kernel registry or published config key the product fills from its own provider, so deleting the domain deletes the registration and the kernel falls back to its defaults. `KernelProductNeutralityTest` fails on a product name under `packages/*/{src,config,routes,database}`.
+Deep dive for [client-project.md](client-project.md). A fork runs with **no product domain**: every seam below is a kernel registry or published config key the product fills from its own provider, so deleting the domain deletes the registration and the kernel falls back to its defaults. In the living line `KernelProductNeutralityTest` fails on a product name under `packages/*/{src,config,routes,database}`; this fork ships no product at all, so every empty state in the table below is the shipped state.
 
 | Seam | Contract / key | Owner | Product registers from | Empty state |
 |---|---|---|---|---|
 | Settings | `Support\Settings\Contracts\SettingContributor` → `definitions()` | `Support\Settings\SettingCatalog` (singleton; `SettingRegistry` is a static facade over it) | `Archivd/…/ArchivdSettingContributor`, `Microstock/…/MicrostockSettingContributor` in `register()` behind `app()->bound()` | 37 `platform.*` definitions only |
-| Menu | `Support\Navigation\Contracts\MenuContributor` → `contributions()` keyed by group (`products`, `settings`) | `Support\Navigation\MenuContributorRegistry`; `packages/navigation` `MenuSeeder` appends after the core nodes of that group | `Archivd/…/ArchivdMenuContributor`, `Microstock/…/MicrostockMenuContributor` | core tree (`HostMenuSeederTreeTest` pins merged order) |
-| AI consumers + FKs | `config('ai.consumers')`, `config('ai.ledger_fk_targets')` (`[{table, columns[]}]`) | `packages/ai` — seeder, `ImportLegacyEnvCommand`, inference migration (`Schema::hasTable()`) | `Microstock\Support\Ai\MicrostockAiConfig` merged in `boot()` | no consumer rows, no extra FKs |
-| Storage | `packages/platform/config/storage.php` — `upload_proxy.*`, `debug_log_requests` | `Support\Storage\S3DirectUploadEngine` reads `storage.*` | `ArchivdServiceProvider::boot()` republishes `config('archivd.*')` | engine inert, no proxy URL |
+| Menu | `Support\Navigation\Contracts\MenuContributor` → `contributions()` keyed by group (`products`, `settings`) | `Support\Navigation\MenuContributorRegistry`; `vendor/silverspoonmedia/navigation` `MenuSeeder` appends after the core nodes of that group | `Archivd/…/ArchivdMenuContributor`, `Microstock/…/MicrostockMenuContributor` | core tree (`HostMenuSeederTreeTest` pins merged order) |
+| AI consumers + FKs | `config('ai.consumers')`, `config('ai.ledger_fk_targets')` (`[{table, columns[]}]`) | `vendor/silverspoonmedia/ai` — seeder, `ImportLegacyEnvCommand`, inference migration (`Schema::hasTable()`) | `Microstock\Support\Ai\MicrostockAiConfig` merged in `boot()` | no consumer rows, no extra FKs |
+| Storage | `vendor/silverspoonmedia/platform/config/storage.php` — `upload_proxy.*`, `debug_log_requests` | `Support\Storage\S3DirectUploadEngine` reads `storage.*` | `ArchivdServiceProvider::boot()` republishes `config('archivd.*')` | engine inert, no proxy URL |
 | Share URL | kernel keeps `to()`/`passwordReset()`/`emailVerification()`/`paymentReturn()`/`paymentCancel()` | `Support\SpaPublicUrl` | `Support\PublicShareUrl` owns `/s/f/{id}`, `/s/d/{id}` | no share link, `/s/*` 404 |
 | SPA feature | `src/features/types.ts` `FeatureModule` | `src/features/registry.ts` + `src/features/messages.ts` | `src/features/{name}/index.ts` (routes, `boot()`, `messages` loader) | core screens only, core locale pack |
 | SPA cycle leaves | `src/composables/echo/echoBindings.ts` (useEcho registers, registry reads), `src/i18n/featurePacks.ts` (i18n reads, feature modules supply) | core | nothing — a feature reads copy via `useI18n()`, never the `@/i18n` singleton | both leaves stay, both trees empty |
@@ -16,7 +16,7 @@ Product copy travels with the product on both sides: menu labels read `trans('we
 
 ## Fork recipe: dropping a product
 
-Nothing under `packages/` changes.
+Nothing under `vendor/silverspoonmedia/` changes — the packages are already product-neutral by contract, and this is where that claim gets exercised.
 
 1. **Backend.** `php artisan domain:remove {Product} --dry-run` reads `app/Domain/{Product}/uninstall.json`: every shared-file hit is a `delete`, an `edits` op, or an `ignore` with a reason (`DomainUninstallManifestTest` gates it). Then run it without `--dry-run`.
 2. **Registrations leave with the provider.** Contributors, `ai.*`, `storage.*` and the share-URL class register from `{Product}ServiceProvider`, whose `bootstrap/providers.php` line the manifest drops; `config/{product}.php` and its `.env` keys leave, kernel groups stay.

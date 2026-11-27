@@ -201,4 +201,4 @@ Env: non-empty `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` required; `DISCORD_
 
 ## Tests
 
-Feature/unit under `tests/Domain/Identity/`. Prefer `composer test -- --filter=…`.
+Feature/unit live in the `silverspoonmedia/platform` mirror under `tests/Domain/Identity/`: the tag is `export-ignore`d for `tests/`, so run them from a clone (`composer install`, then `composer test -- --filter=Identity`). This host has no Identity suite of its own; `KernelBootTest` only proves the provider boots and the routes mount.

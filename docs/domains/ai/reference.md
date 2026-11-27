@@ -204,13 +204,15 @@ The data file must stay out of git: `/database/seeders/data/*.local.php` is in `
 
 | Suite | Covers |
 |-------|--------|
-| `packages/ai/tests/Ai/Feature/Http/Controllers/API/V1/AiConnectionApiTest.php` | CRUD, mask-only payload, test gate, demotion, single default, RBAC |
-| `packages/ai/tests/Ai/Unit/Services/AiConnectionServiceTest.php` | lifecycle, slug uniqueness, encryption at rest |
-| `packages/ai/tests/Ai/Unit/Services/AiConnectionResolverTest.php` | default fallback, inactive rows, cache invalidation |
-| `packages/ai/tests/Ai/Unit/Support/AiConnectionSecretsTest.php` | normalization, fingerprint, hint |
-| `packages/ai/tests/Ai/Feature/Console/Commands/ImportLegacyEnvCommandTest.php` | import + dry-run + skip invalid |
-| `packages/ai/tests/Ai/Feature/Database/Seeders/AiConnectionSeederTest.php` | local-only guard, skip rules, probe gate, `defaults` inheritance, hoisted variables, scope isolation, no-demotion re-seed, key rotation, binding typos |
-| `tests/Feature/Broadcasting/AiConnectionsChannelTest.php` | channel authorization |
-| `tests/Concerns/BindsAiConnection.php` | consumer-test stub (no DB, no encryption) |
+| `AiConnectionApiTest` | CRUD, mask-only payload, test gate, demotion, single default, RBAC |
+| `AiConnectionServiceTest` | lifecycle, slug uniqueness, encryption at rest |
+| `AiConnectionResolverTest` | default fallback, inactive rows, cache invalidation |
+| `AiConnectionSecretsTest` | normalization, fingerprint, hint |
+| `ImportLegacyEnvCommandTest` | import + dry-run + skip invalid |
+| `AiConnectionSeederTest` | local-only guard, skip rules, probe gate, `defaults` inheritance, hoisted variables, scope isolation, no-demotion re-seed, key rotation, binding typos |
+| `tests/Feature/Broadcasting/AiConnectionsChannelTest.php` | channel authorization (host) |
+| `tests/Concerns/BindsAiConnection.php` | consumer-test stub, no DB, no encryption (host) |
+
+The first six live in the `silverspoonmedia/ai` mirror under `tests/Ai/`, which is `export-ignore`d from the tag: run them from a clone (`composer install`, then `composer test`), never from `vendor/`. The last two are this host's own.
 
 Consumer suites (`HttpAiMetadataService*`) bind the stub through `BindsAiConnection` instead of seeding a row.

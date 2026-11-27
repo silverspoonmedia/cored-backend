@@ -6,7 +6,7 @@ Auth observability maps to Spatie activitylog (`log_name: auth`), and runtime fa
 
 | | |
 |---|---|
-| Code | `packages/platform/src/Support/Http/AllowlistCorsService.php`, `packages/platform/src/Support/Http/StampApiCors.php`, `app/Domain/Identity/Support/AuthLoginThrottle.php`, `bootstrap/app.php` |
+| Code | `vendor/silverspoonmedia/platform/src/Support/Http/AllowlistCorsService.php`, `vendor/silverspoonmedia/platform/src/Support/Http/StampApiCors.php`, `app/Domain/Identity/Support/AuthLoginThrottle.php`, `bootstrap/app.php` |
 | Config | `config/cors.php`, `config/auth.php` (`login_throttle`) |
 | Commands | `composer audit`, `npm audit`, `php artisan route:list` |
 | Tests | `tests/Feature/Http/CorsOriginsTest.php`, `CorsBroadcastAuthTest.php`, `CorsOnAuthErrorProbeTest.php`, `Tests\Concerns\AssertsPayloadHygiene` |

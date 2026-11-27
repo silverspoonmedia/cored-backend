@@ -1,6 +1,6 @@
 ---
 description: Forever cache + explicit invalidation for domain data
-globs: app/**/Domain/**,packages/**/src/Support/**,config/cache.php
+globs: app/**/Domain/**,vendor/silverspoonmedia/**/src/Support/**,config/cache.php
 alwaysApply: false
 ---
 

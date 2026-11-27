@@ -59,18 +59,18 @@ Domain data caches are forever + rebuild-on-miss + invalidate-on-change — [cac
 | `encryption:migrate-activity-log` | Encrypt PII in `activity_log.properties` (`ip_address`, `user_agent`, `email`) to envelopes; idempotent, `--dry-run` | [domains/activity-log/README.md](../domains/activity-log/README.md) |
 | `oci:kms-verify` | Verify Oracle Cloud KMS connectivity via `generateDataEncryptionKey` | [envelope-encryption.md](envelope-encryption.md) |
 
-## Payments (`payments:*` — `packages/billing`)
+## Payments (`payments:*` — `vendor/silverspoonmedia/billing`)
 
 | Command | Purpose | Details |
 |---------|---------|---------|
-| `payments:sync-routing-policy` | Materialize the routing policy YAML (`packages/billing/resources/routing/price.yaml`) into `payment_channels` + `payment_channel_routes` | [domains/payment-gateway/reference.md](../domains/payment-gateway/reference.md) |
+| `payments:sync-routing-policy` | Materialize the routing policy YAML (`vendor/silverspoonmedia/billing/resources/routing/price.yaml`) into `payment_channels` + `payment_channel_routes` | [domains/payment-gateway/reference.md](../domains/payment-gateway/reference.md) |
 | `payments:webhook-urls` | Print public webhook URLs to register with Midtrans/iPaymu | [domains/payment-gateway/README.md](../domains/payment-gateway/README.md) |
 | `payments:midtrans-reconcile-pending` | Poll Midtrans Get Status for pending/challenge invoices (cron backup when webhooks fail) | [domains/payment-gateway/README.md](../domains/payment-gateway/README.md) |
 | `payments:reconcile-withdrawable-funds` | Poll Midtrans/iPaymu for paid invoices not yet withdrawable | [domains/payment-gateway/README.md](../domains/payment-gateway/README.md) |
 | `payments:audit-invoice-funds` | Summarize invoices by withdrawable/disbursement buckets | [domains/payment-gateway/README.md](../domains/payment-gateway/README.md) |
 | `payments:disbursement-begin` / `-complete` / `-fail` / `-reopen` | Disbursement lifecycle: eligible → processing → completed/failed; reopen after a failed payout | [domains/payment-gateway/README.md](../domains/payment-gateway/README.md) |
 
-## Services (entitlements — `packages/billing`)
+## Services (entitlements — `vendor/silverspoonmedia/billing`)
 
 | Command | Purpose | Details |
 |---------|---------|---------|

@@ -26,7 +26,7 @@ The SPA is an **API-consumer** — no business logic lives in the frontend. All 
 | Aspect | Detail |
 |--------|--------|
 | Framework | Laravel 13, PHP 8.4 |
-| Architecture | Domain-driven monorepo, `app/Domain/{Domain}/` in one git repo |
+| Architecture | Core domains as versioned Composer packages (`vendor/silverspoonmedia/*`, `^1.2`) + host-owned overrides in `app/Domain/{Domain}/` — [core-packages.md](core-packages.md) |
 | API | REST at `/api/v1/*` — all business logic lives here. Versioned: global (`/api/ping`) vs versioned (`/api/v1/*`), no dual exposure, breaking changes → new version |
 | IDs | UUID v7 primary keys end-to-end (no auto-increment integers) |
 | Auth | JWT (`php-open-source-saver/jwt-auth`), TOTP 2FA (`pragmarx/google2fa-laravel`), Spatie RBAC with hierarchical roles (H-RBAC) |

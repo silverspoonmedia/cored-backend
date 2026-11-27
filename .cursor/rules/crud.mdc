@@ -1,6 +1,6 @@
 ---
 description: CRUD layering, shared repository, FormRequest DRY, dual-field resources
-globs: packages/**/src/Repositories/**,app/Http/**,packages/**/src/Http/**
+globs: vendor/silverspoonmedia/**/src/Repositories/**,app/Http/**,vendor/silverspoonmedia/**/src/Http/**
 alwaysApply: false
 ---
 

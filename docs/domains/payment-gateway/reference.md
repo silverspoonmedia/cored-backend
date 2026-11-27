@@ -27,7 +27,7 @@ Registry: **`kind => core`** in [`config/domains.php`](../../../config/domains.p
 
 ### Channel sync (API)
 
-`POST /api/v1/payment-channels/sync-policy` — materializes the routing policy YAML (`packages/billing/resources/routing/price.yaml`) into `payment_channels` + `payment_channel_routes` rows. API equivalent of the web sync button (`POST /apps/payment-channels/sync-routing-policy`) and `php artisan payments:sync-routing-policy`. Permission: `manage payment gateway`. Returns `{ channels: int, routes: int, skipped: int }`.
+`POST /api/v1/payment-channels/sync-policy` — materializes the routing policy YAML (`vendor/silverspoonmedia/billing/resources/routing/price.yaml`) into `payment_channels` + `payment_channel_routes` rows. API equivalent of the web sync button (`POST /apps/payment-channels/sync-routing-policy`) and `php artisan payments:sync-routing-policy`. Permission: `manage payment gateway`. Returns `{ channels: int, routes: int, skipped: int }`.
 
 ### PaymentChannelResource checkout quote flattening
 
@@ -39,7 +39,7 @@ Provider notify URLs should hit the backend public webhook routes (or a trusted 
 
 ## Routing policy (the YAML contract)
 
-The YAML in `packages/billing/resources/routing/price.yaml` (registry path in `packages/billing/config/payment-routing.php`) is the **source of truth**. Code loads it via `App\Domain\PaymentGateway\Support\Routing\RoutingPolicyLoader`, validates it with `RoutingPolicyValidator`, then writes it to the DB via `PaymentRouteMaterializer` (`php artisan payments:sync-routing-policy`). Checkout resolver: `PaymentChannelResolver` + `PaymentChannelFeeCalculator`.
+The YAML in `vendor/silverspoonmedia/billing/resources/routing/price.yaml` (registry path in `vendor/silverspoonmedia/billing/config/payment-routing.php`) is the **source of truth**. Code loads it via `App\Domain\PaymentGateway\Support\Routing\RoutingPolicyLoader`, validates it with `RoutingPolicyValidator`, then writes it to the DB via `PaymentRouteMaterializer` (`php artisan payments:sync-routing-policy`). Checkout resolver: `PaymentChannelResolver` + `PaymentChannelFeeCalculator`.
 
 The routing config is a **declarative contract**. An operator edits the YAML, then `payments:sync-routing-policy` rewrites the `payment_channels` / `payment_channel_routes` rows; the checkout resolver never reads the YAML directly — it reads the synced DB ordered by `route_role` then `priority`.
 
@@ -151,7 +151,7 @@ Checkout UI shows subtotal / payment fee / total due. `GET /api/v1/payment-chann
 
 ### Channel checkout
 
-Logical channels (`qris`, `va_*`, e-wallets) are **materialized from** the routing policy YAML (`packages/billing/resources/routing/price.yaml`) into `payment_channels` + `payment_channel_routes` (fee, settlement tier, route role). Sync: `php artisan payments:sync-routing-policy` (also runs via `PaymentChannelSeeder` after gateways).
+Logical channels (`qris`, `va_*`, e-wallets) are **materialized from** the routing policy YAML (`vendor/silverspoonmedia/billing/resources/routing/price.yaml`) into `payment_channels` + `payment_channel_routes` (fee, settlement tier, route role). Sync: `php artisan payments:sync-routing-policy` (also runs via `PaymentChannelSeeder` after gateways).
 
 `PaymentChannelResolver` orders viable routes by `route_role` (primary/only before fallback) then `priority`, skips `avoid` tags, and checks gateway credentials. Successful checkout stores `payment_channel_route_id` and an immutable **`payment_channel_route_snapshot_id`** on the invoice.
 
@@ -238,7 +238,7 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 The SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA-side realtime wiring is documented in [vue-workers-spa.md — realtime](../../integration/reference-vue-workers-spa.md#realtime); the backend broadcast contract is below.
 
-iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `defaultCancelUrl`) use `SpaPublicUrl`: `{SPA_URL}/payment/return` and `/payment/cancel` when `SPA_URL` is set; otherwise the server endpoints `/payment/ipaymu/return|cancel` ([`packages/billing/routes/web-ipaymu-return.php`](../../../packages/billing/routes/web-ipaymu-return.php), loaded through the registry `web` key), which redirect onward. Channel checkout still sends empty `ureturn` (on-page QR/VA). SPA bounce views stay authenticated at the site root — [vue-workers-spa — payment return URLs](../../integration/reference-vue-workers-spa.md#payment-return-urls).
+iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `defaultCancelUrl`) use `SpaPublicUrl`: `{SPA_URL}/payment/return` and `/payment/cancel` when `SPA_URL` is set; otherwise the server endpoints `/payment/ipaymu/return|cancel` ([`vendor/silverspoonmedia/billing/routes/web-ipaymu-return.php`](../../../vendor/silverspoonmedia/billing/routes/web-ipaymu-return.php), loaded through the registry `web` key), which redirect onward. Channel checkout still sends empty `ureturn` (on-page QR/VA). SPA bounce views stay authenticated at the site root — [vue-workers-spa — payment return URLs](../../integration/reference-vue-workers-spa.md#payment-return-urls).
 
 ## UI surfaces (SPA)
 
@@ -310,8 +310,8 @@ Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment g
 
 ## Config
 
-`packages/billing/config/payment.php` — Midtrans/iPaymu credentials from env (Tier A); `default_buyer_phone` is Tier B (`platform.payment.default_buyer_phone` via Settings → Platform) for iPaymu when profile has no phone. `packages/billing/config/payment-routing.php` — `policy_path` → `packages/billing/resources/routing/price.yaml`. After secret edits: `php artisan config:rebuild`.
+`vendor/silverspoonmedia/billing/config/payment.php` — Midtrans/iPaymu credentials from env (Tier A); `default_buyer_phone` is Tier B (`platform.payment.default_buyer_phone` via Settings → Platform) for iPaymu when profile has no phone. `vendor/silverspoonmedia/billing/config/payment-routing.php` — `policy_path` → `vendor/silverspoonmedia/billing/resources/routing/price.yaml`. After secret edits: `php artisan config:rebuild`.
 
 ## Tests
 
-`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`. Route snapshot: `InvoiceChannelCheckoutTest` (snapshot FK + immutable fee basis). Snap parameter building + IDR int `gross_amount` convention: `MidtransSnapParameterBuilderTest`.
+`composer test -- --filter=Payment` on this host matches no package test: the billing suite lives in the `silverspoonmedia/billing` mirror and is `export-ignore`d from the tag, so run it from a clone (`composer install`, then `composer test`). It covers `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`, the route snapshot (`InvoiceChannelCheckoutTest` — snapshot FK + immutable fee basis) and the snap parameter builder (`MidtransSnapParameterBuilderTest` — IDR int `gross_amount` convention).

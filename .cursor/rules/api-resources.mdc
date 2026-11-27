@@ -1,6 +1,6 @@
 ---
 description: API envelope, list contract, aggregation policy, per-viewer data minimization
-globs: packages/**/src/Http/**,routes/api/**,packages/platform/src/Support/ApiResponder.php
+globs: vendor/silverspoonmedia/**/src/Http/**,routes/api/**,vendor/silverspoonmedia/platform/src/Support/ApiResponder.php
 alwaysApply: false
 ---
 
