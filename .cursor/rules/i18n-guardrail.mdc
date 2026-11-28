@@ -11,7 +11,7 @@ Translation is the first thing a user sees. A perfectly built feature nobody can
 ## Definition of done (all three, or the task is not done)
 
 1. **Applied to every supported locale.** `en`, `id` — the whole list, in the same change. Backend `lang/{locale}/**`, flat `lang/{locale}.json`, and SPA `src/i18n/locales/*.json` are three separate surfaces — a change to one is a change to the others. English is the source, never the destination. The canonical list is `config('localization.supported_locales')`; adding a language is `php artisan locale:add <code>`, never a hand-written file (see "Adding a locale back").
-2. **Contextual, not generic.** The wording is chosen for the surface it renders on (button, heading, toast, validation, status badge, table header, empty state, mail) and for the audience. Two surfaces that need different wording get two keys.
+2. **Contextual, not generic.** The wording is chosen for the surface it renders on (button, heading, toast, validation, status badge, table header, empty state, mail) and for the audience. One phrase, two surfaces, two keys.
 3. **Usable and readable.** A native speaker reads it in that locale, on that surface, without noticing it was translated.
 
 ## Order of work
@@ -22,11 +22,9 @@ Translation is the first thing a user sees. A perfectly built feature nobody can
 4. Apply to all locales, flag each curated key (`// curated at <ISO8601+07:00> — <locale> curation wave`; SPA equivalent: a `src/i18n/curation-log.json` entry).
 5. Run the gates below. Fix, do not suppress.
 
-## Readability test (the part no script can do)
+## Readability test (no script can do it)
 
-Before finishing, read the string back as a native speaker of the target locale, **on that surface**:
-
-- Would a product in that language actually say this? If it reads like a translation, it is not done.
+Read the string back as a native speaker of the target locale, **on that surface**: a product would say this, not read like a translation.
 - Does the register match? `id` Anda (formal neutral). A retired locale is not a wrong answer, only an unscoped one: read its register from [archive/localization-retired-locales.md](../../docs/archive/localization-retired-locales.md) when you bring it back.
 - Buttons are plain verb forms. Toasts and messages are full sentences. A table header is a stable label, not a participle agreeing with a hidden noun.
 - No filler the target language does not use in product UI.
@@ -36,7 +34,7 @@ Before finishing, read the string back as a native speaker of the target locale,
 - **Calque.** `id` `403 Forbidden` = `Dilarang` → `Terlarang`; `401` = `Tidak Diizinkan` → `Tidak sah`.
 - **English left inside non-English prose.** `id` `management`/`creator` stayed English in 26 backend keys → `manajemen`/`kreator`. Invisible to every structural guard: the value differs from `en`, so the duplicate check skips it; the locale is Latin-script, so a script scan finds nothing.
 - **One source phrase, two contexts, one key.** Split the key instead of writing a sentence that is wrong on both surfaces.
-- **Term drift between namespaces.** One term per concept, or the glossary says why two senses are kept.
+- **Term drift between namespaces.** One term per concept unless the glossary says why not.
 
 ## Adding a locale back
 
