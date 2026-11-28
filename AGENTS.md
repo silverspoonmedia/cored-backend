@@ -22,11 +22,11 @@ This repository is a **fork of `monolith` with both product domains removed** (M
 
 | Rule | Fires when |
 |------|-----------|
-| `docs-pakem.mdc` *(always-on)* | Writing or moving any doc, brief, or rule file |
+| `docs-pakem.mdc` *(always-on)* | Writing or moving any doc, brief, or rule file, or running `wrap up the docs` — a checkpoint that merges, under the same test gate |
 | `task-scope.mdc` *(always-on)* | Deciding which layers a task must touch |
 | `context-budget.mdc` *(always-on)* | Choosing a workspace / what to open |
 | `i18n-guardrail.mdc` *(always-on)* | Adding or editing user-facing copy |
-| `working-branch.mdc` *(always-on)* | Before the first edit — never work on a protected branch |
+| `working-branch.mdc` *(always-on)* | Before the first edit, or before any commit — protected branch, test evidence, commit approval |
 | `architecture.mdc` | `app/**`, `config/domains.php`, `vendor/silverspoonmedia/**` — domain kind/lifecycle/composition, the consumer install, the kernel as `silverspoonmedia/platform`, namespaces, dependency direction |
 | `api-routing.mdc` | `routes/api/**`, `bootstrap/app.php` — global vs versioned layer, `v{N}` loader, route names |
 | `api-resources.mdc` | `vendor/silverspoonmedia/**/src/Http/**`, `routes/api/**` — envelope, list `display_mode`/`actions[]`, standalone-first `/batch`, response minimization |

@@ -22,4 +22,6 @@ Default is `[fullstack]` when no tag is given. The tag affects **layer coverage 
 | API shape | Canonical envelope only — see `api-resources.mdc` |
 | Other | Migrations, seeders, models, events/listeners, notifications, tests, the owning brief + rule file |
 
-An API-only or SPA-only change without its counterpart layers is **incomplete** unless the tag says otherwise.
+An API-only or SPA-only change without its counterpart is incomplete unless the tag says otherwise.
+
+- **Plan mode keeps its to-dos current.** Every plan carries `todos:` before it is presented — `todos: []` is a defect. Flip each `in_progress` → `completed` as work lands, add what research finds. Re-issue on scope moves. Stale to-dos mean unfinished.
